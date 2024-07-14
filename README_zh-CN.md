@@ -73,7 +73,7 @@ Align-Anything 是一个基于 DeepSpeed 或 NeMo （目前正在开发中）的
 
 # 新闻
 
-- 2023-07-14 🎉我们开源了 `Align-Anything` 框架。
+- 2024-07-14 🎉我们开源了 `Align-Anything` 框架。
 
 # 安装
 
