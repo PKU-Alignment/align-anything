@@ -72,7 +72,7 @@ We have a roadmap for future development work `align-anything`:
 
 # News
 
-- 2023-07-14 🎉We open-souce the `align-anything` framework.
+- 2024-07-14 🎉We open-souce the `align-anything` framework.
 
 # Installation
 
