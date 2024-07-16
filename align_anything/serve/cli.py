@@ -42,7 +42,6 @@ class CLI:
 
     def __init__(self, *model_args: ModelArgs, stream: bool = True) -> None:
         self.model_args = model_args
-        print(model_args)
         self.stream = stream
         self.console = Console(soft_wrap=False, markup=False, emoji=False, highlight=False)
         self.console.print('Loading model...', style='bold yellow')
