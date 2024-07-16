@@ -42,6 +42,7 @@ class CLI:
 
     def __init__(self, *model_args: ModelArgs, stream: bool = True) -> None:
         self.model_args = model_args
+        print(model_args)
         self.stream = stream
         self.console = Console(soft_wrap=False, markup=False, emoji=False, highlight=False)
         self.console.print('Loading model...', style='bold yellow')
@@ -54,6 +55,8 @@ class CLI:
         self.styles = [style for style, _ in reversed(tuple(zip(self.STYLES, self.chatbots)))]
 
         self.console.print('Model loaded. ', style='bold yellow', end='')
+        self.do_generate = True
+        self.image_source = ""
         self.clear()
 
     def reset(self) -> None:
@@ -83,6 +86,7 @@ class CLI:
     def run(self) -> None:
         try:
             while True:
+                self.do_generate = True
                 self.console.print(
                     f'[{self.chatbots.round + 1}] Human: ',
                     style='bold green',
@@ -112,15 +116,35 @@ class CLI:
                     self.console.print(commands)
                     self.console.print()
                     continue
-
-                for response_generator, name, style in zip(
-                    self.chatbots(text=text, stream=self.stream),
-                    self.chatbot_names,
-                    self.styles,
-                ):
-                    self.render(response_generator, name, style)
-
+                if len(text.split()) and text.split()[0] == SpecialCommand.IMAGE:
+                    self.do_generate = False
+                    if not self.model_args[0].vllm:
+                        #print something                       
+                        self.console.print("WRONG COMMAND: /image command is only available for VLLM model.Try setting --vllm True", style='bold yellow')
+                    else:
+                        parts = text.split()[1:]
+                        if len(parts)>1:
+                            self.console.print("WRONG COMMAND: Too many arguments for /image command.", style='bold yellow')
+        
+                        elif len(parts)==0:
+                            self.console.print("WRONG COMMAND: No arguments for /image command.", style='bold yellow')
+                        else:
+                            self.image_source = parts[0]
+                            self.console.print(f"Image source set to {self.image_source}.", style='bold yellow')
+                        
+                    
+                
+                if self.do_generate:
+                    for response_generator, name, style in zip(
+                        self.chatbots(text=text, stream=self.stream, image_source=self.image_source),
+                        self.chatbot_names,
+                        self.styles,
+                    ):
+                        self.render(response_generator, name, style)
+                    
                 self.console.print()
+                if self.do_generate and self.image_source != "":
+                    exit()
 
         except (KeyboardInterrupt, EOFError, EndOfDialogue) as ex:
             if not isinstance(ex, EndOfDialogue):
@@ -183,7 +207,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         '--max_length',
         type=int,
-        default=512,
+        default=4096,
         help='Maximum sequence length of generation.',
     )
     parser.add_argument(
@@ -231,6 +255,12 @@ def parse_arguments() -> argparse.Namespace:
         default="Dialogue",
         help='Model template',
     )
+    parser.add_argument(
+        '--vllm',
+        type=str,
+        default=False,
+        help='Whether to use VLLM model',
+    )
 
     args = parser.parse_args()
     if args.fp16 and args.bf16:
@@ -257,6 +287,7 @@ def main(args: argparse.Namespace | None = None) -> None:
         'repetition_penalty': args.repetition_penalty,
         'dtype': (torch.bfloat16 if args.bf16 else (torch.float16 if args.fp16 else 'auto')),
         'template': args.template,
+        'vllm': args.vllm,
     }
     cli = CLI(
         *(
