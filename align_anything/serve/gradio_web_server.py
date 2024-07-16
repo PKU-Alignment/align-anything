@@ -217,8 +217,6 @@ def get_model_list():
     ret = requests.post(args.controller_url + "/list_models")
     model_names = ret.json()['model_names']
     model_templates = ret.json()['model_templates']
-    print(model_names)
-    print(model_templates)
     logger.print("Models: ")
     for model_name in model_names:
         logger.print(f"{model_name} ")
@@ -307,7 +305,7 @@ def clear_history(request: gr.Request):
 
 def add_text(state, text, image, image_process_mode, videobox, audiobox, request: gr.Request):
     logger.print(f"add_text. ip: {request.client.host}. len: {len(text)}")
-    if len(text) <= 0  and image is None:
+    if len(text) <= 0 and image is None:
         state.skip_next = True
         return (state, state.to_gradio_chatbot(), "", None) + (no_change_btn,) * 5
     if args.moderate:
@@ -483,11 +481,6 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
     with gr.Blocks(title="align-anything", theme=gr.themes.Default(), css=block_css) as demo:
         state = gr.State()
         
-        # if not embed_mode:
-        #     with gr.Row():
-        #         gr.Gallery(['/home/yangyaodong/projects/jiahao/projects/align-anything-me/assets/logo.jpg'])
-        #         gr.Markdown(title_markdown)
-
         with gr.Row():
             with gr.Column(scale=3):
                 if not embed_mode:
@@ -646,11 +639,9 @@ if __name__ == "__main__":
     logger.print(f"args: {args}")
 
     model_names, model_templates = get_model_list()
-    print(model_names)
     models = dict(zip(model_names, model_templates))
 
     base_path = os.path.abspath(os.path.join(os.getcwd(), "..", "..", "logo.jpg"))
-    logger.print(args)
     demo = build_demo(args.embed, concurrency_count=args.concurrency_count)
     demo.queue(
         api_open=False
