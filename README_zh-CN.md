@@ -298,7 +298,7 @@ python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
 ## 可交互的Arena
 
 ```bash
-python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_model_name --blue_corner_model_name_or_path your_blue_model_name
+python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_model_name_or_path --blue_corner_model_name_or_path your_blue_model_name_or_path
 ```
 
 ![Arena-Demo](assets/arena_demo.gif)
