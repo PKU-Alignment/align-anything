@@ -39,7 +39,6 @@ server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR RE
 moderation_msg = "YOUR INPUT VIOLATES OUR CONTENT MODERATION GUIDELINES. PLEASE TRY AGAIN."
 
 LOGDIR = "."
-models = {}
 
 @dataclasses.dataclass
 class Conversation:
@@ -309,7 +308,7 @@ def clear_history(request: gr.Request):
 
 def add_text(state, text, image, image_process_mode, videobox, audiobox, request: gr.Request):
     logger.print(f"add_text. ip: {request.client.host}. len: {len(text)}")
-    if len(text) <= 0  and image is None:
+    if len(text) <= 0 and image is None:
         state.skip_next = True
         return (state, state.to_gradio_chatbot(), "", None) + (no_change_btn,) * 5
     if args.moderate:
@@ -334,6 +333,7 @@ def add_text(state, text, image, image_process_mode, videobox, audiobox, request
 
 
 def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request: gr.Request):
+    logger.print(f"http_bot. ip: {request.client.host}")
     start_tstamp = time.time()
     model_name = model_selector
 
