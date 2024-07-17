@@ -85,7 +85,7 @@ class SpecialCommand(Enum):
     REGENERATE = '/regenerate: Regenerate the last response.'
     HELP = '/help: Show this help message.'
     IMAGE = '/image: Select an image as input.'
-    VLLM = '/vllm: Whether to use VLLM model'
+    VLM = '/vlm: Whether to use VLM model'
 
     def __eq__(self, other: object) -> bool:
         """Test if the command is equal to the given string."""
@@ -183,7 +183,7 @@ class ModelArgs:
     repetition_penalty: float = 1.0
     dtype: torch.dtype | str | None = 'auto'
     template: str = "Dialogue"
-    vllm: str = "False"
+    vlm: str = "False"
 
 
 class Chatbot(AbstractChatbot):
@@ -199,19 +199,19 @@ class Chatbot(AbstractChatbot):
         dtype: torch.dtype | str | None = 'auto',
         template: str = "Dialogue",
         image_source: str="",
-        vllm: str = "False",
+        vlm: str = "False",
     ) -> None:
         """Initialize the chatbot."""
         
         self.name = os.path.basename(os.path.normpath(model_name_or_path))
         self.template = get_template_class(template)
-        if vllm =="True":
-            self.vllm=True
+        if vlm =="True":
+            self.vlm=True
         else:
-            self.vllm=False
+            self.vlm=False
         self.messages = []
         
-        if not self.vllm:
+        if not self.vlm:
             self.model, self.tokenizer, self.processor = load_pretrained_models(
                 model_name_or_path,
                 model_max_length=max_length,
@@ -272,7 +272,7 @@ class Chatbot(AbstractChatbot):
         
     def generator(self, text: str, stream: bool = False) -> Generator[str, None, None]:
         """Generate the response to the given text."""
-        if self.vllm and self.image_source:
+        if self.vlm and self.image_source:
             text = "<image>\n"+text
             image = Image.open(requests.get(self.image_source, stream=True).raw)
         self.last_input = text
@@ -287,7 +287,7 @@ class Chatbot(AbstractChatbot):
 
         input = self.dialogue + prompt
         
-        if self.vllm and self.image_source:
+        if self.vlm and self.image_source:
             
             inputs = self.processor(text=input, images=image, return_tensors="pt")
             generate_ids = self.model.generate(**inputs, max_new_tokens=128)
@@ -296,7 +296,7 @@ class Chatbot(AbstractChatbot):
             response = output[len(input)+1:].strip()
             
             yield response
-        elif self.vllm:
+        elif self.vlm:
             inputs = self.processor(text=input,  return_tensors="pt")
             generate_ids = self.model.generate(**inputs, max_new_tokens=128)
             output = self.processor.batch_decode(generate_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)[0]
