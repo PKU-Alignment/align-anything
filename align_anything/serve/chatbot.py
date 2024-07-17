@@ -244,7 +244,6 @@ class Chatbot(AbstractChatbot):
         self.inputs = []
         self.responses = []
         self.image_source = image_source
-        print(self.image_source)
 
     @property
     def round(self) -> int:
