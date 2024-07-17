@@ -15,7 +15,9 @@
 """Interactive chatbot."""
 
 from __future__ import annotations
-
+from PIL import Image
+import requests
+from transformers import AutoProcessor, LlavaForConditionalGeneration
 import abc
 import dataclasses
 import os
@@ -82,6 +84,8 @@ class SpecialCommand(Enum):
     EXIT = '/exit: End the dialogue and quit.'
     REGENERATE = '/regenerate: Regenerate the last response.'
     HELP = '/help: Show this help message.'
+    IMAGE = '/image: Select an image as input.'
+    VLM = '/vlm: Whether to use VLM model'
 
     def __eq__(self, other: object) -> bool:
         """Test if the command is equal to the given string."""
@@ -174,11 +178,12 @@ class AbstractChatbot:
 class ModelArgs:
     model_name_or_path: str | os.PathLike
     temperature: float = 1.0
-    max_length: int = 512
+    max_length: int = 4096
     top_p: float = 1.0
     repetition_penalty: float = 1.0
     dtype: torch.dtype | str | None = 'auto'
     template: str = "Dialogue"
+    vlm: str = "False"
 
 
 class Chatbot(AbstractChatbot):
@@ -188,27 +193,35 @@ class Chatbot(AbstractChatbot):
         self,
         model_name_or_path: str | os.PathLike,
         temperature: float = 1.0,
-        max_length: int = 512,
+        max_length: int = 4096,
         top_p: float = 1.0,
         repetition_penalty: float = 1.0,
         dtype: torch.dtype | str | None = 'auto',
         template: str = "Dialogue",
+        image_source: str="",
+        vlm: str = "False",
     ) -> None:
         """Initialize the chatbot."""
         
         self.name = os.path.basename(os.path.normpath(model_name_or_path))
         self.template = get_template_class(template)
+        if vlm =="True":
+            self.vlm=True
+        else:
+            self.vlm=False
         self.messages = []
-        self.model, self.tokenizer, self.processor = load_pretrained_models(
-            model_name_or_path,
-            model_max_length=max_length,
-            auto_device_mapping=torch.cuda.is_available(),
-            dtype=dtype,
-            trust_remote_code=True,
-        )
-        self.max_length = 8092
-        self.tokenizer.model_max_length = self.max_length
-        self.generation_config = GenerationConfig(
+        
+        if not self.vlm:
+            self.model, self.tokenizer, self.processor = load_pretrained_models(
+                model_name_or_path,
+                model_max_length=max_length,
+                auto_device_mapping=torch.cuda.is_available(),
+                dtype=dtype,
+                trust_remote_code=True,
+            )
+            self.max_length = 4096
+            self.tokenizer.model_max_length = self.max_length
+            self.generation_config = GenerationConfig(
             do_sample=(temperature > 0.0),
             temperature=temperature,
             max_new_tokens=max_length,
@@ -218,13 +231,19 @@ class Chatbot(AbstractChatbot):
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id,
         )
+        else:
+            self.model = LlavaForConditionalGeneration.from_pretrained(model_name_or_path)
+            self.processor = AutoProcessor.from_pretrained(model_name_or_path)
+            
+        
         self.PROMPT_BEGIN = self.template.system_prompt 
-        self.dialogue = self.PROMPT_BEGIN
+        self.dialogue = ""
         self.last_dialogue = ''
         self.last_input = ''
         self.last_response = ''
         self.inputs = []
         self.responses = []
+        self.image_source = image_source
 
     @property
     def round(self) -> int:
@@ -240,26 +259,22 @@ class Chatbot(AbstractChatbot):
         self.inputs.clear()
         self.responses.clear()
 
-    def __call__(self, text: str, stream: bool = False) -> Iterable[str]:
+    def __call__(self, text: str, stream: bool = False, image_source: str = "") -> Iterable[str]:
         """Generate the response to the given text."""
-        if text in {SpecialCommand.QUIT, SpecialCommand.EXIT}:
-            raise EndOfDialogue
-        if text == SpecialCommand.RESET:
-            self.reset()
-            return ['']
-        if text == SpecialCommand.CLEAR:
-            self.clear()
-            return ['']
-        if text == SpecialCommand.HELP:
-            return [self.help_message]
-        if text == SpecialCommand.REGENERATE:
-            return self.regenerator(stream=stream)
+
+        self.image_source = image_source
+        
+            
 
         return self.generator(text, stream=stream)
 
+            
+        
     def generator(self, text: str, stream: bool = False) -> Generator[str, None, None]:
         """Generate the response to the given text."""
-        
+        if self.vlm and self.image_source:
+            text = "<image>\n"+text
+            image = Image.open(requests.get(self.image_source, stream=True).raw)
         self.last_input = text
         self.last_dialogue = self.dialogue
         raw_sample = {
@@ -270,8 +285,23 @@ class Chatbot(AbstractChatbot):
         prompt = self.template.format_sample(raw_sample)["prompt"]
         self.inputs.append(text)
 
-        input = self.dialogue+prompt
+        input = self.dialogue + prompt
         
+        if self.vlm and self.image_source:
+            
+            inputs = self.processor(text=input, images=image, return_tensors="pt")
+            generate_ids = self.model.generate(**inputs, max_new_tokens=128)
+            output = self.processor.batch_decode(generate_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)[0]
+            input = "<s> "+input
+            response = output[len(input)+1:].strip()
+            
+            yield response
+        elif self.vlm:
+            inputs = self.processor(text=input,  return_tensors="pt")
+            generate_ids = self.model.generate(**inputs, max_new_tokens=128)
+            output = self.processor.batch_decode(generate_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)[0]
+            response = output.replace(input, "", 1)
+            yield response
         #dialogue = self.dialogue + PROMPT_USER.format(input=text) + PROMPT_ASSISTANT
         tokenized = to_device(
             self.tokenizer(input, return_tensors='pt'),
@@ -385,10 +415,10 @@ class ChatbotList(AbstractChatbot):
         for chatbot in self.chatbots:
             chatbot.clear()
 
-    def __call__(self, text: str, stream: bool = False) -> Iterable[Iterable[str]]:
+    def __call__(self, text: str, stream: bool = False, image_source: str = "") -> Iterable[Iterable[str]]:
         """Generate the response to the given text."""
         for chatbot in self.chatbots:
-            yield chatbot(text, stream=stream)
+            yield chatbot(text, stream=stream, image_source=image_source)
 
     def generator(self, text: str, stream: bool = False) -> Iterable[Generator[str, None, None]]:
         """Generate the response to the given text."""

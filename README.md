@@ -291,6 +291,25 @@ class PKUSafeRLHF(Template):
 
 After designing the aforementioned template, you just need to specify this template by passing the `--train_template PKUSafeRLHF` argument when invoking the dataset to complete the corresponding training. Perhaps the above example still lacks specificity; therefore, we provide command references that encompass various models executing multiple algorithms on diverse datasets. You can expedite your training process by directly running or modifying these scripts [here](./examples/).
 
+# Inference
+
+## Interactive CLI Demo
+
+```bash
+python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path 
+```
+
+![cli_demo](assets/cli_demo.gif)
+
+## Interactive Arena
+
+```bash
+python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_model_name_or_path --blue_corner_model_name_or_path your_blue_model_name_or_path
+```
+
+![Arena-Demo](assets/arena_demo.gif)
+
+
 ## Why do we open source align-anything?
 
 Ensuring that the behavior of AI system aligns with human intentions and values is crucial, and alignment techniques provide an effective solution. For large language models (LLMs), methods such as reinforcement learning with human feedback (RLHF) and direct preference optimization (DPO) have significantly improved performance and safety. As models evolve to handle any-modality inputs and outputs, effectively aligning them remains a current research challenge. `Align-Anything` framework integrates alignment tuning across modalities using well-designed interfaces and advanced abstractions, offering a comprehensive testbed for research.

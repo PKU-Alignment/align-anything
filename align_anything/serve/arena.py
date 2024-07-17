@@ -87,6 +87,18 @@ def parse_arguments() -> argparse.Namespace:
         default=None,
         help='Whether to use tf32 mix precision.',
     )
+    parser.add_argument(
+        '--template',
+        type=str,
+        default="Dialogue",
+        help='Model template',
+    )
+    parser.add_argument(
+        '--vlm',
+        type=str,
+        default=False,
+        help='Whether to use VLM model',
+    )
 
     args = parser.parse_args()
     if args.fp16 and args.bf16:
