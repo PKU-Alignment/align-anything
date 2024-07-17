@@ -94,10 +94,10 @@ def parse_arguments() -> argparse.Namespace:
         help='Model template',
     )
     parser.add_argument(
-        '--vllm',
+        '--vlm',
         type=str,
         default=False,
-        help='Whether to use VLLM model',
+        help='Whether to use VLM model',
     )
 
     args = parser.parse_args()
