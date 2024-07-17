@@ -117,9 +117,9 @@ class CLI:
                     continue
                 if len(text.split()) and text.split()[0] == SpecialCommand.IMAGE:
                     self.do_generate = False
-                    if not self.model_args[0].vllm:
+                    if not self.model_args[0].vlm:
                         #print something                       
-                        self.console.print("WRONG COMMAND: /image command is only available for VLLM model.Try setting --vllm True", style='bold yellow')
+                        self.console.print("WRONG COMMAND: /image command is only available for VLM model.Try setting --vlm True", style='bold yellow')
                     else:
                         parts = text.split()[1:]
                         if len(parts)>1:
@@ -255,10 +255,10 @@ def parse_arguments() -> argparse.Namespace:
         help='Model template',
     )
     parser.add_argument(
-        '--vllm',
+        '--vlm',
         type=str,
         default=False,
-        help='Whether to use VLLM model',
+        help='Whether to use VLM model',
     )
 
     args = parser.parse_args()
@@ -286,7 +286,7 @@ def main(args: argparse.Namespace | None = None) -> None:
         'repetition_penalty': args.repetition_penalty,
         'dtype': (torch.bfloat16 if args.bf16 else (torch.float16 if args.fp16 else 'auto')),
         'template': args.template,
-        'vllm': args.vllm,
+        'vlm': args.vlm,
     }
     cli = CLI(
         *(
