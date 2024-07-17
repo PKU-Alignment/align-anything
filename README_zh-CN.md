@@ -72,8 +72,8 @@ Align-Anything 是一个基于 DeepSpeed 或 NeMo （目前正在开发中）的
 - :car: : 正在开发的功能。
 
 # 新闻
-
-- 2024-07-14 🎉我们开源了 `Align-Anything` 框架。
+- 2024-07-17 🎉 我们很高兴宣布开源发布Align-Anything-Instruction-100K文本模态数据集。该数据集提供[英文版](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)和[中文版](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh)，它们分别来源于不同的数据集，并经过GPT-4的精细优化以确保质量。
+- 2024-07-14 🎉 我们开源了 `Align-Anything` 框架。
 
 # 安装
 

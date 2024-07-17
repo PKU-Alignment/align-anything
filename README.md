@@ -72,7 +72,8 @@ We have a roadmap for future development work `align-anything`:
 
 # News
 
-- 2024-07-14 🎉We open-souce the `align-anything` framework.
+- 2024-07-17 🎉 We are pleased to announce the open-source release of the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
+- 2024-07-14 🎉 We open-souce the `align-anything` framework.
 
 # Installation
 
