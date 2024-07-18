@@ -340,14 +340,14 @@ You have just launched the Gradio web interface. Now, you can open the web inter
 This is the actual *worker* that performs the inference on the GPU.  Each worker is responsible for a single model specified in `--model-path`, and check the template.py in align_anything.configs to find the according template name.
 
 ```Shell
-python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/llava-v1.5-13b --template "LLaVA"
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/llava-v1.5-13b --template "LLAVA"
 ```
 Wait until the process completes loading the model and you see "Uvicorn running on ...". Then, refresh your Gradio web UI, and you will see the model you just started in the model list.
 
 You can start as many workers as you need and compare different model checkpoints within the same Gradio interface. Ensure that you keep the `--controller` the same, but change the `--port` and `--worker` to a unique port number for each worker.
 
 ```Shell
-python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port <different from 40000, say 40001> --worker http://localhost:<change accordingly, i.e. 40001> --model-path <ckpt2> --template "LLaVA"
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port <different from 40000, say 40001> --worker http://localhost:<change accordingly, i.e. 40001> --model-path <ckpt2> --template "LLAVA"
 ```
 
 You can specify the mps device by using the `--device` flag: `--device mps`, if you are using an Apple device with an M1 or M2 chip.
@@ -357,7 +357,7 @@ You can specify the mps device by using the `--device` flag: `--device mps`, if 
 If your GPU has less than 24GB of VRAM (e.g., RTX 3090, RTX 4090, etc.), you might consider running it with multiple GPUs. Our latest code base will automatically attempt to utilize multiple GPUs if more than one is available. You can specify which GPUs to use with CUDA_VISIBLE_DEVICES. Here’s an example of how to run it using the first two GPUs:
 
 ```Shell
-CUDA_VISIBLE_DEVICES=0,1 python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/llava-v1.5-13b --template "LLaVA"
+CUDA_VISIBLE_DEVICES=0,1 python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/llava-v1.5-13b --template "LLAVA"
 ```
 
 # Inference
