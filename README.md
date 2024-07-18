@@ -296,7 +296,7 @@ After designing the aforementioned template, you just need to specify this templ
 
 ### Gradio Web UI
 
-To launch a Gradio demo locally, please run the following commands one by one. If you plan to launch multiple model workers to compare between different checkpoints, you only need to launch the controller and the web server *ONCE*.
+To launch a Gradio demo locally, follow these steps by running the commands one by one. If you intend to launch multiple model workers to compare different checkpoints, you only need to launch the controller and the web server *ONCE*.
 
 ```mermaid
 flowchart BT
@@ -305,8 +305,6 @@ flowchart BT
     c("Controller (API Server):<br/>PORT: 10000")
     mw7b("Model Worker:<br/>llava-v1.5-7b<br/>PORT: 40000")
     mw13b("Model Worker:<br/>llava-v1.5-13b<br/>PORT: 40001")
-    sglw13b("SGLang Backend:<br/>llava-v1.6-34b<br/>http://localhost:30000")
-    lsglw13b("SGLang Worker:<br/>llava-v1.6-34b<br/>PORT: 40002")
 
     %% Declare Styles
     classDef data fill:#3af,stroke:#48a,stroke-width:2px,color:#444
@@ -321,11 +319,8 @@ flowchart BT
     subgraph Demo Connections
         direction BT
         c<-->gws
-        
         mw7b<-->c
         mw13b<-->c
-        lsglw13b<-->c
-        sglw13b<-->lsglw13b
     end
 ```
 
@@ -338,30 +333,31 @@ python -m align_anything.serve.controller --host 0.0.0.0 --port 10000
 ```Shell
 python -m align_anything.serve.gradio_web_server --controller http://localhost:10000 --model-list-mode reload
 ```
-You just launched the Gradio web interface. Now, you can open the web interface with the URL printed on the screen. You may notice that there is no model in the model list. Do not worry, as we have not launched any model worker yet. It will be automatically updated when you launch a model worker.
+You have just launched the Gradio web interface. Now, you can open the web interface using the URL printed on the screen. You may notice that there are no models listed yet. Do not worry, as we have not launched any model workers yet. The model list will be automatically updated once you launch a model worker.
 
 #### Launch a model worker
 
-This is the actual *worker* that performs the inference on the GPU.  Each worker is responsible for a single model specified in `--model-path`.
+This is the actual *worker* that performs the inference on the GPU.  Each worker is responsible for a single model specified in `--model-path`, and check the template.py in align_anything.configs to find the according template name.
 
 ```Shell
-python -m llava.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/llava-v1.5-13b
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/llava-v1.5-13b --template "LLaVA"
 ```
-Wait until the process finishes loading the model and you see "Uvicorn running on ...".  Now, refresh your Gradio web UI, and you will see the model you just launched in the model list.
+Wait until the process completes loading the model and you see "Uvicorn running on ...". Then, refresh your Gradio web UI, and you will see the model you just started in the model list.
 
-You can launch as many workers as you want, and compare between different model checkpoints in the same Gradio interface. Please keep the `--controller` the same, and modify the `--port` and `--worker` to a different port number for each worker.
+You can start as many workers as you need and compare different model checkpoints within the same Gradio interface. Ensure that you keep the `--controller` the same, but change the `--port` and `--worker` to a unique port number for each worker.
+
 ```Shell
-python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port <different from 40000, say 40001> --worker http://localhost:<change accordingly, i.e. 40001> --model-path <ckpt2>
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port <different from 40000, say 40001> --worker http://localhost:<change accordingly, i.e. 40001> --model-path <ckpt2> --template "LLaVA"
 ```
 
-If you are using an Apple device with an M1 or M2 chip, you can specify the mps device by using the `--device` flag: `--device mps`.
+You can specify the mps device by using the `--device` flag: `--device mps`, if you are using an Apple device with an M1 or M2 chip.
 
 #### Launch a model worker (Multiple GPUs, when GPU VRAM <= 24GB)
 
-If the VRAM of your GPU is less than 24GB (e.g., RTX 3090, RTX 4090, etc.), you may try running it with multiple GPUs. Our latest code base will automatically try to use multiple GPUs if you have more than one GPU. You can specify which GPUs to use with `CUDA_VISIBLE_DEVICES`. Below is an example of running with the first two GPUs.
+If your GPU has less than 24GB of VRAM (e.g., RTX 3090, RTX 4090, etc.), you might consider running it with multiple GPUs. Our latest code base will automatically attempt to utilize multiple GPUs if more than one is available. You can specify which GPUs to use with CUDA_VISIBLE_DEVICES. Here’s an example of how to run it using the first two GPUs:
 
 ```Shell
-CUDA_VISIBLE_DEVICES=0,1 python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/llava-v1.5-13b
+CUDA_VISIBLE_DEVICES=0,1 python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/llava-v1.5-13b --template "LLaVA"
 ```
 
 # Inference

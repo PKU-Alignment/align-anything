@@ -69,11 +69,12 @@ class ModelWorker:
     def __init__(self, controller_addr, worker_addr,
                  worker_id, no_register,
                  model_path, model_name,
-                 device):
+                 device, template=None):
         self.controller_addr = controller_addr
         self.worker_addr = worker_addr
         self.worker_id = worker_id
         self.context_len = 2048
+        self.template = template
         if model_path.endswith("/"):
             model_path = model_path[:-1]
         if model_name is None:
@@ -107,7 +108,8 @@ class ModelWorker:
         data = {
             "worker_name": self.worker_addr,
             "check_heart_beat": True,
-            "worker_status": self.get_status()
+            "worker_status": self.get_status(),
+            "template": self.template
         }
         r = requests.post(url, json=data)
         assert r.status_code == 200
@@ -145,6 +147,7 @@ class ModelWorker:
             "model_names": [self.model_name],
             "speed": 1,
             "queue_length": self.get_queue_length(),
+            "template": self.template
         }
 
 #TODO:change this
@@ -294,6 +297,7 @@ if __name__ == "__main__":
     parser.add_argument("--limit-model-concurrency", type=int, default=5)
     parser.add_argument("--stream-interval", type=int, default=1)
     parser.add_argument("--no-register", action="store_true")
+    parser.add_argument("--template", type=str, default="Dialogue")
     args = parser.parse_args()
     logger.print(f"args: {args}")
 
@@ -306,5 +310,6 @@ if __name__ == "__main__":
                          args.no_register,
                          args.model_path,
                          args.model_name,
-                         args.device)
+                         args.device,
+                         args.template)
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
