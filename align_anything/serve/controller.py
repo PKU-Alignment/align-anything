@@ -61,6 +61,7 @@ class WorkerInfo:
     queue_length: int
     check_heart_beat: bool
     last_heart_beat: str
+    template: str = None
 
 
 def heart_beat_controller(controller):
@@ -95,7 +96,7 @@ class Controller:
 
         self.worker_info[worker_name] = WorkerInfo(
             worker_status["model_names"], worker_status["speed"], worker_status["queue_length"],
-            check_heart_beat, time.time())
+            worker_status["template"] ,check_heart_beat, time.time())
 
         logger.print(f"Register done: {worker_name}, {worker_status}")
         return True
@@ -125,12 +126,12 @@ class Controller:
                 logger.print(f"Remove stale worker: {w_name}")
 
     def list_models(self):
-        model_names = set()
+        model_names_and_templates = {}
 
         for w_name, w_info in self.worker_info.items():
-            model_names.update(w_info.model_names)
+            model_names_and_templates[w_info.model_names] = w_info.template
 
-        return list(model_names)
+        return model_names_and_templates
 
     def get_worker_address(self, model_name: str):
         if self.dispatch_method == DispatchMethod.LOTTERY:
