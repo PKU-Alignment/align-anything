@@ -379,7 +379,7 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
         "temperature": float(temperature),
         "top_p": float(top_p),
         "max_new_tokens": min(int(max_new_tokens), 1536),
-        "stop": state.sep if state.sep_style in [SeparatorStyle.SINGLE, SeparatorStyle.MPT] else state.sep2,
+        "stop": state.template.split_token,
         "images": f'List of {len(state.get_images())} images: {all_image_hash}',
     }
     logger.print(f"==== request ====\n{pload}")
