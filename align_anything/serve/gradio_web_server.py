@@ -46,7 +46,7 @@ class Conversation:
     roles: List[str]
     messages: List[List[str]]
     offset: int
-    template: Template = Dialogue
+    template: Template = Dialogue()
 
     skip_next: bool = False
 
@@ -141,35 +141,26 @@ class Conversation:
                 ret[-1][-1] = msg
         return ret
 
-    def copy(self):
+    def copy(self) -> 'Conversation':
         return Conversation(
-            system=self.system,
             roles=self.roles,
-            messages=[[x, y] for x, y in self.messages],
+            messages=self.messages,
             offset=self.offset,
-            sep_style=self.sep_style,
-            sep=self.sep,
-            sep2=self.sep2,
-            version=self.version)
+            template=self.template,
+            skip_next=self.skip_next
+        )
 
-    def dict(self):
-        if len(self.get_images()) > 0:
+    def dict(self) -> dict:
+        if hasattr(self, 'get_images') and len(self.get_images()) > 0:
             return {
-                "system": self.system,
                 "roles": self.roles,
-                "messages": [[x, y[0] if type(y) is tuple else y] for x, y in self.messages],
+                "messages": [[x, y[0] if isinstance(y, tuple) else y] for x, y in self.messages],
                 "offset": self.offset,
-                "sep": self.sep,
-                "sep2": self.sep2,
+                # The template field is not included in the dictionary conversion
+                "skip_next": self.skip_next
             }
-        return {
-            "system": self.system,
-            "roles": self.roles,
-            "messages": self.messages,
-            "offset": self.offset,
-            "sep": self.sep,
-            "sep2": self.sep2,
-        }
+        else:
+            return dataclasses.asdict(self)
 default_conversation = Conversation(("user", "assistant"), [], 0, Dialogue)
 
 logger = Logger()
@@ -216,10 +207,14 @@ def get_model_list():
     ret = requests.post(args.controller_url + "/refresh_all_workers")
     assert ret.status_code == 200
     ret = requests.post(args.controller_url + "/list_models")
-    models = ret.json()["models"]
-    models.sort(key=lambda x: priority.get(x, x))
+    model_names = ret.json()["model_names"]
+    model_templates = ret.json()["model_templates"]
+    models = {model_name: model_template 
+              for model_name, model_template in zip(model_names, model_templates)}
+    items = sorted(models.items())
+    models = {k: v for k, v in items}
     logger.print("Models: ")
-    for model_name in models.keys:
+    for model_name in models:
         logger.print(f"{model_name} ")
     return models
 
