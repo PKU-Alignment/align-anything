@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Trainer for SimPO training."""
+"""Trainer for reward model training."""
 
 
 import argparse
@@ -29,11 +29,11 @@ from deepspeed.ops.adam import FusedAdam
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
-from transformers import CONFIG_NAME, AutoModelForCausalLM, PreTrainedModel, get_scheduler
+from transformers import CONFIG_NAME, PreTrainedModel, get_scheduler
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.preference import PreferenceBatch, PreferenceDataset
-from align_anything.models.pretrained_model import load_pretrained_models
+from align_anything.datasets.text_to_text.preference import PreferenceBatch, PreferenceDataset
+from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import (
     get_all_reduce_mean,
@@ -43,24 +43,22 @@ from align_anything.utils.multi_process import (
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
-    gather_log_probabilities,
     get_optimizer_grouped_parameters,
     namedtuple_to_dict,
-    prepare_ds_eval_cfgs,
     prepare_ds_train_cfgs,
     read_cfgs,
     seed_everything,
+    split_prompt_response,
     update_dict,
 )
 
 
-class SimPOTrainer:
+class RMTrainer:
 
     def __init__(self, cfgs, ds_cfgs) -> None:
         """Initialize trainer."""
         self.cfgs = cfgs
-        self.ds_train_cfgs = prepare_ds_train_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
-        self.ds_eval_cfgs = prepare_ds_eval_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
+        self.ds_cfgs = prepare_ds_train_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
         self.global_step = 0
 
         self.init_check()
@@ -92,36 +90,28 @@ class SimPOTrainer:
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
-        if self.ds_train_cfgs['zero_optimization']['stage'] == 3:
-            self.dstchf_train = HfDeepSpeedConfig(self.ds_train_cfgs)
-        if self.ds_eval_cfgs['zero_optimization']['stage'] == 3:
-            self.dsechf_eval = HfDeepSpeedConfig(self.ds_eval_cfgs)
-        self.model, self.tokenizer, self.processor = load_pretrained_models(
+        if self.ds_cfgs is not None and self.ds_cfgs['zero_optimization']['stage'] == 3:
+            self.dstchf = HfDeepSpeedConfig(self.ds_cfgs)
+        self.model, self.tokenizer, self.processor = load_pretrained_model_with_value_head(
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side='left',
+            padding_side='right',
             trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
-        )
-        self.reference_model, _, _ = load_pretrained_models(
-            self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side='left',
-            trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
         )
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         train_dataset = PreferenceDataset(
             path=self.cfgs.data_cfgs.train_datasets,
-            template=self.cfgs.data_cfgs.template,
+            template=self.cfgs.data_cfgs.train_template,
             tokenizer=self.tokenizer,
             processor=self.processor,
-            size=self.cfgs.data_cfgs.size,
+            size=self.cfgs.data_cfgs.train_size,
             split=self.cfgs.data_cfgs.train_split,
-            subset=self.cfgs.data_cfgs.subset,
-            data_files=self.cfgs.data_cfgs.data_files,
+            subset=self.cfgs.data_cfgs.train_subset,
+            data_files=self.cfgs.data_cfgs.train_data_files,
         )
         self.train_dataloader = DataLoader(
             train_dataset,
@@ -132,13 +122,13 @@ class SimPOTrainer:
         if self.cfgs.data_cfgs.eval_datasets:
             eval_dataset = PreferenceDataset(
                 path=self.cfgs.data_cfgs.eval_datasets,
-                template=self.cfgs.data_cfgs.template,
+                template=self.cfgs.data_cfgs.eval_template,
                 tokenizer=self.tokenizer,
                 processor=self.processor,
-                size=self.cfgs.data_cfgs.size,
+                size=self.cfgs.data_cfgs.eval_size,
                 split=self.cfgs.data_cfgs.eval_split,
-                subset=self.cfgs.data_cfgs.subset,
-                data_files=self.cfgs.data_cfgs.data_files,
+                subset=self.cfgs.data_cfgs.eval_subset,
+                data_files=self.cfgs.data_cfgs.eval_data_files,
             )
             self.eval_dataloader = DataLoader(
                 eval_dataset,
@@ -176,138 +166,71 @@ class SimPOTrainer:
         self.model, *_ = deepspeed.initialize(
             model=self.model,
             optimizer=optimizer,
-            config=self.ds_train_cfgs,
+            config=self.ds_cfgs,
             lr_scheduler=lr_scheduler,
             dist_init_required=True,
-        )
-
-        self.reference_model, *_ = deepspeed.initialize(
-            model=self.reference_model,
-            config=self.ds_eval_cfgs,
         )
 
         if self.cfgs.train_cfgs.gradient_checkpointing:
             self.model.gradient_checkpointing_enable()
 
-    @staticmethod
-    def compute_log_probs(
-        model: AutoModelForCausalLM,
-        batch: PreferenceBatch,
-    ) -> torch.Tensor:
-        """Compute log probabilities of given sequences."""
-        logits = model(**batch).logits
-        input_ids = batch['input_ids']
-        return gather_log_probabilities(logits[:, :-1], input_ids[:, 1:])
-
-    def loss(  # pylint: disable=too-many-locals
+    def loss(
         self,
         batch: PreferenceBatch,
     ) -> dict[str, torch.Tensor]:
-        """Loss function for the SimPO algorithm."""
-        sequence_log_probs = self.compute_log_probs(
-            self.model.module,
-            batch,
-        )
+        """Loss function for the reward model."""
         (
-            better_sequence_log_probs,  # size = (B, L - 1)
-            worse_sequence_log_probs,  # size = (B, L - 1)
-        ) = sequence_log_probs.chunk(chunks=2, dim=0)
+            better_input_ids,  # size = (B, L)
+            worse_input_ids,  # size = (B, L)
+        ) = batch[
+            'input_ids'
+        ].chunk(chunks=2, dim=0)
+        assert better_input_ids.size(0) == worse_input_ids.size(0), 'batch size mismatch!'
+        output = self.model(**batch)
+        scores = output.scores
+        end_scores = output.end_scores
+        higher_rewards, lower_rewards = scores.squeeze(dim=-1).chunk(chunks=2, dim=0)
+        higher_end_reward, lower_end_reward = end_scores.squeeze(dim=-1).chunk(chunks=2, dim=0)
 
-        
+        loss = -F.logsigmoid(higher_end_reward - lower_end_reward).mean()
 
-        losses = []
-        better_sample_rewards = []
-        worse_sample_rewards = []
-
-        better_input_ids, worse_input_ids = batch['input_ids'].chunk(chunks=2, dim=0)
-        better_attention_mask, worse_attention_mask = batch['attention_mask'].chunk(chunks=2, dim=0)
-
-        batch_size = better_input_ids.size(0)
-        for i in range(batch_size):
-            if torch.all(torch.eq(better_input_ids[i], worse_input_ids[i])).item():
-                continue
-            better_end_index = better_attention_mask[i].nonzero()[-1].squeeze().item()
-            worse_end_index = worse_attention_mask[i].nonzero()[-1].squeeze().item()
-            better_input_length = better_end_index + 1
-            worse_input_length = worse_end_index + 1
-            diverge_index = (
-                (better_input_ids[i] != worse_input_ids[i]).nonzero()[0].squeeze().item()
+        if self.cfgs.train_cfgs.regularization > 0.0:
+            loss = (
+                loss
+                + self.cfgs.train_cfgs.regularization
+                * torch.stack([lower_end_reward, higher_end_reward]).square().mean()
             )
-            assert 0 <= diverge_index <= better_end_index, 'diverge index is out of range!'
-            assert 0 <= diverge_index <= worse_end_index, 'diverge index is out of range!'
 
-            better_seq_slice = slice(diverge_index, better_end_index + 1)
-            worse_seq_slice = slice(diverge_index, worse_end_index + 1)
-
-            # size = ()
-            better_log_prob = better_sequence_log_probs[i, better_seq_slice].sum(dim=-1)
-            worse_log_prob = worse_sequence_log_probs[i, worse_seq_slice].sum(dim=-1)
-            better_log_ratio = better_log_prob/ better_input_length
-            worse_log_ratio = worse_log_prob/ worse_input_length
-            losses.append(
-                -F.logsigmoid(
-                    self.cfgs.train_cfgs.scale_coeff * (better_log_ratio - worse_log_ratio)-self.cfgs.train_cfgs.gamma,
-                ),
-            )
-            better_sample_rewards.append(
-                self.cfgs.train_cfgs.scale_coeff * better_log_ratio.detach(),
-            )
-            worse_sample_rewards.append(self.cfgs.train_cfgs.scale_coeff * worse_log_ratio.detach())
-
-        loss = torch.stack(losses).mean()  # size = ()
-        better_sample_reward = torch.stack(better_sample_rewards)  # size = (B,)
-        worse_sample_reward = torch.stack(worse_sample_rewards)  # size = (B,)
-        reward = better_sample_reward + worse_sample_reward  # size = (B,)
-        reward_accuracy = (better_sample_reward > worse_sample_reward).float().mean()  # size = ()
-        reward_margin = better_sample_reward - worse_sample_reward  # size = (B,)
-
+        accuracy = (higher_end_reward > lower_end_reward).float().mean()  # size = ()
         return {
-            'loss': loss,
-            'reward': reward,
-            'better_sample_reward': better_sample_reward,
-            'worse_sample_reward': worse_sample_reward,
-            'reward_accuracy': reward_accuracy,
-            'reward_margin': reward_margin,
+            'loss': loss,  # size = ()
+            'higher_end_reward': higher_end_reward,  # size = (B,)
+            'lower_end_reward': lower_end_reward,  # size = (B,)
+            'higher_rewards': higher_rewards,  # size = (B, L)
+            'lower_rewards': lower_rewards,  # size = (B, L)
+            'accuracy': accuracy,  # size = ()
         }
 
     def train_step(
         self,
         batch: PreferenceBatch,
     ) -> dict[str, Any]:
-        """Perform a single training step for SimPO."""
-        loss_dict = self.loss(batch=batch)
+        """Perform a single training step."""
+        loss_dict = self.loss(batch)
         loss = loss_dict['loss']
         self.model.backward(loss)
         self.model.step()
 
-        with torch.no_grad():
-            reward = loss_dict['reward'].mean()
-            better_sample_reward = loss_dict['better_sample_reward'].mean()
-            worse_sample_reward = loss_dict['worse_sample_reward'].mean()
-            reward_accuracy = loss_dict['reward_accuracy']
-            reward_margin = loss_dict['reward_margin'].mean()
+        accuracy = loss_dict['accuracy']
 
-            loss = get_all_reduce_mean(loss)
-            reward = get_all_reduce_mean(reward)
-            better_sample_reward = get_all_reduce_mean(better_sample_reward)
-            worse_sample_reward = get_all_reduce_mean(worse_sample_reward)
-            reward_accuracy = get_all_reduce_mean(reward_accuracy)
-            reward_margin = get_all_reduce_mean(reward_margin)
+        loss = get_all_reduce_mean(loss)
+        accuracy = get_all_reduce_mean(accuracy)
 
         return {
             'train/loss': loss.item(),
-            'train/reward': reward.item(),
-            'train/better_sample_reward': better_sample_reward.item(),
-            'train/worse_sample_reward': worse_sample_reward.item(),
-            'train/reward_accuracy': reward_accuracy.item(),
-            'train/reward_margin': reward_margin.item(),
+            'train/accuracy': accuracy.item(),
             'train/lr': self.model.optimizer.param_groups[0]['lr'],
         }
-
-    @torch.no_grad()
-    def eval(self) -> dict[str, Any]:
-        """Evaluate the model on the evaluation dataset."""
-        return {}
 
     def train(self) -> None:
         """Train the model."""
@@ -322,7 +245,6 @@ class SimPOTrainer:
         )
 
         if self.cfgs.data_cfgs.eval_datasets:
-            self.logger.print('\n***** Evaluating at the beginning *****')
             self.logger.log(self.eval(), step=0)
 
         for epoch in range(self.cfgs.train_cfgs.epochs):
@@ -363,6 +285,125 @@ class SimPOTrainer:
 
             self.model.tput_timer.update_epoch_count()
 
+    @torch.no_grad()
+    def eval(self) -> dict[str, Any]:
+        """Evaluate the model on the evaluation dataset."""
+        self.logger.print('\n***** Evaluating at the beginning *****')
+        if self.eval_dataloader is None:
+            return {}
+
+        self.model.eval()
+        if self.cfgs.train_cfgs.gradient_checkpointing:
+            self.model.gradient_checkpointing_disable()
+        num_correct_predictions = 0
+        num_total_predictions = 0
+
+        eval_dataloader = tqdm(
+            self.eval_dataloader,
+            desc='Evaluating',
+            disable=not is_main_process(),
+            position=1,
+            leave=False,
+        )
+
+        rewards = []
+        batch = None
+        for batch in eval_dataloader:
+            output = self.model(**batch)
+            end_scores = output.end_scores
+            higher_end_rewards, lower_end_rewards = end_scores.squeeze(dim=-1).chunk(
+                chunks=2, dim=0
+            )
+            batch_size = higher_end_rewards.size(0)
+            num_correct_predictions += (higher_end_rewards > lower_end_rewards).sum()
+            num_total_predictions += batch_size
+
+            rewards.extend([higher_end_rewards, lower_end_rewards])
+
+        if batch is None:
+            self.logger.print('WARNING: `eval_dataloader` is empty.')
+            return {}
+
+        accuracy = num_correct_predictions / num_total_predictions
+        accuracy = get_all_reduce_mean(accuracy)
+
+        # Gather rewards from all devices for further analysis
+        rewards = torch.cat(rewards, dim=0)
+        if is_main_process():
+            gathered_rewards = [torch.empty_like(rewards) for _ in range(dist.get_world_size())]
+        else:
+            gathered_rewards = []
+        dist.gather(rewards, gathered_rewards, dst=0)
+        if is_main_process():
+            rewards = torch.cat(gathered_rewards, dim=0)
+
+        self.model.train()
+        if self.cfgs.train_cfgs.gradient_checkpointing:
+            self.model.gradient_checkpointing_enable()
+
+        # Evaluation info
+        info = {
+            'eval/accuracy': accuracy.item(),
+            'eval/reward_mean': rewards.mean().item(),
+            'eval/reward_std': rewards.std().item(),
+        }
+
+        if is_main_process():
+            # Print some examples from the last batch
+            max_num_rows = 3
+            (
+                better_input_ids,  # size = (B, L)
+                worse_input_ids,  # size = (B, L)
+            ) = batch[
+                'input_ids'
+            ].chunk(chunks=2, dim=0)
+            higher_reward_texts = self.tokenizer.batch_decode(
+                better_input_ids[:max_num_rows],
+                skip_special_tokens=True,
+            )
+            lower_reward_texts = self.tokenizer.batch_decode(
+                worse_input_ids[:max_num_rows],
+                skip_special_tokens=True,
+            )
+
+            h_prompts, h_responses = split_prompt_response(
+                higher_reward_texts,
+                split_token=self.split_token,
+            )
+            l_prompts, l_responses = split_prompt_response(
+                lower_reward_texts,
+                split_token=self.split_token,
+            )
+            assert h_prompts == l_prompts, 'prompts are not the same'
+            h_rewards = [f'{reward:.6f}' for reward in higher_end_rewards.tolist()]
+            l_rewards = [f'{reward:.6f}' for reward in lower_end_rewards.tolist()]
+
+            title = ', '.join(
+                f'{key.rpartition("/")[-1]} = {value:.6f}' for key, value in info.items()
+            )
+            self.logger.print_table(
+                title=f'Evaluation: {title}',
+                columns=[
+                    'prompt',
+                    'higher-reward response',
+                    'reward',
+                    'lower-reward response',
+                    'reward',
+                ],
+                rows=tuple(
+                    zip(
+                        h_prompts[:max_num_rows],
+                        h_responses[:max_num_rows],
+                        h_rewards[:max_num_rows],
+                        l_responses[:max_num_rows],
+                        l_rewards[:max_num_rows],
+                    ),
+                ),
+                max_num_rows=max_num_rows,
+            )
+
+        return info
+
     def save(
         self,
         model: deepspeed.DeepSpeedEngine | None = None,
@@ -397,7 +438,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    dict_cfgs, ds_cfgs = read_cfgs(mode='train', task='simpo')
+    dict_cfgs, ds_cfgs = read_cfgs(mode='train', task='rm')
 
     # get custom configs from command line
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -413,7 +454,7 @@ def main():
     seed_everything(cfgs.train_cfgs.seed)
 
     # finetune the model
-    trainer = SimPOTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)
+    trainer = RMTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)
     trainer.train()
     trainer.save()
 

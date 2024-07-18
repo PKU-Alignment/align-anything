@@ -18,9 +18,11 @@
 
 from __future__ import annotations
 
+import accelerate
 import contextlib
 import os
 import warnings
+import diffusers
 from typing import Any, Callable, Literal
 
 import deepspeed
@@ -30,7 +32,19 @@ from transformers import AutoProcessor, AutoTokenizer, PreTrainedModel, PreTrain
 from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
 
 from align_anything.models.model_registry import AnyModel
-from align_anything.utils.multi_process import is_main_process
+from align_anything.utils.multi_process import is_main_process, get_current_device
+
+from accelerate.state import AcceleratorState
+from diffusers import AutoencoderKL, DDPMScheduler, StableDiffusionPipeline, UNet2DConditionModel
+from diffusers.optimization import get_scheduler
+from diffusers.training_utils import EMAModel, compute_dream_and_update_latents, compute_snr
+from diffusers.utils import check_min_version, deprecate, is_wandb_available, make_image_grid
+from diffusers.utils.hub_utils import load_or_create_model_card, populate_model_card
+from diffusers.utils.import_utils import is_xformers_available
+from diffusers.utils.torch_utils import is_compiled_module
+
+from transformers.utils import ContextManagers
+from transformers import CLIPTextModel, CLIPTokenizer
 
 
 DEFAULT_BOS_TOKEN: str = '<s>'
@@ -151,7 +165,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     auto_device_mapping: bool = False,
     freeze_vision_tower: bool = True,
     freeze_mm_proj: bool = True,
-    dtype: torch.dtype | str | None = 'auto',
+    dtype: torch.dtype | str | None = torch.bfloat16,
     *,
     cache_dir: str | os.PathLike | None = None,
     trust_remote_code: bool = False,
@@ -212,3 +226,64 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     except:
         processor = None
     return model, tokenizer, processor
+
+
+def load_pretrained_diffusion_models(  # pylint: disable=too-many-arguments
+    model_name_or_path: str | os.PathLike,
+    model_max_length: int = 512,
+    padding_side: Literal['left', 'right'] = 'right',
+    dtype: torch.dtype = torch.bfloat16,
+    *,
+    cache_dir: str | os.PathLike | None = None,
+    trust_remote_code: bool = False,
+    revision: str | None = None,
+    non_ema_revision: str | None = None,
+    variant: str | None = None,
+    freeze_unet: bool = False,
+) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
+    """Load pre-trained model and tokenizer from a given path."""
+    model_name_or_path = os.path.expanduser(model_name_or_path)
+    # Load scheduler, tokenizer and models.
+    noise_scheduler = DDPMScheduler.from_pretrained(model_name_or_path, subfolder="scheduler")
+    tokenizer = CLIPTokenizer.from_pretrained(
+        model_name_or_path, 
+        subfolder="tokenizer", 
+        revision=revision,
+        model_max_length=model_max_length,
+        cache_dir=cache_dir,
+        padding_side=padding_side,
+        trust_remote_code=trust_remote_code,
+    )
+    def deepspeed_zero_init_disabled_context_manager():
+        """
+        returns either a context list that includes one that will disable zero.Init or an empty context list
+        """
+        deepspeed_plugin = AcceleratorState().deepspeed_plugin if accelerate.state.is_initialized() else None
+        if deepspeed_plugin is None:
+            return []
+
+        return [deepspeed_plugin.zero3_init_context_manager(enable=False)]
+    
+    with ContextManagers(deepspeed_zero_init_disabled_context_manager()):
+        text_encoder = CLIPTextModel.from_pretrained(
+            model_name_or_path, subfolder="text_encoder", revision=revision, variant=variant, torch_dtype=dtype
+        )
+        vae = AutoencoderKL.from_pretrained(
+            model_name_or_path, subfolder="vae", revision=revision, variant=variant, torch_dtype=dtype
+        )
+    unet = UNet2DConditionModel.from_pretrained(
+        model_name_or_path, subfolder="unet", revision=non_ema_revision, torch_dtype=dtype
+    )
+    # Freeze vae and text_encoder and set unet to trainable
+    vae.requires_grad_(False)
+    text_encoder.requires_grad_(False)
+    if freeze_unet:
+        unet.requires_grad_(False)
+    else:
+        unet.train()
+    
+    current_device = get_current_device()
+    text_encoder.to(current_device, dtype=dtype)
+    vae.to(current_device, dtype=dtype)
+    
+    return unet, vae, text_encoder, noise_scheduler, tokenizer

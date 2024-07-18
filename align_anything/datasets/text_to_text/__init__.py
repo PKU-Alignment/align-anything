@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""Dataset classes for text to text training."""
 
+from __future__ import annotations
 
-import io
+import torch
+from torch.utils.data import Dataset
 
-import PIL.Image as PIL_image
-
-
-def bytes_to_PIL_image(img_buffer):
-    img_io = io.BytesIO(img_buffer)
-    img_io.seek(0)
-    image = PIL_image.open(img_io).convert('RGB')
-    return image
+from align_anything.datasets.text_to_text.preference import *
+from align_anything.datasets.text_to_text.prompt_only import *
+from align_anything.datasets.text_to_text.supervised import *

@@ -35,7 +35,7 @@ from tqdm import tqdm
 from transformers import CONFIG_NAME, GenerationConfig, PreTrainedModel, get_scheduler
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets import (
+from align_anything.datasets.text_to_text import (
     DummyDataset,
     PromptOnlyBatch,
     PromptOnlyDataset,

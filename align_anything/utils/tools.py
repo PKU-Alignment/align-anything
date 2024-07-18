@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import random
@@ -144,6 +145,29 @@ def prepare_ds_train_cfgs(custom_cfgs: NamedTuple, raw_ds_cfgs: dict[str, Any]) 
     ds_cfgs['fp16']['enabled'] = custom_cfgs.fp16
     return ds_cfgs
 
+def prepare_accelerate_train_cfgs(custom_cfgs: NamedTuple) -> dict[str, Any]:
+    """Prepare the DeepSpeed config for training."""
+    cfgs = {}
+    world_size = dist.get_world_size() if dist.is_initialized() else 1
+
+    micro_batch_size_per_gpu = custom_cfgs.per_device_train_batch_size
+    gradient_accumulation_steps = custom_cfgs.gradient_accumulation_steps
+
+    train_batch_size = micro_batch_size_per_gpu * world_size * gradient_accumulation_steps
+    cfgs['train_batch_size'] = train_batch_size
+    cfgs['train_micro_batch_size_per_gpu'] = micro_batch_size_per_gpu
+    cfgs['gradient_accumulation_steps'] = gradient_accumulation_steps
+
+    if custom_cfgs.bf16:
+        mixed_precision = 'bf16'
+    elif custom_cfgs.fp16:
+        mixed_precision = 'fp16'
+    else:
+        mixed_precision = 'no'
+
+    cfgs['mixed_precision'] = mixed_precision
+    return cfgs
+
 
 def prepare_ds_eval_cfgs(custom_cfgs: NamedTuple, raw_ds_cfgs: dict[str, Any]) -> dict[str, Any]:
     """Prepare the DeepSpeed config for training."""
@@ -194,8 +218,10 @@ def custom_cfgs_to_dict(key_list: str, value: Any) -> dict[str, Any]:
     elif value.startswith('[') and value.endswith(']'):
         value = value[1:-1]
         value = value.split(',')
+        value = list(filter(None, value))
     elif ',' in value:
         value = value.split(',')
+        value = list(filter(None, value))
     else:
         value = str(value)
     keys_split = key_list.replace('-', '_').split(':')
@@ -304,3 +330,24 @@ def str2bool(string: str) -> bool:
     if string.lower() in {'0', 'false', 'f', 'no', 'n', 'off'}:
         return False
     return bool(string)
+
+def parse_unknown_args():
+    parser = argparse.ArgumentParser(description="Parse bash arguments.")
+    
+    # parse unknown arguments
+    _, unknown = parser.parse_known_args()
+    args_dict = {}
+    key = None
+    for arg in unknown:
+        if arg.startswith('--'):
+            if key:
+                args_dict[key] = True
+            key = arg.lstrip('--')
+        else:
+            if key:
+                args_dict[key] = arg
+                key = None
+    if key:
+        args_dict[key] = True
+
+    return args_dict

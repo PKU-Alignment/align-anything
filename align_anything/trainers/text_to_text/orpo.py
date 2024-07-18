@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Trainer for DPO training."""
+"""Trainer for ORPO training."""
 
 
 import argparse
@@ -32,7 +32,7 @@ from tqdm import tqdm
 from transformers import CONFIG_NAME, AutoModelForCausalLM, PreTrainedModel, get_scheduler
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.preference import PreferenceBatch, PreferenceDataset
+from align_anything.datasets.text_to_text.preference import PreferenceBatch, PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import (
@@ -54,7 +54,7 @@ from align_anything.utils.tools import (
 )
 
 
-class DPOTrainer:
+class ORPOTrainer:
 
     def __init__(self, cfgs, ds_cfgs) -> None:
         """Initialize trainer."""
@@ -115,13 +115,13 @@ class DPOTrainer:
         """Initialize training and evaluation datasets."""
         train_dataset = PreferenceDataset(
             path=self.cfgs.data_cfgs.train_datasets,
-            template=self.cfgs.data_cfgs.train_template,
+            template=self.cfgs.data_cfgs.template,
             tokenizer=self.tokenizer,
             processor=self.processor,
-            size=self.cfgs.data_cfgs.train_size,
+            size=self.cfgs.data_cfgs.size,
             split=self.cfgs.data_cfgs.train_split,
-            subset=self.cfgs.data_cfgs.train_subset,
-            data_files=self.cfgs.data_cfgs.train_data_files,
+            subset=self.cfgs.data_cfgs.subset,
+            data_files=self.cfgs.data_cfgs.data_files,
         )
         self.train_dataloader = DataLoader(
             train_dataset,
@@ -132,13 +132,13 @@ class DPOTrainer:
         if self.cfgs.data_cfgs.eval_datasets:
             eval_dataset = PreferenceDataset(
                 path=self.cfgs.data_cfgs.eval_datasets,
-                template=self.cfgs.data_cfgs.eval_template,
+                template=self.cfgs.data_cfgs.template,
                 tokenizer=self.tokenizer,
                 processor=self.processor,
-                size=self.cfgs.data_cfgs.eval_size,
+                size=self.cfgs.data_cfgs.size,
                 split=self.cfgs.data_cfgs.eval_split,
-                subset=self.cfgs.data_cfgs.eval_subset,
-                data_files=self.cfgs.data_cfgs.eval_data_files,
+                subset=self.cfgs.data_cfgs.subset,
+                data_files=self.cfgs.data_cfgs.data_files,
             )
             self.eval_dataloader = DataLoader(
                 eval_dataset,
@@ -203,7 +203,7 @@ class DPOTrainer:
         self,
         batch: PreferenceBatch,
     ) -> dict[str, torch.Tensor]:
-        """Loss function for the DPO algorithm."""
+        """Loss function for the ORPO algorithm."""
         sequence_log_probs = self.compute_log_probs(
             self.model.module,
             batch,
@@ -243,19 +243,20 @@ class DPOTrainer:
 
             better_seq_slice = slice(diverge_index, better_end_index + 1)
             worse_seq_slice = slice(diverge_index, worse_end_index + 1)
-
+            better_seq_length = better_end_index+1
+            worse_seq_length = worse_end_index+1
+            
             # size = ()
             better_log_prob = better_sequence_log_probs[i, better_seq_slice].sum(dim=-1)
             worse_log_prob = worse_sequence_log_probs[i, worse_seq_slice].sum(dim=-1)
-            ref_better_log_prob = ref_better_sequence_log_probs[i, better_seq_slice].sum(dim=-1)
-            ref_worse_log_prob = ref_worse_sequence_log_probs[i, worse_seq_slice].sum(dim=-1)
-            better_log_ratio = better_log_prob - ref_better_log_prob
-            worse_log_ratio = worse_log_prob - ref_worse_log_prob
+            better_log_ratio = better_log_prob / better_seq_length
+            worse_log_ratio = worse_log_prob / worse_seq_length
+            log_odds = (better_log_ratio - worse_log_ratio) - (torch.log1p(-torch.exp(better_log_ratio )) - torch.log1p(-torch.exp(worse_log_ratio)))
+            odds_ratio_loss = -F.logsigmoid(log_odds)
 
+            sft_loss = -better_log_ratio
             losses.append(
-                -F.logsigmoid(
-                    self.cfgs.train_cfgs.scale_coeff * (better_log_ratio - worse_log_ratio),
-                ),
+                sft_loss+self.cfgs.train_cfgs.scale_coeff *odds_ratio_loss,
             )
             better_sample_rewards.append(
                 self.cfgs.train_cfgs.scale_coeff * better_log_ratio.detach(),
@@ -282,7 +283,7 @@ class DPOTrainer:
         self,
         batch: PreferenceBatch,
     ) -> dict[str, Any]:
-        """Perform a single training step for DPO."""
+        """Perform a single training step for ORPO."""
         loss_dict = self.loss(batch=batch)
         loss = loss_dict['loss']
         self.model.backward(loss)
@@ -405,7 +406,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    dict_cfgs, ds_cfgs = read_cfgs(mode='train', task='dpo')
+    dict_cfgs, ds_cfgs = read_cfgs(mode='train', task='orpo')
 
     # get custom configs from command line
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -421,7 +422,7 @@ def main():
     seed_everything(cfgs.train_cfgs.seed)
 
     # finetune the model
-    trainer = DPOTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)
+    trainer = ORPOTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)
     trainer.train()
     trainer.save()
 

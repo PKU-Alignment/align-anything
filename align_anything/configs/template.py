@@ -55,38 +55,6 @@ class Dialogue(Template):
         return return_dict
 
 
-@register_template('Vicuna')
-class Vicuna(Template):
-    system_prompt: str = ''
-    user_prompt: str = 'USER: {input} '
-    assistant_prompt: str = 'ASSISTANT:{output}'
-    split_token: str = 'ASSISTANT:'
-
-    def format_text(self, raw_sample: dict[str, Any]) -> str:
-        formatted_output = (
-            f'{self.system_prompt}'
-            f"{self.user_prompt.format(input=raw_sample['user'])}"
-            f"{self.assistant_prompt.format(output=raw_sample['assistant'])}"
-        )
-        return formatted_output
-
-    def format_prompt(self, raw_sample: dict[str, Any]) -> str:
-        formatted_output = (
-            f'{self.system_prompt}'
-            f"{self.user_prompt.format(input=raw_sample['user'])}"
-            f"{self.assistant_prompt.format(output='')}"
-        )
-        return formatted_output
-
-    def format_sample(self, raw_sample: dict[str, Any]) -> str:
-        formatted_output = (
-            f'{self.system_prompt}'
-            f"{self.user_prompt.format(input=raw_sample['user'])}"
-            f"{self.assistant_prompt.format(output=raw_sample['assistant'])}"
-        )
-        return formatted_output
-
-
 @register_template('PKUSafeRLHF')
 class PKUSafeRLHF(Template):
     system_prompt: str = 'BEGINNING OF CONVERSATION: '
@@ -158,6 +126,23 @@ class LLAVA:
             'text': text,
             'prompt': prompt,
             'image': Image.open(requests.get(image_file, stream=True).raw),
+        }
+
+
+@register_template('DiffusionDB')
+class DiffusionDB:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = ' ASSISTANT:{output}'
+    split_token: str = ' ASSISTANT:'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+
+        text = raw_sample['prompt']
+        return {
+            'text': text,
+            'prompt': text,
+            'image': raw_sample['image'].convert("RGB"),
         }
 
 
@@ -316,7 +301,7 @@ class Breeze(Dialogue):
     user_prompt: str = "[INST] {input}"
     assistant_prompt: str = "[/INST]{output}"
     separator: str = ""
-    
+
     
 @register_template('Chatglm2')
 class Chatglm2(Dialogue):

@@ -12,24 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Dataset classes."""
-
-from __future__ import annotations
-
-import torch
-from torch.utils.data import Dataset
-
-from align_anything.datasets.preference import *
-from align_anything.datasets.prompt_only import *
-from align_anything.datasets.supervised import *
+"""The image processing utility."""
 
 
-class DummyDataset(Dataset[dict[str, torch.Tensor]]):
-    def __init__(self, length: int) -> None:
-        self.length = length
+from torchvision import transforms
 
-    def __len__(self) -> int:
-        return self.length
 
-    def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
-        return {}
+def get_image_processor(resolution: int):
+    return transforms.Compose(
+            [
+                transforms.Resize(resolution, interpolation=transforms.InterpolationMode.BILINEAR),
+                transforms.RandomCrop(resolution),
+                transforms.Lambda(lambda x: x),
+                transforms.ToTensor(),
+                transforms.Normalize([0.5], [0.5]),
+            ]
+        )

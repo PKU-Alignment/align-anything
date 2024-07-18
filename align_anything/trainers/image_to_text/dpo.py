@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Trainer for KTO training."""
+"""Trainer for DPO training."""
 
 
 import argparse
@@ -32,7 +32,7 @@ from tqdm import tqdm
 from transformers import CONFIG_NAME, AutoModelForCausalLM, PreTrainedModel, get_scheduler
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.preference import PreferenceBatch, PreferenceDataset, RandomPreferenceDataset
+from align_anything.datasets.text_to_text.preference import PreferenceBatch, PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import (
@@ -54,7 +54,7 @@ from align_anything.utils.tools import (
 )
 
 
-class KTOTrainer:
+class DPOTrainer:
 
     def __init__(self, cfgs, ds_cfgs) -> None:
         """Initialize trainer."""
@@ -115,13 +115,13 @@ class KTOTrainer:
         """Initialize training and evaluation datasets."""
         train_dataset = PreferenceDataset(
             path=self.cfgs.data_cfgs.train_datasets,
-            template=self.cfgs.data_cfgs.template,
+            template=self.cfgs.data_cfgs.train_template,
             tokenizer=self.tokenizer,
             processor=self.processor,
-            size=self.cfgs.data_cfgs.size,
+            size=self.cfgs.data_cfgs.train_size,
             split=self.cfgs.data_cfgs.train_split,
-            subset=self.cfgs.data_cfgs.subset,
-            data_files=self.cfgs.data_cfgs.data_files,
+            subset=self.cfgs.data_cfgs.train_subset,
+            data_files=self.cfgs.data_cfgs.train_data_files,
         )
         self.train_dataloader = DataLoader(
             train_dataset,
@@ -132,13 +132,13 @@ class KTOTrainer:
         if self.cfgs.data_cfgs.eval_datasets:
             eval_dataset = PreferenceDataset(
                 path=self.cfgs.data_cfgs.eval_datasets,
-                template=self.cfgs.data_cfgs.template,
+                template=self.cfgs.data_cfgs.eval_template,
                 tokenizer=self.tokenizer,
                 processor=self.processor,
-                size=self.cfgs.data_cfgs.size,
+                size=self.cfgs.data_cfgs.eval_size,
                 split=self.cfgs.data_cfgs.eval_split,
-                subset=self.cfgs.data_cfgs.subset,
-                data_files=self.cfgs.data_cfgs.data_files,
+                subset=self.cfgs.data_cfgs.eval_subset,
+                data_files=self.cfgs.data_cfgs.eval_data_files,
             )
             self.eval_dataloader = DataLoader(
                 eval_dataset,
@@ -198,43 +198,12 @@ class KTOTrainer:
         logits = model(**batch).logits
         input_ids = batch['input_ids']
         return gather_log_probabilities(logits[:, :-1], input_ids[:, 1:])
-    def compute_kl(self):
-        random_dataset = RandomPreferenceDataset(
-            path=self.cfgs.data_cfgs.train_datasets,
-            template=self.cfgs.data_cfgs.template,
-            tokenizer=self.tokenizer,
-            processor=self.processor,
-            size=self.cfgs.data_cfgs.size,
-            split=self.cfgs.data_cfgs.train_split,
-            subset=self.cfgs.data_cfgs.subset,
-            data_files=self.cfgs.data_cfgs.data_files,
-        )
-        seed = torch.randint(0, 100000, (1,)).item()
-        torch.manual_seed(seed)
-        self.random_dataloader = DataLoader(
-            random_dataset,
-            collate_fn=random_dataset.get_collator(),
-            sampler=DistributedSampler(random_dataset, shuffle=True),
-            batch_size=self.cfgs.train_cfgs.per_device_kl_batch_size,
-        )
-        for batch in self.random_dataloader:
-            log_probs = self.compute_log_probs(  # size = (2 * B, L - 1)
-                self.model.module,
-                batch = batch,
-            )
-            ref_log_probs = self.compute_log_probs(  # size = (2 * B, L - 1)
-                self.reference_model.module,
-                batch = batch,
-            )
-            kl = (log_probs - ref_log_probs).mean()
 
-            self.kl = max(kl,0)
-             
     def loss(  # pylint: disable=too-many-locals
         self,
         batch: PreferenceBatch,
     ) -> dict[str, torch.Tensor]:
-        """Loss function for the KTO algorithm."""
+        """Loss function for the DPO algorithm."""
         sequence_log_probs = self.compute_log_probs(
             self.model.module,
             batch,
@@ -282,14 +251,17 @@ class KTOTrainer:
             ref_worse_log_prob = ref_worse_sequence_log_probs[i, worse_seq_slice].sum(dim=-1)
             better_log_ratio = better_log_prob - ref_better_log_prob
             worse_log_ratio = worse_log_prob - ref_worse_log_prob
+
             losses.append(
-                 - self.cfgs.train_cfgs.scale_better * F.sigmoid(self.cfgs.train_cfgs.scale_coeff * (better_log_ratio - self.kl))
-                 - self.cfgs.train_cfgs.scale_worse * F.sigmoid(self.cfgs.train_cfgs.scale_coeff * (self.kl - worse_log_ratio)),
+                -F.logsigmoid(
+                    self.cfgs.train_cfgs.scale_coeff * (better_log_ratio - worse_log_ratio),
+                ),
             )
             better_sample_rewards.append(
                 self.cfgs.train_cfgs.scale_coeff * better_log_ratio.detach(),
             )
             worse_sample_rewards.append(self.cfgs.train_cfgs.scale_coeff * worse_log_ratio.detach())
+
         loss = torch.stack(losses).mean()  # size = ()
         better_sample_reward = torch.stack(better_sample_rewards)  # size = (B,)
         worse_sample_reward = torch.stack(worse_sample_rewards)  # size = (B,)
@@ -310,7 +282,7 @@ class KTOTrainer:
         self,
         batch: PreferenceBatch,
     ) -> dict[str, Any]:
-        """Perform a single training step for KTO."""
+        """Perform a single training step for DPO."""
         loss_dict = self.loss(batch=batch)
         loss = loss_dict['loss']
         self.model.backward(loss)
@@ -363,9 +335,6 @@ class KTOTrainer:
 
         for epoch in range(self.cfgs.train_cfgs.epochs):
             self.model.train()
-            if self.global_step%self.cfgs.train_cfgs.kl_steps==0:
-                with torch.no_grad():
-                    self.compute_kl()
 
             for batch in self.train_dataloader:
                 info = self.train_step(batch)
@@ -436,7 +405,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    dict_cfgs, ds_cfgs = read_cfgs(mode='train', task='kto')
+    dict_cfgs, ds_cfgs = read_cfgs(mode='train', task='dpo')
 
     # get custom configs from command line
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -452,7 +421,7 @@ def main():
     seed_everything(cfgs.train_cfgs.seed)
 
     # finetune the model
-    trainer = KTOTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)
+    trainer = DPOTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)
     trainer.train()
     trainer.save()
 

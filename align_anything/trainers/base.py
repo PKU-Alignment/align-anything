@@ -14,55 +14,30 @@
 # ==============================================================================
 """Trainer for supervised training."""
 
-import argparse
-import os
-import sys
 from datetime import datetime
 from typing import Any
 
 import deepspeed
 import torch
-import torch.distributed as dist
 from deepspeed.ops.adam import FusedAdam
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
-from transformers import CONFIG_NAME, PreTrainedModel, get_scheduler
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
+from transformers import get_scheduler
 
-from align_anything.datasets.supervised import SupervisedBatch, SupervisedDataset
-from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.utils.logger import Logger
-from align_anything.utils.multi_process import get_current_device, is_main_process
+from align_anything.utils.multi_process import is_main_process
 from align_anything.utils.tools import (
-    custom_cfgs_to_dict,
-    dict_to_namedtuple,
     get_optimizer_grouped_parameters,
     namedtuple_to_dict,
-    prepare_ds_train_cfgs,
-    read_cfgs,
-    seed_everything,
-    update_dict,
 )
 
 
-class SuperviseTrainer:
+class SupervisedTrainer:
 
     def __init__(self, cfgs, ds_cfgs) -> None:
         """Initialize the SFT trainer."""
         self.cfgs = cfgs
-        self.ds_cfgs = prepare_ds_train_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
-        self.global_step = 0
-
-        self.init_check()
-        dist.barrier()
-        self.init_models()
-        dist.barrier()
-        self.init_datasets()
-        dist.barrier()
-        self.init_engines()
-        dist.barrier()
-        self.init_logger()
 
     def init_check(self) -> None:
         """Initial configuration checking."""
@@ -82,53 +57,46 @@ class SuperviseTrainer:
         )
 
     def init_models(self) -> None:
-        """Initialize model and tokenizer."""
-        if self.ds_cfgs is not None and self.ds_cfgs['zero_optimization']['stage'] == 3:
-            self.dstchf = HfDeepSpeedConfig(self.ds_cfgs)
-        self.model, self.tokenizer, self.processor = load_pretrained_models(
-            self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side='right',
-            trust_remote_code=True,
-        )
+        """Initialize model."""
 
-    def init_datasets(self) -> None:
+    def init_datasets(self, data_dtype) -> None:
         """Initialize training and evaluation datasets."""
-        train_dataset = SupervisedDataset(
+
+    def get_dataloaders(self, train_data_dtype, eval_data_dtype) -> None:
+        """Get the dataloaders based on data_dtype."""
+        train_dataset = train_data_dtype(
             path=self.cfgs.data_cfgs.train_datasets,
             template=self.cfgs.data_cfgs.train_template,
             tokenizer=self.tokenizer,
-            processor=self.processor,
             size=self.cfgs.data_cfgs.train_size,
             split=self.cfgs.data_cfgs.train_split,
-            subset=self.cfgs.data_cfgs.train_subset,
-            data_files=self.cfgs.data_cfgs.train_data_files,
+            optional_args=self.cfgs.data_cfgs.train_optional_args,
         )
-        self.train_dataloader = DataLoader(
+        train_dataloader = DataLoader(
             train_dataset,
             collate_fn=train_dataset.get_collator(),
             sampler=DistributedSampler(train_dataset, shuffle=True),
             batch_size=self.cfgs.train_cfgs.per_device_train_batch_size,
         )
         if self.cfgs.data_cfgs.eval_datasets:
-            eval_dataset = SupervisedDataset(
+            eval_dataset = eval_data_dtype(
                 path=self.cfgs.data_cfgs.eval_datasets,
                 template=self.cfgs.data_cfgs.eval_template,
                 tokenizer=self.tokenizer,
-                processor=self.processor,
-                size=self.cfgs.data_cfgs.eval_size,
                 split=self.cfgs.data_cfgs.eval_split,
-                subset=self.cfgs.data_cfgs.eval_subset,
-                data_files=self.cfgs.data_cfgs.eval_data_files,
+                size=self.cfgs.data_cfgs.eval_size,
+                optional_args=self.cfgs.data_cfgs.eval_optional_args,
             )
-            self.eval_dataloader = DataLoader(
+            eval_dataloader = DataLoader(
                 eval_dataset,
                 collate_fn=eval_dataset.get_collator(),
                 sampler=DistributedSampler(eval_dataset, shuffle=True),
                 batch_size=self.cfgs.train_cfgs.per_device_train_batch_size,
             )
+            return train_dataloader, eval_dataloader
+        return train_dataloader, None
 
-    def init_engines(self) -> None:
+    def init_deepspeed_engines(self) -> None:
         """Initialize DeepSpeed engines."""
         num_update_steps_per_epoch = (
             len(self.train_dataloader) + self.cfgs.train_cfgs.gradient_accumulation_steps - 1
@@ -154,30 +122,48 @@ class SuperviseTrainer:
         self.model, *_ = deepspeed.initialize(
             model=self.model,
             optimizer=optimizer,
-            config=self.ds_cfgs,
+            config=self.muti_process_cfgs,
             lr_scheduler=lr_scheduler,
             dist_init_required=True,
         )
         if self.cfgs.train_cfgs.gradient_checkpointing:
             self.model.gradient_checkpointing_enable()
 
-    def loss(self, sft_batch: SupervisedBatch) -> dict[str, torch.Tensor]:
-        """Loss function for supervised finetuning."""
-        outputs = self.model(**sft_batch)
-        return {
-            'loss': outputs.loss,
-        }
+    def init_accelerate_engines(self) -> None:
+        """Initialize Accelerate engines."""
+        num_update_steps_per_epoch = (
+            len(self.train_dataloader) + self.cfgs.train_cfgs.gradient_accumulation_steps - 1
+        ) // self.cfgs.train_cfgs.gradient_accumulation_steps
+        total_training_steps = self.cfgs.train_cfgs.epochs * num_update_steps_per_epoch
+        
+        self.optimizer = torch.optim.AdamW(
+            self.model.parameters(),
+            lr=self.cfgs.train_cfgs.learning_rate,
+            betas=self.cfgs.train_cfgs.adam_betas,
+            eps=self.cfgs.train_cfgs.adam_epsilon,
+        )
+        
+        num_warmup_steps = int(self.cfgs.train_cfgs.lr_warmup_ratio * total_training_steps)
+        self.lr_scheduler = get_scheduler(
+            name=self.cfgs.train_cfgs.lr_scheduler_type,
+            optimizer=self.optimizer,
+            num_warmup_steps=num_warmup_steps,
+            num_training_steps=total_training_steps,
+        )
+        if self.cfgs.train_cfgs.gradient_checkpointing:
+            self.model.enable_gradient_checkpointing()
+        self.model, self.optimizer, self.train_dataloader, self.lr_scheduler = self.accelerator.prepare(
+            self.model, self.optimizer, self.train_dataloader, self.lr_scheduler
+        )
 
-    def train_step(self, sft_batch: SupervisedBatch) -> dict[str, Any]:
+    def loss(self, sft_batch) -> dict[str, torch.Tensor]:
+        """Loss function for supervised finetuning."""
+        return torch.zeros(1)
+
+    def train_step(self, sft_batch) -> dict[str, Any]:
         """Performs a single training step."""
         loss = self.loss(sft_batch)['loss']
-        self.model.backward(loss)
-        self.model.step()
-
-        return {
-            'train/loss': loss.item(),
-            'train/lr': self.model.optimizer.param_groups[0]['lr'],
-        }
+        return {'train/loss': loss.item()}
 
     def train(self) -> None:
         """Train the model."""
@@ -232,7 +218,8 @@ class SuperviseTrainer:
                 self.logger.log(self.eval(), step=self.global_step)
 
             self.logger.print(f'\n***** Updating epoch counting at step {self.global_step} *****')
-            self.model.tput_timer.update_epoch_count()
+            if isinstance(self.model, deepspeed.DeepSpeedEngine):
+                self.model.tput_timer.update_epoch_count()
 
     @torch.no_grad()
     def eval(self) -> dict[str, Any]:
@@ -274,54 +261,3 @@ class SuperviseTrainer:
         tag: int | None = None,
     ) -> None:
         """Save model and tokenizer in Hugging Face format."""
-        dist.barrier()
-
-        if model is None:
-            model = self.model  # pylint: disable=no-member
-
-        self.logger.print(f'Saving model to "{self.cfgs.logger_cfgs.output_dir}" ...')
-
-        output_config_file = os.path.join(self.cfgs.logger_cfgs.output_dir, CONFIG_NAME)
-        model_to_save: PreTrainedModel = getattr(model, 'module', model)
-
-        if is_main_process():
-            model_to_save.config.to_json_file(output_config_file)
-            self.tokenizer.save_pretrained(self.cfgs.logger_cfgs.output_dir)
-
-        self.logger.print('Saving 16-bit model...')
-        save_file_name = f'pytorch_model_{tag}.bin' if tag else 'pytorch_model.bin'
-        model.save_16bit_model(self.cfgs.logger_cfgs.output_dir, save_filename=save_file_name)
-
-        self.logger.print('Model saved!')
-
-
-def main():
-    # setup distribution training
-    deepspeed.init_distributed()
-    current_device = get_current_device()
-    torch.cuda.set_device(current_device)
-
-    # read default configs from the yaml file
-    dict_cfgs, ds_cfgs = read_cfgs(mode='train', task='sft')
-
-    # get custom configs from command line
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    _, unparsed_args = parser.parse_known_args()
-    keys = [k[2:] for k in unparsed_args[1::2]]
-    values = list(unparsed_args[2::2])
-    unparsed_args = dict(zip(keys, values))
-    for k, v in unparsed_args.items():
-        dict_cfgs = update_dict(dict_cfgs, custom_cfgs_to_dict(k, v))
-
-    # setup training
-    cfgs = dict_to_namedtuple(dict_cfgs)
-    seed_everything(cfgs.train_cfgs.seed)
-
-    # finetune the model
-    trainer = SuperviseTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)
-    trainer.train()
-    trainer.save()
-
-
-if __name__ == '__main__':
-    sys.exit(main())
