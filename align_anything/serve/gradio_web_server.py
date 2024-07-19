@@ -491,8 +491,9 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
         with gr.Row():
             with gr.Column(scale=3):
                 if not embed_mode:
-                    gr.Image(value='/home/yangyaodong/projects/jiahao/projects/align-anything-me/assets/logo.jpg')
-                    gr.Markdown(title_markdown)
+                    with gr.Row():
+                        gr.Image(value='/home/yangyaodong/projects/jiahao/projects/align-anything-me/assets/logo.jpg')
+                        gr.Markdown(title_markdown)
                 with gr.Row(elem_id="model_selector_row"):
                     model_selector = gr.Dropdown(
                         choices=model_names,
