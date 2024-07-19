@@ -52,6 +52,10 @@ dependencies = [
     "pytest",
     "shortuuid",
     "diffusers",
+    "gradio",
+    "unicorn",
+    "fastapi",
+    "PIL"
 ]
 dynamic = ["version"]
 

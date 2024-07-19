@@ -39,6 +39,7 @@ server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR RE
 moderation_msg = "YOUR INPUT VIOLATES OUR CONTENT MODERATION GUIDELINES. PLEASE TRY AGAIN."
 
 LOGDIR = "."
+models = {}
 
 @dataclasses.dataclass
 class Conversation:
@@ -52,21 +53,34 @@ class Conversation:
 
     def get_prompt(self):
         messages = self.messages
-        ret = self.system
+        ret = self.template.system_prompt
         if len(messages) > 0:
             messages = self.messages.copy()
             for role, message in messages:
                 if message:
                     if type(message) is tuple:
                         message, _, _ = message
+                        if role == "user":
+                            ret += self.template.user_prompt.format(input=message.replace('<image>', ''))
+                        elif role == "assistant":
+                            ret += self.template.assistant_prompt.format(output=message)
+                        else:
+                            raise ValueError(f"Invalid role: {role}")
+                    else:
+                        if role == "user":
+                            user_prompt = self.template.user_prompt.format(input=message)
+                            ret += user_prompt.replace('<image>', '')
+                        elif role == "assistant":
+                            ret += self.template.assistant_prompt.format(output=message)
+                        else:
+                            raise ValueError(f"Invalid role: {role}")
+                else:
                     if role == "user":
-                        ret += self.template.user_prompt.format(input=message)
+                        ret += self.template.user_prompt.format(input="")
                     elif role == "assistant":
-                        ret += self.template.assistant_prompt.format(output=message)
+                        ret += self.template.assistant_prompt.format(output="")
                     else:
                         raise ValueError(f"Invalid role: {role}")
-                else:
-                    ret += role + ":"
         return ret
 
     def append_message(self, role, message):
@@ -151,17 +165,13 @@ class Conversation:
         )
 
     def dict(self) -> dict:
-        if hasattr(self, 'get_images') and len(self.get_images()) > 0:
-            return {
-                "roles": self.roles,
-                "messages": [[x, y[0] if isinstance(y, tuple) else y] for x, y in self.messages],
-                "offset": self.offset,
-                # The template field is not included in the dictionary conversion
-                "skip_next": self.skip_next
-            }
-        else:
-            return dataclasses.asdict(self)
-default_conversation = Conversation(("user", "assistant"), [], 0, Dialogue)
+        return {
+            "roles": self.roles,
+            "messages": [[x, y[0] if isinstance(y, tuple) else y] for x, y in self.messages],
+            "offset": self.offset,
+            "skip_next": self.skip_next
+        }
+default_conversation = Conversation(("user", "assistant"), [], 0, LLAVA)
 
 logger = Logger()
 
@@ -176,7 +186,6 @@ priority = {
     "koala-13b": "aaaaaab",
 }
 
-#can be integrate to other files
 def violates_moderation(text):
     """
     Check whether the text violates OpenAI moderation API.
@@ -202,21 +211,18 @@ def get_conv_log_filename():
     name = os.path.join(LOGDIR, f"{t.year}-{t.month:02d}-{t.day:02d}-conv.json")
     return name
 
-
 def get_model_list():
     ret = requests.post(args.controller_url + "/refresh_all_workers")
     assert ret.status_code == 200
     ret = requests.post(args.controller_url + "/list_models")
-    model_names = ret.json()["model_names"]
-    model_templates = ret.json()["model_templates"]
-    models = {model_name: model_template 
-              for model_name, model_template in zip(model_names, model_templates)}
-    items = sorted(models.items())
-    models = {k: v for k, v in items}
+    model_names = ret.json()['model_names']
+    model_templates = ret.json()['model_templates']
+    print(model_names)
+    print(model_templates)
     logger.print("Models: ")
-    for model_name in models:
+    for model_name in model_names:
         logger.print(f"{model_name} ")
-    return models
+    return model_names, model_templates
 
 
 get_window_url_params = """
@@ -235,7 +241,7 @@ def load_demo(url_params, request: gr.Request):
     dropdown_update = gr.Dropdown(visible=True)
     if "model" in url_params:
         model = url_params["model"]
-        if model in models:
+        if model in models.keys():
             dropdown_update = gr.Dropdown(value=model, visible=True)
     state = default_conversation.copy()
     return state, dropdown_update
@@ -243,11 +249,12 @@ def load_demo(url_params, request: gr.Request):
 
 def load_demo_refresh_model_list(request: gr.Request):
     logger.print(f"load_demo. ip: {request.client.host}")
-    models = get_model_list()
+    model_names, model_templates = get_model_list()
+    models = dict(zip(model_names, model_templates))
     state = default_conversation.copy()
     dropdown_update = gr.Dropdown(
-        choices=models,
-        value=models[0] if len(models) > 0 else ""
+        choices=model_names,
+        value=model_names[0] if len(model_names) > 0 else ""
     )
     return state, dropdown_update
 
@@ -300,7 +307,7 @@ def clear_history(request: gr.Request):
 
 def add_text(state, text, image, image_process_mode, videobox, audiobox, request: gr.Request):
     logger.print(f"add_text. ip: {request.client.host}. len: {len(text)}")
-    if len(text) <= 0 and image is None:
+    if len(text) <= 0  and image is None:
         state.skip_next = True
         return (state, state.to_gradio_chatbot(), "", None) + (no_change_btn,) * 5
     if args.moderate:
@@ -325,7 +332,6 @@ def add_text(state, text, image, image_process_mode, videobox, audiobox, request
 
 
 def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request: gr.Request):
-    logger.print(f"http_bot. ip: {request.client.host}")
     start_tstamp = time.time()
     model_name = model_selector
 
@@ -335,6 +341,8 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
         return
 
     if len(state.messages) == state.offset + 2:
+        model_names, model_templates = get_model_list()
+        models = dict(zip(model_names, model_templates))
         template_name = models[model_name]
         template = get_template_class(template_name)
         new_state = Conversation(("user", "assistant"), [], 0, template)
@@ -374,7 +382,7 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
         "temperature": float(temperature),
         "top_p": float(top_p),
         "max_new_tokens": min(int(max_new_tokens), 1536),
-        "stop": state.template.split_token,
+        "stop": state.template.separator,
         "images": f'List of {len(state.get_images())} images: {all_image_hash}',
     }
     logger.print(f"==== request ====\n{pload}")
@@ -425,7 +433,7 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
         fout.write(json.dumps(data) + "\n")
 
 title_markdown = ("""
-#[[Project Page](https://align-anything.com)] [[Code](https://github.com/PKU-Alignment/align-anything)]
+[[Project Page](https://align-anything.com)] [[Code](https://github.com/PKU-Alignment/align-anything)]
 """)
 
 tos_markdown = ("""
@@ -475,16 +483,20 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
     with gr.Blocks(title="align-anything", theme=gr.themes.Default(), css=block_css) as demo:
         state = gr.State()
         
-        if not embed_mode:
-            gr.HTML(html_logo)
-            gr.Markdown(title_markdown)
+        # if not embed_mode:
+        #     with gr.Row():
+        #         gr.Gallery(['/home/yangyaodong/projects/jiahao/projects/align-anything-me/assets/logo.jpg'])
+        #         gr.Markdown(title_markdown)
 
         with gr.Row():
             with gr.Column(scale=3):
+                if not embed_mode:
+                    gr.Image(value='/home/yangyaodong/projects/jiahao/projects/align-anything-me/assets/logo.jpg')
+                    gr.Markdown(title_markdown)
                 with gr.Row(elem_id="model_selector_row"):
                     model_selector = gr.Dropdown(
-                        choices=models,
-                        value=models[0] if len(models) > 0 else "",
+                        choices=model_names,
+                        value=model_names[0] if len(model_names) > 0 else "",
                         interactive=True,
                         show_label=False,
                         container=False)
@@ -512,8 +524,8 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
 
             with gr.Column(scale=8):
                 gr.Examples(examples=[
-                    [f"{cur_dir}/examples/extreme_ironing.jpg", "What is unusual about this image?"],
-                    [f"{cur_dir}/examples/waterview.jpg", "What are the things I should be cautious about when I visit here?"],
+                    [f"{cur_dir}/examples/PKU.jpg", "What is great about this image?"],
+                    [f"{cur_dir}/examples/boya.jpg", "What are the things I should be cautious about when I visit here?"],
                 ], inputs=[imagebox, textbox, audiobox, videobox])
                 chatbot = gr.Chatbot(
                     elem_id="chatbot",
@@ -632,8 +644,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     logger.print(f"args: {args}")
 
-    models = get_model_list()
+    model_names, model_templates = get_model_list()
+    print(model_names)
+    models = dict(zip(model_names, model_templates))
 
+    base_path = os.path.abspath(os.path.join(os.getcwd(), "..", "..", "logo.jpg"))
     logger.print(args)
     demo = build_demo(args.embed, concurrency_count=args.concurrency_count)
     demo.queue(
@@ -642,4 +657,5 @@ if __name__ == "__main__":
         server_name=args.host,
         server_port=args.port,
         share=args.share,
+        allowed_paths=['/home/yangyaodong/projects/jiahao/projects/align-anything-me/assets/logo.jpg']
     )
