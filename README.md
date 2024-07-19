@@ -340,7 +340,7 @@ You have just launched the Gradio web interface. Now, you can open the web inter
 This is the actual *worker* that performs the inference on the GPU.  Each worker is responsible for a single model specified in `--model-path`, and check the template.py in align_anything.configs to find the according template name.
 
 ```Shell
-python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/llava-v1.5-13b --template "LLAVA"
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/models/llava/llava-1.5-7b-hf  --template "LLAVA"
 ```
 Wait until the process completes loading the model and you see "Uvicorn running on ...". Then, refresh your Gradio web UI, and you will see the model you just started in the model list.
 
@@ -351,33 +351,7 @@ python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://l
 ```
 
 You can specify the mps device by using the `--device` flag: `--device mps`, if you are using an Apple device with an M1 or M2 chip.
-
-#### Launch a model worker (Multiple GPUs, when GPU VRAM <= 24GB)
-
-If your GPU has less than 24GB of VRAM (e.g., RTX 3090, RTX 4090, etc.), you might consider running it with multiple GPUs. Our latest code base will automatically attempt to utilize multiple GPUs if more than one is available. You can specify which GPUs to use with CUDA_VISIBLE_DEVICES. Here’s an example of how to run it using the first two GPUs:
-
-```Shell
-CUDA_VISIBLE_DEVICES=0,1 python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/llava-v1.5-13b --template "LLAVA"
 ```
-
-# Inference
-
-## Interactive CLI Demo
-
-```bash
-python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path 
-```
-
-![cli_demo](assets/cli_demo.gif)
-
-## Interactive Arena
-
-```bash
-python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_model_name_or_path --blue_corner_model_name_or_path your_blue_model_name_or_path
-```
-
-![Arena-Demo](assets/arena_demo.gif)
-
 
 ## Why do we open source align-anything?
 
