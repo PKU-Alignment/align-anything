@@ -20,42 +20,12 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
  --master_port ${MASTER_PORT} \
- --module align_anything.trainers.sft \
+ --module align_anything.trainers.text_to_text.sft \
  --model_name_or_path ${MODEL_NAME_OR_PATH} \
  --train_datasets ${TRAIN_DATASETS} \
  --output_dir ${OUTPUT_DIR} \
  --train_template Dialogue \
  --train_split train
-```
-
-## Reward Modeling
-
-```bash
-# You can replace it with a local model path
-MODEL_NAME_OR_PATH="PKU-Alignment/alpaca-7b-reproduced"
-# You can replace it with a local dataset path
-TRAIN_DATASETS="PKU-Alignment/PKU-SafeRLHF"
-# You can replace it with a local dataset path
-EVAL_DATASETS="PKU-Alignment/PKU-SafeRLHF"
-# You can replace it with a new path with correct permission
-OUTPUT_DIR="../output/rm"
-
-# Source the setup script
-source ./setup.sh
-
-# Execute deepspeed command
-deepspeed \
- --master_port ${MASTER_PORT} \
- --module align_anything.trainers.rm \
- --model_name_or_path ${MODEL_NAME_OR_PATH} \
- --train_datasets ${TRAIN_DATASETS} \
- --train_template PKUSafeRLHF \
- --train_split train \
- --eval_datasets ${EVAL_DATASETS} \
- --eval_template PKUSafeRLHF \
- --eval_split test \
- --output_dir ${OUTPUT_DIR} \
- --train_template PKUSafeRLHF
 ```
 
 ## DPO Training
@@ -76,7 +46,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.dpo \
+	--module align_anything.trainers.text_to_text.dpo \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
   	--train_template PKUSafeRLHF \
@@ -108,7 +78,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
   --master_port ${MASTER_PORT} \
-  --module align_anything.trainers.ppo \
+  --module align_anything.trainers.text_to_text.ppo \
   --actor_model_name_or_path ${ACTOR_MODEL_NAME_OR_PATH} \
   --reward_model_name_or_path ${REWARD_MODEL_NAME_OR_PATH} \
   --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME_OR_PATH} \

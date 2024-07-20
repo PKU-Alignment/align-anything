@@ -13,6 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 
+
+import io
+
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -21,11 +24,20 @@ from PIL import Image
 
 from align_anything.utils.template_registry import register_template
 
+ALLOWED_ATTRIBUTES=['split_token']
+DEFAULT_SPLIT_TOKEN='ASSISTANT:'
+
 
 class Template(ABC):
     @abstractmethod
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         pass
+
+    def __getattr__(self, name):
+        if name in ALLOWED_ATTRIBUTES:
+            return DEFAULT_SPLIT_TOKEN
+        else:
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
 
 @register_template('Dialogue')
@@ -84,6 +96,9 @@ class PKUSafeRLHF(Template):
             'better_text': formatted_better_output,
             'worse_text': formatted_worse_output,
         }
+
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return False
 
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['prompt']
@@ -176,6 +191,9 @@ class RLAIFV:
             'image': image,
         }
     
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return False
+    
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['question']
         image = raw_sample['image']
@@ -223,6 +241,9 @@ class SPA_VL:
             'image': image,
         }
 
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return False
+
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['question']
         image = raw_sample['image']
@@ -238,6 +259,34 @@ class SPA_VL:
             'text': formatted_prompt,
             'image': image,
         }
+
+
+@register_template('Pickapic')
+class Pickapic:
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['caption']
+        better_id = float(raw_sample['label_1'])
+        worse_id = float(raw_sample['label_0'])
+        
+        raw_better_image = raw_sample[f'jpg_{int(better_id)}']
+        raw_worse_image = raw_sample[f'jpg_{int(worse_id)}']
+        
+        better_image = Image.open(io.BytesIO(raw_better_image)).convert("RGB")
+        worse_image = Image.open(io.BytesIO(raw_worse_image)).convert("RGB")
+        
+        return {
+            'prompt': prompt,
+            'better_image': better_image,
+            'worse_image': worse_image,
+        }
+        
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        better_id = float(raw_sample['label_0'])
+        if better_id == 0.5:
+            return True
+        else:
+            return False
 
 
 @register_template('Alpaca')

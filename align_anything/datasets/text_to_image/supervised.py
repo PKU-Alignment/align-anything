@@ -22,6 +22,7 @@ from typing_extensions import TypedDict  # Python 3.10+
 import torch
 import transformers
 from torch.utils.data import Dataset
+from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
@@ -36,52 +37,54 @@ from PIL import Image
 IGNORE_INDEX = -100
 
 __all__ = [
-    'AnyToImageDataset',
-    'AnyToImageCollator',
-    'AnyToImageSample',
-    'AnyToImageBatch',
+    'SupervisedDataset',
+    'SupervisedCollator',
+    'SupervisedSample',
+    'SupervisedBatch',
 ]
 
 
-class AnyToImageSample(TypedDict, total=True):
+class SupervisedSample(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (L,)
     labels: torch.LongTensor  # size = (L,)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
-class AnyToImageBatch(TypedDict, total=True):
+class SupervisedBatch(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (B, L)
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
-class AnyToImageDataset(Dataset):
+class SupervisedDataset(Dataset):
 
     def __init__(
         self,
         path: str,
         template: str,
         tokenizer: transformers.PreTrainedTokenizer,
+        processor: transformers.ProcessorMixin | transforms.Compose | None = None,
         size: int | None = None,
         split: str | None = None,
+        subset: str | None = None,
+        data_files: str | None = None,
         optional_args: list | str = [],
     ):
         super().__init__()
         assert path, f'You must set the valid datasets path! Here is {path}'
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
+        self.transforms = processor
         
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        self.raw_data = load_dataset(path, *optional_args, split=split, trust_remote_code=True)
+        self.raw_data = load_dataset(path, split=split, data_files=data_files, subset=subset,  *optional_args, trust_remote_code=True)
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
         self.template = get_template_class(template)
-        self.resolution = 512
-        self.transforms = get_image_processor(resolution=self.resolution)
 
-    def preprocess(self, raw_sample: dict[str, Any]) -> AnyToImageSample:
+    def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         formatted_sample = self.template.format_sample(raw_sample)
         return_dict = {}
         return_dict['input_ids'] = self.tokenize(formatted_sample['prompt'], add_special_tokens=False)
@@ -92,7 +95,7 @@ class AnyToImageDataset(Dataset):
         return self.transforms(raw_image)
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return AnyToImageCollator(self.tokenizer.pad_token_id)
+        return SupervisedCollator(self.tokenizer.pad_token_id)
 
     def tokenize(
         self,
@@ -126,13 +129,13 @@ class AnyToImageDataset(Dataset):
         return len(self.raw_data)
 
 
-class AnyToImageCollator:
+class SupervisedCollator:
 
     def __init__(self, pad_token_id: int) -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
 
-    def __call__(self, samples: list[AnyToImageSample]) -> AnyToImageBatch:
+    def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
         return_dict = {}
         current_device = get_current_device()
 

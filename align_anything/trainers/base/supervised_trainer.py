@@ -14,26 +14,37 @@
 # ==============================================================================
 """Trainer for supervised training."""
 
+
+import os
 from datetime import datetime
 from typing import Any
 
 import deepspeed
 import torch
+import torch.distributed as dist
 from deepspeed.ops.adam import FusedAdam
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
-from transformers import get_scheduler
+from transformers import get_scheduler, CONFIG_NAME, PreTrainedModel
 
 from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import is_main_process
+from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import (
     get_optimizer_grouped_parameters,
     namedtuple_to_dict,
 )
 
+from diffusers import StableDiffusionPipeline
+from diffusers.loaders import LoraLoaderMixin
+from diffusers.utils.torch_utils import is_compiled_module
+from diffusers.utils import convert_state_dict_to_diffusers
 
-class SupervisedTrainer:
+from peft.utils import get_peft_model_state_dict
+
+
+class SupervisedTrainerBase:
 
     def __init__(self, cfgs, ds_cfgs) -> None:
         """Initialize the SFT trainer."""
@@ -56,20 +67,19 @@ class SupervisedTrainer:
             config=namedtuple_to_dict(self.cfgs),
         )
 
-    def init_models(self) -> None:
-        """Initialize model."""
-
-    def init_datasets(self, data_dtype) -> None:
-        """Initialize training and evaluation datasets."""
-
     def get_dataloaders(self, train_data_dtype, eval_data_dtype) -> None:
         """Get the dataloaders based on data_dtype."""
+        self.train_template = get_template_class(self.cfgs.data_cfgs.train_template)
+        self.eval_template = None
         train_dataset = train_data_dtype(
             path=self.cfgs.data_cfgs.train_datasets,
             template=self.cfgs.data_cfgs.train_template,
             tokenizer=self.tokenizer,
+            processor=self.processor,
             size=self.cfgs.data_cfgs.train_size,
             split=self.cfgs.data_cfgs.train_split,
+            subset=self.cfgs.data_cfgs.train_subset,
+            data_files=self.cfgs.data_cfgs.train_data_files,
             optional_args=self.cfgs.data_cfgs.train_optional_args,
         )
         train_dataloader = DataLoader(
@@ -79,12 +89,16 @@ class SupervisedTrainer:
             batch_size=self.cfgs.train_cfgs.per_device_train_batch_size,
         )
         if self.cfgs.data_cfgs.eval_datasets:
+            self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
             eval_dataset = eval_data_dtype(
                 path=self.cfgs.data_cfgs.eval_datasets,
                 template=self.cfgs.data_cfgs.eval_template,
                 tokenizer=self.tokenizer,
+                processor=self.processor,
                 split=self.cfgs.data_cfgs.eval_split,
                 size=self.cfgs.data_cfgs.eval_size,
+                subset=self.cfgs.data_cfgs.eval_subset,
+                data_files=self.cfgs.data_cfgs.eval_data_files,
                 optional_args=self.cfgs.data_cfgs.eval_optional_args,
             )
             eval_dataloader = DataLoader(
@@ -94,6 +108,7 @@ class SupervisedTrainer:
                 batch_size=self.cfgs.train_cfgs.per_device_train_batch_size,
             )
             return train_dataloader, eval_dataloader
+        
         return train_dataloader, None
 
     def init_deepspeed_engines(self) -> None:
@@ -122,7 +137,7 @@ class SupervisedTrainer:
         self.model, *_ = deepspeed.initialize(
             model=self.model,
             optimizer=optimizer,
-            config=self.muti_process_cfgs,
+            config=self.ds_train_cfgs,
             lr_scheduler=lr_scheduler,
             dist_init_required=True,
         )
@@ -135,9 +150,9 @@ class SupervisedTrainer:
             len(self.train_dataloader) + self.cfgs.train_cfgs.gradient_accumulation_steps - 1
         ) // self.cfgs.train_cfgs.gradient_accumulation_steps
         total_training_steps = self.cfgs.train_cfgs.epochs * num_update_steps_per_epoch
-        
+        self.params_to_optimize = list(filter(lambda p: p.requires_grad, self.model.parameters()))
         self.optimizer = torch.optim.AdamW(
-            self.model.parameters(),
+            self.params_to_optimize,
             lr=self.cfgs.train_cfgs.learning_rate,
             betas=self.cfgs.train_cfgs.adam_betas,
             eps=self.cfgs.train_cfgs.adam_epsilon,
@@ -156,15 +171,6 @@ class SupervisedTrainer:
             self.model, self.optimizer, self.train_dataloader, self.lr_scheduler
         )
 
-    def loss(self, sft_batch) -> dict[str, torch.Tensor]:
-        """Loss function for supervised finetuning."""
-        return torch.zeros(1)
-
-    def train_step(self, sft_batch) -> dict[str, Any]:
-        """Performs a single training step."""
-        loss = self.loss(sft_batch)['loss']
-        return {'train/loss': loss.item()}
-
     def train(self) -> None:
         """Train the model."""
         self.logger.print('***** Running training *****')
@@ -181,7 +187,7 @@ class SupervisedTrainer:
             self.logger.print('\n***** Evaluating at the beginning *****')
             self.logger.log(self.eval(), step=0)
 
-        for epoch in range(self.cfgs.train_cfgs.epochs):
+        for epoch in range(int(self.cfgs.train_cfgs.epochs)):
             self.model.train()
 
             for batch in self.train_dataloader:
@@ -216,10 +222,7 @@ class SupervisedTrainer:
                     f'\n***** Evaluating at epoch {epoch + 1}/{self.cfgs.train_cfgs.epochs} *****',
                 )
                 self.logger.log(self.eval(), step=self.global_step)
-
-            self.logger.print(f'\n***** Updating epoch counting at step {self.global_step} *****')
-            if isinstance(self.model, deepspeed.DeepSpeedEngine):
-                self.model.tput_timer.update_epoch_count()
+            self.model.tput_timer.update_epoch_count()
 
     @torch.no_grad()
     def eval(self) -> dict[str, Any]:
@@ -255,9 +258,58 @@ class SupervisedTrainer:
 
         return {'eval/loss': sum(eval_loss) / len(eval_loss)}
 
-    def save(
+    def save_transformers(
         self,
         model: deepspeed.DeepSpeedEngine | None = None,
         tag: int | None = None,
     ) -> None:
-        """Save model and tokenizer in Hugging Face format."""
+        """Save transformers model and tokenizer in Hugging Face format."""
+        dist.barrier()
+
+        if model is None:
+            model = self.model  # pylint: disable=no-member
+
+        self.logger.print(f'Saving model to "{self.cfgs.logger_cfgs.output_dir}" ...')
+
+        output_config_file = os.path.join(self.cfgs.logger_cfgs.output_dir, CONFIG_NAME)
+        model_to_save: PreTrainedModel = getattr(model, 'module', model)
+
+        if is_main_process():
+            model_to_save.config.to_json_file(output_config_file)
+            self.tokenizer.save_pretrained(self.cfgs.logger_cfgs.output_dir)
+
+        self.logger.print('Saving 16-bit model...')
+        save_file_name = f'pytorch_model_{tag}.bin' if tag else 'pytorch_model.bin'
+        model.save_16bit_model(self.cfgs.logger_cfgs.output_dir, save_filename=save_file_name)
+
+        self.logger.print('Model saved!')
+        
+    def save_diffusers(
+        self,
+        tag: int | None = None,
+    ) -> None:
+        """Save the stable diffusion pipeline in Hugging Face format."""
+        self.accelerator.wait_for_everyone()
+        save_dir = os.path.join(self.cfgs.logger_cfgs.output_dir, f'epoch_{tag or "end"}')
+        if self.accelerator.is_main_process:
+            model = self.accelerator.unwrap_model(self.model)
+            if self.cfgs.train_cfgs.lora_unet:
+                model = model.to(torch.float32)
+                pipeline = StableDiffusionPipeline.from_pretrained(self.cfgs.model_cfgs.model_name_or_path)
+                unet_lora_state_dict = convert_state_dict_to_diffusers(get_peft_model_state_dict(model))
+                LoraLoaderMixin.save_lora_weights(
+                    save_directory=save_dir, unet_lora_layers=unet_lora_state_dict, text_encoder_lora_layers=None
+                )
+            else:
+                model = model._orig_mod if is_compiled_module(model) else model
+                pipeline = StableDiffusionPipeline.from_pretrained(
+                    self.cfgs.model_cfgs.model_name_or_path,
+                    text_encoder=self.text_encoder,
+                    vae=self.vae,
+                    unet=model,
+                    revision=self.cfgs.train_cfgs.revision,
+                    variant=self.cfgs.train_cfgs.variant,
+                )
+            pipeline.save_pretrained(save_dir)
+
+        self.logger.print('Model saved!')

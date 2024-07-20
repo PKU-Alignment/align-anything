@@ -20,8 +20,8 @@ from typing_extensions import TypedDict  # Python 3.10+
 
 import torch
 import transformers
-from torchvision import transforms
 from torch.utils.data import Dataset
+from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
@@ -43,12 +43,14 @@ __all__ = [
 class SupervisedSample(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (L,)
     labels: torch.LongTensor  # size = (L,)
+    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
 class SupervisedBatch(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (B, L)
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
+    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
 class SupervisedDataset(Dataset):
@@ -63,7 +65,6 @@ class SupervisedDataset(Dataset):
         split: str | None = None,
         subset: str | None = None,
         data_files: str | None = None,
-        optional_args: list | str = [],
     ):
         super().__init__()
         assert path, f'You must set the valid datasets path! Here is {path}'
@@ -92,6 +93,11 @@ class SupervisedDataset(Dataset):
         # mask non-assistant input
         labels[: len(self.tokenize(formatted_prompt))] = IGNORE_INDEX
         return_dict['labels'] = labels
+
+        raw_image = formatted_sample['image']
+        return_dict['pixel_values'] = self.processor.image_processor(
+            raw_image, return_tensors='pt'
+        )['pixel_values'][0]
 
         return return_dict
 
@@ -153,5 +159,9 @@ class SupervisedCollator:
         return_dict['attention_mask'] = (
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
         )
+        
+        return_dict['pixel_values'] = torch.stack(
+            [sample['pixel_values'] for sample in samples]
+        ).to(current_device)
 
         return return_dict

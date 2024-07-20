@@ -20,6 +20,7 @@ from typing_extensions import TypedDict  # Python 3.10+
 
 import torch
 import transformers
+from torchvision import transforms
 from torch.utils.data import Dataset
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
@@ -54,14 +55,12 @@ def remove_duplicate_prompts(dict_list: list[dict[str, Any]], template):
 class PromptOnlySample(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (L,)
     labels: torch.LongTensor  # size = (L,)
-    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
 class PromptOnlyBatch(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (B, L)
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
-    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
 class PromptOnlyDataset(Dataset):
@@ -71,18 +70,19 @@ class PromptOnlyDataset(Dataset):
         path: str,
         template: str,
         tokenizer: transformers.PreTrainedTokenizer,
-        processor: transformers.ProcessorMixin | None = None,
+        processor: transformers.ProcessorMixin | transforms.Compose | None = None,
         size: int | None = None,
         split: str | None = None,
         subset: str | None = None,
         data_files: str | None = None,
+        optional_args: list | str = [],
     ):
         super().__init__()
         assert path, f'You must set the valid datasets path! Here is {path}'
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        raw_data_duplicated = load_dataset(path, split=split, subset=subset, data_files=data_files)
+        raw_data_duplicated = load_dataset(path, split=split, data_files=data_files, subset=subset,  *optional_args, trust_remote_code=True)
         self.template = get_template_class(template)
         self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
 
@@ -100,12 +100,6 @@ class PromptOnlyDataset(Dataset):
         else:
             raise NotImplementedError
         return_dict['input_ids'] = self.tokenize(raw_text)
-
-        if 'image' in formatted_sample.keys():
-            raw_image = formatted_sample['image']
-            return_dict['pixel_values'] = self.processor.image_processor(
-                raw_image, return_tensors='pt'
-            )['pixel_values'][0]
 
         return return_dict
 
@@ -165,10 +159,5 @@ class PromptOnlyCollator:
         return_dict['attention_mask'] = left_padding(attention_mask, padding_value=0).to(
             current_device
         )
-
-        if 'pixel_values' in samples[0].keys():
-            return_dict['pixel_values'] = torch.stack(
-                [sample['pixel_values'] for sample in samples]
-            ).to(current_device)
 
         return return_dict

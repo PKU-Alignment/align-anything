@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Trainer for supervised training."""
+"""Trainer for diffusion SFT."""
+
 
 import os
 import sys
@@ -25,11 +26,13 @@ import torch.nn.functional as F
 from accelerate import Accelerator
 
 import torch.distributed as dist
+from tqdm import tqdm
 
-from align_anything.datasets.text_to_image import AnyToImageDataset, AnyToImageBatch
+from align_anything.datasets.text_to_image import SupervisedDataset, SupervisedBatch
 from align_anything.models.pretrained_model import load_pretrained_diffusion_models
-from align_anything.trainers.base import SupervisedTrainer
-from align_anything.utils.multi_process import get_current_device
+from align_anything.trainers.base import SupervisedTrainerBase
+from align_anything.utils.multi_process import get_current_device, is_main_process
+from align_anything.utils.process_image import get_image_processor
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -40,11 +43,9 @@ from align_anything.utils.tools import (
     prepare_accelerate_train_cfgs
 )
 
-from diffusers import StableDiffusionPipeline
-from diffusers.utils.torch_utils import is_compiled_module
 
 
-class DiffusionTrainer(SupervisedTrainer):
+class SupervisedTrainer(SupervisedTrainerBase):
 
     def __init__(self, cfgs) -> None:
         """Initialize the SFT trainer."""
@@ -55,6 +56,7 @@ class DiffusionTrainer(SupervisedTrainer):
             gradient_accumulation_steps=self.muti_process_cfgs['gradient_accumulation_steps'],
             mixed_precision=self.muti_process_cfgs['mixed_precision'],
         )
+        self.dtype = torch.bfloat16 if self.muti_process_cfgs['mixed_precision'] else torch.float32
         if torch.backends.mps.is_available():
             self.accelerator.native_amp = False
 
@@ -76,22 +78,24 @@ class DiffusionTrainer(SupervisedTrainer):
         """Initialize model and tokenizer."""
         self.model, self.vae, self.text_encoder, self.noise_scheduler, self.tokenizer = load_pretrained_diffusion_models(
             self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side='right',
             trust_remote_code=True,
+            freeze_unet=self.cfgs.train_cfgs.freeze_unet,
+            lora_unet=self.cfgs.train_cfgs.lora_unet,
+            dtype=self.dtype
         )
+        self.processor = get_image_processor(resolution=int(self.cfgs.train_cfgs.resolution))
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(AnyToImageDataset, AnyToImageDataset)
+        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(SupervisedDataset, SupervisedDataset)
 
     def init_engines(self) -> None:
-        """Initialize DeepSpeed engines."""
+        """Initialize Accelerate engines."""
         self.init_accelerate_engines()
 
-    def loss(self, sft_batch: AnyToImageBatch) -> dict[str, torch.Tensor]:
+    def loss(self, batch: SupervisedBatch) -> dict[str, torch.Tensor]:
         """Loss function for supervised finetuning."""
-        latents = self.vae.encode(sft_batch["pixel_values"].to(self.vae.dtype)).latent_dist.sample()
+        latents = self.vae.encode(batch["pixel_values"].to(self.vae.dtype)).latent_dist.sample()
         latents = latents * self.vae.config.scaling_factor
 
         noise = torch.randn_like(latents)
@@ -100,7 +104,7 @@ class DiffusionTrainer(SupervisedTrainer):
         timesteps = timesteps.long()
         noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
         
-        encoder_hidden_states = self.text_encoder(sft_batch["input_ids"], return_dict=False)[0]
+        encoder_hidden_states = self.text_encoder(batch["input_ids"], return_dict=False)[0]
         if self.noise_scheduler.config.prediction_type == "epsilon":
             target = noise
         elif self.noise_scheduler.config.prediction_type == "v_prediction":
@@ -115,12 +119,12 @@ class DiffusionTrainer(SupervisedTrainer):
             'loss': loss,
         }
 
-    def train_step(self, sft_batch: AnyToImageBatch) -> dict[str, Any]:
+    def train_step(self, batch: SupervisedBatch) -> dict[str, Any]:
         """Performs a single training step."""
-        loss = self.loss(sft_batch)['loss']
+        loss = self.loss(batch)['loss']
         self.accelerator.backward(loss)
         if self.accelerator.sync_gradients:
-            self.accelerator.clip_grad_norm_(self.model.parameters(), self.cfgs.train_cfgs.max_grad_norm)
+            self.accelerator.clip_grad_norm_(self.params_to_optimize, self.cfgs.train_cfgs.max_grad_norm)
         self.optimizer.step()
         self.lr_scheduler.step()
         self.optimizer.zero_grad()
@@ -129,28 +133,62 @@ class DiffusionTrainer(SupervisedTrainer):
             'train/lr': self.optimizer.param_groups[0]['lr'],
         }
 
-    def save(
-        self,
-        model: deepspeed.DeepSpeedEngine | None = None,
-        tag: int | None = None,
-    ) -> None:
-        """Save model and tokenizer in Hugging Face format."""
-        self.accelerator.wait_for_everyone()
-        save_dir = os.path.join(self.cfgs.logger_cfgs.output_dir, f'epoch_{tag}')
-        if self.accelerator.is_main_process:
-            model = self.accelerator.unwrap_model(self.model)
-            model = model._orig_mod if is_compiled_module(model) else model
-            pipeline = StableDiffusionPipeline.from_pretrained(
-                self.cfgs.model_cfgs.model_name_or_path,
-                text_encoder=self.text_encoder,
-                vae=self.vae,
-                unet=model,
-                revision=self.cfgs.train_cfgs.revision,
-                variant=self.cfgs.train_cfgs.variant,
-            )
-            pipeline.save_pretrained(save_dir)
+    def train(self) -> None:
+        """Train the model."""
+        self.logger.print('***** Running training *****')
 
-        self.logger.print('Model saved!')
+        progress_bar = tqdm(
+            total=self.cfgs.train_cfgs.epochs * len(self.train_dataloader),
+            desc=f'Training 1/{self.cfgs.train_cfgs.epochs} epoch',
+            position=0,
+            leave=True,
+            disable=not is_main_process(),
+        )
+
+        if self.cfgs.data_cfgs.eval_datasets:
+            self.logger.print('\n***** Evaluating at the beginning *****')
+            self.logger.log(self.eval(), step=0)
+
+        for epoch in range(int(self.cfgs.train_cfgs.epochs)):
+            self.model.train()
+
+            for batch in self.train_dataloader:
+                info = self.train_step(batch)
+                torch.cuda.empty_cache()
+
+                self.global_step += 1
+                progress_bar.set_description(
+                    f'Training {epoch + 1}/{self.cfgs.train_cfgs.epochs} epoch '
+                    f'(loss {info["train/loss"]:.4f})',
+                )
+                progress_bar.update(1)
+
+                info['train/epoch'] = self.global_step / len(self.train_dataloader)
+                self.logger.log(info, step=self.global_step)
+
+                if self.global_step % self.cfgs.logger_cfgs.save_interval == 0:
+                    self.logger.print(f'Saving checkpoint at step {self.global_step} ...')
+                    self.save(tag=self.global_step)
+                    self.logger.print('Checkpoint saved.')
+
+                if (
+                    self.cfgs.data_cfgs.eval_datasets
+                    and self.cfgs.train_cfgs.eval_strategy == 'steps'
+                    and self.global_step % self.cfgs.train_cfgs.eval_interval == 0
+                ):
+                    self.logger.print(f'\n***** Evaluating at step {self.global_step} *****')
+                    self.logger.log(self.eval(), step=self.global_step)
+
+            if self.cfgs.data_cfgs.eval_datasets and self.cfgs.train_cfgs.eval_strategy == 'epoch':
+                self.logger.print(
+                    f'\n***** Evaluating at epoch {epoch + 1}/{self.cfgs.train_cfgs.epochs} *****',
+                )
+                self.logger.log(self.eval(), step=self.global_step)
+
+
+    def save(self, tag: int | None = None) -> None:
+        """Save the stable diffusion pipeline in Hugging Face format."""
+        self.save_diffusers(tag=tag)
 
 
 def main():
@@ -159,7 +197,8 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    dict_cfgs, _ = read_cfgs(mode='train', task='sft')
+    task = os.path.join('text_to_image', 'sft')
+    dict_cfgs, _ = read_cfgs(mode='train', task=task)
     unparsed_args = parse_unknown_args()
     for k, v in unparsed_args.items():
         dict_cfgs = update_dict(dict_cfgs, custom_cfgs_to_dict(k, v))
@@ -169,7 +208,7 @@ def main():
     seed_everything(cfgs.train_cfgs.seed)
 
     # finetune the model
-    trainer = DiffusionTrainer(cfgs=cfgs)
+    trainer = SupervisedTrainer(cfgs=cfgs)
     trainer.train()
     trainer.save()
     trainer.accelerator.end_training()

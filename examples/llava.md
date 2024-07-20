@@ -19,7 +19,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.sft \
+	--module align_anything.trainers.text_image_to_text.sft \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
 	--output_dir ${OUTPUT_DIR} \
@@ -47,7 +47,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.rm \
+	--module align_anything.trainers.text_image_to_text.rm \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
 	--eval_datasets ${EVAL_DATASETS} \
@@ -76,7 +76,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.dpo \
+	--module align_anything.trainers.text_image_to_text.dpo \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
 	--train_template RLAIFV \
@@ -110,7 +110,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
   --master_port ${MASTER_PORT} \
-  --module align_anything.trainers.ppo \
+  --module align_anything.trainers.text_image_to_text.ppo \
   --actor_model_name_or_path ${ACTOR_MODEL_NAME_OR_PATH} \
   --reward_model_name_or_path ${REWARD_MODEL_NAME_OR_PATH} \
   --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME_OR_PATH} \

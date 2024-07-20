@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Dataset classes for text to text training."""
+"""Dataset classes for text to image training."""
 
 
 from align_anything.datasets.text_to_image.supervised import *
+from align_anything.datasets.text_to_image.preference import *

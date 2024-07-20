@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2024 PKU-Alignment Team and LlamaFactory team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Dataset classes for text to text training."""
+"""Dataset classes."""
 
+from __future__ import annotations
 
-from align_anything.datasets.text_to_text.preference import *
-from align_anything.datasets.text_to_text.prompt_only import *
-from align_anything.datasets.text_to_text.supervised import *
+import torch
+from torch.utils.data import Dataset
+
+class DummyDataset(Dataset[dict[str, torch.Tensor]]):
+    def __init__(self, length: int) -> None:
+        self.length = length
+
+    def __len__(self) -> int:
+        return self.length
+
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
+        return {}

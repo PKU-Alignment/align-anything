@@ -14,36 +14,29 @@
 # ==============================================================================
 """Trainer for PPO training."""
 
-from __future__ import annotations
 
 import argparse
 import copy
 import itertools
 import os
 import sys
-from datetime import datetime
 from typing import Any
 
 import deepspeed
 import torch
 import torch.distributed as dist
-import torch.nn as nn
-from deepspeed.ops.adam import FusedAdam
-from torch.utils.data import DataLoader
-from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
-from transformers import CONFIG_NAME, GenerationConfig, PreTrainedModel, get_scheduler
+from transformers import GenerationConfig
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
+from align_anything.trainers.base import RLTrainerBase
 from align_anything.datasets.text_to_text import (
-    DummyDataset,
     PromptOnlyBatch,
     PromptOnlyDataset,
     SupervisedDataset,
 )
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
-from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import (
     get_all_reduce_max,
     get_all_reduce_mean,
@@ -55,11 +48,8 @@ from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
     gather_log_probabilities,
-    get_optimizer_grouped_parameters,
-    is_same_processor,
     is_same_tokenizer,
     masked_mean,
-    namedtuple_to_dict,
     prepare_ds_eval_cfgs,
     prepare_ds_train_cfgs,
     read_cfgs,
@@ -68,7 +58,7 @@ from align_anything.utils.tools import (
 )
 
 
-class PPOTrainer:  # pylint: disable=too-many-instance-attributes
+class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
     """Trainer base class for PPO training."""
 
     def __init__(self, cfgs, ds_cfgs) -> None:
@@ -96,19 +86,6 @@ class PPOTrainer:  # pylint: disable=too-many-instance-attributes
         self.gamma = self.cfgs.train_cfgs.gamma
         self.gae_lambda = self.cfgs.train_cfgs.gae_lambda
 
-    def init_logger(self) -> None:
-        """Set logger."""
-        logger_cfgs = self.cfgs.logger_cfgs
-        time = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-
-        self.logger = Logger(
-            log_type=logger_cfgs.log_type,
-            log_dir=logger_cfgs.output_dir,
-            log_project=logger_cfgs.log_project,
-            log_run_name=f'{logger_cfgs.log_run_name}-{self.cfgs.data_cfgs.train_datasets}-{time}',
-            config=namedtuple_to_dict(self.cfgs),
-        )
-
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
         if self.ds_train_cfgs['zero_optimization']['stage'] == 3:
@@ -121,8 +98,6 @@ class PPOTrainer:  # pylint: disable=too-many-instance-attributes
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-            freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
-            freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
         )
         # loading actor reference model
         self.actor_reference_model, _, _ = load_pretrained_models(
@@ -132,7 +107,7 @@ class PPOTrainer:  # pylint: disable=too-many-instance-attributes
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
         )
         # loading reward model
-        self.reward_model, self.reward_tokenizer, self.reward_processor = (
+        self.reward_model, self.reward_tokenizer, _ = (
             load_pretrained_model_with_value_head(
                 self.cfgs.model_cfgs.reward_model_name_or_path,
                 model_max_length=self.cfgs.model_cfgs.model_max_length,
@@ -141,7 +116,7 @@ class PPOTrainer:  # pylint: disable=too-many-instance-attributes
             )
         )
         # loading reward critic model
-        self.reward_critic_model, self.reward_critic_tokenizer, self.reward_critic_processor = (
+        self.reward_critic_model, self.reward_critic_tokenizer, _ = (
             load_pretrained_model_with_value_head(
                 self.cfgs.model_cfgs.reward_critic_model_name_or_path,
                 model_max_length=self.cfgs.model_cfgs.model_max_length,
@@ -167,12 +142,8 @@ class PPOTrainer:  # pylint: disable=too-many-instance-attributes
                 ),
             )
 
-        if is_same_processor(self.processor, self.reward_processor):
-            self.reward_processor = self.processor
         # training setup
         self.reward_critic_tokenizer = self.tokenizer
-        self.reward_critic_processor = self.processor
-
         self.generation_config = GenerationConfig(
             max_length=self.cfgs.model_cfgs.model_max_length,
             temperature=self.cfgs.model_cfgs.temperature,
@@ -198,173 +169,11 @@ class PPOTrainer:  # pylint: disable=too-many-instance-attributes
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         # load training datasets
-        prompt_only_dataset = PromptOnlyDataset(
-            path=self.cfgs.data_cfgs.train_datasets,
-            template=self.cfgs.data_cfgs.train_template,
-            tokenizer=self.tokenizer,
-            processor=self.processor,
-            size=self.cfgs.data_cfgs.train_size,
-            split=self.cfgs.data_cfgs.train_split,
-            subset=self.cfgs.data_cfgs.train_subset,
-            data_files=self.cfgs.data_cfgs.train_data_files,
-        )
-        self.prompt_only_dataloader = DataLoader(
-            prompt_only_dataset,
-            collate_fn=prompt_only_dataset.get_collator(),
-            sampler=DistributedSampler(prompt_only_dataset, shuffle=True),
-            batch_size=self.cfgs.train_cfgs.per_device_prompt_batch_size,
-        )
-        # load evaluation datasets
-        if self.cfgs.data_cfgs.eval_datasets:
-            eval_dataset = PromptOnlyDataset(
-                path=self.cfgs.data_cfgs.eval_datasets,
-                template=self.cfgs.data_cfgs.eval_template,
-                tokenizer=self.tokenizer,
-                processor=self.processor,
-                size=self.cfgs.data_cfgs.eval_size,
-                split=self.cfgs.data_cfgs.eval_split,
-                subset=self.cfgs.data_cfgs.eval_subset,
-                data_files=self.cfgs.data_cfgs.eval_data_files,
-            )
-            self.eval_dataloader = DataLoader(
-                eval_dataset,
-                collate_fn=eval_dataset.get_collator(),
-                sampler=DistributedSampler(eval_dataset, shuffle=True),
-                batch_size=self.cfgs.train_cfgs.per_device_eval_batch_size,
-            )
-        else:
-            self.eval_dataloader = None
-        # load ptx datasets
-        self.use_ptx = self.cfgs.data_cfgs.ptx_datasets is not None
-        if self.use_ptx:
-            ptx_dataset = SupervisedDataset(
-                path=self.cfgs.data_cfgs.ptx_datasets,
-                template=self.cfgs.data_cfgs.ptx_template,
-                tokenizer=self.tokenizer,
-                processor=self.processor,
-                size=self.cfgs.data_cfgs.ptx_size,
-                split=self.cfgs.data_cfgs.ptx_split,
-                subset=self.cfgs.data_cfgs.ptx_subset,
-                data_files=self.cfgs.data_cfgs.ptx_data_files,
-            )
-            self.ptx_dataloader = DataLoader(
-                ptx_dataset,
-                collate_fn=ptx_dataset.get_collator(),
-                sampler=DistributedSampler(ptx_dataset, shuffle=True),
-                batch_size=self.cfgs.train_cfgs.per_device_prompt_batch_size,
-            )
-        else:
-            self.ptx_dataloader = DataLoader(DummyDataset(len(self.prompt_only_dataloader)))
-
-    def _init_train_engine(
-        self,
-        model: nn.Module,
-        weight_decay: float,
-        lr: float,
-        lr_scheduler_type: str,
-        lr_warmup_ratio: float,
-        total_training_steps: int,
-        ds_cfgs: dict[str, Any],
-    ) -> deepspeed.DeepSpeedEngine:
-        optimizer_grouped_parameters = get_optimizer_grouped_parameters(model, weight_decay)
-        optimizer = FusedAdam(
-            optimizer_grouped_parameters,
-            lr=lr,
-            betas=self.cfgs.train_cfgs.adam_betas,
-        )
-
-        lr_scheduler_update_steps = total_training_steps // ds_cfgs['gradient_accumulation_steps']
-        num_warmup_steps = int(lr_scheduler_update_steps * lr_warmup_ratio)
-        lr_scheduler = get_scheduler(
-            name=lr_scheduler_type,
-            optimizer=optimizer,
-            num_warmup_steps=num_warmup_steps,
-            num_training_steps=lr_scheduler_update_steps,
-        )
-        engine, *_ = deepspeed.initialize(
-            model=model,
-            optimizer=optimizer,
-            lr_scheduler=lr_scheduler,
-            config=ds_cfgs,
-        )
-        return engine
-
-    def _init_eval_engine(
-        self,
-        model: nn.Module,
-        ds_cfgs: dict[str, Any],
-    ) -> deepspeed.DeepSpeedEngine:
-        engine, *_ = deepspeed.initialize(
-            model=model,
-            config=ds_cfgs,
-        )
-        return engine
-
+        self.prompt_only_dataloader, self.eval_dataloader, self.ptx_dataloader = self.get_dataloaders(PromptOnlyDataset, PromptOnlyDataset, SupervisedDataset)
+        
     def init_engines(self) -> None:
         """Initialize DeepSpeed engines."""
-        self.total_training_steps: int = (
-            len(self.prompt_only_dataloader)
-            * self.cfgs.train_cfgs.epochs
-            * self.cfgs.train_cfgs.update_iters
-            * self.cfgs.train_cfgs.per_device_prompt_batch_size
-            // self.cfgs.train_cfgs.per_device_train_batch_size
-        )
-        # initialize the actor model engines
-        actor_ds_cfgs = copy.deepcopy(self.ds_train_cfgs)
-        actor_total_training_steps = self.total_training_steps
-        if self.use_ptx:
-            actor_ds_cfgs['train_batch_size'] *= 2
-            actor_ds_cfgs['gradient_accumulation_steps'] *= 2
-            actor_total_training_steps *= 2
-        self.actor_model = self._init_train_engine(
-            model=self.actor_model,
-            weight_decay=self.cfgs.train_cfgs.actor_weight_decay,
-            lr=self.cfgs.train_cfgs.actor_lr,
-            lr_scheduler_type=self.cfgs.train_cfgs.actor_lr_scheduler_type,
-            lr_warmup_ratio=self.cfgs.train_cfgs.actor_lr_warmup_ratio,
-            total_training_steps=actor_total_training_steps,
-            ds_cfgs=actor_ds_cfgs,
-        )
-        # initialize the actor reference model engines
-        self.actor_reference_model = self._init_eval_engine(
-            model=self.actor_reference_model,
-            ds_cfgs=self.ds_eval_cfgs,
-        )
-        self.actor_reference_model.eval()
-        # initialize the critic model engines
-        self.reward_critic_model = self._init_train_engine(
-            model=self.reward_critic_model,
-            weight_decay=self.cfgs.train_cfgs.critic_weight_decay,
-            lr=self.cfgs.train_cfgs.critic_lr,
-            lr_scheduler_type=self.cfgs.train_cfgs.critic_lr_scheduler_type,
-            lr_warmup_ratio=self.cfgs.train_cfgs.critic_lr_warmup_ratio,
-            total_training_steps=self.total_training_steps,
-            ds_cfgs=self.ds_train_cfgs,
-        )
-        self.reward_model = self._init_eval_engine(
-            model=self.reward_model,
-            ds_cfgs=self.ds_eval_cfgs,
-        )
-        self.reward_model.eval()
-        # setup the gradient checkpointing
-        if self.cfgs.train_cfgs.actor_gradient_checkpointing:
-            self.actor_model.gradient_checkpointing_enable()
-        if self.cfgs.train_cfgs.critic_gradient_checkpointing:
-            self.reward_critic_model.gradient_checkpointing_enable()
-
-    def set_train(self, mode: bool = True) -> None:
-        """Set training mode for all models."""
-        if mode:
-            self.actor_model.train()
-            self.reward_critic_model.train()
-            if self.cfgs.train_cfgs.actor_gradient_checkpointing:
-                self.actor_model.gradient_checkpointing_enable()
-        else:
-            self.actor_model.eval()
-            self.reward_critic_model.eval()
-            if self.cfgs.train_cfgs.actor_gradient_checkpointing:
-                self.actor_model.gradient_checkpointing_disable()
-        return
+        self.init_deepspeed_engines()
 
     def split_ptx_micro_batches(
         self,
@@ -570,29 +379,6 @@ class PPOTrainer:  # pylint: disable=too-many-instance-attributes
             'train/max_generated_length': max_generated_length.item(),
         }
 
-    def get_advantages_and_returns(
-        self,
-        values: torch.Tensor,
-        rewards: torch.Tensor,
-        sequence_mask: torch.BoolTensor,
-        start: int,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Compute advantages and returns using Generalized Advantage Estimation (GAE)."""
-        # Modified from https://github.com/CarperAI/trlx/blob/main/trlx/models/modeling_ppo.py
-        last_gae_lambda = 0.0
-        advantages_reversed = []
-        values = values * sequence_mask
-        rewards = rewards * sequence_mask
-        length = rewards.size(-1)
-        for t in reversed(range(start, length)):  # pylint: disable=invalid-name
-            next_values = values[:, t + 1] if t < length - 1 else 0.0
-            delta = rewards[:, t] + self.gamma * next_values - values[:, t]
-            last_gae_lambda = delta + self.gamma * self.gae_lambda * last_gae_lambda
-            advantages_reversed.append(last_gae_lambda)
-        advantages = torch.stack(advantages_reversed[::-1], dim=1)
-        returns = advantages + values[:, start:]
-        return advantages.detach(), returns
-
     def ptx_step(self, ptx_batch: dict[str, torch.Tensor]) -> dict[str, Any]:
         """Perform a single update step with PTX loss."""
         ptx_loss = self.actor_model(**ptx_batch).loss
@@ -676,48 +462,6 @@ class PPOTrainer:  # pylint: disable=too-many-instance-attributes
                 )
                 self.eval()
 
-    def eval(self) -> dict[str, Any]:
-        """Evaluate the model on the evaluation dataset."""
-        if self.eval_dataloader is None:
-            return {}
-
-        self.set_train(mode=False)
-        prompts: list[str] = []
-        generateds: list[str] = []
-        eval_dataloader = tqdm(
-            self.eval_dataloader,
-            desc='Evaluating',
-            disable=not is_main_process(),
-        )
-        for batch in eval_dataloader:
-            with torch.no_grad():
-                seq = self.actor_model.module.generate(
-                    **batch,
-                    max_length=self.cfgs.model_cfgs.model_max_length,
-                    synced_gpus=True,
-                    do_sample=True,
-                )
-
-            dist.barrier()
-            prompt = self.tokenizer.batch_decode(batch['input_ids'], skip_special_tokens=True)
-            generated = self.tokenizer.batch_decode(seq, skip_special_tokens=True)
-            generated = [text[len(prompt[i]) :] for i, text in enumerate(generated)]
-            prompts.extend(prompt)
-            generateds.extend(generated)
-        # Display result in main process
-        if is_main_process():
-            columns = ['Prompt', 'Generated']
-            rows = list(zip(prompts, generateds))
-            self.logger.print_table(
-                title='Evaluating...',
-                columns=columns,
-                rows=rows,
-                max_num_rows=5,
-            )
-        dist.barrier()
-
-        self.set_train()
-
     def get_advantages_and_returns(
         self,
         values: torch.Tensor,
@@ -786,26 +530,7 @@ class PPOTrainer:  # pylint: disable=too-many-instance-attributes
         tag: int | None = None,
     ) -> None:
         """Save model and tokenizer in Hugging Face format."""
-        dist.barrier()
-
-        if model is None:
-            model = self.actor_model  # pylint: disable=no-member
-
-        self.logger.print(f'Saving model to "{self.cfgs.logger_cfgs.output_dir}" ...')
-
-        output_config_file = os.path.join(self.cfgs.logger_cfgs.output_dir, CONFIG_NAME)
-        model_to_save: PreTrainedModel = getattr(model, 'module', model)
-
-        if is_main_process():
-            model_to_save.config.to_json_file(output_config_file)
-            self.tokenizer.save_pretrained(self.cfgs.logger_cfgs.output_dir)
-            self.processor.save_pretrained(self.cfgs.logger_cfgs.output_dir)
-
-        self.logger.print('Saving 16-bit model...')
-        save_file_name = f'pytorch_model_{tag}.bin' if tag else 'pytorch_model.bin'
-        model.save_16bit_model(self.cfgs.logger_cfgs.output_dir, save_filename=save_file_name)
-
-        self.logger.print('Model saved!')
+        self.save_transformers(model=model, tag=tag)
 
 
 def main():
@@ -815,7 +540,8 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    dict_cfgs, ds_cfgs = read_cfgs(mode='train', task='ppo')
+    task = os.path.join('text_to_text', 'ppo')
+    dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # get custom configs from command line
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

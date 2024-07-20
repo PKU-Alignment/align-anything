@@ -18,7 +18,7 @@
 from torchvision import transforms
 
 
-def get_image_processor(resolution: int):
+def get_image_processor(resolution: int) -> transforms.Compose:
     return transforms.Compose(
             [
                 transforms.Resize(resolution, interpolation=transforms.InterpolationMode.BILINEAR),
