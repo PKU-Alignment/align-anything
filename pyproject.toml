@@ -53,7 +53,7 @@ dependencies = [
     "shortuuid",
     "diffusers",
     "gradio",
-    "unicorn",
+    "uvicorn",
     "fastapi",
     "PIL"
 ]
