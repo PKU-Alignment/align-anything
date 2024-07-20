@@ -44,8 +44,6 @@ train_cfgs:
   bf16: True
   # Enable float 16 precision
   fp16: False
-  # Enable evaluation in training process
-  need_eval: False
   # The strategy of evaluation, choosing form [epoch, steps]
   eval_strategy: epoch
   # The evaluation interval in step-wise evaluation case
@@ -58,22 +56,34 @@ train_cfgs:
   gamma: 1.4
 # Configuration for datasets
 data_cfgs:
-  # Dataset to use for training
+  # Datasets to use for training
   train_datasets: null
-  # Dataset to use for evaluation
-  eval_datasets: null
   # The format template for training
-  template: null
+  train_template: null
   # The total number for training
-  size: null
+  train_size: null
   # The split of train datasets
   train_split: null
+  # The subset of training datasets
+  train_subset: null
+  # The training data files to be used
+  train_data_files: null
+  # The optional arguments for loading training datasets
+  train_optional_args: []
+  # Datasets to use for evaluation
+  eval_datasets: null
+  # The format template for evaluation
+  eval_template: null
+  # The total number for evaluation
+  eval_size: null
   # The split of evaluation datasets
   eval_split: null
-  # The subset of datasets
-  subset: null
-  # The data files to be used
-  data_files: null
+  # The subset of evaluation datasets
+  eval_subset: null
+  # The evaluation data files to be used
+  eval_data_files: null
+  # The optional arguments for loading training evaluation datasets
+  eval_optional_args: []
 # Configuration for logging
 logger_cfgs:
   # Type of logging to use, choosing from [wandb, tensorboard]
@@ -95,6 +105,6 @@ model_cfgs:
   # Whether to trust remote code
   trust_remote_code: True
   # The max token length
-  model_max_length: 16384
+  model_max_length: 2048
 # Customized special tokens
 special_tokens: null
