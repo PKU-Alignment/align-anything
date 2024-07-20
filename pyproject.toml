@@ -52,7 +52,7 @@ dependencies = [
     "pytest",
     "shortuuid",
     "gradio",
-    "unicorn",
+    "uvicorn",
     "fastapi",
     "PIL"
 ]
