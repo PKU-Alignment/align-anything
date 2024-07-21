@@ -32,28 +32,30 @@ accelerate launch  \
 
 ## DPO Training
 
+**Note:** We conducted code testing on a small subset of the [Pickapic](https://huggingface.co/datasets/yuvalkirstain/pickapic_v1) dataset. However, since the full Pickapic dataset is too large, we chose a smaller version for users to run quickly here.
+
 ```bash
 # You can replace it with a local model path
-MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf"
+MODEL_NAME_OR_PATH="CompVis/stable-diffusion-v1-4"
 # You can replace it with a local dataset path
-TRAIN_DATASETS="openbmb/RLAIF-V-Dataset"
-# You can replace it with a new path with correct permission
-OUTPUT_DIR="../output/dpo"
+TRAIN_DATASETS="kashif/pickascore"
+# You can replace it with a new path
+OUTPUT_DIR="../output/dpo_diffusion"
 # For wandb online logging
 export WANDB_API_KEY=""
+# Source the setup script
+source ./setup.sh
 
 # Source the setup script
 source ./setup.sh
 
 # Execute deepspeed command
-deepspeed \
-	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.text_image_to_text.dpo \
+accelerate launch  \
+	--multi_gpu \
+	--module align_anything.trainers.text_to_image.dpo_diffusion \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
-	--train_template RLAIFV \
-	--train_split train \
-	--freeze_mm_proj True \
-	--freeze_vision_tower False \
+    --train_template Pickapic \
+	--train_split validation \
 	--output_dir ${OUTPUT_DIR}
 ```

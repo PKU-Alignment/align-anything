@@ -266,8 +266,8 @@ class Pickapic:
 
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['caption']
-        better_id = raw_sample['label_1']
-        worse_id = raw_sample['label_0']
+        better_id = int(raw_sample['label_1'])
+        worse_id = int(raw_sample['label_0'])
         
         raw_better_image = raw_sample[f'jpg_{better_id}']
         raw_worse_image = raw_sample[f'jpg_{worse_id}']

@@ -58,9 +58,9 @@ We have a roadmap for future development work `align-anything`:
 
 | Trainers | Text :arrow_right: Text | Image+Text :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | More Modality... |
 |---|---|---|---|---|---|
-| SFT Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
+| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :car: | :car: |
 | RM Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
-| DPO Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
+| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :car: | :car: |
 | PPO Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
 | KTO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
 | ORPO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
