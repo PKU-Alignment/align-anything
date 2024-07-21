@@ -41,7 +41,7 @@ class BaseEvaluatorVLLM:
         
         self.vllm_cfgs_sp, self.vllm_cfgs_llm = vllm_cfgs.SamplingParams, vllm_cfgs.LLM
         self.eval_cfgs, self.data_cfgs, self.model_cfgs = cfgs.default.eval_cfgs, cfgs.default.data_cfgs, cfgs.default.model_cfgs
-        os.environ['CUDA_VISIBLE_DEVICES'] = '4, 5, 6, 7'
+        # os.environ['CUDA_VISIBLE_DEVICES'] = '4, 5, 6, 7'
         self.action = self.eval_cfgs.action if self.eval_cfgs.action else 'generation'
         self.num_shot = self.eval_cfgs.n_shot if self.eval_cfgs.n_shot else 0
         self.chat_template = self.model_cfgs.chat_template
@@ -50,8 +50,7 @@ class BaseEvaluatorVLLM:
         self.device = self.eval_cfgs.device if self.eval_cfgs.device else 'cuda'
         
         self.output_dir = self.eval_cfgs.output_dir
-        
-        # TODO: 留出灵活的传参接口
+
         self.sp_n = self.vllm_cfgs_sp.n
         self.sp_top_k = self.vllm_cfgs_sp.top_k
         self.sp_top_p = self.vllm_cfgs_sp.top_p
@@ -159,14 +158,7 @@ class BaseEvaluatorVLLM:
                 detail[k] = v[i]
             details_info.append(detail)
             details_info[-1]['pred'] = preds[i]
-        '''
-        for pred in preds:
-            detail = {}
-            for k, v in item.items():
-                detail[k] = v
-            detail['pred'] = pred
-            details.append(detail)
-        '''
+            
         return details_info
     
     @torch.no_grad()
