@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 
-from __future__ import annotations
 
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
@@ -65,6 +64,7 @@ class SupervisedDataset(Dataset):
         split: str | None = None,
         subset: str | None = None,
         data_files: str | None = None,
+        optional_args: list | str = [],
     ):
         super().__init__()
         assert path, f'You must set the valid datasets path! Here is {path}'

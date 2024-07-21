@@ -21,7 +21,7 @@ train_cfgs:
   # Number of training epochs
   epochs: 3
   # Seed for random number generator
-  seed: 0
+  seed: 42
   # Batch size per device for training
   per_device_prompt_batch_size: 4
   # Batch size per device for training
@@ -96,6 +96,8 @@ data_cfgs:
   train_subset: null
   # The training data files to be used
   train_data_files: null
+  # The optional arguments for loading training datasets
+  train_optional_args: []
   # Datasets to use for evaluation
   eval_datasets: null
   # The format template for evaluation
@@ -108,6 +110,8 @@ data_cfgs:
   eval_subset: null
   # The evaluation data files to be used
   eval_data_files: null
+  # The optional arguments for loading training evaluation datasets
+  eval_optional_args: []
   # Datasets to use for ptx loss
   ptx_datasets: null
   # The format template for ptx training
@@ -120,6 +124,8 @@ data_cfgs:
   ptx_split: null
   # The ptx training data files to be used
   ptx_data_files: null
+  # The optional arguments for loading ptx training datasets
+  ptx_optional_args: []
 # Configuration for logging
 logger_cfgs:
   # Type of logging to use, choosing from [wandb, tensorboard]

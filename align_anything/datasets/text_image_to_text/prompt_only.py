@@ -76,6 +76,7 @@ class PromptOnlyDataset(Dataset):
         split: str | None = None,
         subset: str | None = None,
         data_files: str | None = None,
+        optional_args: list | str = [],
     ):
         super().__init__()
         assert path, f'You must set the valid datasets path! Here is {path}'

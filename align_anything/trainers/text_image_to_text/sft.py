@@ -25,7 +25,7 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.sft import SupervisedTrainer as SupervisedtextTrainer
-from align_anything.datasets.text_to_image import SupervisedDataset
+from align_anything.datasets.text_image_to_text import SupervisedDataset
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
@@ -62,7 +62,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('text+image_to_text', 'sft')
+    task = os.path.join('text_image_to_text', 'sft')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # get custom configs from command line

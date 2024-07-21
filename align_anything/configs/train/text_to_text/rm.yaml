@@ -21,7 +21,7 @@ train_cfgs:
   # Number of training epochs
   epochs: 3
   # Seed for random number generator
-  seed: 0
+  seed: 42
   # Batch size per device for training
   per_device_train_batch_size: 4
   # Batch size per device for evaluation
@@ -56,7 +56,7 @@ train_cfgs:
   freeze_vision_tower: True
 # Configuration for datasets
 data_cfgs:
-    # Datasets to use for training
+  # Datasets to use for training
   train_datasets: null
   # The format template for training
   train_template: null
@@ -93,7 +93,7 @@ logger_cfgs:
   # Run name for logging
   log_run_name: rm
   # Output directory name
-  output_dir: outputs/
+  output_dir: null
   # The directory to cache the downloaded model
   cache_dir: null
   # The interval of saving models
@@ -105,6 +105,6 @@ model_cfgs:
   # Whether to trust remote code
   trust_remote_code: True
   # The max token length
-  model_max_length: 1024
+  model_max_length: 2048
 # Customized special tokens
 special_tokens: null

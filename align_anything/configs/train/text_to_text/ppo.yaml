@@ -21,7 +21,7 @@ train_cfgs:
   # Number of training epochs
   epochs: 3
   # Seed for random number generator
-  seed: 0
+  seed: 42
   # Batch size per device for training
   per_device_prompt_batch_size: 4
   # Batch size per device for training
