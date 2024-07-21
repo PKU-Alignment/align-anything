@@ -519,7 +519,7 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
             with gr.Column(scale=8):
                 gr.Examples(examples=[
                     [f"{cur_dir}/examples/PKU.jpg", "What is great about this image?"],
-                    [f"{cur_dir}/examples/boya.jpg", "What are the things I should be cautious about when I visit here?"],
+                    [f"{cur_dir}/examples/boya.jpg", "What are the things I should pay attention to when I visit here?"],
                 ], inputs=[imagebox, textbox, audiobox, videobox])
                 chatbot = gr.Chatbot(
                     elem_id="chatbot",
