@@ -1,4 +1,4 @@
-eval_cfgs:
+infer_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
   vllm_cfgs: vllm_basic.json
@@ -13,20 +13,24 @@ default:
     # The number of choices
     num_choices: 1
     # Output directory name
-    output_dir: null
+    output_dir: /aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output
   # Configuration for data
   data_cfgs:
     # Task name
-    task: mt_bench
+    task: default
     # Task directory
-    task_dir: null
+    task_dir: /aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/datasets/gsm8k/
+    # Evaluation split
+    split: test
 
   # Model configurations
   model_cfgs:
     # Model ID
     model_id: Llama-3-8B
-    # Pretrained model name or path
-    model_name_or_path: meta-llama/Meta-Llama-3-8B
+    # Model name or path
+    model_name_or_path: /aifs4su/yaodong/models/alpaca-7b-reproduced
+    # Chat template
+    chat_template: PKUSafeRLHF
     # Whether to trust remote code
     trust_remote_code: True
     # The max token length
