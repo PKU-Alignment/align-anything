@@ -52,12 +52,8 @@ class vllm_Inference(BaseInference):
         self.llm_trust_remote_code = kwargs.get('trust_remote_code', False)
         self.llm_gpu_memory_utilization = kwargs.get('gpu_memory_utilization', 0.3)
 
-        
-            
-    def inference(self, inputs : InferenceInput | List[InferenceInput]) -> List[InferenceOutput]:
-        if not isinstance(inputs, List):
-            inputs = [inputs]
-        inputs = [input.text for input in inputs] #这里的input是InferenceInput类
+
+    def __inference(self, inputs : List[str]) -> List[str]:        
         num_gpu = 1
         from vllm import LLM, SamplingParams
         self.samplingparams = SamplingParams(
@@ -81,6 +77,12 @@ class vllm_Inference(BaseInference):
             prompts=inputs,
             sampling_params=self.samplingparams
         )
+            
+    def inference(self, inputs : InferenceInput | List[InferenceInput]) -> List[InferenceOutput]:
+        if not isinstance(inputs, List):
+            inputs = [inputs]
+        inputs = [input.text for input in inputs] #这里的input是InferenceInput类
+        responses = self.__inference(inputs)
         return [InferenceOutput.from_vllm_output(response) for response in responses]
 
 if __name__ == "__main__":

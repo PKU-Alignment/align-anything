@@ -7,9 +7,9 @@
 
 from typing import List, Optional, Union, Dict
 from dataclasses import dataclass
-
 from vllm.outputs import CompletionOutput, RequestOutput
 from vllm.sequence import PromptLogprobs
+from openai.types.chat.chat_completion import ChatCompletion
 
 @dataclass
 class RewardModelOutput:
@@ -17,22 +17,40 @@ class RewardModelOutput:
     """
 
 @dataclass
+class InferenceInput:
+    '''
+    Args:
+        text: The text to be completed.
+            
+    '''
+    text: str
+    image_url: Optional[str] = None
+
+    def __init__(self, text: str):
+        self.text = text
+
+    def __repr__(self):
+        return f"InferenceInput(text={self.text!r})"
+
+@dataclass
 class InferenceOutput:
     """The output data of a completion request to the LLM.
 
     Args:
-        request_id: The unique ID of the request.
-        prompt: The prompt string of the request.
-        prompt_token_ids: The token IDs of the prompt.
-        prompt_logprobs: The log probabilities to return per prompt token.
-        outputs: The output sequences of the request.
+        engine: The inference engine used. \\
+        prompt: The prompt string of the request. \\
+        prompt_token_ids: The token IDs of the prompt string. \\
+        prompt_logprobs: The logprobs of the prompt string. \\
+        response: The response string of the request. \\
+        response_token_ids: The token IDs of the response string. \\
+        response_logprobs: The logprobs of the response string.
     """
 
     engine: str
     prompt: str
+    response: str
     prompt_token_ids: Optional[List[int]]
     prompt_logprobs: Optional[PromptLogprobs]
-    response: str
     response_token_ids: Optional[List[int]]
     response_logprobs: Optional[PromptLogprobs]
 
@@ -73,9 +91,9 @@ class InferenceOutput:
         return cls(
             engine="dict",
             prompt=data.get("prompt"),
+            response=data.get("response"),
             prompt_token_ids=data.get("prompt_token_ids"),
             prompt_logprobs=data.get("prompt_logprobs"),
-            response=data.get("response"),
             response_token_ids=data.get("response_token_ids"),
             response_logprobs=data.get("response_logprobs")
         )
@@ -95,7 +113,6 @@ class InferenceOutput:
             f"response_token_ids={self.response_token_ids!r}, "
             f"response_logprobs={self.response_logprobs!r})"
         )
-from dataclasses import dataclass
 
 '''
 Reward model: [InferenceOutput] -> [EvalOutput]
@@ -113,7 +130,6 @@ class Arena_input:
         prompt: "Human:....Assistant:..."
         response1: The first response string of the request.
         response2: The second response string of the request.
-        template: The template string of the request.
     """
 
     engine: str
@@ -154,12 +170,17 @@ class Arena_input:
 class EvalOutput:
     """
     Args:
-        engine: The evaluation engine used
+        evalEngine: The evaluation engine used. \\
+        input: The input data of the evaluation request. \\
+        raw_output: The raw output data of the evaluation request.
+         - For GPT evaluation, it is a ChatCompletion object. \\
+         - For vllm evaluation, it is a RequestOutput object.
+         - For something wrong, it is an Exception object.
     """
 
     evalEngine: str
     input : Union[InferenceOutput, Arena_input]
-    raw_output: Dict
+    raw_output: Union[ChatCompletion, Exception, RequestOutput]
 
     def __post_init__(self):
         assert self.evalEngine in ["gpt_evaluation", "arena"]
@@ -171,6 +192,14 @@ class EvalOutput:
             input=data.get("input"),
             raw_output=data.get("raw_output")
         )
+
+    def parse_text(self):
+        if isinstance(self.raw_output, ChatCompletion):
+            return self.raw_output.choices[0].text
+        elif isinstance(self.raw_output, RequestOutput):
+            return self.raw_output.outputs[0].text
+        else:
+            return None
 
     def __repr__(self) -> str:
         return (f"EvalOutput("
