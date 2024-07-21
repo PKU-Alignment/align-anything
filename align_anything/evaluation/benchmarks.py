@@ -34,7 +34,7 @@ from align_anything.utils.multi_process import get_current_device, is_main_proce
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
-    read_cfgs,
+    read_eval_cfgs,
     seed_everything,
     update_dict,
 )
@@ -365,7 +365,7 @@ def main():
 
     # read default configs from the yaml file
     task = unparsed_args[-1]
-    dict_configs, ds_configs = read_cfgs(mode = "evaluation", task=task)
+    dict_configs, infer_configs = read_eval_cfgs(task=task)
 
     keys = [k[2:] for k in unparsed_args[1::2]]
     values = list(unparsed_args[2::2])
@@ -375,7 +375,7 @@ def main():
 
     configs = dict_to_namedtuple(dict_configs)
 
-    evaluator = get_template_class(task, configs.default, ds_configs)
+    evaluator = get_template_class(task, configs.default, infer_configs)
     evaluator.eval()
 
 

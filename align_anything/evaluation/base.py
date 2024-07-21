@@ -285,6 +285,9 @@ class BaseEvaluator:
             "answers": answers,
             "prompts": prompts,
         }
+    
+    def set_fewshot_dataset(self, dataset):
+        self.few_shot_data = None
 
     @abstractmethod
     def get_task_names(self)-> List[str]:
