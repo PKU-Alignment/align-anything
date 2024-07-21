@@ -33,8 +33,8 @@ class TestBenchmark(BaseEvaluatorVLLM):
         return dataset
 
     def get_answer(self, data):
-        return chr(65 + data['answer'])
-        # return data['answer']
+        # return chr(65 + data.get('answer', 'N'))
+        return data['answer']
 
     def set_fewshot_dataset(self, dataset):
         self.few_shot_data = dataset['dev']
@@ -59,10 +59,7 @@ class TestBenchmark(BaseEvaluatorVLLM):
             ]
             question = []
             for item in data:
-                request = {}
-                for key, value in item.items():
-                    request[key] = value
-                examples = few_shots + [self.build_example_prompt(request, False)]
+                examples = few_shots + [self.build_example_prompt(item, False)]
                 question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
         
         return question
@@ -76,7 +73,7 @@ class TestBenchmark(BaseEvaluatorVLLM):
     def preproccess(self, data):
         prompts = self.build_prompt(data)
         # inputs = self.model.encode(prompts).to(self.device)
-        answers = [self.get_answer(item) for item in data]
+        answers = self.get_answer(data)
 
         return {
             "prompt": prompts,

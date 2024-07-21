@@ -75,27 +75,31 @@ def namedtuple_to_dict(obj: Any) -> Any:
 def requestoutput_to_dict(data, mode='brief'):
     if mode == 'brief':
         info = {
-            "prompt": data.prompt,
+            "prompt": data['prompt'],
             "outputs": []
         }
+        if 'answer' in data.keys():
+            info['answer'] = data['answer']
     else:
         info = {
-            "prompt": data.prompt,
-            "prompt_token_ids": data.prompt_token_ids,
-            "prompt_logprobs": [vllm_logprob_to_dict(token_logprob) for token_logprob in data.prompt_logprobs[1:]],
+            "prompt": data['pred'].prompt,
+            "prompt_token_ids": data['pred'].prompt_token_ids,
+            "prompt_logprobs": [vllm_logprob_to_dict(token_logprob) for token_logprob in data['pred'].prompt_logprobs[1:]],
             'outputs': [],
-            'finished': data.finished,
+            'finished': data['pred'].finished,
             'metrics':
             {
-                'arrival_time': data.metrics.arrival_time,
-                'last_token_time': data.metrics.last_token_time,
-                'first_scheduled_time': data.metrics.first_scheduled_time,
-                'first_token_time': data.metrics.first_token_time,
-                'time_in_queue': data.metrics.time_in_queue,
-                'finished_time': data.metrics.finished_time,
+                'arrival_time': data['pred'].metrics.arrival_time,
+                'last_token_time': data['pred'].metrics.last_token_time,
+                'first_scheduled_time': data['pred'].metrics.first_scheduled_time,
+                'first_token_time': data['pred'].metrics.first_token_time,
+                'time_in_queue': data['pred'].metrics.time_in_queue,
+                'finished_time': data['pred'].metrics.finished_time,
             }
         }
-    for output in data.outputs:
+        if 'answer' in data.keys():
+            info['answer'] = data['answer']
+    for output in data['pred'].outputs:
         if mode == 'brief':
             output = {
                 'index': output.index,
@@ -118,39 +122,6 @@ def vllm_logprob_to_dict(data):
     # print([{v.decoded_token: v.logprob} for k, v in data.items()])
     return [{v.decoded_token: v.logprob} for k, v in data.items()]
 
-
-def override_with_env_variables(config, env_prefix):
-    for key, value in os.environ.items():
-        if key.startswith(env_prefix):
-            keys = key[len(env_prefix):].lower().split('__')
-            override_nested_value(config, keys, value)
-
-def override_nested_value(config, keys, value):
-    for key, subconfig in config.items():
-        if isinstance(subconfig, dict):
-            override_nested_value(subconfig, keys, value)
-    if keys[0] in config:
-        set_nested_value(config, keys, value)
-
-def set_nested_value(dictionary, keys, value):
-    for key in keys[:-1]:
-        dictionary = dictionary.setdefault(key, {})
-    dictionary[keys[-1]] = value
-    
-def yaml_load(yaml_path):
-    
-    # Use the PREFIX ENV PREFIX to identify the relevant environment variables
-    env_prefix = 'ENV_PREFIX__'
-    with open(yaml_path, encoding='utf-8') as f:
-        try:
-            configs = yaml.safe_load(f)
-            override_with_env_variables(configs, env_prefix)
-            print(configs)
-            return configs
-        except FileNotFoundError as exc:
-            raise FileNotFoundError(f'{yaml_path} error: {exc}') from exc
-    
-
 def read_cfgs(mode: str, task: str) -> list[dict[str, Any], dict[str, Any]]:
     current_file_path = os.path.abspath(__file__)
     parent_path = os.path.dirname(os.path.dirname(current_file_path))
@@ -169,26 +140,26 @@ def read_cfgs(mode: str, task: str) -> list[dict[str, Any], dict[str, Any]]:
 
     return configs, ds_cfgs
 
-def read_eval_cfgs(task: str, backend: str) -> dict[str, Any]:
+def read_eval_cfgs(task: str) -> dict[str, Any]:
     current_file_path = os.path.abspath(__file__)
     parent_path = os.path.dirname(os.path.dirname(current_file_path))
-    yaml_path = os.path.join(parent_path, 'configs', 'evaluation', 'benchmarks', f'{task}.yaml')
-
-    configs = yaml_load(yaml_path)
-    
-    if backend.lower() == 'vllm':
+    yaml_path = os.path.join(parent_path, 'configs', 'evaluation', f'{task}.yaml')
+    with open(yaml_path, encoding='utf-8') as f:
+        try:
+            configs = yaml.safe_load(f)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f'{yaml_path} error: {exc}') from exc
+    if 'vllm_cfgs' in configs['infer_cfgs'].keys():
         infer_cfgs_path = os.path.join(
             parent_path,
             'configs',
-            'evaluation',
             'vllm',
             configs['infer_cfgs']['vllm_cfgs'],
         )
-    else:
+    else: 
         infer_cfgs_path = os.path.join(
             parent_path,
             'configs',
-            'evaluation',
             'deepspeed',
             configs['infer_cfgs']['ds_cfgs'],
         )
