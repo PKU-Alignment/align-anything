@@ -325,7 +325,7 @@ python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://l
 ```
 
 You can specify the mps device by using the `--device` flag: `--device mps`, if you are using an Apple device with an M1 or M2 chip.
-```
+
 
 ## Why do we open source align-anything?
 
