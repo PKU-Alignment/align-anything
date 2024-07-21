@@ -12,6 +12,11 @@ from vllm.outputs import CompletionOutput, RequestOutput
 from vllm.sequence import PromptLogprobs
 
 @dataclass
+class RewardModelOutput:
+    """The output data of a reward model.
+    """
+
+@dataclass
 class InferenceOutput:
     """The output data of a completion request to the LLM.
 
@@ -32,7 +37,24 @@ class InferenceOutput:
     response_logprobs: Optional[PromptLogprobs]
 
     def __post_init__(self):
-        assert self.engine in ["deepspeed", "vllm", "dict"]
+        pass
+    
+    def __init__(self, 
+                 prompt: str, 
+                 response: str,
+                 engine: str = "hand",
+                 prompt_token_ids: Optional[List[int]] = None,
+                 prompt_logprobs: Optional[PromptLogprobs] = None,
+                 response_token_ids: Optional[List[int]] = None,
+                 response_logprobs: Optional[PromptLogprobs] = None
+                ):
+        self.engine = engine
+        self.prompt = prompt
+        self.prompt_token_ids = prompt_token_ids
+        self.prompt_logprobs = prompt_logprobs
+        self.response = response
+        self.response_token_ids = response_token_ids
+        self.response_logprobs = response_logprobs
 
     @classmethod
     def from_vllm_output(cls, vllm_output: RequestOutput):
@@ -81,7 +103,7 @@ Arena GPT eval: [Arena_input] -> [EvalOutput]
 
 '''
 
-MMdata = Dict[str,str] # MultiModal data,like {'text':'','image_url':''}
+MMdata = Dict[str,any] # MultiModal data,like {'text':'','image_url':''}
 @dataclass
 class Arena_input:
     """The input data of a pairwise evaluation request.
@@ -98,6 +120,17 @@ class Arena_input:
     prompt: Union[str, MMdata]
     response1: Union[str, MMdata]
     response2: Union[str, MMdata]
+
+    def __init__(self, 
+                 prompt: Union[str, MMdata], 
+                 response1: Union[str, MMdata], 
+                 response2: Union[str, MMdata],
+                 engine: str = "hand"
+                ):
+        self.engine = engine
+        self.prompt = prompt
+        self.response1 = response1
+        self.response2 = response2
 
     @classmethod
     def from_InferenceOutput(cls, inference1: InferenceOutput, inference2: InferenceOutput):
