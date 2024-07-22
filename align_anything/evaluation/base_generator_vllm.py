@@ -105,7 +105,7 @@ class BaseGeneratorVLLM:
             tensor_parallel_size=self.llm_tensor_parallel_size,
             gpu_memory_utilization=self.llm_gpu_memory_utilization
         )
-
+    '''
     def eval(self, data:Dict[str, List[InferenceInput]]) -> None:
         task2details = self.eval_task(data)
         
@@ -114,7 +114,25 @@ class BaseGeneratorVLLM:
         for task, details in task2details.items():
             outputs[task] = [InferenceOutput.from_vllm_output(detail['pred']) for detail in details]
         return outputs
+    
+    def eval_task(self, inputs:Dict[str, List[InferenceInput]]) -> Dict[str, Any]:
+        details = {}
+        for task, input in inputs.items():
+            details[task] = self.eval_instance(input)
 
+        return details
+        
+    def eval_instance(self, instance: List[InferenceInput]) -> Dict[str, Any]:
+        details_info = []
+        preds = self.predict(instance)
+        for i in range(len(preds)):
+            detail = {}
+            detail['prompt'] = instance[i].text
+            details_info.append(detail)
+            details_info[-1]['pred'] = preds[i]
+            
+        return details_info
+    '''
     def update_results(self,
                        task2details:Dict[str, Dict[str, Any]]
                     )->None:
@@ -138,24 +156,6 @@ class BaseGeneratorVLLM:
                 for item in output_detailed:
                     json_record = json.dumps(item, ensure_ascii=False)
                     file.write(json_record + '\n')
-    
-    def eval_task(self, inputs:Dict[str, List[InferenceInput]]) -> Dict[str, Any]:
-        details = {}
-        for task, input in inputs.items():
-            details[task] = self.eval_instance(input)
-
-        return details
-
-    def eval_instance(self, instance: List[InferenceInput]) -> Dict[str, Any]:
-        details_info = []
-        preds = self.predict(instance)
-        for i in range(len(preds)):
-            detail = {}
-            detail['prompt'] = instance[i].text
-            details_info.append(detail)
-            details_info[-1]['pred'] = preds[i]
-            
-        return details_info
     
     @torch.no_grad()
     def predict(self, inputs: List[InferenceInput])-> Tuple[List[str], List[Dict[str, Any]]]:
