@@ -15,6 +15,7 @@
 
 from utils import *
 
+
 def main() -> None:
     os.environ['PYTHONHASHSEED'] = '0'
     logging.basicConfig(level=logging.DEBUG)
@@ -25,8 +26,8 @@ def main() -> None:
     parser.add_argument('--base-url', type=str, default=None)
     parser.add_argument('--openai-api-key', type=str, nargs='+')
     parser.add_argument('--openai-api-key-file', type=Path, default=None)
-    parser.add_argument('--ans1', type=str, default="response_a")
-    parser.add_argument('--ans2', type=str, default="response_b")
+    parser.add_argument('--ans1', type=str, default='response_a')
+    parser.add_argument('--ans2', type=str, default='response_b')
     parser.add_argument(
         '--openai-chat-completion-models',
         type=str,
@@ -37,13 +38,13 @@ def main() -> None:
     parser.add_argument('--cache-dir', type=Path, default=Path('./cache'))
     parser.add_argument('--num-cpus', type=int, default=max(os.cpu_count() - 4, 4))
     parser.add_argument('--num-workers', type=int, default=max(2 * (os.cpu_count() - 4) // 3, 4))
-    parser.add_argument('--type', type=str, default="image-recognition")
-    parser.add_argument('--platform',  type=str, default="openai")
+    parser.add_argument('--type', type=str, default='image-recognition')
+    parser.add_argument('--platform', type=str, default='openai')
     parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
-    print(f"Type: {args.type}")
-    
+    print(f'Type: {args.type}')
+
     if args.num_workers >= args.num_cpus:
         raise ValueError('num_workers should be less than num_cpus')
 
@@ -58,7 +59,9 @@ def main() -> None:
             f.write('*\n')
 
     input_file = args.input_file.expanduser().absolute()
-    inputs = prepare_inputs(input_file, shuffle=args.shuffle, platform=args.platform, type=args.type)
+    inputs = prepare_inputs(
+        input_file, shuffle=args.shuffle, platform=args.platform, type=args.type
+    )
 
     openai_api_keys = get_openai_api_keys(args.openai_api_key, args.openai_api_key_file)
 
@@ -85,10 +88,11 @@ def main() -> None:
 
     ray.shutdown()
 
-    output_file = input_file.with_suffix('.'+args.type+'_re_output.json')
+    output_file = input_file.with_suffix('.' + args.type + '_re_output.json')
     output_file.write_text(json.dumps(processed_results, indent=2, ensure_ascii=False))
-    output_file = input_file.with_suffix('.'+args.type+'_re_debug.json')
+    output_file = input_file.with_suffix('.' + args.type + '_re_debug.json')
     output_file.write_text(json.dumps(raw_results, indent=2, ensure_ascii=False))
+
 
 if __name__ == '__main__':
     main()

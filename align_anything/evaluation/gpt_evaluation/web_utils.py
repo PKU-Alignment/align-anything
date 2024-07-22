@@ -18,7 +18,6 @@ import hashlib
 import itertools
 import json
 import logging
-
 import os
 import random
 import re
@@ -29,13 +28,15 @@ from typing import Any, Callable, Union
 
 import openai
 import ray
-import tqdm
-# from tqdm import tqdm
-
-import urllib3
 import requests
+import tqdm
+import urllib3
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+
+# from tqdm import tqdm
+
 
 def request_openai_noexcept(
     messages: list[dict[str, str]],
@@ -69,8 +70,8 @@ def request_openai_noexcept(
                     'output': 'ERROR: Sorry! We have encountered an issue with repetitive patterns in your prompt. Please try again with a different prompt.',
                     'model': openai_model,
                 }
-            
-            time.sleep(random.randint(5, 30) * 0.1)  
+
+            time.sleep(random.randint(5, 30) * 0.1)
     return {
         'messages': messages,
         'output': output.choices[0].message.content,

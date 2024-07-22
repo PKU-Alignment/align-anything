@@ -31,4 +31,4 @@ deepspeed \
 	--module align_anything.trainers.rm \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
-	--output_dir ${OUTPUT_DIR} 
+	--output_dir ${OUTPUT_DIR}

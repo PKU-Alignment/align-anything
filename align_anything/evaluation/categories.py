@@ -74,21 +74,21 @@ MMLUCategories = {
 }
 
 MMECategories = {
-    "OCR": ["OCR"],
-    "celebrity": ["celebrity"],
-    "color": ["color"],
-    "count": ["count"],
-    "landmark": ["landmark"],
-    "position": ["position"],
-    "text_translation": ["text_translation"],
-    "artwork": ["artwork"],
-    "code_reasoning": ["code_reasoning"],
-    "commonsense_reasoning": ["commonsense_reasoning"],
-    "code_reasoning": ["code_reasoning"],
-    "existence": ["existence"],
-    "numerical_calculation": ["numerical_calculation"],
-    "posters": ["posters"],
-    "scene": ["scene"],
+    'OCR': ['OCR'],
+    'celebrity': ['celebrity'],
+    'color': ['color'],
+    'count': ['count'],
+    'landmark': ['landmark'],
+    'position': ['position'],
+    'text_translation': ['text_translation'],
+    'artwork': ['artwork'],
+    'code_reasoning': ['code_reasoning'],
+    'commonsense_reasoning': ['commonsense_reasoning'],
+    'code_reasoning': ['code_reasoning'],
+    'existence': ['existence'],
+    'numerical_calculation': ['numerical_calculation'],
+    'posters': ['posters'],
+    'scene': ['scene'],
 }
 
 GaokaoCategories = {

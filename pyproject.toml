@@ -55,6 +55,7 @@ dependencies = [
     "uvicorn",
     "fastapi",
     "PIL"
+    "diffusers",
 ]
 dynamic = ["version"]
 

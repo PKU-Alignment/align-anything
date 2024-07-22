@@ -19,17 +19,16 @@ import os
 import re
 from typing import Any, Dict, List
 
-from PIL import Image
-
+import deepspeed
 import pandas as pd
 import torch
-import deepspeed
+from PIL import Image
 
 from align_anything.evaluation.base import BaseEvaluator
-from align_anything.evaluation.mt_bench import MTBench
-from align_anything.evaluation.categories import MMLUCategories, MMECategories, GaokaoCategories
+from align_anything.evaluation.categories import GaokaoCategories, MMECategories, MMLUCategories
 from align_anything.evaluation.evaluator import GSM8KEvaluator
 from align_anything.evaluation.evaluator_registry import get_template_class, register_evaluator
+from align_anything.evaluation.mt_bench import MTBench
 from align_anything.utils.multi_process import get_current_device, is_main_process
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
@@ -53,13 +52,15 @@ class MMLU(BaseEvaluator):
         self.few_shot_data = dataset['dev']
 
     def build_example_prompt(self, data, with_answer=True):
-        choices = '\n'.join([f'{label}: {data["choices"][ord(label) - 65]}' for label in self.candidate_labels])
+        choices = '\n'.join(
+            [f'{label}: {data["choices"][ord(label) - 65]}' for label in self.candidate_labels]
+        )
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
         return f"{data['question']}\n{choices}\n{answer}"
 
     def build_prompt(self, data):
-        prompt = f"The following are multiple choice questions (with answers).\n\n"
-        few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
+        prompt = f'The following are multiple choice questions (with answers).\n\n'
+        few_shot_examples = self.few_shot_data[: self.num_shot] if self.num_shot else []
         if len(few_shot_examples) == 0:
             return prompt + self.build_example_prompt(data, False)
         else:
@@ -100,7 +101,7 @@ class GaokaoSingleChoice(BaseEvaluator):
         return f'{question}\n{choices}\n{answer}'
 
     def build_prompt(self, data):
-        few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
+        few_shot_examples = self.few_shot_data[: self.num_shot] if self.num_shot else []
         if len(few_shot_examples) == 0:
             return self.build_example_prompt(data, False)
         else:
@@ -122,13 +123,13 @@ class GSM8K(BaseEvaluator):
         return ['main']
 
     def get_answer(self, data):
-        return self.gsm8k_evalutor._decimal_separator.sub("", data['answer'])
+        return self.gsm8k_evalutor._decimal_separator.sub('', data['answer'])
 
     def build_example_prompt(self, data, with_answer=True):
         question = data['question']
         prompt = f"Question: {question} Let's think step by step\nAnswer:\n"
         if with_answer:
-            return prompt + self.gsm8k_evalutor._decimal_separator.sub("", data['answer'])
+            return prompt + self.gsm8k_evalutor._decimal_separator.sub('', data['answer'])
         else:
             return prompt
 
@@ -137,7 +138,7 @@ class GSM8K(BaseEvaluator):
 
     def build_prompt(self, data):
         prompt = ''
-        few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
+        few_shot_examples = self.few_shot_data[: self.num_shot] if self.num_shot else []
         examples = [
             self.build_example_prompt(
                 {key: value[i] for key, value in few_shot_examples.items()}, True
@@ -153,6 +154,7 @@ class GSM8K(BaseEvaluator):
     def parser_response(self, response):
         response = response[0]
         return response.lstrip()
+
 
 @register_evaluator('hellaswag')
 class Hellaswag(BaseEvaluator):
@@ -178,10 +180,11 @@ class Hellaswag(BaseEvaluator):
         answers = self.get_answer(data)
 
         return {
-            "inputs": inputs,
-            "answers": answers,
-            "prompts": prompts,
+            'inputs': inputs,
+            'answers': answers,
+            'prompts': prompts,
         }
+
 
 @register_evaluator('winogrande')
 class Winogrande(BaseEvaluator):
@@ -224,45 +227,46 @@ class Winogrande(BaseEvaluator):
         answers = self.get_answer(data)
 
         return {
-            "inputs": inputs,
-            "answers": answers,
-            "prompts": prompts,
+            'inputs': inputs,
+            'answers': answers,
+            'prompts': prompts,
         }
 
-@register_evaluator("mme")
+
+@register_evaluator('mme')
 class MME(BaseEvaluator):
     def get_task_names(self):
         return list(MMECategories.keys())
 
     def load_dataset(self, task_name: str) -> DatasetDict:
         data = []
-        questions_dir = os.path.join(self.task_dir, task_name, "questions_answers_YN")
-        image_dir = os.path.join(self.task_dir, task_name, "images")
+        questions_dir = os.path.join(self.task_dir, task_name, 'questions_answers_YN')
+        image_dir = os.path.join(self.task_dir, task_name, 'images')
         image_files = os.listdir(image_dir)
         for image_file in image_files:
-            prefix = image_file.split(".")[0]
-            qa_path = os.path.join(questions_dir, prefix + ".txt")
+            prefix = image_file.split('.')[0]
+            qa_path = os.path.join(questions_dir, prefix + '.txt')
             image_path = os.path.join(image_dir, image_file)
 
-            with open(qa_path, "r") as f:
+            with open(qa_path) as f:
                 text = f.readlines()
             for qa in text:
-                question, answer = qa.strip().split("\t")
-                data.append({
-                    'question': question,
-                    'answer': answer,
-                    'image_path': image_path,
-                    'id': prefix,
-                })
-        return DatasetDict({
-            'val': Dataset.from_list(data)
-        })
+                question, answer = qa.strip().split('\t')
+                data.append(
+                    {
+                        'question': question,
+                        'answer': answer,
+                        'image_path': image_path,
+                        'id': prefix,
+                    }
+                )
+        return DatasetDict({'val': Dataset.from_list(data)})
 
     def set_fewshot_dataset(self, dataset):
         self.few_shot_data = None
 
     def build_prompt(self, data: Dict[str, Any]) -> str:
-        assert self.num_shot == 0, "MME does not support few-shot learning."
+        assert self.num_shot == 0, 'MME does not support few-shot learning.'
         return f"USER: <image>\n{data['question']}\nASSISTANT: "
 
     def parser_response(self, response):
@@ -270,11 +274,11 @@ class MME(BaseEvaluator):
         response_clean = re.sub(r'[\s\n\t]+', '', response[0]).lower()
 
         if re.match(r'^yes$', response_clean):
-            return "yes"
+            return 'yes'
         elif re.match(r'^no$', response_clean):
-            return "no"
+            return 'no'
         else:
-            return "unknown"
+            return 'unknown'
 
     def preproccess(self, data):
         image_path = data['image_path']
@@ -284,9 +288,9 @@ class MME(BaseEvaluator):
         inputs = self.processor(prompt, raw_image, return_tensors='pt').to(self.device)
 
         return {
-            "inputs": inputs,
-            "answers": data['answer'].lower(),
-            "prompts": prompt,
+            'inputs': inputs,
+            'answers': data['answer'].lower(),
+            'prompts': prompt,
             'id': data['id'],
         }
 
@@ -294,7 +298,9 @@ class MME(BaseEvaluator):
         details, correction = [], []
         preds, infos = self.predict(instance)
 
-        for id, prompt, answer, pred, info in zip(instance['id'], instance['prompts'], instance['answers'], preds, infos):
+        for id, prompt, answer, pred, info in zip(
+            instance['id'], instance['prompts'], instance['answers'], preds, infos
+        ):
             is_correct = self.is_correct(pred, answer)
 
             detail = {
@@ -303,7 +309,7 @@ class MME(BaseEvaluator):
                 'pred': pred,
                 'answer': answer,
                 'is_correct': is_correct,
-                **info
+                **info,
             }
 
             details.append(detail)
@@ -327,14 +333,13 @@ class MME(BaseEvaluator):
             image_items = {}
             for detail in details:
                 if detail['id'] not in image_items:
-                    image_items[detail['id']] = {
-                        'is_correct': None,
-                        'results': []
-                    }
+                    image_items[detail['id']] = {'is_correct': None, 'results': []}
                 image_items[detail['id']]['results'].append(detail['is_correct'])
             for id, items in image_items.items():
                 image_items[id]['is_correct'] = all(items['results'])
-            acc_plus[task] = sum([item['is_correct'] for item in image_items.values()]) / len(image_items)
+            acc_plus[task] = sum([item['is_correct'] for item in image_items.values()]) / len(
+                image_items
+            )
             total_correct_plus += sum([item['is_correct'] for item in image_items.values()])
             total_length_plus += len(image_items)
         acc_plus['average'] = total_correct_plus / total_length_plus
@@ -342,7 +347,7 @@ class MME(BaseEvaluator):
         score = {}
         keys = ['average'] + list(self.task2correction.keys())
         for key in keys:
-            score[key] = (acc[key] + acc_plus[key])*100
+            score[key] = (acc[key] + acc_plus[key]) * 100
 
         result = {
             'score': score,
@@ -352,6 +357,7 @@ class MME(BaseEvaluator):
 
         with open(os.path.join(self.output_dir, self.results_filename), 'w', encoding='utf-8') as f:
             json.dump(result, f, ensure_ascii=False, indent=4)
+
 
 def main():
     # setup distribution
@@ -365,7 +371,7 @@ def main():
 
     # read default configs from the yaml file
     task = unparsed_args[-1]
-    dict_configs, ds_configs = read_cfgs(mode = "evaluation", task=task)
+    dict_configs, ds_configs = read_cfgs(mode='evaluation', task=task)
 
     keys = [k[2:] for k in unparsed_args[1::2]]
     values = list(unparsed_args[2::2])

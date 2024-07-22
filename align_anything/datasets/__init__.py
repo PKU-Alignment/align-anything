@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2024 PKU-Alignment Team and LlamaFactory team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,10 +18,6 @@ from __future__ import annotations
 
 import torch
 from torch.utils.data import Dataset
-
-from align_anything.datasets.preference import *
-from align_anything.datasets.prompt_only import *
-from align_anything.datasets.supervised import *
 
 
 class DummyDataset(Dataset[dict[str, torch.Tensor]]):

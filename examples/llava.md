@@ -19,7 +19,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.sft \
+	--module align_anything.trainers.text_image_to_text.sft \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
 	--output_dir ${OUTPUT_DIR} \
@@ -47,7 +47,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.rm \
+	--module align_anything.trainers.text_image_to_text.rm \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
 	--eval_datasets ${EVAL_DATASETS} \
@@ -55,7 +55,7 @@ deepspeed \
   	--train_split train \
 	--eval_split train \
 	--train_template RLAIFV \
-	--eval_template RLAIFV 
+	--eval_template RLAIFV
 ```
 
 ## DPO Training
@@ -76,7 +76,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.dpo \
+	--module align_anything.trainers.text_image_to_text.dpo \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
 	--train_template RLAIFV \
@@ -110,7 +110,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
   --master_port ${MASTER_PORT} \
-  --module align_anything.trainers.ppo \
+  --module align_anything.trainers.text_image_to_text.ppo \
   --actor_model_name_or_path ${ACTOR_MODEL_NAME_OR_PATH} \
   --reward_model_name_or_path ${REWARD_MODEL_NAME_OR_PATH} \
   --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME_OR_PATH} \
@@ -123,5 +123,5 @@ deepspeed \
   --freeze_mm_proj True \
   --freeze_vision_tower False \
   --output_dir ${OUTPUT_DIR} \
-  --ptx_data_files llava_instruct_150k.json 
+  --ptx_data_files llava_instruct_150k.json
 ```
