@@ -1,6 +1,6 @@
 from typing import List
 from abc import abstractmethod
-from align_anything.evaluation.outputs import Arena_input, EvalOutput, InferenceOutput, InferenceInput
+from align_anything.evaluation.outputs import ArenaInput, EvalOutput, InferenceOutput, InferenceInput
 
 class BaseInference:
     def __init__(self, **kwargs):

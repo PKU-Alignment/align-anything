@@ -99,6 +99,7 @@ class InferenceOutput:
 
 
 
+
 @dataclass 
 class SingleInput:
     '''
@@ -108,23 +109,27 @@ class SingleInput:
     '''
     prompt: str
     response: str
-    template: str
 
     def __init__(self, prompt: str, response: str):
         self.prompt = prompt
         self.response = response
-        self.template = "Human: {prompt}\nAssistant: {response}"
     
     @classmethod
     def from_InferenceOutput(cls, inference: InferenceOutput):
         return cls(
             prompt=inference.prompt,
             response=inference.response,
-            template="Human: {prompt}\nAssistant: {response}"
         )
 
+    def build_gpt_input(self, judge_prompt: str, template_function=None):
+        prompt = template_function(self)
+        return [
+            {'role': 'system', 'content': judge_prompt},
+            {'role': 'user', 'content': prompt}
+        ]
+
     def __repr__(self):
-        return f"SingleInput(prompt={self.prompt!r}, response={self.response!r}, template={self.template!r})"
+        return f"SingleInput(prompt={self.prompt!r}, response={self.response!r})"
 
 '''
 Reward model: [InferenceOutput] -> [EvalOutput]
@@ -132,7 +137,10 @@ Arena GPT eval: [ArenaInput] -> [EvalOutput]
 
 '''
 
-MMdata = Dict[str,str] # MultiModal data,like {'text':'','image_url':''}
+def function1(ArenaInput):
+    return "Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}".format(prompt=ArenaInput.prompt, response1=ArenaInput.response1, response2=ArenaInput.response2)
+
+MMdata = Dict[str,any] # MultiModal data,like {'text':'','image_url':''}
 @dataclass
 class ArenaInput:
     """The input data of a pairwise evaluation request.
@@ -171,22 +179,28 @@ class ArenaInput:
             prompt=inference1.prompt,
             response1=inference1.response,
             response2=inference2.response,
-            template="Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}"
+            
         )
+
+    def build_gpt_input(self, judge_prompt: str, template_function=None):
+        prompt = template_function(self)
+        return [
+            {'role': 'system', 'content': judge_prompt},
+            {'role': 'user', 'content': prompt}
+        ]
 
     def __repr__(self) -> str:
         return (f"ArenaInput("
                 f"engine={self.engine!r}, "
                 f"prompt={self.prompt!r}, "
                 f"response1={self.response1!r}, "
-                f"response2={self.response2!r}, "
-                f"template={self.template!r})")
+                f"response2={self.response2!r})")
 
 
 @dataclass
 class EvalOutput:
     """
-    Args:
+    Args: 
         evalEngine: The evaluation engine used. \\
         input: The input data of the evaluation request. \\
         raw_output: The raw output data of the evaluation request.

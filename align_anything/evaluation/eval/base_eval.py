@@ -73,14 +73,20 @@ class Reward_Single_eval_vllm(vllm_Eval):
         results = [EvalOutput(evalEngine="vllm_evaluation", input=input, raw_output=response) for input, response in zip(inputs, responses)]
         return filter_out_exception(results)
 
+# this function should not be in this file, move it and fix it in the right place
+def template_function_example(input):
+    assert isinstance(input, ArenaInput)
+    return "test:Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}".format(prompt=input.prompt, response1=input.response1, response2=input.response2)
+
 class API_Eval(BaseEval):
     def __init__(self,
-                    system_prompt: str,
-                    model: str,
-                    api_key: str,
-                    base_url: str,
-                    cache_dir: str,
-                    num_workers: int,
+                    judge_prompt: str,
+                    model: str = 'deepseek-chat',
+                    num_workers: int = 1,
+                    cache_dir : str = None,
+                    api_key: str = None,
+                    base_url: str = None,
+                    template_function = None,
                     **kwargs):
         self.system_prompt = system_prompt
         self.model = model
@@ -89,8 +95,10 @@ class API_Eval(BaseEval):
         self.base_url = base_url
         self.num_workers = num_workers
         self.cache_dir = cache_dir
+        self.template_function = template_function
 
     def _evaluate(self, processed_inputs : List[List[dict]]) -> List[ChatCompletion | Exception]:
+        print(processed_inputs)
         responses = batch_request_openai(
             type="Arena",
             inputs=processed_inputs,
@@ -112,12 +120,7 @@ class API_Single_Eval(API_Eval):
             inputs = [inputs,]
         processed_inputs = []
         for input in inputs:
-            # prompt = "[CONTEXT] " + input.prompt + "\n\n" + "[RESPONSE] " + input.response
-            prompt = input.template.format(prompt=input.prompt, response=input.response)
-            gpt_input = [
-                {'role': 'system', 'content': self.judge_prompt},
-                {'role': 'user', 'content': prompt}
-            ]
+            gpt_input = input.build_gpt_input(judge_prompt=self.judge_prompt, template_function=self.template_function)
             processed_inputs.append(gpt_input)
         responses = self._evaluate(processed_inputs)
         results = [EvalOutput(evalEngine="gpt_evaluation", input=input, raw_output=response) for input, response in zip(inputs, responses)]
@@ -128,6 +131,8 @@ class API_Pair_Eval(API_Eval):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        if self.template_function is None:
+            self.template_function = template_function_example
 
     def evaluate(self, inputs : ArenaInput | List[ArenaInput]) -> List[EvalOutput]:
         if not isinstance(inputs, list):
@@ -135,19 +140,18 @@ class API_Pair_Eval(API_Eval):
         print(inputs)
         processed_inputs = []
         for input in inputs:
-            prompt = input.template.format(prompt=input.prompt, response1=input.response1, response2=input.response2)
-            gpt_input = [
-                {'role': 'system', 'content': self.system_prompt},
-                {'role': 'user', 'content': prompt}
-            ]
+            gpt_input = input.build_gpt_input(judge_prompt=self.judge_prompt, template_function=self.template_function)
             processed_inputs.append(gpt_input)
         responses = self._evaluate(processed_inputs)
         results = [EvalOutput(evalEngine="gpt_evaluation", input=input, raw_output=response) for input, response in zip(inputs, responses)]
         return filter_out_exception(results)
         
 if __name__ == "__main__":
+    
+    import os
+    os.environ["OPENAI_API_KEY"] = "sk-xxx"
     # judger = API_Single_Eval(judge_prompt="judge how good it is, in a [0,10] scores. Response should start with 'SCORE[X]',where X is the socres", model='deepseek-chat', num_workers=2, temperature=0.5)
     # print(judger.evaluate(InferenceOutput(prompt="what is 1+2+3", response="1+2+3=1")))
     
-    judger = API_Pair_Eval(judge_prompt="judge which response is better,response should start with '[1]' or '[2]'", model='deepseek-chat', num_workers=2, temperature=0.7)
+    judger = API_Pair_Eval(judge_prompt="judge which response is better,response should start with '[1]' or '[2]'", model='deepseek-chat', num_workers=2, temperature=0.7, template_function=template_function_example)
     print(judger.evaluate(ArenaInput(prompt="what is 1+2+3", response1="1+2+3=1", response2="1+2+3=6")))
