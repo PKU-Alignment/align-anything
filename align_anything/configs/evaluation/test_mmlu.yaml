@@ -18,7 +18,7 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: high_school_chemistry
+    task: [high_school_chemistry, high_school_biology]
     # Task directory
     task_dir: cais/mmlu
     # Evaluation split

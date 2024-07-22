@@ -81,7 +81,7 @@ def requestoutput_to_dict(data, mode='brief'):
             info['answer'] = data['answer']
     else:
         info = {
-            "prompt": data['pred'].prompt,
+            "prompt": data['prompt'],
             "prompt_token_ids": data['pred'].prompt_token_ids,
             "prompt_logprobs": [vllm_logprob_to_dict(token_logprob) for token_logprob in data['pred'].prompt_logprobs[1:]],
             'outputs': [],
