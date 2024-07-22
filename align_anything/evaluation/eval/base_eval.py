@@ -1,6 +1,6 @@
 from typing import List
 from abc import abstractmethod
-from align_anything.evaluation.outputs import Arena_input, EvalOutput, InferenceOutput
+from align_anything.evaluation.outputs import ArenaInput, EvalOutput, InferenceOutput, InferenceInput, SingleInput
 from align_anything.evaluation.inference.base_inference import vllm_Inference
 from utils import batch_request_openai,filter_out_exception
 from openai.types.chat.chat_completion import ChatCompletion
@@ -27,7 +27,7 @@ class Reward_Single_eval_deepspeed(BaseEval):
         self.num_workers = num_workers
         self.cache_dir = cache_dir
             
-    def evaluate(self, inputs : InferenceOutput | List[InferenceOutput]) -> List[EvalOutput]:
+    def evaluate(self, inputs : SingleInput | List[SingleInput]) -> List[EvalOutput]:
         raise NotImplementedError
 
 class vllm_Eval(BaseEval):
@@ -52,14 +52,14 @@ class vllm_Eval(BaseEval):
         responses = inferencor.inference(processed_inputs)
         return responses
     
-    def evaluate(self, inputs : InferenceOutput | List[InferenceOutput]) -> List[EvalOutput]:
+    def evaluate(self, inputs : SingleInput | List[SingleInput]) -> List[EvalOutput]:
         raise NotImplementedError
 
 class Reward_Single_eval_vllm(vllm_Eval):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def evaluate(self, inputs : InferenceOutput | List[InferenceOutput]) -> List[EvalOutput]:
+    def evaluate(self, inputs : SingleInput | List[SingleInput]) -> List[EvalOutput]:
         if not isinstance(inputs, list):
             inputs = [inputs,]
         processed_inputs = []
@@ -107,12 +107,13 @@ class API_Single_Eval(API_Eval):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def evaluate(self, inputs : InferenceOutput | List[InferenceOutput]) -> List[EvalOutput]:
+    def evaluate(self, inputs : SingleInput | List[SingleInput]) -> List[EvalOutput]:
         if not isinstance(inputs, list):
             inputs = [inputs,]
         processed_inputs = []
         for input in inputs:
-            prompt = "[CONTEXT] " + input.prompt + "\n\n" + "[RESPONSE] " + input.response
+            # prompt = "[CONTEXT] " + input.prompt + "\n\n" + "[RESPONSE] " + input.response
+            prompt = input.template.format(prompt=input.prompt, response=input.response)
             gpt_input = [
                 {'role': 'system', 'content': self.judge_prompt},
                 {'role': 'user', 'content': prompt}
@@ -128,14 +129,13 @@ class API_Pair_Eval(API_Eval):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def evaluate(self, inputs : Arena_input | List[Arena_input]) -> List[EvalOutput]:
+    def evaluate(self, inputs : ArenaInput | List[ArenaInput]) -> List[EvalOutput]:
         if not isinstance(inputs, list):
             inputs = [inputs,]
         print(inputs)
         processed_inputs = []
         for input in inputs:
-            print(input)
-            prompt = "[CONTEXT] " + input.prompt + "\n\n" + "[RESPONSE1] " + input.response1 + "\n\n" + "[RESPONSE2] " + input.response2
+            prompt = input.template.format(prompt=input.prompt, response1=input.response1, response2=input.response2)
             gpt_input = [
                 {'role': 'system', 'content': self.system_prompt},
                 {'role': 'user', 'content': prompt}
@@ -150,4 +150,4 @@ if __name__ == "__main__":
     # print(judger.evaluate(InferenceOutput(prompt="what is 1+2+3", response="1+2+3=1")))
     
     judger = API_Pair_Eval(judge_prompt="judge which response is better,response should start with '[1]' or '[2]'", model='deepseek-chat', num_workers=2, temperature=0.7)
-    print(judger.evaluate(Arena_input(prompt="what is 1+2+3", response1="1+2+3=1", response2="1+2+3=6")))
+    print(judger.evaluate(ArenaInput(prompt="what is 1+2+3", response1="1+2+3=1", response2="1+2+3=6")))
