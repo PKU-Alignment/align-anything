@@ -156,20 +156,17 @@ class ArenaInput:
     prompt: Union[str, MMdata]
     response1: Union[str, MMdata]
     response2: Union[str, MMdata]
-    template: str
 
     def __init__(self, 
                  prompt: Union[str, MMdata], 
                  response1: Union[str, MMdata], 
                  response2: Union[str, MMdata],
                  engine: str = "hand",
-                 template: str = "Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}"
                 ):
         self.engine = engine
         self.prompt = prompt
         self.response1 = response1
         self.response2 = response2
-        self.template = template
 
     @classmethod
     def from_InferenceOutput(cls, inference1: InferenceOutput, inference2: InferenceOutput):
