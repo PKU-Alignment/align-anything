@@ -15,9 +15,7 @@
 """Interactive chatbot."""
 
 from __future__ import annotations
-from PIL import Image
-import requests
-from transformers import AutoProcessor, LlavaForConditionalGeneration
+
 import abc
 import dataclasses
 import os
@@ -26,12 +24,20 @@ from enum import Enum
 from threading import Thread
 from typing import Generator, Iterable, Iterator, NoReturn, overload
 
+import requests
 import torch
-from transformers import GenerationConfig, TextIteratorStreamer
+from PIL import Image
+from transformers import (
+    AutoProcessor,
+    GenerationConfig,
+    LlavaForConditionalGeneration,
+    TextIteratorStreamer,
+)
 
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.utils.multi_process import to_device
 from align_anything.utils.template_registry import get_template_class
+
 
 __all__ = [
     'CODE_BLOCK_PATTERN',
@@ -182,8 +188,8 @@ class ModelArgs:
     top_p: float = 1.0
     repetition_penalty: float = 1.0
     dtype: torch.dtype | str | None = 'auto'
-    template: str = "Dialogue"
-    vlm: str = "False"
+    template: str = 'Dialogue'
+    vlm: str = 'False'
 
 
 class Chatbot(AbstractChatbot):
@@ -197,20 +203,20 @@ class Chatbot(AbstractChatbot):
         top_p: float = 1.0,
         repetition_penalty: float = 1.0,
         dtype: torch.dtype | str | None = 'auto',
-        template: str = "Dialogue",
-        image_source: str="",
-        vlm: str = "False",
+        template: str = 'Dialogue',
+        image_source: str = '',
+        vlm: str = 'False',
     ) -> None:
         """Initialize the chatbot."""
-        
+
         self.name = os.path.basename(os.path.normpath(model_name_or_path))
         self.template = get_template_class(template)
-        if vlm =="True":
-            self.vlm=True
+        if vlm == 'True':
+            self.vlm = True
         else:
-            self.vlm=False
+            self.vlm = False
         self.messages = []
-        
+
         if not self.vlm:
             self.model, self.tokenizer, self.processor = load_pretrained_models(
                 model_name_or_path,
@@ -222,22 +228,21 @@ class Chatbot(AbstractChatbot):
             self.max_length = 4096
             self.tokenizer.model_max_length = self.max_length
             self.generation_config = GenerationConfig(
-            do_sample=(temperature > 0.0),
-            temperature=temperature,
-            max_new_tokens=max_length,
-            top_p=top_p,
-            repetition_penalty=repetition_penalty,
-            bos_token_id=self.tokenizer.bos_token_id,
-            eos_token_id=self.tokenizer.eos_token_id,
-            pad_token_id=self.tokenizer.pad_token_id,
-        )
+                do_sample=(temperature > 0.0),
+                temperature=temperature,
+                max_new_tokens=max_length,
+                top_p=top_p,
+                repetition_penalty=repetition_penalty,
+                bos_token_id=self.tokenizer.bos_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+                pad_token_id=self.tokenizer.pad_token_id,
+            )
         else:
             self.model = LlavaForConditionalGeneration.from_pretrained(model_name_or_path)
             self.processor = AutoProcessor.from_pretrained(model_name_or_path)
-            
-        
-        self.PROMPT_BEGIN = self.template.system_prompt 
-        self.dialogue = ""
+
+        self.PROMPT_BEGIN = self.template.system_prompt
+        self.dialogue = ''
         self.last_dialogue = ''
         self.last_input = ''
         self.last_response = ''
@@ -259,56 +264,55 @@ class Chatbot(AbstractChatbot):
         self.inputs.clear()
         self.responses.clear()
 
-    def __call__(self, text: str, stream: bool = False, image_source: str = "") -> Iterable[str]:
+    def __call__(self, text: str, stream: bool = False, image_source: str = '') -> Iterable[str]:
         """Generate the response to the given text."""
 
         self.image_source = image_source
-        
-            
 
         return self.generator(text, stream=stream)
 
-            
-        
     def generator(self, text: str, stream: bool = False) -> Generator[str, None, None]:
         """Generate the response to the given text."""
         if self.vlm and self.image_source:
-            text = "<image>\n"+text
+            text = '<image>\n' + text
             image = Image.open(requests.get(self.image_source, stream=True).raw)
         self.last_input = text
         self.last_dialogue = self.dialogue
         raw_sample = {
-            "instruction":"",
-            "input": text,
-            "output": "",
+            'instruction': '',
+            'input': text,
+            'output': '',
         }
-        prompt = self.template.format_sample(raw_sample)["prompt"]
+        prompt = self.template.format_sample(raw_sample)['prompt']
         self.inputs.append(text)
 
         input = self.dialogue + prompt
-        
+
         if self.vlm and self.image_source:
-            
-            inputs = self.processor(text=input, images=image, return_tensors="pt")
+
+            inputs = self.processor(text=input, images=image, return_tensors='pt')
             generate_ids = self.model.generate(**inputs, max_new_tokens=128)
-            output = self.processor.batch_decode(generate_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)[0]
-            input = "<s> "+input
-            response = output[len(input)+1:].strip()
-            
+            output = self.processor.batch_decode(
+                generate_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False
+            )[0]
+            input = '<s> ' + input
+            response = output[len(input) + 1 :].strip()
+
             yield response
         elif self.vlm:
-            inputs = self.processor(text=input,  return_tensors="pt")
+            inputs = self.processor(text=input, return_tensors='pt')
             generate_ids = self.model.generate(**inputs, max_new_tokens=128)
-            output = self.processor.batch_decode(generate_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)[0]
-            response = output.replace(input, "", 1)
+            output = self.processor.batch_decode(
+                generate_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False
+            )[0]
+            response = output.replace(input, '', 1)
             yield response
-        #dialogue = self.dialogue + PROMPT_USER.format(input=text) + PROMPT_ASSISTANT
+        # dialogue = self.dialogue + PROMPT_USER.format(input=text) + PROMPT_ASSISTANT
         tokenized = to_device(
             self.tokenizer(input, return_tensors='pt'),
             device=('cuda' if torch.cuda.is_available() else None),
         )
         decoded_text = self.tokenizer.decode(tokenized['input_ids'][0], skip_special_tokens=True)
-        
 
         if stream:
             streamer = TextIteratorStreamer(
@@ -335,33 +339,29 @@ class Chatbot(AbstractChatbot):
 
             daemon.join()
         else:
-            
+
             output = self.model.generate(
                 input_ids=tokenized['input_ids'].to(self.model.device),
                 attention_mask=tokenized['attention_mask'].to(self.model.device),
                 generation_config=self.generation_config,
             )
-            
 
             dialogue_text = self.tokenizer.decode(output[0], skip_special_tokens=False)
             clean_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-            clean_response = clean_text.replace(decoded_text, "", 1)
-            
-            response = dialogue_text.replace(self.dialogue, "", 1)
-            
+            clean_response = clean_text.replace(decoded_text, '', 1)
 
-            
+            response = dialogue_text.replace(self.dialogue, '', 1)
+
         self.last_response = response
         self.responses.append(response)
         raw_sample = {
-            "instruction":"",
-            "input": text,
-            "output": response,
+            'instruction': '',
+            'input': text,
+            'output': response,
         }
-        message = self.template.format_sample(raw_sample)["text"]
+        message = self.template.format_sample(raw_sample)['text']
         self.dialogue += message + self.tokenizer.eos_token
-        
-        
+
         yield clean_response
 
     def regenerator(self, stream: bool = False) -> Generator[str, None, None]:
@@ -415,7 +415,9 @@ class ChatbotList(AbstractChatbot):
         for chatbot in self.chatbots:
             chatbot.clear()
 
-    def __call__(self, text: str, stream: bool = False, image_source: str = "") -> Iterable[Iterable[str]]:
+    def __call__(
+        self, text: str, stream: bool = False, image_source: str = ''
+    ) -> Iterable[Iterable[str]]:
         """Generate the response to the given text."""
         for chatbot in self.chatbots:
             yield chatbot(text, stream=stream, image_source=image_source)

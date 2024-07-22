@@ -55,7 +55,7 @@ class CLI:
 
         self.console.print('Model loaded. ', style='bold yellow', end='')
         self.do_generate = True
-        self.image_source = ""
+        self.image_source = ''
         self.clear()
 
     def reset(self) -> None:
@@ -118,31 +118,42 @@ class CLI:
                 if len(text.split()) and text.split()[0] == SpecialCommand.IMAGE:
                     self.do_generate = False
                     if not self.model_args[0].vlm:
-                        #print something                       
-                        self.console.print("WRONG COMMAND: /image command is only available for VLM model.Try setting --vlm True", style='bold yellow')
+                        # print something
+                        self.console.print(
+                            'WRONG COMMAND: /image command is only available for VLM model.Try setting --vlm True',
+                            style='bold yellow',
+                        )
                     else:
                         parts = text.split()[1:]
-                        if len(parts)>1:
-                            self.console.print("WRONG COMMAND: Too many arguments for /image command.", style='bold yellow')
-        
-                        elif len(parts)==0:
-                            self.console.print("WRONG COMMAND: No arguments for /image command.", style='bold yellow')
+                        if len(parts) > 1:
+                            self.console.print(
+                                'WRONG COMMAND: Too many arguments for /image command.',
+                                style='bold yellow',
+                            )
+
+                        elif len(parts) == 0:
+                            self.console.print(
+                                'WRONG COMMAND: No arguments for /image command.',
+                                style='bold yellow',
+                            )
                         else:
                             self.image_source = parts[0]
-                            self.console.print(f"Image source set to {self.image_source}.", style='bold yellow')
-                        
-                    
-                
+                            self.console.print(
+                                f'Image source set to {self.image_source}.', style='bold yellow'
+                            )
+
                 if self.do_generate:
                     for response_generator, name, style in zip(
-                        self.chatbots(text=text, stream=self.stream, image_source=self.image_source),
+                        self.chatbots(
+                            text=text, stream=self.stream, image_source=self.image_source
+                        ),
                         self.chatbot_names,
                         self.styles,
                     ):
                         self.render(response_generator, name, style)
-                    
+
                 self.console.print()
-                if self.do_generate and self.image_source != "":
+                if self.do_generate and self.image_source != '':
                     exit()
 
         except (KeyboardInterrupt, EOFError, EndOfDialogue) as ex:
@@ -251,7 +262,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         '--template',
         type=str,
-        default="Dialogue",
+        default='Dialogue',
         help='Model template',
     )
     parser.add_argument(

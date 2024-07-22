@@ -58,9 +58,9 @@ We have a roadmap for future development work `align-anything`:
 
 | Trainers | Text :arrow_right: Text | Image+Text :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | More Modality... |
 |---|---|---|---|---|---|
-| SFT Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
+| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :car: | :car: |
 | RM Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
-| DPO Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
+| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :car: | :car: |
 | PPO Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
 | KTO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
 | ORPO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
@@ -198,7 +198,7 @@ The specific path depends on your `cuda` path.
 
 ## Customized Dataset
 
-Align-anything offers a highly scalable dataset registration interface, enabling users to embed customized datasets simply by designing and specifying their `template.py`. 
+Align-anything offers a highly scalable dataset registration interface, enabling users to embed customized datasets simply by designing and specifying their `template.py`.
 
 Taking [PKU-Alignment/PKU-SafeRLHF](https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF) as an example, we illustrate here how to design the template and incorporate it into a complete RLHF workflow.
 
@@ -297,7 +297,7 @@ After designing the aforementioned template, you just need to specify this templ
 ## Interactive CLI Demo
 
 ```bash
-python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path 
+python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
 ```
 
 ![cli_demo](assets/cli_demo.gif)

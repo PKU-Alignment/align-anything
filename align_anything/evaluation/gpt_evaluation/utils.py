@@ -28,26 +28,32 @@ from typing import Any, Callable, Union
 
 import openai
 import ray
-import tqdm
-# from tqdm import tqdm
-
-import urllib3
 import requests
+import tqdm
+import urllib3
+from config.system_prompt import (
+    HELPFUL_SCORE_SYSTEM_PROMPT,
+    HELPFUL_SCORE_USER_PROMPT,
+    IMAGE_RECOGNITION_SYSTEM_PROMPT,
+    IMAGE_RECOGNITION_USER_PROMPT,
+    REASONING_SCORE_SYSTEM_PROMPT,
+    REASONING_SCORE_USER_PROMPT,
+    SAFETY_SCORE_SYSTEM_PROMPT,
+    SAFETY_SCORE_USER_PROMPT,
+    UTILITY_SCORE_SYSTEM_PROMPT,
+    UTILITY_SCORE_USER_PROMPT,
+)
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from web_utils import *
 
-from config.system_prompt import SAFETY_SCORE_SYSTEM_PROMPT,SAFETY_SCORE_USER_PROMPT
-from config.system_prompt import UTILITY_SCORE_SYSTEM_PROMPT,UTILITY_SCORE_USER_PROMPT
-from config.system_prompt import HELPFUL_SCORE_SYSTEM_PROMPT,HELPFUL_SCORE_USER_PROMPT
-from config.system_prompt import REASONING_SCORE_SYSTEM_PROMPT,REASONING_SCORE_USER_PROMPT
-from config.system_prompt import IMAGE_RECOGNITION_SYSTEM_PROMPT,IMAGE_RECOGNITION_USER_PROMPT
+
+# from tqdm import tqdm
+
 
 HERE = Path(__file__).absolute().parent
 
-DEFAULT_OPENAI_CHAT_COMPLETION_MODELS = [
-    'gpt-4o'
-]
+DEFAULT_OPENAI_CHAT_COMPLETION_MODELS = ['gpt-4o']
 
 
 def generate_hash_uid(to_hash: dict | tuple | list | str):
@@ -61,29 +67,37 @@ def generate_hash_uid(to_hash: dict | tuple | list | str):
 
     return hash_uid
 
+
 def hash_checker(result: dict):
     return (result['safer_id'] is not None) or result['better_id'] is not None
 
+
 def string_to_seed(s):
-    
+
     hash_value = hashlib.sha256(s.encode()).hexdigest()
 
     seed = int(hash_value, 16)
     return seed
 
+
 def fixed_random(s):
 
     seed = string_to_seed(s)
     random.seed(seed)
-    return random.choice([0,1])
+    return random.choice([0, 1])
+
 
 def post_process(response, type: str):
     order = response['order']
-    
-    if(type == "safety"):
+
+    if type == 'safety':
         pattern = r'More harmful: \[\[(.*?)\]\]'
         matches = re.findall(pattern, response['output'], re.IGNORECASE)
-        result = {'content': response['transformed_input'],'safer_id': None, 'reasoning': response['output']}
+        result = {
+            'content': response['transformed_input'],
+            'safer_id': None,
+            'reasoning': response['output'],
+        }
         if len(matches) == 1:
             match = matches[0].lower()
             if match == 'responsea':
@@ -93,10 +107,14 @@ def post_process(response, type: str):
             elif match == 'equal':
                 result['safer_id'] = -1
         return result
-    elif(type == "utility"):
+    elif type == 'utility':
         pattern = r'Better: \[\[(.*?)\]\]'
         matches = re.findall(pattern, response['output'], re.IGNORECASE)
-        result = {'content': response['transformed_input'], 'better_id': None, 'reasoning': response['output']}
+        result = {
+            'content': response['transformed_input'],
+            'better_id': None,
+            'reasoning': response['output'],
+        }
         if len(matches) == 1:
             match = matches[0].lower()
             if match == 'responsea':
@@ -106,10 +124,14 @@ def post_process(response, type: str):
             elif match == 'equal':
                 result['better_id'] = -1
         return result
-    elif(type == "empathetic"):
+    elif type == 'empathetic':
         pattern = r'More empathetic: \[\[(.*?)\]\]'
         matches = re.findall(pattern, response['output'], re.IGNORECASE)
-        result = {'content': response['transformed_input'], 'better_id': None, 'reasoning': response['output']}
+        result = {
+            'content': response['transformed_input'],
+            'better_id': None,
+            'reasoning': response['output'],
+        }
         if len(matches) == 1:
             match = matches[0].lower()
             if match == 'responsea':
@@ -119,10 +141,14 @@ def post_process(response, type: str):
             elif match == 'equal':
                 result['better_id'] = -1
         return result
-    elif(type == "reasoning"):
+    elif type == 'reasoning':
         pattern = r'Better: \[\[(.*?)\]\]'
         matches = re.findall(pattern, response['output'], re.IGNORECASE)
-        result = {'content': response['transformed_input'], 'better_id': None, 'reasoning': response['output']}
+        result = {
+            'content': response['transformed_input'],
+            'better_id': None,
+            'reasoning': response['output'],
+        }
         if len(matches) == 1:
             match = matches[0].lower()
             if match == 'responsea':
@@ -132,10 +158,14 @@ def post_process(response, type: str):
             elif match == 'equal':
                 result['better_id'] = -1
         return result
-    elif(type == "image-recognition"):
+    elif type == 'image-recognition':
         pattern = r'Better: \[\[(.*?)\]\]'
         matches = re.findall(pattern, response['output'], re.IGNORECASE)
-        result = {'content': response['transformed_input'], 'better_id': None, 'reasoning': response['output']}
+        result = {
+            'content': response['transformed_input'],
+            'better_id': None,
+            'reasoning': response['output'],
+        }
         if len(matches) == 1:
             match = matches[0].lower()
             if match == 'responsea':
@@ -145,8 +175,6 @@ def post_process(response, type: str):
             elif match == 'equal':
                 result['better_id'] = -1
         return result
-
-
 
 
 @ray.remote(num_cpus=1)
@@ -161,7 +189,7 @@ def request_openai(
 ) -> list[dict[str, object]]:
     openai_api_keys = itertools.cycle(openai_api_keys)
     openai_api_keys = next(openai_api_keys)
-    
+
     openai_api_key = openai_api_keys[0]
     if cache_dir is not None:
         cache_dir = Path(cache_dir).expanduser().absolute()
@@ -182,35 +210,31 @@ def request_openai(
     else:
         output_file = None
 
-    if (type == "image-recognition"):
+    if type == 'image-recognition':
         image_url = input['transformed_input']['image_url']
         messages = [
-        {'role': 'system', 'content': system_prompt},
-        {'role': 'user', 
-         'content': [
-             {
-                 "type": "text",
-                 "text": user_prompt
-             },
-             {
-                 "type": "image_url",
-                 "image_url": {
-                    "url": f"data:image/jpeg;base64,{image_url}"
-                },
-             }
-         ]
-        },
-      ]
-        
+            {'role': 'system', 'content': system_prompt},
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'text', 'text': user_prompt},
+                    {
+                        'type': 'image_url',
+                        'image_url': {'url': f'data:image/jpeg;base64,{image_url}'},
+                    },
+                ],
+            },
+        ]
+
     else:
-        
+
         messages = [
-        {'role': 'system', 'content': system_prompt},
-        {'role': 'user', 'content': user_prompt},
-    ]
-    
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': user_prompt},
+        ]
+
     result = input.copy()
-    
+
     result.update(
         request_openai_noexcept(
             messages=messages,
@@ -219,7 +243,7 @@ def request_openai(
             base_url=base_url,
         ),
     )
-    
+
     result['sha256'] = sha256
 
     if output_file is not None:
@@ -253,19 +277,18 @@ def batch_request_openai(
         while len(not_ready) > 0 or len(pending) > 0:
             while len(not_ready) < num_workers and len(pending) > 0:
                 idx, input = pending.popleft()
-                current_key=next(openai_api_keys_cycle)
+                current_key = next(openai_api_keys_cycle)
                 not_ready.append(
                     request_openai.remote(
                         idx,
                         type,
                         input,
                         openai_api_keys=current_key,
-                        openai_model=random.choice(openai_models),  
+                        openai_model=random.choice(openai_models),
                         base_url=base_url,
                         cache_dir=cache_dir,
                     ),
                 )
-                
 
             ready, not_ready = ray.wait(not_ready, timeout=1)
             for idx, result in ray.get(ready):
@@ -308,10 +331,10 @@ def get_openai_api_keys(
 
     return openai_api_keys
 
-def get_annotator_response_b_prompt(data, type):
-    
 
-    if(type == "safety"):
+def get_annotator_response_b_prompt(data, type):
+
+    if type == 'safety':
         question = str(data['question'])
         response_a = str(data['response_a'])
         response_b = str(data['response_b'])
@@ -321,7 +344,7 @@ def get_annotator_response_b_prompt(data, type):
             responseB=response_b,
         )
         return SAFETY_SCORE_SYSTEM_PROMPT, user_prompt
-    elif(type == "utility"):
+    elif type == 'utility':
         question = str(data['question'])
         response_a = str(data['response_a'])
         response_b = str(data['response_b'])
@@ -331,7 +354,7 @@ def get_annotator_response_b_prompt(data, type):
             responseB=response_b,
         )
         return UTILITY_SCORE_SYSTEM_PROMPT, user_prompt
-    elif(type == "empathetic"):
+    elif type == 'empathetic':
         question = str(data['question'])
         response_a = str(data['response_a'])
         response_b = str(data['response_b'])
@@ -341,7 +364,7 @@ def get_annotator_response_b_prompt(data, type):
             responseB=response_b,
         )
         return HELPFUL_SCORE_SYSTEM_PROMPT, user_prompt
-    elif(type == "reasoning"):
+    elif type == 'reasoning':
         question = str(data['question'])
         response_a = str(data['response_a'])
         response_b = str(data['response_b'])
@@ -349,50 +372,51 @@ def get_annotator_response_b_prompt(data, type):
 
         user_prompt = REASONING_SCORE_USER_PROMPT.format(
             question=question,
-            gt = ground_truth,
+            gt=ground_truth,
             response_a=response_a,
             response_b=response_b,
         )
         return REASONING_SCORE_SYSTEM_PROMPT, user_prompt
-    elif(type == "image-recognition"):
+    elif type == 'image-recognition':
         question = str(data['question'])
         response_a = str(data['response_a'])
         response_b = str(data['response_b'])
 
         user_prompt = IMAGE_RECOGNITION_USER_PROMPT.format(
             question=question,
-            response_a = response_a,
-            response_b = response_b,
+            response_a=response_a,
+            response_b=response_b,
         )
         return IMAGE_RECOGNITION_SYSTEM_PROMPT, user_prompt
-        
+
     else:
-        raise RuntimeError("not implemented type")
+        raise RuntimeError('not implemented type')
+
 
 def transform_data(data, type):
     order = fixed_random(data.get('prompt', data.get('question')))
     new_data = {}
-    if type == "reasoning":
-        new_data["target"] = data['target']
-        new_data["question"] = data.get('prompt', data.get('question'))
+    if type == 'reasoning':
+        new_data['target'] = data['target']
+        new_data['question'] = data.get('prompt', data.get('question'))
         if order == 0:
-            new_data["response_a"] = data.get('original_response_a', data.get('response_a'))
-            new_data["response_b"] = data.get('response_b_response_a', data.get('response_b'))
+            new_data['response_a'] = data.get('original_response_a', data.get('response_a'))
+            new_data['response_b'] = data.get('response_b_response_a', data.get('response_b'))
         else:
-            new_data["response_a"] = data.get('response_b_response_a', data.get('response_b'))
-            new_data["response_b"] = data.get('original_response_a', data.get('response_a'))
+            new_data['response_a'] = data.get('response_b_response_a', data.get('response_b'))
+            new_data['response_b'] = data.get('original_response_a', data.get('response_a'))
 
         new_data['order'] = order
         return new_data, order
 
-    if type == "image-recognition":
-        new_data["question"] = data.get('prompt', data.get('question'))
+    if type == 'image-recognition':
+        new_data['question'] = data.get('prompt', data.get('question'))
         if order == 0:
-            new_data["response_a"] = data.get('original_response_a', data.get('response_a'))
-            new_data["response_b"] = data.get('response_b_response_a', data.get('response_b'))
+            new_data['response_a'] = data.get('original_response_a', data.get('response_a'))
+            new_data['response_b'] = data.get('response_b_response_a', data.get('response_b'))
         else:
-            new_data["response_a"] = data.get('response_b_response_a', data.get('response_b'))
-            new_data["response_b"] = data.get('original_response_a', data.get('response_a'))
+            new_data['response_a'] = data.get('response_b_response_a', data.get('response_b'))
+            new_data['response_b'] = data.get('original_response_a', data.get('response_a'))
 
         new_data['order'] = order
         new_data['image_url'] = data.get('image_url')
@@ -402,19 +426,25 @@ def transform_data(data, type):
         violation = []
     else:
         violation = data['category']
-    
-    new_data["violation"] = violation
-    new_data["question"] = data.get('prompt', data.get('question'))
+
+    new_data['violation'] = violation
+    new_data['question'] = data.get('prompt', data.get('question'))
     if order == 0:
-        new_data["response_a"] = data.get('original_response_a', data.get('response_a'))
-        new_data["response_b"] = data.get('response_b_response_a', data.get('response_b'))
+        new_data['response_a'] = data.get('original_response_a', data.get('response_a'))
+        new_data['response_b'] = data.get('response_b_response_a', data.get('response_b'))
     else:
-        new_data["response_a"] = data.get('response_b_response_a', data.get('response_b'))
-        new_data["response_b"] = data.get('original_response_a', data.get('response_a'))
+        new_data['response_a'] = data.get('response_b_response_a', data.get('response_b'))
+        new_data['response_b'] = data.get('original_response_a', data.get('response_a'))
     new_data['order'] = order
     return new_data, order
 
-def prepare_inputs(input_file: Path | str, shuffle: bool = False, type: str = "image-recognition", platform : str = "openai") -> list[Any]:
+
+def prepare_inputs(
+    input_file: Path | str,
+    shuffle: bool = False,
+    type: str = 'image-recognition',
+    platform: str = 'openai',
+) -> list[Any]:
     input_file = Path(input_file).expanduser().absolute()
 
     if input_file.suffix.lower() == '.json':
@@ -425,20 +455,20 @@ def prepare_inputs(input_file: Path | str, shuffle: bool = False, type: str = "i
             raw_inputs = [json.loads(line) for line in f]
 
     inputs = []
-    i=0
+    i = 0
     for raw_input in raw_inputs:
         data, order = transform_data(raw_input, type)
         system_prompt, user_prompt = get_annotator_response_b_prompt(data, type)
         inputs.append(
-                {
-                    'system_prompt': system_prompt,
-                    'user_prompt': user_prompt,
-                    'transformed_input': data,
-                    'input_file': str(input_file),
-                    'order': order
-                },
-            )
-        i+=1
+            {
+                'system_prompt': system_prompt,
+                'user_prompt': user_prompt,
+                'transformed_input': data,
+                'input_file': str(input_file),
+                'order': order,
+            },
+        )
+        i += 1
 
     if shuffle:
         random.shuffle(inputs)

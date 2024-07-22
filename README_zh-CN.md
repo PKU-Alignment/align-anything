@@ -59,9 +59,9 @@ Align-Anything 是一个基于 DeepSpeed 或 NeMo （目前正在开发中）的
 
 | 训练算法 | 文本 :arrow_right: 文本 | 文本+图像 :arrow_right: 文本 | 文本 :arrow_right: 图像 | 文本 :arrow_right: 视频 | 更多模态... |
 |---|---|---|---|---|---|
-| SFT Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
+| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :car: | :car: |
 | RM Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
-| DPO Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
+| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :car: | :car: |
 | PPO Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
 | KTO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
 | ORPO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
@@ -290,7 +290,7 @@ class PKUSafeRLHF(Template):
 ## 可交互的Client
 
 ```bash
-python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path 
+python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
 ```
 
 ![cli_demo](assets/cli_demo.gif)

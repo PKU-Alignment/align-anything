@@ -78,4 +78,4 @@ python3 main.py --debug \
     --cache-dir ${SCRIPT_DIR}/.cache/${INPUT_PATH}${SCRIPT_NAME_WITHOUT_EXTENSION} \
 	--num-workers 10 \
 	--type ${INPUT_TYPE} \
-    --shuffle 
+    --shuffle

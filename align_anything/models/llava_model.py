@@ -16,7 +16,7 @@
 # limitations under the License.
 # ==============================================================================
 
-import logging
+
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
@@ -24,7 +24,6 @@ import torch
 import torch.utils.checkpoint
 from torch import nn
 from transformers import LlavaPreTrainedModel
-from transformers.models.llava.configuration_llava import LlavaConfig
 from transformers.models.llava.modeling_llava import (
     LlavaCausalLMOutputWithPast,
     LlavaForConditionalGeneration,

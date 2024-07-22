@@ -15,11 +15,14 @@
 
 EVALUATOR_REGISTRY = {}
 
+
 def register_evaluator(evaluator_name):
     def decorator(cls):
         EVALUATOR_REGISTRY[evaluator_name] = cls
         return cls
+
     return decorator
+
 
 def get_template_class(evaluator_name: str, cfgs: tuple, ds_cfgs: tuple):
     evaluator_class = EVALUATOR_REGISTRY.get(evaluator_name)
