@@ -303,7 +303,7 @@ To launch a Gradio demo locally, follow these steps by running the commands one 
 python -m align_anything.serve.controller --host 0.0.0.0 --port 10000
 ```
 
-#### Launch a gradio web server.
+#### Launch a gradio web server
 ```Shell
 python -m align_anything.serve.gradio_web_server --controller http://localhost:10000 --model-list-mode reload
 ```

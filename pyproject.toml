@@ -55,7 +55,7 @@ dependencies = [
     "gradio",
     "uvicorn",
     "fastapi",
-    "PIL"
+    "PIL",
 ]
 dynamic = ["version"]
 
