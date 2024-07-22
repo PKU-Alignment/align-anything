@@ -51,6 +51,10 @@ dependencies = [
     "pre-commit",
     "pytest",
     "shortuuid",
+    "gradio",
+    "uvicorn",
+    "fastapi",
+    "PIL"
     "diffusers",
     "gradio",
     "uvicorn",

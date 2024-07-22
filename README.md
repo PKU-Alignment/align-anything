@@ -303,7 +303,7 @@ To launch a Gradio demo locally, follow these steps by running the commands one 
 python -m align_anything.serve.controller --host 0.0.0.0 --port 10000
 ```
 
-#### Launch a gradio web server
+#### Launch a gradio web server.
 ```Shell
 python -m align_anything.serve.gradio_web_server --controller http://localhost:10000 --model-list-mode reload
 ```
@@ -325,25 +325,6 @@ python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://l
 ```
 
 You can specify the mps device by using the `--device` flag: `--device mps`, if you are using an Apple device with an M1 or M2 chip.
-
-
-# Inference
-
-## Interactive CLI Demo
-
-```bash
-python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
-```
-
-![cli_demo](assets/cli_demo.gif)
-
-## Interactive Arena
-
-```bash
-python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_model_name_or_path --blue_corner_model_name_or_path your_blue_model_name_or_path
-```
-
-![Arena-Demo](assets/arena_demo.gif)
 
 
 ## Why do we open source align-anything?
