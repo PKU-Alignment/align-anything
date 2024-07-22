@@ -13,11 +13,18 @@
 # limitations under the License.
 # ==============================================================================
 
+import dataclasses
 import os
-from typing import Any, Callable, TypeVar, cast
+import threading
+from typing import Any, Callable, Generator, TypeVar, cast
+from typing_extensions import TypeAlias
 
+import optree
 import torch
 import torch.distributed as dist
+from optree.typing import PyTreeTypeVar
+from transformers.modeling_outputs import ModelOutput
+from transformers.tokenization_utils import BatchEncoding
 from transformers.utils import (
     is_torch_cuda_available,
     is_torch_mps_available,
@@ -25,15 +32,7 @@ from transformers.utils import (
     is_torch_xpu_available,
 )
 
-from optree.typing import PyTreeTypeVar
-from typing_extensions import TypeAlias
-import threading
-import optree
-from optree.typing import PyTreeTypeVar
-from transformers.tokenization_utils import BatchEncoding
-from transformers.modeling_outputs import ModelOutput
-import dataclasses
-from typing import Generator
+
 Func = TypeVar('Func', bound=Callable[..., Any])
 
 
@@ -85,11 +84,13 @@ def get_all_reduce_max(tensor: torch.Tensor) -> torch.Tensor:
         dist.all_reduce(tensor, op=dist.ReduceOp.MAX)
     return tensor
 
+
 TensorTree: TypeAlias = PyTreeTypeVar('TensorTree', torch.Tensor)
 
 __PYTREE_REGISTRY_LOCK = threading.Lock()
 
 __PYTREE_INITIALIZED = False
+
 
 def get_subclasses(cls: type, memo: set[type] | None = None) -> Generator[type, None, None]:
     """Get all subclasses of a class recursively."""
@@ -103,10 +104,10 @@ def get_subclasses(cls: type, memo: set[type] | None = None) -> Generator[type, 
         memo.add(subclass)
         yield subclass
         yield from get_subclasses(subclass, memo=memo)
-        
+
+
 def __initialize_pytree_registry_once() -> None:
     # pylint: disable-next=import-outside-toplevel,unused-import
-    
 
     global __PYTREE_INITIALIZED  # pylint: disable=global-statement
     if __PYTREE_INITIALIZED:
@@ -141,6 +142,8 @@ def __initialize_pytree_registry_once() -> None:
             )
 
         __PYTREE_INITIALIZED = True
+
+
 def to_device(batch: TensorTree, device: torch.device | str | int | None) -> TensorTree:
     """Move a batch of tensors to a device."""
     if not __PYTREE_INITIALIZED:

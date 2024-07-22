@@ -55,7 +55,7 @@ deepspeed \
   	--train_split train \
 	--eval_split train \
 	--train_template RLAIFV \
-	--eval_template RLAIFV 
+	--eval_template RLAIFV
 ```
 
 ## DPO Training
@@ -123,5 +123,5 @@ deepspeed \
   --freeze_mm_proj True \
   --freeze_vision_tower False \
   --output_dir ${OUTPUT_DIR} \
-  --ptx_data_files llava_instruct_150k.json 
+  --ptx_data_files llava_instruct_150k.json
 ```

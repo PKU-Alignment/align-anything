@@ -71,7 +71,14 @@ class SupervisedDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        self.raw_data = load_dataset(path, split=split, data_files=data_files, subset=subset,  *optional_args, trust_remote_code=True)
+        self.raw_data = load_dataset(
+            path,
+            split=split,
+            data_files=data_files,
+            subset=subset,
+            *optional_args,
+            trust_remote_code=True,
+        )
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
         self.template = get_template_class(template)
@@ -159,7 +166,7 @@ class SupervisedCollator:
         return_dict['attention_mask'] = (
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
         )
-        
+
         return_dict['pixel_values'] = torch.stack(
             [sample['pixel_values'] for sample in samples]
         ).to(current_device)

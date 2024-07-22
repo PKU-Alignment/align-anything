@@ -21,20 +21,14 @@ import sys
 
 import deepspeed
 import torch
-
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from transformers import GenerationConfig
+from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
+from align_anything.datasets.text_image_to_text import PromptOnlyDataset, SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.trainers.text_to_text.ppo import PPOTrainer as PPOTextTrainer
-from align_anything.datasets.text_image_to_text import (
-    PromptOnlyDataset,
-    SupervisedDataset,
-)
-from align_anything.utils.multi_process import (
-    get_current_device,
-)
+from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -51,7 +45,9 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         # load training datasets
-        self.prompt_only_dataloader, self.eval_dataloader, self.ptx_dataloader = self.get_dataloaders(PromptOnlyDataset, PromptOnlyDataset, SupervisedDataset)
+        self.prompt_only_dataloader, self.eval_dataloader, self.ptx_dataloader = (
+            self.get_dataloaders(PromptOnlyDataset, PromptOnlyDataset, SupervisedDataset)
+        )
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
@@ -76,13 +72,11 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
         )
         # loading reward model
-        self.reward_model, self.reward_tokenizer, _ = (
-            load_pretrained_model_with_value_head(
-                self.cfgs.model_cfgs.reward_model_name_or_path,
-                model_max_length=self.cfgs.model_cfgs.model_max_length,
-                padding_side='right',
-                trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-            )
+        self.reward_model, self.reward_tokenizer, _ = load_pretrained_model_with_value_head(
+            self.cfgs.model_cfgs.reward_model_name_or_path,
+            model_max_length=self.cfgs.model_cfgs.model_max_length,
+            padding_side='right',
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = (

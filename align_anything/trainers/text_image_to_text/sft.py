@@ -23,9 +23,9 @@ import deepspeed
 import torch
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
+from align_anything.datasets.text_image_to_text import SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.sft import SupervisedTrainer as SupervisedtextTrainer
-from align_anything.datasets.text_image_to_text import SupervisedDataset
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
@@ -37,10 +37,12 @@ from align_anything.utils.tools import (
 
 
 class SuperviseTrainer(SupervisedtextTrainer):
-    
+
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(SupervisedDataset, SupervisedDataset)
+        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+            SupervisedDataset, SupervisedDataset
+        )
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
@@ -54,6 +56,7 @@ class SuperviseTrainer(SupervisedtextTrainer):
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
         )
+
 
 def main():
     # setup distribution training

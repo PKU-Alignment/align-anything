@@ -70,12 +70,19 @@ class PreferenceDataset(Dataset):
         self.tokenizer = tokenizer
         self.processor = processor
         self.template = get_template_class(template)
-        
+
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        self.raw_data = load_dataset(path, split=split, data_files=data_files, subset=subset,  *optional_args, trust_remote_code=True)
+        self.raw_data = load_dataset(
+            path,
+            split=split,
+            data_files=data_files,
+            subset=subset,
+            *optional_args,
+            trust_remote_code=True,
+        )
         self.valid_indices = self.fillter_indices()
-        
+
         if size:
             size = min(size, len(self.raw_data))
             self.raw_data = self.raw_data.select(range(int(size)))

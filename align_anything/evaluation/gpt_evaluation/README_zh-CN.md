@@ -11,26 +11,26 @@
 对于安全性，有效性，同理心任务，jsonl文件的格式要求如下
 ```bash
 {
-  "question": <your question>, 
-  "response_a": <response_a>,  
-  "response_b": <response_b> 
+  "question": <your question>,
+  "response_a": <response_a>,
+  "response_b": <response_b>
 }
 ```
 对于推理任务，jsonl文件的格式要求如下
 ```bash
-{ 
-  "question": <your question>, 
-  "response_a": <response_a>, 
-  "response_b": <response_b>, 
+{
+  "question": <your question>,
+  "response_a": <response_a>,
+  "response_b": <response_b>,
   "target": <the ground-truth answer of your question>
 }
 ```
 对于图像-文本任务，jsonl文件的格式要求如下
 ```bash
-{ 
-  "question": <your question>, 
-  "response_a": <response_a>, 
-  "response_b": <response_b>, 
+{
+  "question": <your question>,
+  "response_a": <response_a>,
+  "response_b": <response_b>,
   "image_url": <the image_url of your image>
 }
 ```

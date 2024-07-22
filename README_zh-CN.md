@@ -290,7 +290,7 @@ class PKUSafeRLHF(Template):
 ## 可交互的Client
 
 ```bash
-python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path 
+python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
 ```
 
 ![cli_demo](assets/cli_demo.gif)

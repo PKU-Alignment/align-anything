@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Trainer for supervised training."""
+"""Trainer base for supervised training."""
 
 
 import os
@@ -23,25 +23,20 @@ import deepspeed
 import torch
 import torch.distributed as dist
 from deepspeed.ops.adam import FusedAdam
+from diffusers import StableDiffusionPipeline
+from diffusers.loaders import LoraLoaderMixin
+from diffusers.utils import convert_state_dict_to_diffusers
+from diffusers.utils.torch_utils import is_compiled_module
+from peft.utils import get_peft_model_state_dict
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
-from transformers import get_scheduler, CONFIG_NAME, PreTrainedModel
+from transformers import CONFIG_NAME, PreTrainedModel, get_scheduler
 
 from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import is_main_process
 from align_anything.utils.template_registry import get_template_class
-from align_anything.utils.tools import (
-    get_optimizer_grouped_parameters,
-    namedtuple_to_dict,
-)
-
-from diffusers import StableDiffusionPipeline
-from diffusers.loaders import LoraLoaderMixin
-from diffusers.utils.torch_utils import is_compiled_module
-from diffusers.utils import convert_state_dict_to_diffusers
-
-from peft.utils import get_peft_model_state_dict
+from align_anything.utils.tools import get_optimizer_grouped_parameters, namedtuple_to_dict
 
 
 class SupervisedTrainerBase:
@@ -108,7 +103,7 @@ class SupervisedTrainerBase:
                 batch_size=self.cfgs.train_cfgs.per_device_train_batch_size,
             )
             return train_dataloader, eval_dataloader
-        
+
         return train_dataloader, None
 
     def init_deepspeed_engines(self) -> None:
@@ -157,7 +152,7 @@ class SupervisedTrainerBase:
             betas=self.cfgs.train_cfgs.adam_betas,
             eps=self.cfgs.train_cfgs.adam_epsilon,
         )
-        
+
         num_warmup_steps = int(self.cfgs.train_cfgs.lr_warmup_ratio * total_training_steps)
         self.lr_scheduler = get_scheduler(
             name=self.cfgs.train_cfgs.lr_scheduler_type,
@@ -167,8 +162,10 @@ class SupervisedTrainerBase:
         )
         if self.cfgs.train_cfgs.gradient_checkpointing:
             self.model.enable_gradient_checkpointing()
-        self.model, self.optimizer, self.train_dataloader, self.lr_scheduler = self.accelerator.prepare(
-            self.model, self.optimizer, self.train_dataloader, self.lr_scheduler
+        self.model, self.optimizer, self.train_dataloader, self.lr_scheduler = (
+            self.accelerator.prepare(
+                self.model, self.optimizer, self.train_dataloader, self.lr_scheduler
+            )
         )
 
     def train(self) -> None:
@@ -283,7 +280,7 @@ class SupervisedTrainerBase:
         model.save_16bit_model(self.cfgs.logger_cfgs.output_dir, save_filename=save_file_name)
 
         self.logger.print('Model saved!')
-        
+
     def save_diffusers(
         self,
         tag: int | None = None,
@@ -295,10 +292,16 @@ class SupervisedTrainerBase:
             model = self.accelerator.unwrap_model(self.model)
             if self.cfgs.train_cfgs.lora_unet:
                 model = model.to(torch.float32)
-                pipeline = StableDiffusionPipeline.from_pretrained(self.cfgs.model_cfgs.model_name_or_path)
-                unet_lora_state_dict = convert_state_dict_to_diffusers(get_peft_model_state_dict(model))
+                pipeline = StableDiffusionPipeline.from_pretrained(
+                    self.cfgs.model_cfgs.model_name_or_path
+                )
+                unet_lora_state_dict = convert_state_dict_to_diffusers(
+                    get_peft_model_state_dict(model)
+                )
                 LoraLoaderMixin.save_lora_weights(
-                    save_directory=save_dir, unet_lora_layers=unet_lora_state_dict, text_encoder_lora_layers=None
+                    save_directory=save_dir,
+                    unet_lora_layers=unet_lora_state_dict,
+                    text_encoder_lora_layers=None,
                 )
             else:
                 model = model._orig_mod if is_compiled_module(model) else model

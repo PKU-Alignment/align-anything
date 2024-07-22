@@ -21,11 +21,10 @@ import sys
 
 import deepspeed
 import torch
-
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.datasets.text_image_to_text.preference import PreferenceDataset
+from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
@@ -36,11 +35,14 @@ from align_anything.utils.tools import (
     update_dict,
 )
 
+
 class DPOTrainer(DPOtextTrainer):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(PreferenceDataset, PreferenceDataset)
+        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+            PreferenceDataset, PreferenceDataset
+        )
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
@@ -62,6 +64,7 @@ class DPOTrainer(DPOtextTrainer):
             padding_side='left',
             trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
         )
+
 
 def main():
     # setup distribution training

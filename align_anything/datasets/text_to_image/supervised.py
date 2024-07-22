@@ -13,25 +13,22 @@
 # limitations under the License.
 # ==============================================================================
 
-from __future__ import annotations
-
 
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
 import torch
 import transformers
+from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
+from align_anything.utils.process_image import get_image_processor
 from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
-from align_anything.utils.process_image import get_image_processor
 from datasets import load_dataset
-
-from PIL import Image
 
 
 IGNORE_INDEX = -100
@@ -76,10 +73,17 @@ class SupervisedDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.transforms = processor
-        
+
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        self.raw_data = load_dataset(path, split=split, data_files=data_files, subset=subset,  *optional_args, trust_remote_code=True)
+        self.raw_data = load_dataset(
+            path,
+            split=split,
+            data_files=data_files,
+            subset=subset,
+            *optional_args,
+            trust_remote_code=True,
+        )
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
         self.template = get_template_class(template)
@@ -87,7 +91,9 @@ class SupervisedDataset(Dataset):
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         formatted_sample = self.template.format_sample(raw_sample)
         return_dict = {}
-        return_dict['input_ids'] = self.tokenize(formatted_sample['prompt'], add_special_tokens=False)
+        return_dict['input_ids'] = self.tokenize(
+            formatted_sample['prompt'], add_special_tokens=False
+        )
         return_dict['pixel_values'] = self.process_image(formatted_sample['image'])
         return return_dict
 

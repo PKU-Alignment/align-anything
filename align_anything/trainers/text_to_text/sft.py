@@ -19,11 +19,11 @@ import argparse
 import os
 import sys
 from typing import Any
-from tqdm import tqdm
 
 import deepspeed
 import torch
 import torch.distributed as dist
+from tqdm import tqdm
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.datasets.text_to_text.supervised import SupervisedBatch, SupervisedDataset
@@ -75,7 +75,9 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(SupervisedDataset, SupervisedDataset)
+        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+            SupervisedDataset, SupervisedDataset
+        )
 
     def init_engines(self) -> None:
         """Initialize DeepSpeed engines."""

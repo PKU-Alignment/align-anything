@@ -198,7 +198,7 @@ The specific path depends on your `cuda` path.
 
 ## Customized Dataset
 
-Align-anything offers a highly scalable dataset registration interface, enabling users to embed customized datasets simply by designing and specifying their `template.py`. 
+Align-anything offers a highly scalable dataset registration interface, enabling users to embed customized datasets simply by designing and specifying their `template.py`.
 
 Taking [PKU-Alignment/PKU-SafeRLHF](https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF) as an example, we illustrate here how to design the template and incorporate it into a complete RLHF workflow.
 
@@ -297,7 +297,7 @@ After designing the aforementioned template, you just need to specify this templ
 ## Interactive CLI Demo
 
 ```bash
-python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path 
+python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
 ```
 
 ![cli_demo](assets/cli_demo.gif)

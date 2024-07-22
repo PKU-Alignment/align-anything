@@ -92,7 +92,9 @@ class SimPOTrainer(SupervisedTrainerBase):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(PreferenceDataset, PreferenceDataset)
+        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+            PreferenceDataset, PreferenceDataset
+        )
 
     def init_engines(self) -> None:
         """Initialize DeepSpeed engines."""
@@ -152,11 +154,12 @@ class SimPOTrainer(SupervisedTrainerBase):
 
             better_log_prob = better_sequence_log_probs[i, better_seq_slice].sum(dim=-1)
             worse_log_prob = worse_sequence_log_probs[i, worse_seq_slice].sum(dim=-1)
-            better_log_ratio = better_log_prob/ better_input_length
-            worse_log_ratio = worse_log_prob/ worse_input_length
+            better_log_ratio = better_log_prob / better_input_length
+            worse_log_ratio = worse_log_prob / worse_input_length
             losses.append(
                 -F.logsigmoid(
-                    self.cfgs.train_cfgs.scale_coeff * (better_log_ratio - worse_log_ratio)-self.cfgs.train_cfgs.gamma,
+                    self.cfgs.train_cfgs.scale_coeff * (better_log_ratio - worse_log_ratio)
+                    - self.cfgs.train_cfgs.gamma,
                 ),
             )
             better_sample_rewards.append(

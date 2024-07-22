@@ -14,5 +14,5 @@
 # ==============================================================================
 
 
-from align_anything.trainers.base.supervised_trainer import SupervisedTrainerBase
 from align_anything.trainers.base.rl_trainer import RLTrainerBase
+from align_anything.trainers.base.supervised_trainer import SupervisedTrainerBase

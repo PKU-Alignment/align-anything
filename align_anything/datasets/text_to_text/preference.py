@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 
-from __future__ import annotations
 
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
@@ -69,12 +68,19 @@ class PreferenceDataset(Dataset):
         self.tokenizer = tokenizer
         self.processor = processor
         self.template = get_template_class(template)
-        
+
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        self.raw_data = load_dataset(path, split=split, data_files=data_files, subset=subset,  *optional_args, trust_remote_code=True)
+        self.raw_data = load_dataset(
+            path,
+            split=split,
+            data_files=data_files,
+            subset=subset,
+            *optional_args,
+            trust_remote_code=True,
+        )
         self.valid_indices = self.fillter_indices()
-        
+
         if size:
             size = min(size, len(self.raw_data))
             self.raw_data = self.raw_data.select(range(int(size)))
@@ -103,7 +109,7 @@ class PreferenceDataset(Dataset):
             raise NotImplementedError
         return_dict['better_input_ids'] = self.tokenize(raw_better_text)
         return_dict['worse_input_ids'] = self.tokenize(raw_worse_text)
-        
+
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
@@ -183,15 +189,24 @@ class RandomPreferenceDataset(Dataset):
         super().__init__()
         self.tokenizer = tokenizer
         self.processor = processor
-        self.raw_data = load_dataset(path, split=split, data_files=data_files, subset=subset,  *optional_args, trust_remote_code=True)
+        self.raw_data = load_dataset(
+            path,
+            split=split,
+            data_files=data_files,
+            subset=subset,
+            *optional_args,
+            trust_remote_code=True,
+        )
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
         self.template = get_template_class(template)
 
-    def preprocess(self, raw_sample_1: dict[str, Any], raw_sample_2: dict[str, Any]) -> PreferenceSample:
-        
-        formatted_sample_2 = self.template.format_sample(raw_sample_2)["better_text"]
-        assert(isinstance(formatted_sample_2, str))
+    def preprocess(
+        self, raw_sample_1: dict[str, Any], raw_sample_2: dict[str, Any]
+    ) -> PreferenceSample:
+
+        formatted_sample_2 = self.template.format_sample(raw_sample_2)['better_text']
+        assert isinstance(formatted_sample_2, str)
         formatted_prompt_1 = self.template.format_prompt_only_sample(raw_sample_1)['text']
         formatted_prompt_2 = self.template.format_prompt_only_sample(raw_sample_2)['text']
         formatted_response_2 = formatted_sample_2.removeprefix(formatted_prompt_2)
@@ -230,10 +245,10 @@ class RandomPreferenceDataset(Dataset):
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
         raw_sample = self.raw_data[index]
-        if index==0:
+        if index == 0:
             raw_sample_change = self.raw_data[-1]
         else:
-            raw_sample_change = self.raw_data[index-1]
+            raw_sample_change = self.raw_data[index - 1]
         data = self.preprocess(raw_sample, raw_sample_change)
         return data
 
@@ -252,8 +267,8 @@ class RandomPreferenceCollator:
         return_dict = {}
         current_device = get_current_device()
 
-        input_ids = [sample['better_input_ids'] for sample in samples] 
-          # size = (B, L)
+        input_ids = [sample['better_input_ids'] for sample in samples]
+        # size = (B, L)
         return_dict['input_ids'] = right_padding(input_ids, padding_value=self.pad_token_id).to(
             current_device
         )  # size = (2 * B, L)

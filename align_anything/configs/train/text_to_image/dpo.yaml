@@ -110,6 +110,6 @@ model_cfgs:
   trust_remote_code: True
   # The max token length
   model_max_length: 512
-  # Whether 
+  # Whether
 # Customized special tokens
 special_tokens: null

@@ -21,15 +21,12 @@ import sys
 
 import deepspeed
 import torch
-
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.trainers.text_to_text.rm import RMTrainer as RMtextTrainer
-from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.datasets.text_image_to_text.preference import PreferenceDataset
-from align_anything.utils.multi_process import (
-    get_current_device,
-)
+from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
+from align_anything.trainers.text_to_text.rm import RMTrainer as RMtextTrainer
+from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -43,7 +40,9 @@ class RMTrainer(RMtextTrainer):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(PreferenceDataset, PreferenceDataset)
+        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+            PreferenceDataset, PreferenceDataset
+        )
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
@@ -57,6 +56,7 @@ class RMTrainer(RMtextTrainer):
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
         )
+
 
 def main():
     # setup distribution training

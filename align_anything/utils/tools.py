@@ -145,6 +145,7 @@ def prepare_ds_train_cfgs(custom_cfgs: NamedTuple, raw_ds_cfgs: dict[str, Any]) 
     ds_cfgs['fp16']['enabled'] = custom_cfgs.fp16
     return ds_cfgs
 
+
 def prepare_accelerate_train_cfgs(custom_cfgs: NamedTuple) -> dict[str, Any]:
     """Prepare the DeepSpeed config for training."""
     cfgs = {}
@@ -323,6 +324,7 @@ def masked_mean(
         return x.mean()
     return ((x * mask).sum(dim=-1) / mask.sum(dim=-1)).mean()
 
+
 def str2bool(string: str) -> bool:
     """Convert a string literal to a boolean value."""
     if string.lower() in {'1', 'true', 't', 'yes', 'y', 'on'}:
@@ -331,9 +333,10 @@ def str2bool(string: str) -> bool:
         return False
     return bool(string)
 
+
 def parse_unknown_args():
-    parser = argparse.ArgumentParser(description="Parse bash arguments.")
-    
+    parser = argparse.ArgumentParser(description='Parse bash arguments.')
+
     # parse unknown arguments
     _, unknown = parser.parse_known_args()
     args_dict = {}

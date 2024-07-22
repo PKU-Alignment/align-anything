@@ -21,14 +21,12 @@ from typing import Any
 
 import deepspeed
 import torch
-import torch.nn.functional as F
-
-from accelerate import Accelerator
-
 import torch.distributed as dist
+import torch.nn.functional as F
+from accelerate import Accelerator
 from tqdm import tqdm
 
-from align_anything.datasets.text_to_image import SupervisedDataset, SupervisedBatch
+from align_anything.datasets.text_to_image import SupervisedBatch, SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_diffusion_models
 from align_anything.trainers.base import SupervisedTrainerBase
 from align_anything.utils.multi_process import get_current_device, is_main_process
@@ -36,19 +34,18 @@ from align_anything.utils.process_image import get_image_processor
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
+    parse_unknown_args,
+    prepare_accelerate_train_cfgs,
     read_cfgs,
     seed_everything,
     update_dict,
-    parse_unknown_args,
-    prepare_accelerate_train_cfgs
 )
-
 
 
 class SupervisedTrainer(SupervisedTrainerBase):
 
     def __init__(self, cfgs) -> None:
-        """Initialize the SFT trainer."""
+        """Initialize the SFT diffusion trainer."""
         self.cfgs = cfgs
         self.muti_process_cfgs = prepare_accelerate_train_cfgs(custom_cfgs=cfgs.train_cfgs)
         self.global_step = 0
@@ -76,18 +73,22 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
-        self.model, self.vae, self.text_encoder, self.noise_scheduler, self.tokenizer = load_pretrained_diffusion_models(
-            self.cfgs.model_cfgs.model_name_or_path,
-            trust_remote_code=True,
-            freeze_unet=self.cfgs.train_cfgs.freeze_unet,
-            lora_unet=self.cfgs.train_cfgs.lora_unet,
-            dtype=self.dtype
+        self.model, self.vae, self.text_encoder, self.noise_scheduler, self.tokenizer = (
+            load_pretrained_diffusion_models(
+                self.cfgs.model_cfgs.model_name_or_path,
+                trust_remote_code=True,
+                freeze_unet=self.cfgs.train_cfgs.freeze_unet,
+                lora_unet=self.cfgs.train_cfgs.lora_unet,
+                dtype=self.dtype,
+            )
         )
         self.processor = get_image_processor(resolution=int(self.cfgs.train_cfgs.resolution))
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(SupervisedDataset, SupervisedDataset)
+        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+            SupervisedDataset, SupervisedDataset
+        )
 
     def init_engines(self) -> None:
         """Initialize Accelerate engines."""
@@ -95,26 +96,32 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
     def loss(self, batch: SupervisedBatch) -> dict[str, torch.Tensor]:
         """Loss function for supervised finetuning."""
-        latents = self.vae.encode(batch["pixel_values"].to(self.vae.dtype)).latent_dist.sample()
+        latents = self.vae.encode(batch['pixel_values'].to(self.vae.dtype)).latent_dist.sample()
         latents = latents * self.vae.config.scaling_factor
 
         noise = torch.randn_like(latents)
         batch_size = latents.shape[0]
-        timesteps = torch.randint(0, self.noise_scheduler.config.num_train_timesteps, (batch_size,), device=latents.device)
+        timesteps = torch.randint(
+            0, self.noise_scheduler.config.num_train_timesteps, (batch_size,), device=latents.device
+        )
         timesteps = timesteps.long()
         noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
-        
-        encoder_hidden_states = self.text_encoder(batch["input_ids"], return_dict=False)[0]
-        if self.noise_scheduler.config.prediction_type == "epsilon":
+
+        encoder_hidden_states = self.text_encoder(batch['input_ids'], return_dict=False)[0]
+        if self.noise_scheduler.config.prediction_type == 'epsilon':
             target = noise
-        elif self.noise_scheduler.config.prediction_type == "v_prediction":
+        elif self.noise_scheduler.config.prediction_type == 'v_prediction':
             target = self.noise_scheduler.get_velocity(latents, noise, timesteps)
         else:
-            raise ValueError(f"Unknown prediction type {self.noise_scheduler.config.prediction_type}")
-        
-        model_pred = self.model(noisy_latents, timesteps, encoder_hidden_states, return_dict=False)[0]
-        loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
-        
+            raise ValueError(
+                f'Unknown prediction type {self.noise_scheduler.config.prediction_type}'
+            )
+
+        model_pred = self.model(noisy_latents, timesteps, encoder_hidden_states, return_dict=False)[
+            0
+        ]
+        loss = F.mse_loss(model_pred.float(), target.float(), reduction='mean')
+
         return {
             'loss': loss,
         }
@@ -124,7 +131,9 @@ class SupervisedTrainer(SupervisedTrainerBase):
         loss = self.loss(batch)['loss']
         self.accelerator.backward(loss)
         if self.accelerator.sync_gradients:
-            self.accelerator.clip_grad_norm_(self.params_to_optimize, self.cfgs.train_cfgs.max_grad_norm)
+            self.accelerator.clip_grad_norm_(
+                self.params_to_optimize, self.cfgs.train_cfgs.max_grad_norm
+            )
         self.optimizer.step()
         self.lr_scheduler.step()
         self.optimizer.zero_grad()
@@ -185,7 +194,6 @@ class SupervisedTrainer(SupervisedTrainerBase):
                 )
                 self.logger.log(self.eval(), step=self.global_step)
 
-
     def save(self, tag: int | None = None) -> None:
         """Save the stable diffusion pipeline in Hugging Face format."""
         self.save_diffusers(tag=tag)
@@ -212,6 +220,7 @@ def main():
     trainer.train()
     trainer.save()
     trainer.accelerator.end_training()
+
 
 if __name__ == '__main__':
     sys.exit(main())

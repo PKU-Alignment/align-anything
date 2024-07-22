@@ -29,7 +29,6 @@ from tqdm import tqdm
 from transformers import GenerationConfig
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.trainers.base import RLTrainerBase
 from align_anything.datasets.text_to_text import (
     PromptOnlyBatch,
     PromptOnlyDataset,
@@ -37,6 +36,7 @@ from align_anything.datasets.text_to_text import (
 )
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
+from align_anything.trainers.base import RLTrainerBase
 from align_anything.utils.multi_process import (
     get_all_reduce_max,
     get_all_reduce_mean,
@@ -107,13 +107,11 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
         )
         # loading reward model
-        self.reward_model, self.reward_tokenizer, _ = (
-            load_pretrained_model_with_value_head(
-                self.cfgs.model_cfgs.reward_model_name_or_path,
-                model_max_length=self.cfgs.model_cfgs.model_max_length,
-                padding_side='right',
-                trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-            )
+        self.reward_model, self.reward_tokenizer, _ = load_pretrained_model_with_value_head(
+            self.cfgs.model_cfgs.reward_model_name_or_path,
+            model_max_length=self.cfgs.model_cfgs.model_max_length,
+            padding_side='right',
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = (
@@ -169,8 +167,10 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         # load training datasets
-        self.prompt_only_dataloader, self.eval_dataloader, self.ptx_dataloader = self.get_dataloaders(PromptOnlyDataset, PromptOnlyDataset, SupervisedDataset)
-        
+        self.prompt_only_dataloader, self.eval_dataloader, self.ptx_dataloader = (
+            self.get_dataloaders(PromptOnlyDataset, PromptOnlyDataset, SupervisedDataset)
+        )
+
     def init_engines(self) -> None:
         """Initialize DeepSpeed engines."""
         self.init_deepspeed_engines()

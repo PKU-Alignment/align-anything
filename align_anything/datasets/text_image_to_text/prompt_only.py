@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 
-from __future__ import annotations
 
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
@@ -21,8 +20,9 @@ from typing_extensions import TypedDict  # Python 3.10+
 import torch
 import transformers
 from torch.utils.data import Dataset
-from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 from torchvision import transforms
+from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
+
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import left_padding
@@ -83,7 +83,14 @@ class PromptOnlyDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        raw_data_duplicated = load_dataset(path, split=split, data_files=data_files, subset=subset,  *optional_args, trust_remote_code=True)
+        raw_data_duplicated = load_dataset(
+            path,
+            split=split,
+            data_files=data_files,
+            subset=subset,
+            *optional_args,
+            trust_remote_code=True,
+        )
         self.template = get_template_class(template)
         self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
 

@@ -17,31 +17,32 @@
 # limitations under the License.
 # ==============================================================================
 
+import ast
+import dataclasses
+import json
 import os
 import re
-import ast
-import json
 import time
-import openai
-import dataclasses
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple, Union
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, Union, Any
+import openai
+
 
 # API setting constants
 API_MAX_RETRY = 16
 API_RETRY_SLEEP = 10
-API_ERROR_OUTPUT = "$ERROR$"
+API_ERROR_OUTPUT = '$ERROR$'
 
 TIE_DELTA = 0.1
 
 # Categories that need reference answers
-NEED_REF_CATS = ["math", "reasoning", "coding", "arena-hard-200"]
+NEED_REF_CATS = ['math', 'reasoning', 'coding', 'arena-hard-200']
 
 # Extract scores from judgments
-two_score_pattern = re.compile("\[\[(\d+\.?\d*),\s?(\d+\.?\d*)\]\]")
-two_score_pattern_backup = re.compile("\[(\d+\.?\d*),\s?(\d+\.?\d*)\]")
-one_score_pattern = re.compile("\[\[(\d+\.?\d*)\]\]")
-one_score_pattern_backup = re.compile("\[(\d+\.?\d*)\]")
+two_score_pattern = re.compile(r'\[\[(\d+\.?\d*),\s?(\d+\.?\d*)\]\]')
+two_score_pattern_backup = re.compile(r'\[(\d+\.?\d*),\s?(\d+\.?\d*)\]')
+one_score_pattern = re.compile(r'\[\[(\d+\.?\d*)\]\]')
+one_score_pattern_backup = re.compile(r'\[(\d+\.?\d*)\]')
 
 
 @dataclasses.dataclass
@@ -50,6 +51,7 @@ class Judge:
     prompt_template: Dict[str, Any]
     ref_based: bool = False
     multi_turn: bool = False
+
 
 @dataclasses.dataclass
 class MatchSingle:
@@ -60,12 +62,15 @@ class MatchSingle:
     ref_answer: Optional[Dict[str, Any]] = None
     multi_turn: bool = False
 
+
 def make_judge(judge_model: str, judge_prompts: Dict[str, Dict[str, Any]]) -> Dict[str, Judge]:
     return {
-        "default": Judge(judge_model, judge_prompts["single-v1"]),
-        "math": Judge(judge_model, judge_prompts["single-math-v1"], ref_based=True),
-        "default-mt": Judge(judge_model, judge_prompts["single-v1-multi-turn"], multi_turn=True),
-        "math-mt": Judge(judge_model, judge_prompts["single-math-v1-multi-turn"], ref_based=True, multi_turn=True)
+        'default': Judge(judge_model, judge_prompts['single-v1']),
+        'math': Judge(judge_model, judge_prompts['single-math-v1'], ref_based=True),
+        'default-mt': Judge(judge_model, judge_prompts['single-v1-multi-turn'], multi_turn=True),
+        'math-mt': Judge(
+            judge_model, judge_prompts['single-math-v1-multi-turn'], ref_based=True, multi_turn=True
+        ),
     }
 
 
@@ -75,68 +80,66 @@ def make_match(
     model_answers: Dict[str, Dict[str, Any]],
     judge: Judge,
     ref_answers: Optional[Dict[str, Dict[str, Any]]] = None,
-    multi_turn: bool = False
+    multi_turn: bool = False,
 ) -> List[MatchSingle]:
     matches = []
     for question in questions:
-        if multi_turn and len(question["turns"]) != 2:
+        if multi_turn and len(question['turns']) != 2:
             continue
-        question_id = question["question_id"]
+        question_id = question['question_id']
         model_answer = model_answers[model][question_id]
         ref_answer = ref_answers[judge.model_name][question_id] if ref_answers else None
         matches.append(
             MatchSingle(
-                question,
-                model,
-                model_answer,
-                judge,
-                ref_answer=ref_answer,
-                multi_turn=multi_turn
+                question, model, model_answer, judge, ref_answer=ref_answer, multi_turn=multi_turn
             )
         )
     return matches
+
 
 def run_judge(
     question: Dict[str, Any],
     answer: Dict[str, Any],
     judge: Judge,
     ref_answer: Optional[Dict[str, Any]] = None,
-    multi_turn: bool = False
+    multi_turn: bool = False,
 ) -> Tuple[int, str, str]:
     kwargs = {}
     model = judge.model_name
 
     if ref_answer:
-        kwargs["ref_answer_1"] = ref_answer["choices"][0]["turns"][0]
+        kwargs['ref_answer_1'] = ref_answer['choices'][0]['turns'][0]
         if multi_turn:
-            kwargs["ref_answer_2"] = ref_answer["choices"][0]["turns"][1]
+            kwargs['ref_answer_2'] = ref_answer['choices'][0]['turns'][1]
 
     if multi_turn:
-        user_prompt = judge.prompt_template["prompt_template"].format(
-            question_1=question["turns"][0],
-            question_2=question["turns"][1],
-            answer_1=answer["choices"][0]["turns"][0],
-            answer_2=answer["choices"][0]["turns"][1],
+        user_prompt = judge.prompt_template['prompt_template'].format(
+            question_1=question['turns'][0],
+            question_2=question['turns'][1],
+            answer_1=answer['choices'][0]['turns'][0],
+            answer_2=answer['choices'][0]['turns'][1],
             **kwargs,
         )
     else:
-        user_prompt = judge.prompt_template["prompt_template"].format(
-            question=question["turns"][0],
-            answer=answer["choices"][0]["turns"][0],
+        user_prompt = judge.prompt_template['prompt_template'].format(
+            question=question['turns'][0],
+            answer=answer['choices'][0]['turns'][0],
             **kwargs,
         )
 
-    system_prompt = judge.prompt_template["system_prompt"]
+    system_prompt = judge.prompt_template['system_prompt']
     messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt}
+        {'role': 'system', 'content': system_prompt},
+        {'role': 'user', 'content': user_prompt},
     ]
 
     judgment = chat_completion_openai(model, messages, temperature=0, max_tokens=2048)
 
     rating = -1
-    if judge.prompt_template["output_format"] == "[[rating]]":
-        match = re.search(one_score_pattern, judgment) or re.search(one_score_pattern_backup, judgment)
+    if judge.prompt_template['output_format'] == '[[rating]]':
+        match = re.search(one_score_pattern, judgment) or re.search(
+            one_score_pattern_backup, judgment
+        )
         if match:
             rating = ast.literal_eval(match.groups()[0])
     else:
@@ -144,20 +147,21 @@ def run_judge(
 
     return rating, user_prompt, judgment
 
+
 def play_a_match(match: MatchSingle, output_file: Optional[str] = None) -> Dict[str, Any]:
     score, user_prompt, judgment = run_judge(
         match.question, match.answer, match.judge, match.ref_answer, multi_turn=match.multi_turn
     )
 
     result = {
-        "question_id": match.question["question_id"],
-        "model": match.model,
-        "judge": (match.judge.model_name, match.judge.prompt_template["name"]),
-        "user_prompt": user_prompt,
-        "judgment": judgment,
-        "score": score,
-        "turn": 1 if not match.multi_turn else 2,
-        "tstamp": time.time(),
+        'question_id': match.question['question_id'],
+        'model': match.model,
+        'judge': (match.judge.model_name, match.judge.prompt_template['name']),
+        'user_prompt': user_prompt,
+        'judgment': judgment,
+        'score': score,
+        'turn': 1 if not match.multi_turn else 2,
+        'tstamp': time.time(),
     }
 
     print(
@@ -167,26 +171,28 @@ def play_a_match(match: MatchSingle, output_file: Optional[str] = None) -> Dict[
 
     if output_file:
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        with open(output_file, "a") as fout:
+        with open(output_file, 'a') as fout:
             json.dump(result, fout)
-            fout.write("\n")
+            fout.write('\n')
 
     return result
 
+
 def load_jsonl(file_path: str) -> List[Dict[str, Any]]:
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         return [json.loads(line) for line in f]
+
 
 def chat_completion_openai(
     model: str,
     messages: List[Dict[str, str]],
     temperature: float,
     max_tokens: int,
-    api_dict: Optional[Dict[str, str]] = None
+    api_dict: Optional[Dict[str, str]] = None,
 ) -> str:
     if api_dict:
-        openai.api_base = api_dict.get("api_base", openai.api_base)
-        openai.api_key = api_dict.get("api_key", openai.api_key)
+        openai.api_base = api_dict.get('api_base', openai.api_base)
+        openai.api_key = api_dict.get('api_key', openai.api_key)
 
     for _ in range(API_MAX_RETRY):
         try:
@@ -199,7 +205,7 @@ def chat_completion_openai(
             )
             return response.choices[0].message.content
         except Exception as e:
-            print(f"Exception: {e}")
+            print(f'Exception: {e}')
             time.sleep(API_RETRY_SLEEP)
 
     return API_ERROR_OUTPUT

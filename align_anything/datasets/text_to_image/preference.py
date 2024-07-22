@@ -13,13 +13,13 @@
 # limitations under the License.
 # ==============================================================================
 
-from __future__ import annotations
 
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
 import torch
 import transformers
+from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
@@ -28,8 +28,6 @@ from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
-
-from PIL import Image
 
 
 __all__ = [
@@ -73,34 +71,43 @@ class PreferenceDataset(Dataset):
         self.tokenizer = tokenizer
         self.template = get_template_class(template)
         self.transforms = processor
-        
+
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        self.raw_data = load_dataset(path, split=split, data_files=data_files, subset=subset,  *optional_args, trust_remote_code=True)
+        self.raw_data = load_dataset(
+            path,
+            split=split,
+            data_files=data_files,
+            subset=subset,
+            *optional_args,
+            trust_remote_code=True,
+        )
         self.valid_indices = self.fillter_indices()
-        
+
         if size:
             size = min(size, len(self.raw_data))
             self.raw_data = self.raw_data.select(range(int(size)))
-        
+
     def fillter_indices(self):
         valid_indices = []
         for i, item in enumerate(self.raw_data):
             if not self.template.check_equal(item):
                 valid_indices.append(i)
         return valid_indices
-        
+
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
         formatted_sample = self.template.format_sample(raw_sample)
         return_dict = {}
-        
-        return_dict['input_ids'] = self.tokenize(formatted_sample['prompt'], add_special_tokens=False)
+
+        return_dict['input_ids'] = self.tokenize(
+            formatted_sample['prompt'], add_special_tokens=False
+        )
         better_pixel_values = self.process_image(formatted_sample['better_image'])
         worse_pixel_values = self.process_image(formatted_sample['worse_image'])
-        
+
         all_pixel_values = torch.cat([better_pixel_values, worse_pixel_values], dim=0)
         return_dict['pixel_values'] = all_pixel_values
-        
+
         return return_dict
 
     def process_image(self, raw_image: Image) -> torch.Tensor:
@@ -120,7 +127,7 @@ class PreferenceDataset(Dataset):
         """Tokenize a text string into a tensor representation."""
         if max_length is None:
             max_length = self.tokenizer.model_max_length
-        
+
         return self.tokenizer(
             text,
             add_special_tokens=add_special_tokens,
@@ -157,8 +164,11 @@ class PreferenceCollator:
             padding_value=self.pad_token_id,
         ).to(current_device)
 
-        return_dict['pixel_values'] = torch.stack(
-            [sample['pixel_values'] for sample in samples]
-        ).to(current_device).to(memory_format=torch.contiguous_format).float()
-        
+        return_dict['pixel_values'] = (
+            torch.stack([sample['pixel_values'] for sample in samples])
+            .to(current_device)
+            .to(memory_format=torch.contiguous_format)
+            .float()
+        )
+
         return return_dict

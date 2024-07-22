@@ -12,34 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Trainer for RL training."""
+"""Trainer base for RL training."""
 
 
+import copy
 import os
 from datetime import datetime
 from typing import Any
-import copy
 
 import deepspeed
 import torch
 import torch.distributed as dist
 import torch.nn as nn
-
 from deepspeed.ops.adam import FusedAdam
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
-from transformers import get_scheduler, CONFIG_NAME, PreTrainedModel
-
+from transformers import CONFIG_NAME, PreTrainedModel, get_scheduler
 
 from align_anything.datasets import DummyDataset
 from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import is_main_process
 from align_anything.utils.template_registry import get_template_class
-from align_anything.utils.tools import (
-    get_optimizer_grouped_parameters,
-    namedtuple_to_dict,
-)
+from align_anything.utils.tools import get_optimizer_grouped_parameters, namedtuple_to_dict
 
 
 class RLTrainerBase:
@@ -88,7 +83,7 @@ class RLTrainerBase:
             sampler=DistributedSampler(train_dataset, shuffle=True),
             batch_size=self.cfgs.train_cfgs.per_device_train_batch_size,
         )
-        
+
         # load ptx datasets
         self.use_ptx = self.cfgs.data_cfgs.ptx_datasets is not None
         if self.use_ptx:
@@ -111,7 +106,7 @@ class RLTrainerBase:
             )
         else:
             ptx_dataloader = DataLoader(DummyDataset(len(self.prompt_only_dataloader)))
-        
+
         if self.cfgs.data_cfgs.eval_datasets:
             self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
             eval_dataset = eval_data_dtype(
@@ -132,7 +127,7 @@ class RLTrainerBase:
                 batch_size=self.cfgs.train_cfgs.per_device_train_batch_size,
             )
             return train_dataloader, eval_dataloader, ptx_dataloader
-        
+
         return train_dataloader, None, ptx_dataloader
 
     def _init_train_deepspeed_engine(

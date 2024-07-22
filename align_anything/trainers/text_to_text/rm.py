@@ -81,7 +81,9 @@ class RMTrainer(SupervisedTrainerBase):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(PreferenceDataset, PreferenceDataset)
+        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+            PreferenceDataset, PreferenceDataset
+        )
 
     def init_engines(self) -> None:
         """Initialize DeepSpeed engines."""

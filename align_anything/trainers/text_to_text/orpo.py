@@ -94,7 +94,9 @@ class ORPOTrainer(SupervisedTrainerBase):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(PreferenceDataset, PreferenceDataset)
+        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+            PreferenceDataset, PreferenceDataset
+        )
 
     def init_engines(self) -> None:
         """Initialize DeepSpeed engines."""
@@ -158,20 +160,22 @@ class ORPOTrainer(SupervisedTrainerBase):
 
             better_seq_slice = slice(diverge_index, better_end_index + 1)
             worse_seq_slice = slice(diverge_index, worse_end_index + 1)
-            better_seq_length = better_end_index+1
-            worse_seq_length = worse_end_index+1
-            
+            better_seq_length = better_end_index + 1
+            worse_seq_length = worse_end_index + 1
+
             # size = ()
             better_log_prob = better_sequence_log_probs[i, better_seq_slice].sum(dim=-1)
             worse_log_prob = worse_sequence_log_probs[i, worse_seq_slice].sum(dim=-1)
             better_log_ratio = better_log_prob / better_seq_length
             worse_log_ratio = worse_log_prob / worse_seq_length
-            log_odds = (better_log_ratio - worse_log_ratio) - (torch.log1p(-torch.exp(better_log_ratio )) - torch.log1p(-torch.exp(worse_log_ratio)))
+            log_odds = (better_log_ratio - worse_log_ratio) - (
+                torch.log1p(-torch.exp(better_log_ratio)) - torch.log1p(-torch.exp(worse_log_ratio))
+            )
             odds_ratio_loss = -F.logsigmoid(log_odds)
 
             sft_loss = -better_log_ratio
             losses.append(
-                sft_loss+self.cfgs.train_cfgs.scale_coeff *odds_ratio_loss,
+                sft_loss + self.cfgs.train_cfgs.scale_coeff * odds_ratio_loss,
             )
             better_sample_rewards.append(
                 self.cfgs.train_cfgs.scale_coeff * better_log_ratio.detach(),

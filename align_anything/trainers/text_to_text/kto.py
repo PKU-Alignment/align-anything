@@ -30,7 +30,11 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.text_to_text.preference import PreferenceBatch, PreferenceDataset, RandomPreferenceDataset
+from align_anything.datasets.text_to_text.preference import (
+    PreferenceBatch,
+    PreferenceDataset,
+    RandomPreferenceDataset,
+)
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.base import SupervisedTrainerBase
 from align_anything.utils.multi_process import (
@@ -94,7 +98,9 @@ class KTOTrainer(SupervisedTrainerBase):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(PreferenceDataset, PreferenceDataset)
+        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+            PreferenceDataset, PreferenceDataset
+        )
 
     def init_engines(self) -> None:
         """Initialize DeepSpeed engines."""
@@ -113,7 +119,7 @@ class KTOTrainer(SupervisedTrainerBase):
         logits = model(**batch).logits
         input_ids = batch['input_ids']
         return gather_log_probabilities(logits[:, :-1], input_ids[:, 1:])
-    
+
     def compute_kl(self):
         random_dataset = RandomPreferenceDataset(
             path=self.cfgs.data_cfgs.train_datasets,
@@ -136,16 +142,16 @@ class KTOTrainer(SupervisedTrainerBase):
         for batch in self.random_dataloader:
             log_probs = self.compute_log_probs(  # size = (2 * B, L - 1)
                 self.model.module,
-                batch = batch,
+                batch=batch,
             )
             ref_log_probs = self.compute_log_probs(  # size = (2 * B, L - 1)
                 self.reference_model.module,
-                batch = batch,
+                batch=batch,
             )
             kl = (log_probs - ref_log_probs).mean()
 
-            self.kl = max(kl,0)
-             
+            self.kl = max(kl, 0)
+
     def loss(  # pylint: disable=too-many-locals
         self,
         batch: PreferenceBatch,
@@ -199,8 +205,10 @@ class KTOTrainer(SupervisedTrainerBase):
             worse_log_ratio = worse_log_prob - ref_worse_log_prob
 
             losses.append(
-                 - self.cfgs.train_cfgs.scale_better * F.sigmoid(self.cfgs.train_cfgs.scale_coeff * (better_log_ratio - self.kl))
-                 - self.cfgs.train_cfgs.scale_worse * F.sigmoid(self.cfgs.train_cfgs.scale_coeff * (self.kl - worse_log_ratio)),
+                -self.cfgs.train_cfgs.scale_better
+                * F.sigmoid(self.cfgs.train_cfgs.scale_coeff * (better_log_ratio - self.kl))
+                - self.cfgs.train_cfgs.scale_worse
+                * F.sigmoid(self.cfgs.train_cfgs.scale_coeff * (self.kl - worse_log_ratio)),
             )
             better_sample_rewards.append(
                 self.cfgs.train_cfgs.scale_coeff * better_log_ratio.detach(),
@@ -274,7 +282,7 @@ class KTOTrainer(SupervisedTrainerBase):
 
         for epoch in range(int(self.cfgs.train_cfgs.epochs)):
             self.model.train()
-            if self.global_step%self.cfgs.train_cfgs.kl_steps==0:
+            if self.global_step % self.cfgs.train_cfgs.kl_steps == 0:
                 with torch.no_grad():
                     self.compute_kl()
 
