@@ -1,19 +1,10 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
+'''
+# This file uses code from the vllm library.
+# vllm: https://github.com/vllm-project/vllm
+# License: Apache-2.0 license
 
-import torch
+'''
+
 from typing import List, Optional, Union, Dict
 from dataclasses import dataclass
 from vllm.outputs import CompletionOutput, RequestOutput
@@ -30,26 +21,15 @@ class InferenceInput:
     '''
     Args:
         text: The text to be completed.
-        token_ids: The token IDs of the text to be completed.
-        image_url: The URL of the input image.
-        pixel_values: The pixel values of the input image.
+            
     '''
     text: str
-    token_ids: torch.LongTensor = None
-    
     image_url: Optional[str] = None
-    pixel_values: torch.FloatTensor = None
     
 
-    def __init__(self, 
-                 text: str, 
-                 token_ids: torch.LongTensor, 
-                 image_url: Optional[str] = None, 
-                 pixel_values: torch.FloatTensor = None):
+    def __init__(self, text: str, token_ids):
         self.text = text
         self.token_ids = token_ids
-        self.image_url = image_url
-        self.pixel_values = pixel_values
 
     def __repr__(self):
         return (f"InferenceInput("
@@ -78,7 +58,6 @@ class InferenceOutput:
     prompt_logprobs: Optional[PromptLogprobs]
     response_token_ids: Optional[List[int]]
     response_logprobs: Optional[PromptLogprobs]
-    raw_output : Optional[Union[RequestOutput, None]]
 
     def __post_init__(self):
         pass
@@ -90,8 +69,7 @@ class InferenceOutput:
                  prompt_token_ids: Optional[List[int]] = None,
                  prompt_logprobs: Optional[PromptLogprobs] = None,
                  response_token_ids: Optional[List[int]] = None,
-                 response_logprobs: Optional[PromptLogprobs] = None,
-                 raw_output: Optional[Union[RequestOutput, None]] = None
+                 response_logprobs: Optional[PromptLogprobs] = None
                 ):
         self.engine = engine
         self.prompt = prompt
@@ -100,10 +78,9 @@ class InferenceOutput:
         self.response = response
         self.response_token_ids = response_token_ids
         self.response_logprobs = response_logprobs
-        self.raw_output = raw_output
 
     @classmethod
-    def from_vllm_output(cls, vllm_output: RequestOutput, store_raw: bool = False):
+    def from_vllm_output(cls, vllm_output: RequestOutput):
         return cls(
             engine="vllm",
             prompt=vllm_output.prompt,
@@ -111,12 +88,11 @@ class InferenceOutput:
             prompt_logprobs=vllm_output.prompt_logprobs,
             response=[output.text for output in vllm_output.outputs],
             response_token_ids=[output.token_ids for output in vllm_output.outputs],
-            response_logprobs=[output.logprobs for output in vllm_output.outputs],
-            raw_output=vllm_output if store_raw else None
+            response_logprobs=[output.logprobs for output in vllm_output.outputs]
         )
 
     @classmethod
-    def from_dict(cls, data: Dict, store_raw: bool = False):
+    def from_dict(cls, data: Dict):
         return cls(
             engine="dict",
             prompt=data.get("prompt"),
@@ -124,22 +100,12 @@ class InferenceOutput:
             prompt_token_ids=data.get("prompt_token_ids"),
             prompt_logprobs=data.get("prompt_logprobs"),
             response_token_ids=data.get("response_token_ids"),
-            response_logprobs=data.get("response_logprobs"),
-            raw_output=data if store_raw else None
+            response_logprobs=data.get("response_logprobs")
         )
     
-    @classmethod
-    def from_deepspeed_output(cls, deepspeed_output: Dict, store_raw: bool = False):
-        return cls(
-            engine="deepspeed",
-            prompt=deepspeed_output.get("prompt"),
-            prompt_token_ids=deepspeed_output.get("prompt_token_ids"),
-            prompt_logprobs=deepspeed_output.get("prompt_logprobs"),
-            response=deepspeed_output.get("response"),
-            response_token_ids=deepspeed_output.get("response_token_ids"),
-            response_logprobs=deepspeed_output.get("response_logprobs"),
-            raw_output=deepspeed_output if store_raw else None
-        )
+    def from_deepspeed_output(self, deepspeed_output: Dict):
+        # todo
+        pass
 
     def __repr__(self):
         return (
@@ -196,7 +162,7 @@ Arena GPT eval: [ArenaInput] -> [EvalOutput]
 def function1(ArenaInput):
     return "Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}".format(prompt=ArenaInput.prompt, response1=ArenaInput.response1, response2=ArenaInput.response2)
 
-MMdata = Dict[str,any]
+MMdata = Dict[str,any] # MultiModal data,like {'text':'','image_url':''}
 @dataclass
 class ArenaInput:
     """The input data of a pairwise evaluation request.
