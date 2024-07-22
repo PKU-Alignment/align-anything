@@ -1,7 +1,7 @@
 {
     "SamplingParams":
     {
-        "n": 2,
+        "n": 1,
         "top_k": 10,
         "top_p": 0.95,
         "temperature": 0.05,
