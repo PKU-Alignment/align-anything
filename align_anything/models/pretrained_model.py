@@ -29,7 +29,7 @@ import diffusers
 import torch
 import torch.nn as nn
 from accelerate.state import AcceleratorState
-from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel
+from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel, UNet3DConditionModel
 from peft import LoraConfig
 from transformers import (
     AutoProcessor,
@@ -38,6 +38,7 @@ from transformers import (
     CLIPTokenizer,
     PreTrainedModel,
     PreTrainedTokenizerBase,
+    ClapTextModelWithProjection,
 )
 from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
 from transformers.utils import ContextManagers
@@ -227,7 +228,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     return model, tokenizer, processor
 
 
-def load_pretrained_diffusion_models(  # pylint: disable=too-many-arguments
+def load_pretrained_image_diffusion_models(  # pylint: disable=too-many-arguments
     model_name_or_path: str | os.PathLike,
     dtype: torch.dtype = torch.bfloat16,
     *,
@@ -267,6 +268,178 @@ def load_pretrained_diffusion_models(  # pylint: disable=too-many-arguments
 
     with ContextManagers(deepspeed_zero_init_disabled_context_manager()):
         text_encoder = CLIPTextModel.from_pretrained(
+            model_name_or_path,
+            subfolder='text_encoder',
+            revision=revision,
+            variant=variant,
+            torch_dtype=dtype,
+        )
+        vae = AutoencoderKL.from_pretrained(
+            model_name_or_path,
+            subfolder='vae',
+            revision=revision,
+            variant=variant,
+            torch_dtype=dtype,
+        )
+    unet = UNet2DConditionModel.from_pretrained(
+        model_name_or_path, subfolder='unet', revision=non_ema_revision, torch_dtype=dtype
+    )
+    # Freeze vae and text_encoder and set unet to trainable
+    vae.requires_grad_(False)
+    text_encoder.requires_grad_(False)
+    if freeze_unet:
+        unet.requires_grad_(False)
+    else:
+        unet.train()
+    current_device = get_current_device()
+    text_encoder.to(current_device, dtype=dtype)
+    vae.to(current_device, dtype=dtype)
+
+    if lora_unet:
+        # Set up LoRA.
+        unet_lora_config = LoraConfig(
+            r=lora_rank,
+            lora_alpha=lora_rank,
+            init_lora_weights='gaussian',
+            target_modules=['to_k', 'to_q', 'to_v', 'to_out.0'],
+        )
+        # Add adapter and make sure the trainable params are in float32.
+        unet.add_adapter(unet_lora_config)
+        for param in unet.parameters():
+            # only upcast trainable parameters (LoRA) into fp32
+            if param.requires_grad:
+                param.data = param.to(torch.float32)
+
+    resize_tokenizer_embedding(tokenizer=tokenizer, model=text_encoder)
+
+    return unet, vae, text_encoder, noise_scheduler, tokenizer
+
+def load_pretrained_video_diffusion_models(  # pylint: disable=too-many-arguments
+    model_name_or_path: str | os.PathLike,
+    dtype: torch.dtype = torch.bfloat16,
+    *,
+    cache_dir: str | os.PathLike | None = None,
+    trust_remote_code: bool = False,
+    revision: str | None = None,
+    non_ema_revision: str | None = None,
+    variant: str | None = None,
+    freeze_unet: bool = False,
+    lora_unet: bool = False,
+    lora_rank: int = 8,
+) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
+    """Load pre-trained model and tokenizer from a given path."""
+    model_name_or_path = os.path.expanduser(model_name_or_path)
+    # Load scheduler, tokenizer and models.
+    noise_scheduler = DDPMScheduler.from_pretrained(model_name_or_path, subfolder='scheduler')
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name_or_path,
+        subfolder='tokenizer',
+        revision=revision,
+        cache_dir=cache_dir,
+        trust_remote_code=trust_remote_code,
+        use_fast=False,
+    )
+
+    def deepspeed_zero_init_disabled_context_manager():
+        """
+        returns either a context list that includes one that will disable zero.Init or an empty context list
+        """
+        deepspeed_plugin = (
+            AcceleratorState().deepspeed_plugin if accelerate.state.is_initialized() else None
+        )
+        if deepspeed_plugin is None:
+            return []
+
+        return [deepspeed_plugin.zero3_init_context_manager(enable=False)]
+
+    with ContextManagers(deepspeed_zero_init_disabled_context_manager()):
+        text_encoder = CLIPTextModel.from_pretrained(
+            model_name_or_path,
+            subfolder='text_encoder',
+            revision=revision,
+            variant=variant,
+            torch_dtype=dtype,
+        )
+        vae = AutoencoderKL.from_pretrained(
+            model_name_or_path,
+            subfolder='vae',
+            revision=revision,
+            variant=variant,
+            torch_dtype=dtype,
+        )
+    unet = UNet3DConditionModel.from_pretrained(
+        model_name_or_path, subfolder='unet', revision=non_ema_revision, torch_dtype=dtype
+    )
+    # Freeze vae and text_encoder and set unet to trainable
+    vae.requires_grad_(False)
+    text_encoder.requires_grad_(False)
+    if freeze_unet:
+        unet.requires_grad_(False)
+    else:
+        unet.train()
+    current_device = get_current_device()
+    text_encoder.to(current_device, dtype=dtype)
+    vae.to(current_device, dtype=dtype)
+
+    if lora_unet:
+        # Set up LoRA.
+        unet_lora_config = LoraConfig(
+            r=lora_rank,
+            lora_alpha=lora_rank,
+            init_lora_weights='gaussian',
+            target_modules=['to_k', 'to_q', 'to_v', 'to_out.0'],
+        )
+        # Add adapter and make sure the trainable params are in float32.
+        unet.add_adapter(unet_lora_config)
+        for param in unet.parameters():
+            # only upcast trainable parameters (LoRA) into fp32
+            if param.requires_grad:
+                param.data = param.to(torch.float32)
+
+    resize_tokenizer_embedding(tokenizer=tokenizer, model=text_encoder)
+
+    return unet, vae, text_encoder, noise_scheduler, tokenizer
+
+def load_pretrained_audio_diffusion_models(  # pylint: disable=too-many-arguments
+    model_name_or_path: str | os.PathLike,
+    dtype: torch.dtype = torch.bfloat16,
+    *,
+    cache_dir: str | os.PathLike | None = None,
+    trust_remote_code: bool = False,
+    revision: str | None = None,
+    non_ema_revision: str | None = None,
+    variant: str | None = None,
+    freeze_unet: bool = False,
+    lora_unet: bool = False,
+    lora_rank: int = 8,
+) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
+    """Load pre-trained model and tokenizer from a given path."""
+    model_name_or_path = os.path.expanduser(model_name_or_path)
+    # Load scheduler, tokenizer and models.
+    noise_scheduler = DDPMScheduler.from_pretrained(model_name_or_path, subfolder='scheduler')
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name_or_path,
+        subfolder='tokenizer',
+        revision=revision,
+        cache_dir=cache_dir,
+        trust_remote_code=trust_remote_code,
+        use_fast=False,
+    )
+
+    def deepspeed_zero_init_disabled_context_manager():
+        """
+        returns either a context list that includes one that will disable zero.Init or an empty context list
+        """
+        deepspeed_plugin = (
+            AcceleratorState().deepspeed_plugin if accelerate.state.is_initialized() else None
+        )
+        if deepspeed_plugin is None:
+            return []
+
+        return [deepspeed_plugin.zero3_init_context_manager(enable=False)]
+
+    with ContextManagers(deepspeed_zero_init_disabled_context_manager()):
+        text_encoder = ClapTextModelWithProjection.from_pretrained(
             model_name_or_path,
             subfolder='text_encoder',
             revision=revision,

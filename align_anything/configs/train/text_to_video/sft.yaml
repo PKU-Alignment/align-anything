@@ -26,9 +26,9 @@ train_cfgs:
   # Batch size per device for evaluation
   per_device_eval_batch_size: 4
   # The number of gradient accumulation steps
-  gradient_accumulation_steps: 16
+  gradient_accumulation_steps: 2
   # Whether to use gradient checkpointing
-  gradient_checkpointing: True
+  gradient_checkpointing: False
   # Initial learning rate
   learning_rate: 2.e-5
   # Type of learning rate scheduler
@@ -55,8 +55,12 @@ train_cfgs:
   lora_unet: False
   # The max norm of gradient
   max_grad_norm: 1.0
-  # The resolution of the image processor
+  # The resolution of the video processor
   resolution: 512
+  # The number of frames to sample
+  sample_frames: 16
+  # Whether to do resize for the input frames
+  do_resize: True
 # Configuration for datasets
 data_cfgs:
   # Datasets to use for training
@@ -67,6 +71,8 @@ data_cfgs:
   train_size: null
   # The split of train datasets
   train_split: null
+  # The files of training datasets
+  train_data_files: null
   # The optional arguments for loading training datasets
   train_optional_args: []
   # Datasets to use for evaluation
@@ -77,6 +83,8 @@ data_cfgs:
   eval_size: null
   # The split of evaluation datasets
   eval_split: null
+  # The files of evaluation datasets
+  eval_data_files: null
   # The optional arguments for loading training evaluation datasets
   eval_optional_args: []
 # Configuration for logging

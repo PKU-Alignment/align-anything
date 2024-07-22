@@ -52,6 +52,10 @@ dependencies = [
     "pytest",
     "shortuuid",
     "diffusers",
+    "librosa",
+    "soundfile",
+    "torchaudio",
+    "torchvision",
 ]
 dynamic = ["version"]
 

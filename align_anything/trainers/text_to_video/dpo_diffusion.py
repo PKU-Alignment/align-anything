@@ -18,6 +18,7 @@
 import os
 import sys
 from typing import Any
+from einops import rearrange
 
 import deepspeed
 import torch
@@ -26,15 +27,15 @@ import torch.nn.functional as F
 from accelerate import Accelerator
 from tqdm import tqdm
 
-from align_anything.datasets.text_to_image import PreferenceBatch, PreferenceDataset
-from align_anything.models.pretrained_model import load_pretrained_image_diffusion_models
+from align_anything.datasets.text_to_video import PreferenceBatch, PreferenceDataset
+from align_anything.models.pretrained_model import load_pretrained_video_diffusion_models
 from align_anything.trainers.base import SupervisedTrainerBase
 from align_anything.utils.multi_process import (
     get_all_reduce_mean,
     get_current_device,
     is_main_process,
 )
-from align_anything.utils.process_image import get_image_processor
+from align_anything.utils.process_video import get_video_processor
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -84,7 +85,7 @@ class DPOTrainer(SupervisedTrainerBase):
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
         self.model, self.vae, self.text_encoder, self.noise_scheduler, self.tokenizer = (
-            load_pretrained_image_diffusion_models(
+            load_pretrained_video_diffusion_models(
                 self.cfgs.model_cfgs.model_name_or_path,
                 trust_remote_code=True,
                 freeze_unet=self.cfgs.train_cfgs.freeze_unet,
@@ -92,8 +93,12 @@ class DPOTrainer(SupervisedTrainerBase):
                 dtype=self.dtype,
             )
         )
-        self.processor = get_image_processor(resolution=int(self.cfgs.train_cfgs.resolution))
-
+        self.processor = get_video_processor(
+            resolution=int(self.cfgs.train_cfgs.resolution),
+            sample_frames=int(self.cfgs.train_cfgs.sample_frames),
+            do_resize=self.cfgs.train_cfgs.do_resize,
+        )
+        
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
@@ -106,19 +111,16 @@ class DPOTrainer(SupervisedTrainerBase):
 
     def loss(self, batch: PreferenceBatch) -> dict[str, torch.Tensor]:
         """Loss function for DPO finetuning."""
-        pixel_values = batch['pixel_values'].to(dtype=self.dtype)
-        feed_pixel_values = torch.cat(pixel_values.chunk(2, dim=1))
-        latents = []
-        for i in range(0, feed_pixel_values.shape[0], self.cfgs.train_cfgs.vae_encode_batch_size):
-            latents.append(
-                self.vae.encode(
-                    feed_pixel_values[i : i + self.cfgs.train_cfgs.vae_encode_batch_size]
-                ).latent_dist.sample()
-            )
-        latents = torch.cat(latents, dim=0)
+        videos = batch["pixel_values"].to(self.vae.dtype)
+        videos = torch.cat(videos.chunk(2, dim=1))
+        b, _, t, _, _ = videos.shape
+        
+        videos = rearrange(videos, 'b c t h w -> (b t) c h w')
+        latents = self.vae.encode(videos).latent_dist.sample()
+        latents = latents.view(b, t, *latents.shape[1:]).permute(0, 2, 1, 3, 4)
         latents = latents * self.vae.config.scaling_factor
 
-        noise = torch.randn_like(latents).chunk(2)[0].repeat(2, 1, 1, 1)
+        noise = torch.randn_like(latents).chunk(2)[0].repeat(2, 1, 1, 1, 1)
         batch_size = latents.shape[0] // 2
 
         timesteps = torch.randint(
@@ -272,7 +274,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('text_to_image', 'dpo')
+    task = os.path.join('text_to_video', 'dpo')
     dict_cfgs, _ = read_cfgs(mode='train', task=task)
     unparsed_args = parse_unknown_args()
     for k, v in unparsed_args.items():
