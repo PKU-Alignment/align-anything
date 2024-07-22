@@ -5,8 +5,7 @@ from align_anything.evaluation.inference.base_inference import vllm_Inference
 from utils import batch_request_openai,filter_out_exception
 from openai.types.chat.chat_completion import ChatCompletion
 
-
-class BaseEval_API:
+class BaseEval:
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
@@ -88,7 +87,7 @@ class API_Eval(BaseEval):
                     base_url: str = None,
                     template_function = None,
                     **kwargs):
-        self.system_prompt = system_prompt
+        self.judge_prompt = judge_prompt
         self.model = model
         self.kwargs = kwargs
         self.api_key = api_key
@@ -137,7 +136,6 @@ class API_Pair_Eval(API_Eval):
     def evaluate(self, inputs : ArenaInput | List[ArenaInput]) -> List[EvalOutput]:
         if not isinstance(inputs, list):
             inputs = [inputs,]
-        print(inputs)
         processed_inputs = []
         for input in inputs:
             gpt_input = input.build_gpt_input(judge_prompt=self.judge_prompt, template_function=self.template_function)
