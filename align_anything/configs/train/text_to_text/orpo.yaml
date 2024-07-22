@@ -104,5 +104,35 @@ model_cfgs:
   trust_remote_code: True
   # The max token length
   model_max_length: 1024
+lora_cfgs:
+  # Whether to use LoRA
+  use_lora: False 
+  # Task type for LoRA configuration
+  task_type: TaskType.CAUSAL_LM  
+  # Inference mode
+  inference_mode: False  
+  # Rank of the low-rank adaptation matrices
+  r: 16  
+  # Alpha parameter for LoRA
+  lora_alpha: 16  
+  # Dropout rate for LoRA
+  lora_dropout: 0.1  
+  # Target modules for applying LoRA
+  target_modules: ["q_proj", "v_proj"]  
+  # Whether to save the full model
+  save_full_model: True
+bnb_cfgs:
+  # Whether to use BNB(For QLoRA)
+  use_bnb: False
+  # Whether to use 4-bit quantization
+  load_in_4bit: True
+  # Whether to use 8-bit quantization
+  load_in_8bit: False
+  # The quantization type for 4-bit quantization
+  bnb_4bit_quant_type: nf4
+  # Whether to use double quantization
+  bnb_4bit_use_double_quant: True
+  # The compute dtype for 4-bit quantization
+  bnb_4bit_compute_dtype: float16
 # Customized special tokens
 special_tokens: null

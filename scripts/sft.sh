@@ -27,7 +27,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.sft \
+	--module align_anything.trainers.text_to_text.sft \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
 	--output_dir ${OUTPUT_DIR}

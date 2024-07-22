@@ -275,7 +275,10 @@ class Chatbot(AbstractChatbot):
         """Generate the response to the given text."""
         if self.vlm and self.image_source:
             text = '<image>\n' + text
-            image = Image.open(requests.get(self.image_source, stream=True).raw)
+            if self.image_source.startswith(('http://', 'https://')):            
+                image = Image.open(requests.get(self.image_source, stream=True).raw)
+            else:
+                image = Image.open(self.image_source)
         self.last_input = text
         self.last_dialogue = self.dialogue
         raw_sample = {

@@ -83,17 +83,23 @@ class KTOTrainer(SupervisedTrainerBase):
             self.dstchf_train = HfDeepSpeedConfig(self.ds_train_cfgs)
         if self.ds_eval_cfgs['zero_optimization']['stage'] == 3:
             self.dsechf_eval = HfDeepSpeedConfig(self.ds_eval_cfgs)
+        self.bnb_cfgs = self.cfgs.bnb_cfgs
+        self.lora_cfgs = self.cfgs.lora_cfgs
         self.model, self.tokenizer, self.processor = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side='left',
-            trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            padding_side='right',
+            trust_remote_code=True,
+            bnb_cfgs = self.bnb_cfgs,
+            lora_cfgs = self.lora_cfgs,
         )
         self.reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
-            trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            trust_remote_code=True,
+            bnb_cfgs = self.bnb_cfgs,
+            lora_cfgs = self.lora_cfgs,
         )
 
     def init_datasets(self) -> None:
@@ -123,7 +129,7 @@ class KTOTrainer(SupervisedTrainerBase):
     def compute_kl(self):
         random_dataset = RandomPreferenceDataset(
             path=self.cfgs.data_cfgs.train_datasets,
-            template=self.cfgs.data_cfgs.template,
+            template=self.cfgs.data_cfgs.train_template,
             tokenizer=self.tokenizer,
             processor=self.processor,
             size=self.cfgs.data_cfgs.size,

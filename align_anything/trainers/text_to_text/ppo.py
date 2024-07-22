@@ -93,11 +93,15 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         if self.ds_eval_cfgs['zero_optimization']['stage'] == 3:
             self.dsechf_eval = HfDeepSpeedConfig(self.ds_eval_cfgs)
         # loading actor model
+        self.bnb_cfgs = self.cfgs.bnb_cfgs
+        self.lora_cfgs = self.cfgs.lora_cfgs
         self.actor_model, self.tokenizer, self.processor = load_pretrained_models(
             self.cfgs.model_cfgs.actor_model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+            bnb_cfgs=self.bnb_cfgs,
+            lora_cfgs=self.lora_cfgs,
         )
         # loading actor reference model
         self.actor_reference_model, _, _ = load_pretrained_models(
@@ -105,6 +109,8 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+            bnb_cfgs=self.bnb_cfgs,
+            lora_cfgs=self.lora_cfgs,
         )
         # loading reward model
         self.reward_model, self.reward_tokenizer, _ = load_pretrained_model_with_value_head(
