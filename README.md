@@ -56,7 +56,7 @@ We have a roadmap for future development work `align-anything`:
 - [x] Support diverse parameter sizes including `LoRA`, `QLoRA`.
 - [ ] Support `NeMo` backbone for training, and `vllm` backbone for evaluation.
 
-| Trainers | Text :arrow_right: Text | Image+Text :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | More Modality... |
+| Trainers | Text :arrow_right: Text | Image+Text :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | Text :arrow_right: Audio |
 |---|---|---|---|---|---|
 | SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | RM Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
