@@ -60,7 +60,12 @@ dependencies = [
     "uvicorn",
     "fastapi",
     "PIL",
+    "librosa",
+    "soundfile",
+    "torchaudio",
+    "torchvision",
 ]
+
 dynamic = ["version"]
 
 [project.optional-dependencies]

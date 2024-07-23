@@ -26,19 +26,19 @@ train_cfgs:
   # Batch size per device for evaluation
   per_device_eval_batch_size: 4
   # The number of gradient accumulation steps
-  gradient_accumulation_steps: 16
+  gradient_accumulation_steps: 2
   # Whether to use gradient checkpointing
-  gradient_checkpointing: True
+  gradient_checkpointing: False
   # Initial learning rate
-  learning_rate: 2.e-5
+  learning_rate: 1.e-5
   # Type of learning rate scheduler
-  lr_scheduler_type: cosine
+  lr_scheduler_type: constant
   # Ratio of warmup steps for learning rate
   lr_warmup_ratio: 0.03
   # Weight decay coefficient
-  weight_decay: 0.0
+  weight_decay: 0.01
   # Hyper-parameters for adam optimizer
-  adam_betas: [0.9, 0.95]
+  adam_betas: [0.9, 0.999]
   # Hyper-parameters for adam epsilon
   adam_epsilon: 1.e-8
   # Enable bfloat 16 precision
@@ -49,14 +49,26 @@ train_cfgs:
   eval_strategy: epoch
   # The evaluation interval in step-wise evaluation case
   eval_interval: 10
+  # The reward modeling regularization
+  regularization: 0.001
+  # Batch size to use for VAE encoding of the images for efficient processing.
+  vae_encode_batch_size: 8
+  # DPO KL Divergence penalty coefficient.
+  beta_coeff: 2500
+  # The type of loss function, chosen from [sigmoid, hinge]
+  loss_type: sigmoid
   # Freeze the unet model
   freeze_unet: False
   # Enable the unet LoRA training
   lora_unet: False
   # The max norm of gradient
   max_grad_norm: 1.0
-  # The resolution of the image processor
+  # The resolution of the video processor
   resolution: 512
+  # The number of frames to sample
+  sample_frames: 16
+  # Whether to do resize for the input frames
+  do_resize: True
 # Configuration for datasets
 data_cfgs:
   # Datasets to use for training
@@ -86,18 +98,21 @@ logger_cfgs:
   # Project name for logging
   log_project: align-anything
   # Run name for logging
-  log_run_name: sft
+  log_run_name: dpo
   # Output directory name
   output_dir: null
   # The directory to cache the downloaded model
   cache_dir: null
   # The interval of saving models
-  save_interval: 400000
+  save_interval: 100000
 # Model configurations
 model_cfgs:
   # Pretrained model name or path
   model_name_or_path: null
   # Whether to trust remote code
   trust_remote_code: True
+  # The max token length
+  model_max_length: 512
+  # Whether
 # Customized special tokens
 special_tokens: null
