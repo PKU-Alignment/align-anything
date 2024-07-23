@@ -131,6 +131,8 @@ class BaseInferencer_vllm:
         assert isinstance(inputs, list)
         if inputs[0].token_ids:
             outputs = self.model.generate(prompt_token_ids=[input.token_ids for input in inputs], sampling_params=self.samplingparams)
+            for input, output in zip(inputs, outputs):
+                output.prompt = input.text
         else:
             outputs = self.model.generate(prompts=[input.text for input in inputs], sampling_params=self.samplingparams)
         InferenceOutputs = [

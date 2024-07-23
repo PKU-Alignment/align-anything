@@ -57,13 +57,13 @@ class MMLUDataLoader(BaseDataLoader):
 
 class MMLUGeneratorVLLM(BaseInferencer_vllm):
 
-    def eval(self, data:Dict[str, List[InferenceInput]]) -> Dict[str, List[InferenceOutput]]:
+    def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
         for task, input in data.items():
             task2details[task] = self.generation(input)
         
-        output_dir = self.infer_configs.output_dir
-        brief_filename = self.infer_configs.brief_filename
+        output_dir = eval_configs.output_dir
+        brief_filename = eval_configs.brief_filename
         model_id = self.model_cfgs.model_id
         detailed_filename = f'{model_id}_detailed'
         brief_filename = f'{model_id}_brief'
@@ -79,7 +79,7 @@ def main():
     dataloader = MMLUDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
     eval_module = MMLUGeneratorVLLM(model_config, infer_configs)
-    eval_module.eval(test_data)
+    eval_module.eval(test_data, eval_configs)
 
 if __name__ == '__main__':
     main()

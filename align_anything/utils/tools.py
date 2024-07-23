@@ -75,31 +75,27 @@ def namedtuple_to_dict(obj: Any) -> Any:
 def requestoutput_to_dict(data, mode='brief'):
     if mode == 'brief':
         info = {
-            "prompt": data['prompt'],
+            "prompt": data.prompt,
             "outputs": []
         }
-        if 'answer' in data.keys():
-            info['answer'] = data['answer']
     else:
         info = {
-            "prompt": data['prompt'],
-            "prompt_token_ids": data['pred'].prompt_token_ids,
-            "prompt_logprobs": [vllm_logprob_to_dict(token_logprob) for token_logprob in data['pred'].prompt_logprobs[1:]],
+            "prompt": data.prompt,
+            "prompt_token_ids": data.prompt_token_ids,
+            "prompt_logprobs": [vllm_logprob_to_dict(token_logprob) for token_logprob in data.prompt_logprobs[1:]],
             'outputs': [],
-            'finished': data['pred'].finished,
+            'finished': data.finished,
             'metrics':
             {
-                'arrival_time': data['pred'].metrics.arrival_time,
-                'last_token_time': data['pred'].metrics.last_token_time,
-                'first_scheduled_time': data['pred'].metrics.first_scheduled_time,
-                'first_token_time': data['pred'].metrics.first_token_time,
-                'time_in_queue': data['pred'].metrics.time_in_queue,
-                'finished_time': data['pred'].metrics.finished_time,
+                'arrival_time': data.metrics.arrival_time,
+                'last_token_time': data.metrics.last_token_time,
+                'first_scheduled_time': data.metrics.first_scheduled_time,
+                'first_token_time': data.metrics.first_token_time,
+                'time_in_queue': data.metrics.time_in_queue,
+                'finished_time': data.metrics.finished_time,
             }
         }
-        if 'answer' in data.keys():
-            info['answer'] = data['answer']
-    for output in data['pred'].outputs:
+    for output in data.outputs:
         if mode == 'brief':
             output = {
                 'index': output.index,
