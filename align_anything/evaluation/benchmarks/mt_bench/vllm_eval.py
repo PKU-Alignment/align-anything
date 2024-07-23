@@ -1,7 +1,6 @@
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '4, 5, 6, 7'
 
-from align_anything.evaluation.base_vllm import BaseEvaluatorVLLM
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, requestoutput_to_dict
 import json
 from datasets import Dataset, DatasetDict

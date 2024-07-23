@@ -30,6 +30,34 @@ from vllm import LLM, SamplingParams
 
 ACTION_GENERATION = 'generation'
 
+def update_results(output_dir:str,
+                     brief_filename:str,
+                        detailed_filename:str,
+                    task2details:Dict[str, Dict[str, Any]]
+                )->None:
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+    brief_file_path = os.path.join(output_dir, brief_filename)
+    detailed_file_path = os.path.join(output_dir, detailed_filename)
+    
+    for task, value in task2details.items():
+        output_brief = []
+        output_detailed = []
+        
+        for item in value:
+            output_brief.append(requestoutput_to_dict(item.raw_output, mode='brief'))
+            output_detailed.append(requestoutput_to_dict(item.raw_output, mode='detailed'))
+            
+        with open(brief_file_path + '_' + task + ".jsonl", 'w', encoding='utf-8') as file:
+            for item in output_brief:
+                json_record = json.dumps(item, ensure_ascii=False)
+                file.write(json_record + '\n')
+
+        with open(detailed_file_path + '_' + task + ".jsonl", 'w', encoding='utf-8') as file:
+            for item in output_detailed:
+                json_record = json.dumps(item, ensure_ascii=False)
+                file.write(json_record + '\n')
+                
 class BaseInferencer_vllm:
     '''
     
@@ -41,16 +69,11 @@ class BaseInferencer_vllm:
 
     def __init__(self, 
                  model_cfgs: Dict[str, Any],
-                 eval_cfgs: Dict[str, Any],
                  vllm_cfgs,
                  **kwargs):
         self.vllm_cfgs_sp, self.vllm_cfgs_llm = vllm_cfgs.SamplingParams, vllm_cfgs.LLM
-        self.eval_cfgs = eval_cfgs
         self.model_cfgs = model_cfgs
         # TODO: Resolve conflicts with torch.cuda.is_available
-        self.action = self.eval_cfgs.action if self.eval_cfgs.action else 'generation'
-        self.device = self.eval_cfgs.device if self.eval_cfgs.device else 'cuda'        
-        self.output_dir = self.eval_cfgs.output_dir
 
         self.sp_n = self.vllm_cfgs_sp.n
         self.sp_top_k = self.vllm_cfgs_sp.top_k
@@ -75,8 +98,6 @@ class BaseInferencer_vllm:
         self.detailed_filename = f'{self.model_id}_detailed'
         self.brief_filename = f'{self.model_id}_brief'
 
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir, exist_ok=True)
 
         self.init_model()
         
@@ -102,39 +123,6 @@ class BaseInferencer_vllm:
             tensor_parallel_size=self.llm_tensor_parallel_size,
             gpu_memory_utilization=self.llm_gpu_memory_utilization
         )
-        
-    def update_results(self,
-                       task2details:Dict[str, Dict[str, Any]]
-                    )->None:
-        brief_file_path = os.path.join(self.output_dir, self.brief_filename)
-        detailed_file_path = os.path.join(self.output_dir, self.detailed_filename)
-        
-        for task, value in task2details.items():
-            output_brief = []
-            output_detailed = []
-            
-            for item in value:
-                output_brief.append(requestoutput_to_dict(item.raw_output, mode='brief'))
-                output_detailed.append(requestoutput_to_dict(item.raw_output, mode='detailed'))
-                
-            with open(brief_file_path + '_' + task + ".jsonl", 'w', encoding='utf-8') as file:
-                for item in output_brief:
-                    json_record = json.dumps(item, ensure_ascii=False)
-                    file.write(json_record + '\n')
-
-            with open(detailed_file_path + '_' + task + ".jsonl", 'w', encoding='utf-8') as file:
-                for item in output_detailed:
-                    json_record = json.dumps(item, ensure_ascii=False)
-                    file.write(json_record + '\n')
-    
-    @torch.no_grad()
-    def predict(self, inputs: List[InferenceInput])-> Tuple[List[str], List[Dict[str, Any]]]:
-        
-        action_func_name = self.action_map.get(self.action)
-        if action_func_name is None:
-            raise ValueError(f"Action '{self.action}' is not supported")
-        action_func = getattr(self, action_func_name)
-        return action_func(inputs)
 
     def generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
         return self._generation(inputs)
@@ -169,9 +157,6 @@ class BaseInferencer:
             self.instance = BaseInferencer_vllm(model_cfgs, eval_cfgs, vllm_cfgs, **kwargs)
         else:
             pass
-    
-    def predict(self, inputs):
-        return self.instance.predict(inputs)
 
     def generation(self, inputs : List[InferenceInput]) -> List[InferenceOutput]:
         return self.instance.generation(inputs)

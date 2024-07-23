@@ -8,6 +8,7 @@ from typing import Union, List, Dict, Any, Tuple
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
+from align_anything.evaluation.inference.base_inference import update_results
 
 class MMLUDataLoader(BaseDataLoader):
 
@@ -61,7 +62,12 @@ class MMLUGeneratorVLLM(BaseInferencer_vllm):
         for task, input in data.items():
             task2details[task] = self.generation(input)
         
-        self.update_results(task2details) #这一步可以考虑能不能移到外面，目前是把里面的raw_output写了一下
+        output_dir = self.infer_configs.output_dir
+        brief_filename = self.infer_configs.brief_filename
+        model_id = self.model_cfgs.model_id
+        detailed_filename = f'{model_id}_detailed'
+        brief_filename = f'{model_id}_brief'
+        update_results(output_dir, brief_filename, detailed_filename,task2details) #这一步可以考虑能不能移到外面，目前是把里面的raw_output写了一下
         
         return task2details
 
@@ -72,7 +78,7 @@ def main():
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = MMLUDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
-    eval_module = MMLUGeneratorVLLM(model_config,eval_configs, infer_configs)
+    eval_module = MMLUGeneratorVLLM(model_config, infer_configs)
     eval_module.eval(test_data)
 
 if __name__ == '__main__':
