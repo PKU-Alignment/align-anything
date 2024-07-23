@@ -121,6 +121,7 @@ class LLAVA:
     user_prompt: str = 'USER: \n<image>{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
     split_token: str = 'ASSISTANT:'
+    separator: str = '###'
 
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations']

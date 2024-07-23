@@ -293,23 +293,39 @@ class PKUSafeRLHF(Template):
 
 After designing the aforementioned template, you just need to specify this template by passing the `--train_template PKUSafeRLHF` argument when invoking the dataset to complete the corresponding training. Perhaps the above example still lacks specificity; therefore, we provide command references that encompass various models executing multiple algorithms on diverse datasets. You can expedite your training process by directly running or modifying these scripts [here](./examples/).
 
-# Inference
+## Demo
 
-## Interactive CLI Demo
+### Gradio Web UI
 
-```bash
-python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
+To launch a Gradio demo locally, follow these steps by running the commands one by one. If you intend to launch multiple model workers to compare different checkpoints, you only need to launch the controller and the web server *ONCE*.
+
+#### Launch a controller
+```Shell
+python -m align_anything.serve.controller --host 0.0.0.0 --port 10000
 ```
 
-![cli_demo](assets/cli_demo.gif)
+#### Launch a gradio web server.
+```Shell
+python -m align_anything.serve.gradio_web_server --controller http://localhost:10000 --model-list-mode reload
+```
+You have just launched the Gradio web interface. Now, you can open the web interface using the URL printed on the screen. You may notice that there are no models listed yet. Do not worry, as we have not launched any model workers yet. The model list will be automatically updated once you launch a model worker.
 
-## Interactive Arena
+#### Launch a model worker
 
-```bash
-python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_model_name_or_path --blue_corner_model_name_or_path your_blue_model_name_or_path
+This is the actual *worker* that performs the inference on the GPU.  Each worker is responsible for a single model specified in `--model-path`, and check the template.py in align_anything.configs to find the according template name.
+
+```Shell
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/models/llava/llava-1.5-7b-hf  --template "LLAVA"
+```
+Wait until the process completes loading the model and you see "Uvicorn running on ...". Then, refresh your Gradio web UI, and you will see the model you just started in the model list.
+
+You can start as many workers as you need and compare different model checkpoints within the same Gradio interface. Ensure that you keep the `--controller` the same, but change the `--port` and `--worker` to a unique port number for each worker.
+
+```Shell
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port <different from 40000, say 40001> --worker http://localhost:<change accordingly, i.e. 40001> --model-path <ckpt2> --template "LLAVA"
 ```
 
-![Arena-Demo](assets/arena_demo.gif)
+You can specify the mps device by using the `--device` flag: `--device mps`, if you are using an Apple device with an M1 or M2 chip.
 
 
 ## Why do we open source align-anything?
