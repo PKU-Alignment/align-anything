@@ -52,15 +52,15 @@ Align-Anything is an open-source alignment framework for academic research based
 
 We have a roadmap for future development work `align-anything`:
 
-- [ ] Support alignment algorithms over the `diffusion model`, `text to any generation model` and other `vision-language model`.
-- [ ] Support diverse parameter sizes including `LoRA`, `QLoRA`.
+- [x] Support alignment algorithms over the `diffusion model`, `text to any generation model` and other `vision-language model`.
+- [x] Support diverse parameter sizes including `LoRA`, `QLoRA`.
 - [ ] Support `NeMo` backbone for training, and `vllm` backbone for evaluation.
 
 | Trainers | Text :arrow_right: Text | Image+Text :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | More Modality... |
 |---|---|---|---|---|---|
-| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: |
+| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | RM Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
-| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: |
+| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | PPO Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
 | KTO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
 | ORPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
