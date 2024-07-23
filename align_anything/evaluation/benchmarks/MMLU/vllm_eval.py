@@ -1,13 +1,13 @@
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '2, 3'
 
-from align_anything.evaluation.base_generator_vllm import BaseGeneratorVLLM
-from align_anything.evaluation.base_data_loader import BaseDataLoader
+from align_anything.evaluation.eval.base_eval import BaseEval_vllm
+from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
+from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import Union, List, Dict, Any, Tuple
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-
 
 class MMLUDataLoader(BaseDataLoader):
 
@@ -54,7 +54,7 @@ class MMLUDataLoader(BaseDataLoader):
         
         return question
 
-class MMLUGeneratorVLLM(BaseGeneratorVLLM):
+class MMLUGeneratorVLLM(BaseInferencer_vllm):
 
     def eval(self, data:Dict[str, List[InferenceInput]]) -> None:
         task2details = self.eval_task(data)
@@ -65,31 +65,20 @@ class MMLUGeneratorVLLM(BaseGeneratorVLLM):
             outputs[task] = [InferenceOutput.from_vllm_output(detail['pred']) for detail in details]
         return outputs
     
-    def eval_task(self, inputs:Dict[str, List[InferenceInput]]) -> Dict[str, Any]:
+    def eval_task(self, inputs:Dict[str, List[InferenceInput]]) -> Dict[str, List[InferenceOutput]]:
         details = {}
         for task, input in inputs.items():
-            details[task] = self.eval_instance(input)
-
+            details[task] = self.predict(input)
         return details
-
-    def eval_instance(self, instance: List[InferenceInput]) -> Dict[str, Any]:
-        details_info = []
-        preds = self.predict(instance)
-        for i in range(len(preds)):
-            detail = {}
-            detail['prompt'] = instance[i].text
-            details_info.append(detail)
-            details_info[-1]['pred'] = preds[i]
-            
-        return details_info
 
 def main():
     dict_configs, infer_configs = read_eval_cfgs('test_mmlu')
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
-    
+    model_config = dict_configs.default.model_cfgs
+    eval_configs = dict_configs.default.eval_cfgs
     dataloader = MMLUDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
-    eval_module = MMLUGeneratorVLLM(dict_configs, infer_configs)
+    eval_module = MMLUGeneratorVLLM(model_config,eval_configs, infer_configs)
     eval_module.eval(test_data)
 
 if __name__ == '__main__':
