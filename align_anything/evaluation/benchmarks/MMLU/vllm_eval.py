@@ -59,8 +59,10 @@ class MMLUGeneratorVLLM(BaseInferencer_vllm):
     def eval(self, data:Dict[str, List[InferenceInput]]) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
         for task, input in data.items():
-            task2details[task] = self.predict(input)
-        self.update_results(task2details) #这一步可以考虑能不能移到外面
+            task2details[task] = self.generation(input,sotre_raw = True)
+        
+        self.update_results(task2details) #这一步可以考虑能不能移到外面，目前是把里面的raw_output写了一下
+        
         return task2details
 
 def main():
