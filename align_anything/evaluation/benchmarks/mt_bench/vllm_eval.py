@@ -1,122 +1,99 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '4, 5, 6, 7'
 
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, requestoutput_to_dict
-import json
-from datasets import Dataset, DatasetDict
-from vllm import LLM, SamplingParams
+import argparse
+from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
+from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
+from typing import Union, List, Dict, Any, Tuple
+from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from datasets import load_dataset, DatasetDict
 from align_anything.utils.template_registry import get_template_class
-from datasets import load_dataset
+from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
+from align_anything.evaluation.inference.base_inference import update_results
 
-class TestBenchmark(BaseEvaluatorVLLM):
+class MTBenchDataLoader(BaseDataLoader):
     def get_task_names(self):
-        task_names = [
-            # 'default',
-            self.data_cfgs.task
-        ]
-        return task_names
-
-    def load_dataset(self, task_name):
-        # TODO: 区分online数据集和本地数据集
-        '''
-        filename = os.path.join(self.task_dir)
-        with open(filename, encoding='utf-8') as f:
-            data = [json.loads(x) for x in f.readlines()]
-        dataset = DatasetDict(
-            {
-                'test': Dataset.from_list(data),
-            }
-        )
-        '''
-        dataset = load_dataset(self.task_dir, task_name)
-        return dataset
-
-    def set_fewshot_dataset(self, dataset):
-        self.few_shot_data = None
-    '''
-    def build_example_prompt(self, data, with_answer=True):
-        choices = '\n'.join([f'{label}: {data["choices"][ord(label) - 65]}' for label in self.candidate_labels])
-        answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
-        return f"{data['question']}\n{choices}\n{answer}"
-    '''
-    def build_prompt(self, data):
-        template = get_template_class(self.chat_template)
-        if 'response_1' not in data.keys():
-            return [template.system_prompt + template.user_prompt.format(input=item['instruction'][0]) + template.assistant_prompt.format(output="") for item in data]
+        if isinstance(self.data_cfgs.task, list):
+            return self.data_cfgs.task
         else:
+            task_names = [
+            self.data_cfgs.task
+            ]
+            return task_names
+        
+    def load_dataset(self) -> DatasetDict:
+        processed_inputs = {}
+        for task in self.task_names:
+            dataset = load_dataset(self.task_dir, task)
+            prompts, token_ids = self.preprocess(dataset)
+            processed_inputs[task] = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
+        return processed_inputs
+    
+    def build_prompt(self, data, responses_r1=None):
+        template = get_template_class(self.chat_template)
+        if responses_r1:
             return [template.system_prompt + \
                     template.user_prompt.format(input=item['instruction'][0]) + \
-                    template.assistant_prompt.format(output=item['response'][0]) + \
+                    template.assistant_prompt.format(output=response_r1) + \
                     template.user_prompt.format(input=item['instruction'][1]) + \
                     template.assistant_prompt.format(output="") \
-                    for item in data]
-        # return question
+                    for response_r1, item in zip(responses_r1, data)]
+        else:
+            return [template.system_prompt + template.user_prompt.format(input=item['instruction'][0]) + template.assistant_prompt.format(output="") for item in data]
     
-        '''
-        template = get_template_class(self.chat_template)
-        question = [template.system_prompt + template.user_prompt.format(input=item['question']) + template.assistant_prompt.format(output="") for item in data]
-
-        return question
-        '''
+    def load_dataset_round2(self, outputs_r1: Dict[str, List[InferenceOutput]]):
+        processed_inputs = {}
+        for task in self.task_names:
+            dataset = load_dataset(self.task_dir, task)
+            responses_r1 = [output_r1.response[0] for output_r1 in outputs_r1[task]]
+            prompts, token_ids = self.preprocess(data=dataset, responses_r1=responses_r1)
+            processed_inputs[task] = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
+        return processed_inputs
     
-    def preproccess(self, data):
-        prompts = self.build_prompt(data)
-        # inputs = self.model.encode(prompts).to(self.device)
-        # answers = [self.get_answer(item) for item in data]
-
-        return {
-            "prompt": prompts,
-            # "answer": answers,
-        }
-    
-    def eval(self) -> None:
-        for name in self.task_names:
-            details_turn1, details_turn1_2 = self.eval_task(name, self.split)
-            self.update_results(details_turn1, details_turn1_2)
-    
-    def eval_task(self, task_name: str, split='val') -> Dict[str, Dict[str, Any]]:
-        dataset = self.load_dataset(task_name)
-        # self.set_fewshot_dataset(dataset)
-        inputs_turn1 = self.preproccess(dataset[split])
-        details_turn1 = self.eval_instance(inputs_turn1)
-        for data_turn2, response_turn1 in zip(dataset[split], details_turn1):
-            data_turn2['response'] = response_turn1.outputs[0].text
-        inputs_turn2 = self.preproccess(data_turn2)
-        details_turn2 = self.eval_instance(inputs_turn2)
-        return {task_name + 'turn_1': details_turn1}, {task_name + 'turn_2': details_turn2}
-    
-    def update_results(self,
-                       task2details:Dict[str, Dict[str, Any]]
-                    )->None:
-        brief_file_path = os.path.join(self.output_dir, self.brief_filename)
-        detailed_file_path = os.path.join(self.output_dir, self.detailed_filename)
+    def preprocess(self, data, responses_r1=None):
+        prompts = self.build_prompt(data[self.split], responses_r1)
         
-        for task, value in task2details.items():
-            output_brief = []
-            output_detailed = []
-            
-            for item in value:
-                output_brief.append(requestoutput_to_dict(item, mode='brief'))
-                output_detailed.append(requestoutput_to_dict(item, mode='detailed'))
-                
-            with open(brief_file_path + '_' + task + ".jsonl", 'w', encoding='utf-8') as file:
-                for item in output_brief:
-                    json_record = json.dumps(item, ensure_ascii=False)
-                    file.write(json_record + '\n')
+        token_ids = self.tokenizer(prompts)
 
-            with open(detailed_file_path + '_' + task + ".jsonl", 'w', encoding='utf-8') as file:
-                for item in output_detailed:
-                    json_record = json.dumps(item, ensure_ascii=False)
-                    file.write(json_record + '\n')
+        return prompts, token_ids
+
+class MTBenchGeneratorVLLM(BaseInferencer_vllm):
+    def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
+        task2details = {}
+        for task, input in data.items():
+            task2details[task] = self.generation(input)
+        
+        output_dir = eval_configs.output_dir
+        brief_filename = eval_configs.brief_filename
+        model_id = self.model_cfgs.model_id
+        detailed_filename = f'{model_id}_detailed'
+        brief_filename = f'{model_id}_brief'
+        update_results(output_dir, brief_filename, detailed_filename,task2details)
+        
+        return task2details
 
 def main():
-    # os.environ['CUDA_VISIBLE_DEVICES'] = '4, 5, 6, 7'
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    _, unparsed_args = parser.parse_known_args()
+    keys = [k[2:] for k in unparsed_args[0::2]]
+    values = list(unparsed_args[1::2])
+    unparsed_args = dict(zip(keys, values))
     dict_configs, infer_configs = read_eval_cfgs('test_mt_bench')
+    for k, v in unparsed_args.items():
+        dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
+        infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
+
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     
-    eval_module = TestBenchmark(dict_configs, infer_configs)
+    model_config = dict_configs.default.model_cfgs
+    eval_configs = dict_configs.default.eval_cfgs
 
-    eval_module.eval()
+    dataloader = MTBenchDataLoader(dict_configs)
+    test_data_round1 = dataloader.load_dataset()
+    eval_module = MTBenchGeneratorVLLM(model_config, infer_configs)
+    output_data_round1 = eval_module.eval(test_data_round1, eval_configs)
+
+    test_data_round2 = dataloader.load_dataset_round2(output_data_round1)
+    output_data_round2 = eval_module.eval(test_data_round2, eval_configs)
 
 if __name__ == '__main__':
     main()
