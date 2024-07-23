@@ -25,7 +25,9 @@ from transformers import AutoProcessor, AutoTokenizer
 
 ACTION_GENERATION = 'generation'
 
+
 class BaseDataLoader:
+
     action_map = {
         ACTION_GENERATION: 'generation',
     }
@@ -34,13 +36,16 @@ class BaseDataLoader:
         self.eval_cfgs, self.data_cfgs, self.model_cfgs = cfgs.default.eval_cfgs, cfgs.default.data_cfgs, cfgs.default.model_cfgs
         self.action = self.eval_cfgs.action if self.eval_cfgs.action else 'generation'
         self.num_shot = self.eval_cfgs.n_shot if self.eval_cfgs.n_shot else 0
-        self.cot = self.eval_cfgs.cot if self.eval_cfgs.cot else False
         self.chat_template = self.model_cfgs.chat_template
+
         self.model_name_or_path = self.model_cfgs.model_name_or_path
+
         self.split = self.data_cfgs.split
         self.task_dir = self.data_cfgs.task_dir
         self.candidate_labels = self.data_cfgs.candidate_labels
+        
         self.task_names = self.get_task_names()
+
         self.init_tokenizer()
 
     def init_tokenizer(self):
@@ -56,17 +61,19 @@ class BaseDataLoader:
         processed_inputs = {}
         for task in self.task_names:
             dataset = load_dataset(self.task_dir, task)
-            self.few_shot_data = self.set_fewshot_dataset(dataset, task)
+            self.few_shot_data = self.set_fewshot_dataset(dataset)
             prompts, token_ids = self.preprocess(dataset)
             processed_inputs[task] = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
         return processed_inputs
 
     def preprocess(self, data):
         prompts = self.build_prompt(data[self.split])
+        
         token_ids = self.tokenizer(prompts)
+
         return prompts, token_ids
 
-    def set_fewshot_dataset(self, dataset, task: str=None):
+    def set_fewshot_dataset(self, dataset):
         return None
     
     @abstractmethod

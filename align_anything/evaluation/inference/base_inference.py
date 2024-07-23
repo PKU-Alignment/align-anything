@@ -1,94 +1,177 @@
-from typing import List
+# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+import os
+import json
+import torch
+import random
+import numpy as np
+from tqdm import tqdm
+from pprint import pprint
 from abc import abstractmethod
-from align_anything.evaluation.outputs import ArenaInput, EvalOutput, InferenceOutput, InferenceInput
+from typing import Union, List, Dict, Any, Tuple
+from align_anything.utils.tools import requestoutput_to_dict
+from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
+from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, read_cfgs
+from vllm import LLM, SamplingParams
 
-class BaseInference:
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
 
-    @abstractmethod
-    def inference(self, **kwargs):
-        raise NotImplementedError
+ACTION_GENERATION = 'generation'
 
-class API_Inference:
-    def __init__(self,
-                    system_prompt: str,
-                    model: str = 'deepseek-chat',
-                    num_workers: int = 1,
-                    cache_dir : str = None,
-                    api_key: str = None,
-                    base_url: str = None,
-                    **kwargs):
-        self.system_prompt = system_prompt
-        self.model = model
-        self.kwargs = kwargs
-        self.api_key = api_key
-        self.base_url = base_url
-        self.num_workers = num_workers
-        self.cache_dir = cache_dir
+class BaseInferencer_vllm:
+    '''
+    
+    '''
 
-    def inference(self, inputs : str | List[str]) -> List[InferenceOutput]:
-        if not isinstance(inputs, List):
-            inputs = [inputs]
-        raise NotImplementedError
+    action_map = {
+        ACTION_GENERATION: 'generation',
+    }
 
-class vllm_Inference(BaseInference):
     def __init__(self, 
-                 model_name_or_path: str,
-                **kwargs):
-        ##这里没有用config，只是一个参考，但还是用config比较好
-        self.sp = {}
-        self.model_name_or_path = model_name_or_path
-        self.sp_n = kwargs.get('n', 1)
-        self.sp_top_k = kwargs.get('top_k', 10)
-        self.sp_top_p = kwargs.get('top_p', 0.95)
-        self.sp_temperature = kwargs.get('temperature', 1)
-        self.sp_frequency_penalty = kwargs.get('frequency_penalty', 1.2)
-        self.sp_prompt_logprobs = kwargs.get('prompt_logprobs', 1)
-        self.sp_logprobs = kwargs.get('logprobs', 1)
-        self.max_length = kwargs.get('max_length', 32)
+                 model_cfgs: Dict[str, Any],
+                 eval_cfgs: Dict[str, Any],
+                 vllm_cfgs,
+                 **kwargs):
+        self.vllm_cfgs_sp, self.vllm_cfgs_llm = vllm_cfgs.SamplingParams, vllm_cfgs.LLM
+        self.eval_cfgs = eval_cfgs
+        self.model_cfgs = model_cfgs
+        # TODO: Resolve conflicts with torch.cuda.is_available
+        self.action = self.eval_cfgs.action if self.eval_cfgs.action else 'generation'
+        self.device = self.eval_cfgs.device if self.eval_cfgs.device else 'cuda'        
+        self.output_dir = self.eval_cfgs.output_dir
 
-        self.llm_tokenizer_mode = kwargs.get('tokenizer_mode', 'auto')
-        self.llm_trust_remote_code = kwargs.get('trust_remote_code', False)
-        self.llm_gpu_memory_utilization = kwargs.get('gpu_memory_utilization', 0.3)
+        self.sp_n = self.vllm_cfgs_sp.n
+        self.sp_top_k = self.vllm_cfgs_sp.top_k
+        self.sp_top_p = self.vllm_cfgs_sp.top_p
+        self.sp_temperature = self.vllm_cfgs_sp.temperature
+        self.sp_max_tokens = self.vllm_cfgs_sp.max_tokens
+        self.sp_frequency_penalty = self.vllm_cfgs_sp.frequency_penalty
+        self.sp_prompt_logprobs = self.vllm_cfgs_sp.prompt_logprobs
+        self.sp_logprobs = self.vllm_cfgs_sp.logprobs
 
+        self.llm_tokenizer_mode = self.vllm_cfgs_llm.tokenizer_mode
+        self.llm_trust_remote_code = self.vllm_cfgs_llm.trust_remote_code
+        self.llm_gpu_memory_utilization = self.vllm_cfgs_llm.gpu_memory_utilization
+        self.llm_tensor_parallel_size = 2
 
-    def __inference(self, inputs : List[str]) -> List[str]:        
-        num_gpu = 1
-        from vllm import LLM, SamplingParams
+        self.model_id = self.model_cfgs.model_id
+        self.model_name_or_path = self.model_cfgs.model_name_or_path
+        self.llm_trust_remote_code = self.model_cfgs.trust_remote_code # rewrite this??
+        self.sp_max_tokens = self.model_cfgs.model_max_length # rewrite this??
+
+        self.task2details = {}
+        self.detailed_filename = f'{self.model_id}_detailed'
+        self.brief_filename = f'{self.model_id}_brief'
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir, exist_ok=True)
+
+        self.init_model()
+        
+
+    def init_model(self) -> None:
+        
         self.samplingparams = SamplingParams(
             n=self.sp_n,
             top_k=self.sp_top_k,
             top_p=self.sp_top_p,
             temperature=self.sp_temperature,
-            max_tokens=self.max_length,
+            max_tokens=self.sp_max_tokens,
             frequency_penalty=self.sp_frequency_penalty,
             prompt_logprobs=self.sp_prompt_logprobs,
             logprobs=self.sp_logprobs
         )
-        self.llm = LLM(
+
+        self.model = LLM(
             model=self.model_name_or_path,
+            tokenizer=self.model_name_or_path,
             tokenizer_mode=self.llm_tokenizer_mode,
-            tensor_parallel_size=num_gpu,
             trust_remote_code=self.llm_trust_remote_code,
+            tensor_parallel_size=self.llm_tensor_parallel_size,
             gpu_memory_utilization=self.llm_gpu_memory_utilization
         )
-        responses = self.llm.generate(
-            prompts=inputs,
-            sampling_params=self.samplingparams
-        )
+        
+    def update_results(self,
+                       task2details:Dict[str, Dict[str, Any]]
+                    )->None:
+        brief_file_path = os.path.join(self.output_dir, self.brief_filename)
+        detailed_file_path = os.path.join(self.output_dir, self.detailed_filename)
+        
+        for task, value in task2details.items():
+            output_brief = []
+            output_detailed = []
             
-    def inference(self, inputs : InferenceInput | List[InferenceInput]) -> List[InferenceOutput]:
-        if not isinstance(inputs, List):
-            inputs = [inputs]
-        inputs = [input.text for input in inputs] #这里的input是InferenceInput类
-        responses = self.__inference(inputs)
-        return [InferenceOutput.from_vllm_output(response) for response in responses]
+            for item in value:
+                output_brief.append(requestoutput_to_dict(item.raw_output, mode='brief'))
+                output_detailed.append(requestoutput_to_dict(item.raw_output, mode='detailed'))
+                
+            with open(brief_file_path + '_' + task + ".jsonl", 'w', encoding='utf-8') as file:
+                for item in output_brief:
+                    json_record = json.dumps(item, ensure_ascii=False)
+                    file.write(json_record + '\n')
 
-if __name__ == "__main__":
-    inferencor = vllm_Inference(model_name_or_path="gpt2") 
-    print(inferencor.inference(
-        [InferenceInput(text="what is 1+2+3"),
-        InferenceInput(text="what is 1+2+3"),
-        InferenceInput(text="what is 1+2+3")]
-    ))
+            with open(detailed_file_path + '_' + task + ".jsonl", 'w', encoding='utf-8') as file:
+                for item in output_detailed:
+                    json_record = json.dumps(item, ensure_ascii=False)
+                    file.write(json_record + '\n')
+    
+    @torch.no_grad()
+    def predict(self, inputs: List[InferenceInput])-> Tuple[List[str], List[Dict[str, Any]]]:
+        
+        action_func_name = self.action_map.get(self.action)
+        if action_func_name is None:
+            raise ValueError(f"Action '{self.action}' is not supported")
+        action_func = getattr(self, action_func_name)
+        return action_func(inputs)
+
+    def generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
+        return self._generation(inputs)
+
+    def _generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
+        assert isinstance(inputs, list)
+        if inputs[0].token_ids:
+            outputs = self.model.generate(prompt_token_ids=[input.token_ids for input in inputs], sampling_params=self.samplingparams)
+        else:
+            outputs = self.model.generate(prompts=[input.text for input in inputs], sampling_params=self.samplingparams)
+        InferenceOutputs = [
+            InferenceOutput.from_vllm_output(vllm_output=output, store_raw=True)
+                for output in outputs
+        ]
+        return InferenceOutputs
+
+class BaseInferencer_deepspeed:
+    pass
+
+class BaseInferencer:
+    def __init__(self,
+                 type,
+                 model_cfgs,
+                 eval_cfgs,
+                 vllm_cfgs = None,
+                 **kwargs
+                ):
+        assert type in ['vllm', 'deepspeed']
+        if type == 'vllm':
+            assert vllm_cfgs is not None
+            self.type = type
+            self.instance = BaseInferencer_vllm(model_cfgs, eval_cfgs, vllm_cfgs, **kwargs)
+        else:
+            pass
+    
+    def predict(self, inputs):
+        return self.instance.predict(inputs)
+
+    def generation(self, inputs : List[InferenceInput]) -> List[InferenceOutput]:
+        return self.instance.generation(inputs)
