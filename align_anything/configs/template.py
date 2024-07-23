@@ -15,11 +15,14 @@
 
 
 import io
+import os
 from abc import ABC, abstractmethod
 from typing import Any
 
 import requests
+import librosa
 from PIL import Image
+from torchvision.io import read_video
 
 from align_anything.utils.template_registry import register_template
 
@@ -288,13 +291,80 @@ class Pickapic:
         else:
             return False
 
+@register_template('Webvid')
+class Webvid:
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        video, _, _ = read_video(os.path.join(path, raw_sample['video_path']))
+        return {
+            'prompt': raw_sample['caption'],
+            'video': video.squeeze(0),
+        }
+
+@register_template('SafeSora')
+class SafeSora:
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        prompt = raw_sample['prompt_text']
+        
+        better_id = None
+        worse_id = None
+        if raw_sample['helpfulness'] == 'video_0':
+            better_id = 'video_0'
+            worse_id = 'video_1'
+        else:
+            better_id = 'video_1'
+            worse_id = 'video_0'
+        
+        raw_better_video = raw_sample[better_id]['video_path']
+        raw_worse_video = raw_sample[worse_id]['video_path']
+        
+        better_video, _, _ = read_video(os.path.join(path, raw_better_video))
+        worse_video, _, _ = read_video(os.path.join(path, raw_worse_video))
+        
+        return {
+            'prompt': prompt,
+            'better_video': better_video.squeeze(0),
+            'worse_video': worse_video.squeeze(0),
+        }
+        
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return False
+
+@register_template('WavCaps')
+class WavCaps:
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        caption = raw_sample['answer']
+        audio = raw_sample['context']['array']
+        sampling_rate = raw_sample['context']['sampling_rate']
+        return {
+            'prompt': caption,
+            'audio': audio,
+            'sampling_rate': sampling_rate,
+        }
+        
+@register_template('SOMOS')
+class SOMOS:
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        prompt = raw_sample['prompt']
+        better_audio_path = os.path.join(path, raw_sample['better_data_path'])
+        worse_audio_path = os.path.join(path, raw_sample['worse_data_path'])
+        
+        better_audio, _ = librosa.load(better_audio_path, sr=None)
+        worse_audio, _ = librosa.load(worse_audio_path, sr=None)
+        
+        return {
+            'prompt': prompt,
+            'better_audio': better_audio,
+            'worse_audio': worse_audio,
+        }
+        
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return False
 
 @register_template('Alpaca')
 class Alpaca(Dialogue):
     system_prompt: str = 'Below is an instruction that describes a task. '
     user_prompt: str = '### Instruction:\n{input}\n\n'
     assistant_prompt: str = '### Response:\n{output}'
-
 
 @register_template('Aquila')
 class Aquila(Dialogue):

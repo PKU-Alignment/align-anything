@@ -26,15 +26,15 @@ import torch.nn.functional as F
 from accelerate import Accelerator
 from tqdm import tqdm
 
-from align_anything.datasets.text_to_image import PreferenceBatch, PreferenceDataset
-from align_anything.models.pretrained_model import load_pretrained_image_diffusion_models
+from align_anything.datasets.text_to_audio import PreferenceBatch, PreferenceDataset
+from align_anything.models.pretrained_model import load_pretrained_audio_diffusion_models
 from align_anything.trainers.base import SupervisedTrainerBase
 from align_anything.utils.multi_process import (
     get_all_reduce_mean,
     get_current_device,
     is_main_process,
 )
-from align_anything.utils.process_image import get_image_processor
+from align_anything.utils.process_audio import get_audio_processor
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -84,7 +84,7 @@ class DPOTrainer(SupervisedTrainerBase):
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
         self.model, self.vae, self.text_encoder, self.noise_scheduler, self.tokenizer = (
-            load_pretrained_image_diffusion_models(
+            load_pretrained_audio_diffusion_models(
                 self.cfgs.model_cfgs.model_name_or_path,
                 trust_remote_code=True,
                 freeze_unet=self.cfgs.train_cfgs.freeze_unet,
@@ -92,8 +92,12 @@ class DPOTrainer(SupervisedTrainerBase):
                 dtype=self.dtype,
             )
         )
-        self.processor = get_image_processor(resolution=int(self.cfgs.train_cfgs.resolution))
-
+        self.processor = get_audio_processor(
+                clips_per_audio=int(self.cfgs.train_cfgs.clips_per_audio),
+                mel_first=self.cfgs.train_cfgs.mel_first, 
+                num_mel_bins=int(self.cfgs.train_cfgs.num_mel_bins), 
+                max_frames=int(self.cfgs.train_cfgs.max_frames)
+            )
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
@@ -129,11 +133,17 @@ class DPOTrainer(SupervisedTrainerBase):
             dtype=torch.long,
         ).repeat(2)
 
-        encoder_hidden_states = self.text_encoder(batch['input_ids'], attention_mask=None)[
+        prompt_embeds = self.text_encoder(batch['input_ids'], attention_mask=None)[
             0
-        ].repeat(2, 1, 1)
+        ]
+        prompt_embeds = torch.cat([prompt_embeds] * 2, dim=0)
         noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
-        model_pred = self.model(noisy_latents, timesteps, encoder_hidden_states).sample
+        model_pred = self.model(
+            noisy_latents, 
+            timesteps, 
+            encoder_hidden_states=None,
+            class_labels=prompt_embeds
+        ).sample
 
         if self.noise_scheduler.config.prediction_type == 'epsilon':
             target = noise
@@ -156,9 +166,10 @@ class DPOTrainer(SupervisedTrainerBase):
             self.accelerator.unwrap_model(self.model).disable_adapters()
         with torch.no_grad():
             ref_preds = self.model(
-                noisy_latents,
-                timesteps,
-                encoder_hidden_states,
+                noisy_latents, 
+                timesteps, 
+                encoder_hidden_states=None,
+                class_labels=prompt_embeds
             ).sample.detach()
             ref_loss = F.mse_loss(ref_preds.float(), target.float(), reduction='none')
             ref_loss = ref_loss.mean(dim=list(range(1, len(ref_loss.shape))))
@@ -272,7 +283,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('text_to_image', 'dpo')
+    task = os.path.join('text_to_audio', 'dpo')
     dict_cfgs, _ = read_cfgs(mode='train', task=task)
     unparsed_args = parse_unknown_args()
     for k, v in unparsed_args.items():
