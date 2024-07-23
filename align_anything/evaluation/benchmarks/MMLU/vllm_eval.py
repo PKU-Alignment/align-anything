@@ -56,20 +56,12 @@ class MMLUDataLoader(BaseDataLoader):
 
 class MMLUGeneratorVLLM(BaseInferencer_vllm):
 
-    def eval(self, data:Dict[str, List[InferenceInput]]) -> None:
-        task2details = self.eval_task(data)
-        
-        self.update_results(task2details)
-        outputs = {}
-        for task, details in task2details.items():
-            outputs[task] = [InferenceOutput.from_vllm_output(detail['pred']) for detail in details]
-        return outputs
-    
-    def eval_task(self, inputs:Dict[str, List[InferenceInput]]) -> Dict[str, List[InferenceOutput]]:
-        details = {}
-        for task, input in inputs.items():
-            details[task] = self.predict(input)
-        return details
+    def eval(self, data:Dict[str, List[InferenceInput]]) -> Dict[str, List[InferenceOutput]]:
+        task2details = {}
+        for task, input in data.items():
+            task2details[task] = self.predict(input)
+        self.update_results(task2details) #这一步可以考虑能不能移到外面
+        return task2details
 
 def main():
     dict_configs, infer_configs = read_eval_cfgs('test_mmlu')
