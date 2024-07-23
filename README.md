@@ -71,6 +71,8 @@ We have a roadmap for future development work `align-anything`:
 
 # News
 
+- 2024-07-23 🎉 We have supported text-to-image, text-to-audio, and text-to-video modalities for the SFT trainer and DPO trainer!
+- 2024-07-22 🎉 We have supported the currently popular multimodal large model Chameleon for the SFT trainer and DPO trainer!
 - 2024-07-17 🎉 We are pleased to announce the open-source release of the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
 - 2024-07-14 🎉 We open-souce the `align-anything` framework.
 
