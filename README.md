@@ -52,7 +52,7 @@ Align-Anything is an open-source alignment framework for academic research based
 
 We have a roadmap for future development work `align-anything`:
 
-- [x] Support alignment algorithms over the `diffusion model`, `text to any generation model` and other `vision-language model`.
+- [ ] Support alignment algorithms over the `diffusion model`, `text to any generation model` and other `vision-language model`.
 - [x] Support diverse parameter sizes including `LoRA`, `QLoRA`.
 - [ ] Support `NeMo` backbone for training, and `vllm` backbone for evaluation.
 
@@ -71,8 +71,8 @@ We have a roadmap for future development work `align-anything`:
 
 # News
 
-- 2024-07-23 🎉 We have supported text-to-image, text-to-audio, and text-to-video modalities for the SFT trainer and DPO trainer!
-- 2024-07-22 🎉 We have supported the currently popular multimodal large model Chameleon for the SFT trainer and DPO trainer!
+- 2024-07-23 🔥 We have supported text-to-image, text-to-audio, and text-to-video modalities for the SFT trainer and DPO trainer!
+- 2024-07-22 🔥 We have supported the currently popular multimodal large model Chameleon for the SFT trainer and DPO trainer!
 - 2024-07-17 🎉 We are pleased to announce the open-source release of the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
 - 2024-07-14 🎉 We open-souce the `align-anything` framework.
 
