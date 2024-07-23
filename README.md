@@ -53,25 +53,26 @@ Align-Anything is an open-source alignment framework for academic research based
 We have a roadmap for future development work `align-anything`:
 
 - [ ] Support alignment algorithms over the `diffusion model`, `text to any generation model` and other `vision-language model`.
-- [ ] Support diverse parameter sizes including `LoRA`, `QLoRA`.
+- [x] Support diverse parameter sizes including `LoRA`, `QLoRA`.
 - [ ] Support `NeMo` backbone for training, and `vllm` backbone for evaluation.
 
-| Trainers | Text :arrow_right: Text | Image+Text :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | More Modality... |
+| Trainers | Text :arrow_right: Text | Image+Text :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | Text :arrow_right: Audio |
 |---|---|---|---|---|---|
-| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :car: | :car: |
-| RM Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
-| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :car: | :car: |
-| PPO Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
-| KTO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
-| ORPO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
-| SimPO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
+| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| RM Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| PPO Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| KTO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| ORPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| SimPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
 
 - :white_check_mark: : Features supported now.
-- :airplane: : Features under test, would be supported as soon as possible.
-- :car: : Features on going in our TODO list.
+- :heavy_minus_sign: : Features on going in our TODO list.
 
 # News
 
+- 2024-07-23 🔥 We have supported text-to-image, text-to-audio, and text-to-video modalities for the SFT trainer and DPO trainer!
+- 2024-07-22 🔥 We have supported the currently popular multimodal large model Chameleon for the SFT trainer and DPO trainer!
 - 2024-07-17 🎉 We are pleased to announce the open-source release of the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
 - 2024-07-14 🎉 We open-souce the `align-anything` framework.
 
@@ -292,23 +293,39 @@ class PKUSafeRLHF(Template):
 
 After designing the aforementioned template, you just need to specify this template by passing the `--train_template PKUSafeRLHF` argument when invoking the dataset to complete the corresponding training. Perhaps the above example still lacks specificity; therefore, we provide command references that encompass various models executing multiple algorithms on diverse datasets. You can expedite your training process by directly running or modifying these scripts [here](./examples/).
 
-# Inference
+## Demo
 
-## Interactive CLI Demo
+### Gradio Web UI
 
-```bash
-python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
+To launch a Gradio demo locally, follow these steps by running the commands one by one. If you intend to launch multiple model workers to compare different checkpoints, you only need to launch the controller and the web server *ONCE*.
+
+#### Launch a controller
+```Shell
+python -m align_anything.serve.controller --host 0.0.0.0 --port 10000
 ```
 
-![cli_demo](assets/cli_demo.gif)
+#### Launch a gradio web server.
+```Shell
+python -m align_anything.serve.gradio_web_server --controller http://localhost:10000 --model-list-mode reload
+```
+You have just launched the Gradio web interface. Now, you can open the web interface using the URL printed on the screen. You may notice that there are no models listed yet. Do not worry, as we have not launched any model workers yet. The model list will be automatically updated once you launch a model worker.
 
-## Interactive Arena
+#### Launch a model worker
 
-```bash
-python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_model_name_or_path --blue_corner_model_name_or_path your_blue_model_name_or_path
+This is the actual *worker* that performs the inference on the GPU.  Each worker is responsible for a single model specified in `--model-path`, and check the template.py in align_anything.configs to find the according template name.
+
+```Shell
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/models/llava/llava-1.5-7b-hf  --template "LLAVA"
+```
+Wait until the process completes loading the model and you see "Uvicorn running on ...". Then, refresh your Gradio web UI, and you will see the model you just started in the model list.
+
+You can start as many workers as you need and compare different model checkpoints within the same Gradio interface. Ensure that you keep the `--controller` the same, but change the `--port` and `--worker` to a unique port number for each worker.
+
+```Shell
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port <different from 40000, say 40001> --worker http://localhost:<change accordingly, i.e. 40001> --model-path <ckpt2> --template "LLAVA"
 ```
 
-![Arena-Demo](assets/arena_demo.gif)
+You can specify the mps device by using the `--device` flag: `--device mps`, if you are using an Apple device with an M1 or M2 chip.
 
 
 ## Why do we open source align-anything?

@@ -55,8 +55,14 @@ train_cfgs:
   lora_unet: False
   # The max norm of gradient
   max_grad_norm: 1.0
-  # The resolution of the image processor
-  resolution: 512
+  # The number of clips for each audio
+  clips_per_audio: 1
+  # The shape of mel-spectrogram is (1, F, T) if mel_first is True, otherwise (1, T, F)
+  mel_first: False
+  # The number of mel bins
+  num_mel_bins: 64
+  # The number of frames for each audio clip
+  max_frames: 500
 # Configuration for datasets
 data_cfgs:
   # Datasets to use for training

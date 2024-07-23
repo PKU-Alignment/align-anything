@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Trainer for diffusion DPO."""
+"""Trainer for diffusion SFT."""
 
 
 import os
 import sys
 from typing import Any
+from einops import rearrange
 
 import deepspeed
 import torch
@@ -26,15 +27,11 @@ import torch.nn.functional as F
 from accelerate import Accelerator
 from tqdm import tqdm
 
-from align_anything.datasets.text_to_image import PreferenceBatch, PreferenceDataset
-from align_anything.models.pretrained_model import load_pretrained_image_diffusion_models
+from align_anything.datasets.text_to_video import SupervisedBatch, SupervisedDataset
+from align_anything.models.pretrained_model import load_pretrained_video_diffusion_models
 from align_anything.trainers.base import SupervisedTrainerBase
-from align_anything.utils.multi_process import (
-    get_all_reduce_mean,
-    get_current_device,
-    is_main_process,
-)
-from align_anything.utils.process_image import get_image_processor
+from align_anything.utils.multi_process import get_current_device, is_main_process
+from align_anything.utils.process_video import get_video_processor
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -46,16 +43,10 @@ from align_anything.utils.tools import (
 )
 
 
-class DPOTrainer(SupervisedTrainerBase):
+class SupervisedTrainer(SupervisedTrainerBase):
 
     def __init__(self, cfgs) -> None:
-        """Initialize the DPO diffusion trainer.
-
-        References:
-            - Title: DiffusionModel Alignment Using Direct Preference Optimization
-            - Authors: Bram Wallace, Meihua Dang, Rafael Rafailov, Linqi Zhou, Aaron Lou, Senthil
-            Purushwalkam, Stefano Ermon, Caiming Xiong, Shafiq Joty, Nikhil Naik.
-        """
+        """Initialize the SFT diffusion trainer."""
         self.cfgs = cfgs
         self.muti_process_cfgs = prepare_accelerate_train_cfgs(custom_cfgs=cfgs.train_cfgs)
         self.global_step = 0
@@ -84,7 +75,7 @@ class DPOTrainer(SupervisedTrainerBase):
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
         self.model, self.vae, self.text_encoder, self.noise_scheduler, self.tokenizer = (
-            load_pretrained_image_diffusion_models(
+            load_pretrained_video_diffusion_models(
                 self.cfgs.model_cfgs.model_name_or_path,
                 trust_remote_code=True,
                 freeze_unet=self.cfgs.train_cfgs.freeze_unet,
@@ -92,49 +83,40 @@ class DPOTrainer(SupervisedTrainerBase):
                 dtype=self.dtype,
             )
         )
-        self.processor = get_image_processor(resolution=int(self.cfgs.train_cfgs.resolution))
+        self.processor = get_video_processor(
+            resolution=int(self.cfgs.train_cfgs.resolution),
+            sample_frames=int(self.cfgs.train_cfgs.sample_frames),
+            do_resize=self.cfgs.train_cfgs.do_resize,
+        )
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
-            PreferenceDataset, PreferenceDataset
+            SupervisedDataset, SupervisedDataset
         )
 
     def init_engines(self) -> None:
         """Initialize Accelerate engines."""
         self.init_accelerate_engines()
 
-    def loss(self, batch: PreferenceBatch) -> dict[str, torch.Tensor]:
-        """Loss function for DPO finetuning."""
-        pixel_values = batch['pixel_values'].to(dtype=self.dtype)
-        feed_pixel_values = torch.cat(pixel_values.chunk(2, dim=1))
-        latents = []
-        for i in range(0, feed_pixel_values.shape[0], self.cfgs.train_cfgs.vae_encode_batch_size):
-            latents.append(
-                self.vae.encode(
-                    feed_pixel_values[i : i + self.cfgs.train_cfgs.vae_encode_batch_size]
-                ).latent_dist.sample()
-            )
-        latents = torch.cat(latents, dim=0)
+    def loss(self, batch: SupervisedBatch) -> dict[str, torch.Tensor]:
+        """Loss function for supervised finetuning."""
+        videos = batch["pixel_values"].to(self.vae.dtype)
+        b, _, t, _, _ = videos.shape
+        videos = rearrange(videos, 'b c t h w -> (b t) c h w')
+        latents = self.vae.encode(videos).latent_dist.sample()
+        latents = latents.view(b, t, *latents.shape[1:]).permute(0, 2, 1, 3, 4)
         latents = latents * self.vae.config.scaling_factor
 
-        noise = torch.randn_like(latents).chunk(2)[0].repeat(2, 1, 1, 1)
-        batch_size = latents.shape[0] // 2
-
+        noise = torch.randn_like(latents)
+        batch_size = latents.shape[0]
         timesteps = torch.randint(
-            0,
-            self.noise_scheduler.config.num_train_timesteps,
-            (batch_size,),
-            device=latents.device,
-            dtype=torch.long,
-        ).repeat(2)
-
-        encoder_hidden_states = self.text_encoder(batch['input_ids'], attention_mask=None)[
-            0
-        ].repeat(2, 1, 1)
+            0, self.noise_scheduler.config.num_train_timesteps, (batch_size,), device=latents.device
+        )
+        timesteps = timesteps.long()
         noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
-        model_pred = self.model(noisy_latents, timesteps, encoder_hidden_states).sample
 
+        encoder_hidden_states = self.text_encoder(batch['input_ids'], return_dict=False)[0]
         if self.noise_scheduler.config.prediction_type == 'epsilon':
             target = noise
         elif self.noise_scheduler.config.prediction_type == 'v_prediction':
@@ -144,52 +126,18 @@ class DPOTrainer(SupervisedTrainerBase):
                 f'Unknown prediction type {self.noise_scheduler.config.prediction_type}'
             )
 
-        model_losses = F.mse_loss(model_pred.float(), target.float(), reduction='none')
-        model_losses = model_losses.mean(dim=list(range(1, len(model_losses.shape))))
-        model_losses_w, model_losses_l = model_losses.chunk(2)
-
-        # For logging
-        model_diff = model_losses_w - model_losses_l  # These are both LBS (as is t)
-
-        # Reference model predictions
-        if self.cfgs.train_cfgs.lora_unet:
-            self.accelerator.unwrap_model(self.model).disable_adapters()
-        with torch.no_grad():
-            ref_preds = self.model(
-                noisy_latents,
-                timesteps,
-                encoder_hidden_states,
-            ).sample.detach()
-            ref_loss = F.mse_loss(ref_preds.float(), target.float(), reduction='none')
-            ref_loss = ref_loss.mean(dim=list(range(1, len(ref_loss.shape))))
-
-            ref_losses_w, ref_losses_l = ref_loss.chunk(2)
-            ref_diff = ref_losses_w - ref_losses_l
-
-        if self.cfgs.train_cfgs.lora_unet:
-            self.accelerator.unwrap_model(self.model).enable_adapters()
-
-        logits = ref_diff - model_diff
-        if self.cfgs.train_cfgs.loss_type == 'sigmoid':
-            loss = -F.logsigmoid(self.cfgs.train_cfgs.beta_coeff * logits).mean()
-        elif self.cfgs.train_cfgs.loss_type == 'hinge':
-            loss = torch.relu(1 - self.cfgs.train_cfgs.beta_coeff * logits).mean()
-        else:
-            raise ValueError(f'Unknown loss type {self.cfgs.train_cfgs.loss_type}')
-
-        implicit_acc = (logits > 0).sum().float() / logits.size(0)
-        implicit_acc += 0.5 * (logits == 0).sum().float() / logits.size(0)
+        model_pred = self.model(noisy_latents, timesteps, encoder_hidden_states, return_dict=False)[
+            0
+        ]
+        loss = F.mse_loss(model_pred.float(), target.float(), reduction='mean')
 
         return {
             'loss': loss,
-            'reward_accuracy': implicit_acc,
         }
 
-    def train_step(self, batch: PreferenceBatch) -> dict[str, Any]:
+    def train_step(self, batch: SupervisedBatch) -> dict[str, Any]:
         """Performs a single training step."""
         loss = self.loss(batch)['loss']
-        reward_accuracy = self.loss(batch)['reward_accuracy']
-
         self.accelerator.backward(loss)
         if self.accelerator.sync_gradients:
             self.accelerator.clip_grad_norm_(
@@ -198,15 +146,9 @@ class DPOTrainer(SupervisedTrainerBase):
         self.optimizer.step()
         self.lr_scheduler.step()
         self.optimizer.zero_grad()
-
-        with torch.no_grad():
-            loss = get_all_reduce_mean(loss)
-            reward_accuracy = get_all_reduce_mean(reward_accuracy)
-
         return {
             'train/loss': loss.item(),
             'train/lr': self.optimizer.param_groups[0]['lr'],
-            'train/reward_accuracy': reward_accuracy.item(),
         }
 
     def train(self) -> None:
@@ -272,7 +214,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('text_to_image', 'dpo')
+    task = os.path.join('text_to_video', 'sft')
     dict_cfgs, _ = read_cfgs(mode='train', task=task)
     unparsed_args = parse_unknown_args()
     for k, v in unparsed_args.items():
@@ -283,7 +225,7 @@ def main():
     seed_everything(cfgs.train_cfgs.seed)
 
     # finetune the model
-    trainer = DPOTrainer(cfgs=cfgs)
+    trainer = SupervisedTrainer(cfgs=cfgs)
     trainer.train()
     trainer.save()
     trainer.accelerator.end_training()
