@@ -58,6 +58,7 @@ class InferenceOutput:
     prompt_logprobs: Optional[PromptLogprobs]
     response_token_ids: Optional[List[int]]
     response_logprobs: Optional[PromptLogprobs]
+    raw_output : Optional[Union[RequestOutput, None]]
 
     def __post_init__(self):
         pass
@@ -69,7 +70,8 @@ class InferenceOutput:
                  prompt_token_ids: Optional[List[int]] = None,
                  prompt_logprobs: Optional[PromptLogprobs] = None,
                  response_token_ids: Optional[List[int]] = None,
-                 response_logprobs: Optional[PromptLogprobs] = None
+                 response_logprobs: Optional[PromptLogprobs] = None,
+                 raw_output: Optional[Union[RequestOutput, None]] = None
                 ):
         self.engine = engine
         self.prompt = prompt
@@ -78,9 +80,10 @@ class InferenceOutput:
         self.response = response
         self.response_token_ids = response_token_ids
         self.response_logprobs = response_logprobs
+        self.raw_output = raw_output
 
     @classmethod
-    def from_vllm_output(cls, vllm_output: RequestOutput):
+    def from_vllm_output(cls, vllm_output: RequestOutput, store_raw: bool = False):
         return cls(
             engine="vllm",
             prompt=vllm_output.prompt,
@@ -88,11 +91,12 @@ class InferenceOutput:
             prompt_logprobs=vllm_output.prompt_logprobs,
             response=[output.text for output in vllm_output.outputs],
             response_token_ids=[output.token_ids for output in vllm_output.outputs],
-            response_logprobs=[output.logprobs for output in vllm_output.outputs]
+            response_logprobs=[output.logprobs for output in vllm_output.outputs],
+            raw_output=vllm_output if store_raw else None
         )
 
     @classmethod
-    def from_dict(cls, data: Dict):
+    def from_dict(cls, data: Dict, store_raw: bool = False):
         return cls(
             engine="dict",
             prompt=data.get("prompt"),
@@ -100,7 +104,8 @@ class InferenceOutput:
             prompt_token_ids=data.get("prompt_token_ids"),
             prompt_logprobs=data.get("prompt_logprobs"),
             response_token_ids=data.get("response_token_ids"),
-            response_logprobs=data.get("response_logprobs")
+            response_logprobs=data.get("response_logprobs"),
+            raw_output=data if store_raw else None
         )
     
     def from_deepspeed_output(self, deepspeed_output: Dict):

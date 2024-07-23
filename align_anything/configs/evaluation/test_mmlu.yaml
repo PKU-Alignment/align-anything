@@ -10,7 +10,7 @@ default:
     # Seed for random number generator
     seed: 0
     # Output directory name
-    output_dir: /aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/mmlu
+    output_dir: null
     # Num shot
     n_shot: 5
     # Evaluation method
@@ -28,9 +28,9 @@ default:
 
   # Model configurations
   model_cfgs:
-    model_id: alpaca-7b-reproduced
+    model_id: gpt2
     # Pretrained model name or path
-    model_name_or_path: /aifs4su/yaodong/models/alpaca-7b-reproduced
+    model_name_or_path: gpt2
     # Chat template
     chat_template: PKUSafeRLHF
     # Whether to trust remote code

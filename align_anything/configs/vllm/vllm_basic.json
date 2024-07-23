@@ -7,8 +7,8 @@
         "temperature": 0.05,
         "max_tokens": 1024,
         "frequency_penalty": 1.2,
-        "prompt_logprobs": 1,
-        "logprobs": 5
+        "prompt_logprobs": 0,
+        "logprobs": 0
     },
     "LLM":
     {

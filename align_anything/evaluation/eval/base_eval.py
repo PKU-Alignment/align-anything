@@ -1,8 +1,10 @@
 from typing import List
 from abc import abstractmethod
+
 from align_anything.evaluation.outputs import ArenaInput, EvalOutput, InferenceOutput, InferenceInput, SingleInput
-from align_anything.evaluation.inference.base_inference import vllm_Inference
-from utils import batch_request_openai,filter_out_exception
+from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
+from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
+from align_anything.evaluation.eval.utils import batch_request_openai,filter_out_exception
 from openai.types.chat.chat_completion import ChatCompletion
 
 class BaseEval:
@@ -12,7 +14,7 @@ class BaseEval:
     @abstractmethod
     def evaluate(self, **kwargs):
         raise NotImplementedError
-    
+
 class Reward_Single_eval_deepspeed(BaseEval):
     def __init__(self, 
                  judge_prompt: str,
@@ -25,11 +27,14 @@ class Reward_Single_eval_deepspeed(BaseEval):
         self.kwargs = kwargs
         self.num_workers = num_workers
         self.cache_dir = cache_dir
-            
+
+    def set_vllm_config():
+        pass
+
     def evaluate(self, inputs : SingleInput | List[SingleInput]) -> List[EvalOutput]:
         raise NotImplementedError
 
-class vllm_Eval(BaseEval):
+class BaseEval_vllm(BaseEval):
     def __init__(self, 
                  judge_prompt: str,
                  model_name_or_path: str,
@@ -44,27 +49,20 @@ class vllm_Eval(BaseEval):
 
     def _evaluate(self, processed_inputs : List[str]) -> List[str]:
         raise NotImplementedError
-        inferencor = vllm_Inference(
-            model_name_or_path=self.model_name_or_path,
-            **self.kwargs
-        )
-        responses = inferencor.inference(processed_inputs)
-        return responses
     
-    def evaluate(self, inputs : SingleInput | List[SingleInput]) -> List[EvalOutput]:
+    def evaluate(self, inputs : List[SingleInput]) -> List[EvalOutput]:
+        # BaseInferencer_vllm(cfgs, vllm_cfgs)
         raise NotImplementedError
 
-class Reward_Single_eval_vllm(vllm_Eval):
+class Reward_Single_eval_vllm(BaseEval_vllm):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def evaluate(self, inputs : SingleInput | List[SingleInput]) -> List[EvalOutput]:
-        if not isinstance(inputs, list):
-            inputs = [inputs,]
+    def evaluate(self, inputs : List[SingleInput]) -> List[EvalOutput]:
+        assert isinstance(inputs, list)
         processed_inputs = []
         for input in inputs:
-            text = "CONTEXT: " + input.prompt + "\n\n" + "RESPONSE: " + input.response
-            prompt = self.judge_prompt + "\n\n" + text
+            prompt = input.build_prompt(judge_prompt=self.judge_prompt, template_function=self.template_function)
             # TODO: fix it to template rather than hard code
 
             processed_inputs.append(prompt)
@@ -77,7 +75,7 @@ def template_function_example(input):
     assert isinstance(input, ArenaInput)
     return "test:Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}".format(prompt=input.prompt, response1=input.response1, response2=input.response2)
 
-class API_Eval(BaseEval):
+class BaseAPI_Eval(BaseEval):
     def __init__(self,
                     judge_prompt: str,
                     model: str = 'deepseek-chat',
@@ -109,14 +107,13 @@ class API_Eval(BaseEval):
         return responses
 
 
-class API_Single_Eval(API_Eval):
+class API_Single_Eval(BaseAPI_Eval):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def evaluate(self, inputs : SingleInput | List[SingleInput]) -> List[EvalOutput]:
-        if not isinstance(inputs, list):
-            inputs = [inputs,]
+    def evaluate(self, inputs : List[SingleInput]) -> List[EvalOutput]:
+        assert isinstance(inputs, list)
         processed_inputs = []
         for input in inputs:
             gpt_input = input.build_gpt_input(judge_prompt=self.judge_prompt, template_function=self.template_function)
@@ -126,16 +123,15 @@ class API_Single_Eval(API_Eval):
         return filter_out_exception(results)
         
 
-class API_Pair_Eval(API_Eval):
+class API_Pair_Eval(BaseAPI_Eval):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if self.template_function is None:
             self.template_function = template_function_example
 
-    def evaluate(self, inputs : ArenaInput | List[ArenaInput]) -> List[EvalOutput]:
-        if not isinstance(inputs, list):
-            inputs = [inputs,]
+    def evaluate(self, inputs : List[ArenaInput]) -> List[EvalOutput]:
+        assert isinstance(inputs, list)
         processed_inputs = []
         for input in inputs:
             gpt_input = input.build_gpt_input(judge_prompt=self.judge_prompt, template_function=self.template_function)
