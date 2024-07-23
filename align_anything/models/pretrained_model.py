@@ -25,7 +25,6 @@ from typing import Any, Callable, Literal
 
 import accelerate
 import deepspeed
-import diffusers
 import torch
 import torch.nn as nn
 from accelerate.state import AcceleratorState
@@ -35,12 +34,17 @@ from transformers import (
     AutoProcessor,
     AutoTokenizer,
     CLIPTextModel,
-    CLIPTokenizer,
     PreTrainedModel,
     PreTrainedTokenizerBase,
     ClapTextModelWithProjection,
 )
-from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
+
+
+try:
+    from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
+except ImportError:
+    from transformers import is_deepspeed_zero3_enabled
+
 from transformers.utils import ContextManagers
 
 from align_anything.models.model_registry import AnyModel

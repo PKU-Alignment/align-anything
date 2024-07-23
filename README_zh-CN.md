@@ -54,24 +54,25 @@ Align-Anything 是一个基于 DeepSpeed 或 NeMo （目前正在开发中）的
 我们为未来的开发工作制定了 `Align-Anything` 的路线图：
 
 - [ ] 支持在 `扩散模型`、`文本到任何模态的生成模型` 和其他 `视觉语言模型` 上的对齐算法。
-- [ ] 支持包括 `LoRA`、`QLoRA` 在内的多种训练参数。
+- [x] 支持包括 `LoRA`、`QLoRA` 在内的多种训练参数。
 - [ ] 支持用于训练的 `NeMo` 框架，以及用于评估的 `vllm` 框架。
 
 | 训练算法 | 文本 :arrow_right: 文本 | 文本+图像 :arrow_right: 文本 | 文本 :arrow_right: 图像 | 文本 :arrow_right: 视频 | 更多模态... |
 |---|---|---|---|---|---|
-| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :car: | :car: |
-| RM Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
-| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :car: | :car: |
-| PPO Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
-| KTO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
-| ORPO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
-| SimPO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
+| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| RM Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| PPO Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| KTO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| ORPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| SimPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
 
 - :white_check_mark: : 目前支持的功能。
-- :airplane: : 正在内部测试的功能，将尽快被更新。
-- :car: : 正在开发的功能。
+- :heavy_minus_sign: : 正在内部测试的功能，将尽快被更新。
 
 # 新闻
+- 2024-07-23 🔥 我们支持了text-to-image，text-to-audio和text-to-video模态的SFT trainer和DPO trainer！
+- 2024-07-22 🔥 我们支持了目前热门的多模态大模型Chameleon的SFT trainer和DPO trainer！
 - 2024-07-17 🎉 我们很高兴宣布开源发布Align-Anything-Instruction-100K文本模态数据集。该数据集提供[英文版](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)和[中文版](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh)，它们分别来源于不同的数据集，并经过GPT-4的精细优化以确保质量。
 - 2024-07-14 🎉 我们开源了 `Align-Anything` 框架。
 
