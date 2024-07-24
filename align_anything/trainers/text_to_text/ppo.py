@@ -235,10 +235,22 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         micro_batch_size = self.cfgs.train_cfgs.per_device_train_batch_size
         micro_inference_batches = []
         micro_training_batches = []
+        mini_batch = {}
         for i in range(0, total_batch_size, micro_batch_size):
-            mini_batch = {
-                key: prompt_only_batch[key][i : i + micro_batch_size] for key in prompt_only_batch
-            }
+            
+            if 'image_sizes' in prompt_only_batch:
+                for key in prompt_only_batch:
+                    if key == 'pixel_values':
+                        
+                        mini_batch[key] = prompt_only_batch[key][i : i + sum(prompt_only_batch['image_sizes'][i : i + micro_batch_size])]
+                    elif key == 'image_sizes':
+                        mini_batch[key] = prompt_only_batch[key][i : i + micro_batch_size]
+                    else:
+                        mini_batch[key] = prompt_only_batch[key][i : i + micro_batch_size]
+            else:  
+                mini_batch = {
+                    key: prompt_only_batch[key][i : i + micro_batch_size] for key in prompt_only_batch
+                }
 
             # actor generation
             actor_batch = self.actor_step(mini_batch)
