@@ -66,12 +66,17 @@ class SupervisedTrainer(SupervisedTrainerBase):
         """Initialize model and tokenizer."""
         if self.ds_train_cfgs is not None and self.ds_train_cfgs['zero_optimization']['stage'] == 3:
             self.dstchf = HfDeepSpeedConfig(self.ds_train_cfgs)
+        self.bnb_cfgs = self.cfgs.bnb_cfgs
+        self.lora_cfgs = self.cfgs.lora_cfgs
         self.model, self.tokenizer, self.processor = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=True,
+            bnb_cfgs = self.bnb_cfgs,
+            lora_cfgs = self.lora_cfgs,
         )
+
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
