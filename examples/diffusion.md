@@ -1,8 +1,4 @@
-<<<<<<< HEAD:examples/text_to_image_diffusion.md
-# Text-to-Image Diffusion Training Scripts
-=======
 # Diffusion Training Scripts
->>>>>>> f7c31d0 (docs: add video/audio diffusion example):examples/diffusion.md
 
 We provide examples of various scripts for fine-tuning based on the [Stable Diffusion](https://huggingface.co/CompVis/stable-diffusion-v1-4) series models as follows. You can execute these commands in the `./scripts` directory to start the corresponding training.
 
