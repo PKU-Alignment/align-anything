@@ -69,27 +69,12 @@ class ModelWorker:
     def __init__(self, controller_addr, worker_addr,
                  worker_id, no_register,
                  model_path, model_name,
-<<<<<<< HEAD
-<<<<<<< HEAD
                  device, template=None):
-=======
-                 device):
->>>>>>> caa36d0 (add web ui)
-=======
-                 device, template=None):
->>>>>>> d2471510853ae60c32b9fa13eebb31ff2098837a
         self.controller_addr = controller_addr
         self.worker_addr = worker_addr
         self.worker_id = worker_id
         self.context_len = 2048
-<<<<<<< HEAD
-<<<<<<< HEAD
         self.template = template
-=======
->>>>>>> caa36d0 (add web ui)
-=======
-        self.template = template
->>>>>>> d2471510853ae60c32b9fa13eebb31ff2098837a
         if model_path.endswith("/"):
             model_path = model_path[:-1]
         if model_name is None:
@@ -123,17 +108,8 @@ class ModelWorker:
         data = {
             "worker_name": self.worker_addr,
             "check_heart_beat": True,
-<<<<<<< HEAD
-<<<<<<< HEAD
             "worker_status": self.get_status(),
             "template": self.template
-=======
-            "worker_status": self.get_status()
->>>>>>> caa36d0 (add web ui)
-=======
-            "worker_status": self.get_status(),
-            "template": self.template
->>>>>>> d2471510853ae60c32b9fa13eebb31ff2098837a
         }
         r = requests.post(url, json=data)
         assert r.status_code == 200
@@ -171,14 +147,7 @@ class ModelWorker:
             "model_names": [self.model_name],
             "speed": 1,
             "queue_length": self.get_queue_length(),
-<<<<<<< HEAD
-<<<<<<< HEAD
             "template": self.template
-=======
->>>>>>> caa36d0 (add web ui)
-=======
-            "template": self.template
->>>>>>> d2471510853ae60c32b9fa13eebb31ff2098837a
         }
 
 #TODO:change this
@@ -328,14 +297,7 @@ if __name__ == "__main__":
     parser.add_argument("--limit-model-concurrency", type=int, default=5)
     parser.add_argument("--stream-interval", type=int, default=1)
     parser.add_argument("--no-register", action="store_true")
-<<<<<<< HEAD
-<<<<<<< HEAD
     parser.add_argument("--template", type=str, default="Dialogue")
-=======
->>>>>>> caa36d0 (add web ui)
-=======
-    parser.add_argument("--template", type=str, default="Dialogue")
->>>>>>> d2471510853ae60c32b9fa13eebb31ff2098837a
     args = parser.parse_args()
     logger.print(f"args: {args}")
 
@@ -348,15 +310,6 @@ if __name__ == "__main__":
                          args.no_register,
                          args.model_path,
                          args.model_name,
-<<<<<<< HEAD
-<<<<<<< HEAD
                          args.device,
                          args.template)
-=======
-                         args.device)
->>>>>>> caa36d0 (add web ui)
-=======
-                         args.device,
-                         args.template)
->>>>>>> d2471510853ae60c32b9fa13eebb31ff2098837a
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
