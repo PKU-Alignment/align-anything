@@ -52,13 +52,10 @@ dependencies = [
     "pytest",
     "shortuuid",
     "diffusers",
-<<<<<<< HEAD
     "gradio",
     "uvicorn",
     "fastapi",
     "pillow",
-=======
->>>>>>> 48a714b (feat: Support video/audio sft and dpo)
     "librosa",
     "soundfile",
     "torchaudio",
