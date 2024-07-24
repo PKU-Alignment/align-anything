@@ -88,7 +88,7 @@ class KTOTrainer(SupervisedTrainerBase):
         self.model, self.tokenizer, self.processor = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side='right',
+            padding_side='left',
             trust_remote_code=True,
             bnb_cfgs = self.bnb_cfgs,
             lora_cfgs = self.lora_cfgs,
