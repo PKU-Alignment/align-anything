@@ -29,8 +29,7 @@ from align_anything.configs.template import *
 from align_anything.utils.template_registry import get_template_class
 import hashlib
 import dataclasses
-from enum import auto, Enum
-from typing import List, Tuple
+from typing import List
 import base64
 from io import BytesIO
 from PIL import Image
@@ -322,7 +321,6 @@ def add_text(state, text, image, image_process_mode, videobox, audiobox, request
     if image is not None:
         text = text[:1200]  # Hard cut-off for images
         if '<image>' not in text:
-            # text = '<Image><image></Image>' + text
             text = text + '\n<image>'
         text = (text, image, image_process_mode)
         state = default_conversation.copy()

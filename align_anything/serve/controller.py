@@ -24,7 +24,7 @@ from enum import Enum, auto
 import json
 import logging
 import time
-from typing import List, Union
+from typing import List
 import threading
 
 from fastapi import FastAPI, Request
@@ -35,7 +35,6 @@ import uvicorn
 
 from align_anything.utils.logger import Logger
 server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR REFRESH THIS PAGE.**"
-
 CONTROLLER_HEART_BEAT_EXPIRATION = 30
 logger = Logger()
 

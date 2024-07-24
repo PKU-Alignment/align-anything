@@ -56,9 +56,6 @@ dependencies = [
     "fastapi",
     "PIL"
     "diffusers",
-    "gradio",
-    "uvicorn",
-    "fastapi",
     "pillow",
     "librosa",
     "soundfile",
