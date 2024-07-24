@@ -26,6 +26,12 @@ import torch.nn.functional as F
 from accelerate import Accelerator
 from tqdm import tqdm
 
+from diffusers import AudioLDMPipeline
+from diffusers.loaders import LoraLoaderMixin
+from diffusers.utils import convert_state_dict_to_diffusers
+from diffusers.utils.torch_utils import is_compiled_module
+from peft.utils import get_peft_model_state_dict
+
 from align_anything.datasets.text_to_audio import SupervisedBatch, SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_audio_diffusion_models
 from align_anything.trainers.base import SupervisedTrainerBase
@@ -201,6 +207,42 @@ class SupervisedTrainer(SupervisedTrainerBase):
                     f'\n***** Evaluating at epoch {epoch + 1}/{self.cfgs.train_cfgs.epochs} *****',
                 )
                 self.logger.log(self.eval(), step=self.global_step)
+                
+    def save_diffusers(
+        self,
+        tag: int | None = None,
+    ) -> None:
+        """Save the stable diffusion pipeline in Hugging Face format."""
+        self.accelerator.wait_for_everyone()
+        save_dir = os.path.join(self.cfgs.logger_cfgs.output_dir, f'epoch_{tag or "end"}')
+        if self.accelerator.is_main_process:
+            model = self.accelerator.unwrap_model(self.model)
+            if self.cfgs.train_cfgs.lora_unet:
+                model = model.to(torch.float32)
+                pipeline = AudioLDMPipeline.from_pretrained(
+                    self.cfgs.model_cfgs.model_name_or_path
+                )
+                unet_lora_state_dict = convert_state_dict_to_diffusers(
+                    get_peft_model_state_dict(model)
+                )
+                LoraLoaderMixin.save_lora_weights(
+                    save_directory=save_dir,
+                    unet_lora_layers=unet_lora_state_dict,
+                    text_encoder_lora_layers=None,
+                )
+            else:
+                model = model._orig_mod if is_compiled_module(model) else model
+                pipeline = AudioLDMPipeline.from_pretrained(
+                    self.cfgs.model_cfgs.model_name_or_path,
+                    text_encoder=self.text_encoder,
+                    vae=self.vae,
+                    unet=model,
+                    revision=self.cfgs.train_cfgs.revision,
+                    variant=self.cfgs.train_cfgs.variant,
+                )
+            pipeline.save_pretrained(save_dir)
+
+        self.logger.print('Model saved!')
 
     def save(self, tag: int | None = None) -> None:
         """Save the stable diffusion pipeline in Hugging Face format."""
