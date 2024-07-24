@@ -27,7 +27,7 @@ from accelerate import Accelerator
 from tqdm import tqdm
 
 from align_anything.datasets.text_to_image import SupervisedBatch, SupervisedDataset
-from align_anything.models.pretrained_model import load_pretrained_diffusion_models
+from align_anything.models.pretrained_model import load_pretrained_image_diffusion_models
 from align_anything.trainers.base import SupervisedTrainerBase
 from align_anything.utils.multi_process import get_current_device, is_main_process
 from align_anything.utils.process_image import get_image_processor
@@ -74,7 +74,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
         self.model, self.vae, self.text_encoder, self.noise_scheduler, self.tokenizer = (
-            load_pretrained_diffusion_models(
+            load_pretrained_image_diffusion_models(
                 self.cfgs.model_cfgs.model_name_or_path,
                 trust_remote_code=True,
                 freeze_unet=self.cfgs.train_cfgs.freeze_unet,

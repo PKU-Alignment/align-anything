@@ -53,7 +53,16 @@ dependencies = [
     "shortuuid",
     "diffusers",
     "peft",
+    "gradio",
+    "uvicorn",
+    "fastapi",
+    "pillow",
+    "librosa",
+    "soundfile",
+    "torchaudio",
+    "torchvision",
 ]
+
 dynamic = ["version"]
 
 [project.optional-dependencies]

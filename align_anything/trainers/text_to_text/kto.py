@@ -132,10 +132,11 @@ class KTOTrainer(SupervisedTrainerBase):
             template=self.cfgs.data_cfgs.train_template,
             tokenizer=self.tokenizer,
             processor=self.processor,
-            size=self.cfgs.data_cfgs.size,
+            size=self.cfgs.data_cfgs.train_size,
             split=self.cfgs.data_cfgs.train_split,
-            subset=self.cfgs.data_cfgs.subset,
-            data_files=self.cfgs.data_cfgs.data_files,
+            subset=self.cfgs.data_cfgs.train_subset,
+            data_files=self.cfgs.data_cfgs.train_data_files,
+            optional_args=self.cfgs.data_cfgs.train_optional_args,
         )
         seed = torch.randint(0, 100000, (1,)).item()
         torch.manual_seed(seed)

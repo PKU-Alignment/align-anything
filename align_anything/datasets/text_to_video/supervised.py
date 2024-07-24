@@ -24,47 +24,36 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
+from align_anything.utils.process_video import get_video_processor
 from align_anything.utils.template_registry import get_template_class
-from align_anything.utils.tools import left_padding
+from align_anything.utils.tools import right_padding
 from datasets import load_dataset
 
 
 IGNORE_INDEX = -100
 
 __all__ = [
-    'PromptOnlyDataset',
-    'PromptOnlyCollator',
-    'PromptOnlySample',
-    'PromptOnlyBatch',
+    'SupervisedDataset',
+    'SupervisedCollator',
+    'SupervisedSample',
+    'SupervisedBatch',
 ]
 
 
-def remove_duplicate_prompts(dict_list: list[dict[str, Any]], template):
-    seen_prompts = set()
-    unique_dict_list = []
-    for idx in range(len(dict_list)):
-        item = dict_list[idx]
-        prompt = template.format_prompt_only_sample(item)['text']
-        if prompt not in seen_prompts:
-            unique_dict_list.append(item)
-            seen_prompts.add(prompt)
-    return unique_dict_list
-
-
-class PromptOnlySample(TypedDict, total=True):
+class SupervisedSample(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (L,)
     labels: torch.LongTensor  # size = (L,)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
-class PromptOnlyBatch(TypedDict, total=True):
+class SupervisedBatch(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (B, L)
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
-class PromptOnlyDataset(Dataset):
+class SupervisedDataset(Dataset):
 
     def __init__(
         self,
@@ -81,9 +70,13 @@ class PromptOnlyDataset(Dataset):
         super().__init__()
         assert path, f'You must set the valid datasets path! Here is {path}'
         assert template, f'You must set the valid template path! Here is {template}'
+        self.path = path
         self.tokenizer = tokenizer
-        self.processor = processor
-        raw_data_duplicated = load_dataset(
+        self.transforms = processor
+
+        if isinstance(optional_args, str):
+            optional_args = [optional_args]
+        self.raw_data = load_dataset(
             path,
             split=split,
             data_files=data_files,
@@ -91,33 +84,24 @@ class PromptOnlyDataset(Dataset):
             *optional_args,
             trust_remote_code=True,
         )
-        self.template = get_template_class(template)
-        self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
-
         if size:
-            self.raw_data = self.raw_data[:size]
+            self.raw_data = self.raw_data.select(range(int(size)))
+        self.template = get_template_class(template)
 
-    def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
-        formatted_sample = self.template.format_prompt_only_sample(raw_sample)
+    def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
+        formatted_sample = self.template.format_sample(raw_sample, self.path)
         return_dict = {}
-        raw_text = ''
-        if isinstance(formatted_sample['text'], list):
-            raw_text = self.tokenizer.eos_token.join(formatted_sample['text'])
-        elif isinstance(formatted_sample['text'], str):
-            raw_text = formatted_sample['text'] + self.tokenizer.eos_token
-        else:
-            raise NotImplementedError
-        return_dict['input_ids'] = self.tokenize(raw_text)
-
-        raw_image = formatted_sample['image']
-        return_dict['pixel_values'] = self.processor.image_processor(
-            raw_image, return_tensors='pt'
-        )['pixel_values'][0]
-
+        return_dict['input_ids'] = self.tokenize(
+            formatted_sample['prompt'], add_special_tokens=False
+        )
+        return_dict['pixel_values'] = self.process_video(formatted_sample['video'])
         return return_dict
 
+    def process_video(self, raw_video: torch.Tensor) -> torch.Tensor:
+        return self.transforms(raw_video)
+
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return PromptOnlyCollator(self.tokenizer.pad_token_id)
+        return SupervisedCollator(self.tokenizer.pad_token_id)
 
     def tokenize(
         self,
@@ -151,58 +135,23 @@ class PromptOnlyDataset(Dataset):
         return len(self.raw_data)
 
 
-class PromptOnlyCollator:
+class SupervisedCollator:
 
     def __init__(self, pad_token_id: int) -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
 
-    def __call__(self, samples: list[PromptOnlySample]) -> PromptOnlyBatch:
+    def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
         return_dict = {}
         current_device = get_current_device()
 
-        input_ids = [sample['input_ids'] for sample in samples]
-        attention_mask = [
-            input_id.new_ones(input_id.size(), dtype=torch.bool) for input_id in input_ids
-        ]
+        return_dict['input_ids'] = right_padding(
+            [sample['input_ids'] for sample in samples],
+            padding_value=self.pad_token_id,
+        ).to(current_device)
 
-        return_dict['input_ids'] = left_padding(input_ids, padding_value=self.pad_token_id).to(
-            current_device
-        )
-        return_dict['attention_mask'] = left_padding(attention_mask, padding_value=0).to(
-            current_device
-        )
-
-        if 'pixel_values' in samples[0].keys():
-            
-            a = return_dict['attention_mask'].shape[0]
-            
-            if samples[0]['pixel_values'].dim() == 4:
-                # init list for pixel_values
-                                
-                _pixel_values_list = []
-                for sample in samples:
-                    pixel_values = sample['pixel_values']  # size = (P, C, H, W)
-                    _pixel_values_list.append(pixel_values)
-                
-                return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
-                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
-                
-                # image_sizes
-                b = samples[0]['pixel_values'].shape[2]
-                c = samples[0]['pixel_values'].shape[3]
-                image_size = torch.tensor([b, c], device=current_device)
-                return_dict['image_sizes'] = [ sample['pixel_values'].to(current_device).size(0) for sample in samples ]
-                
-            
-            
-            else:
-                # original code for non-patches 
-                return_dict['pixel_values'] = torch.stack(
-                    [sample['pixel_values'] for sample in samples]
-                ).to(current_device)
-
-
-
+        return_dict['pixel_values'] = torch.stack(
+            [sample['pixel_values'] for sample in samples]
+        ).to(current_device)
 
         return return_dict
