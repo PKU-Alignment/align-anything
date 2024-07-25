@@ -1,10 +1,12 @@
 import os
-
+os.environ['CUDA_VISIBLE_DEVICES'] = '4, 5, 6, 7'
 import argparse
+import json
 from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import Union, List, Dict, Any, Tuple
+from datasets import load_dataset, DatasetDict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
@@ -24,34 +26,48 @@ class MMLUDataLoader(BaseDataLoader):
     def get_answer(self, data):
         return chr(65 + data['answer'])
 
-    def set_fewshot_dataset(self, dataset):
-        return dataset['dev']
-
-    def build_example_prompt(self, data, with_answer=True):
-        choices = '\n'.join([f'{label}: {data["choices"][ord(label) - 65]}' for label in self.candidate_labels])
+    def set_fewshot_dataset(self, dataset, task): 
+        if self.cot:
+            with open('/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/benchmarks/MMLU/cot_few_shot/' + task + '.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return data
+        else:
+            return dataset['dev']
+        
+    def build_example_prompt(self, data, with_answer=True, cot=False):
+        choices = '\n'.join([f'({label}) {data["choices"][ord(label) - 65]}' for label in self.candidate_labels])
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
         return f"{data['question']}\n{choices}\n{answer}"
 
     def build_prompt(self, data):
         prompt = f"The following are multiple choice questions (with answers).\n\n"
+        cot_prompt = f"Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
         if len(few_shot_examples) == 0:
             question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
         else:
-            few_shots = [
-                self.build_example_prompt(
-                    {key: value[i] for key, value in few_shot_examples.items()}, True
-                )
-                for i in range(len(few_shot_examples['question']))
-            ]
+            if not self.cot:
+                few_shots = [
+                    self.build_example_prompt(
+                        {key: value[i] for key, value in few_shot_examples.items()}, True
+                    )
+                    for i in range(len(few_shot_examples['question']))
+                ]
+            else:
+                few_shots = [
+                    f"{example['question']}\n'Answer: '{example['answer']}" for example in few_shot_examples
+                ]
             question = []
             for item in data:
                 request = {}
                 for key, value in item.items():
                     request[key] = value
                 examples = few_shots + [self.build_example_prompt(request, False)]
-                question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
+                if self.cot:
+                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt))
+                else:
+                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
         
         return question
 
@@ -71,15 +87,90 @@ class MMLUGeneratorVLLM(BaseInferencer_vllm):
         
         return task2details
 
+def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, task: str):
+    
+    dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
+    correct_answers = []
+    responses = []
+    true_cases = []
+    false_cases = []
+    cnt_sum = 0
+    cnt_match = 0
+    cnt_fail = 0
+    flag_fail = True
+    for instance in dataset:
+        correct_answers.append(
+            {
+                'prompt': instance['question'],
+                'prompt_token_ids': dataloader.tokenizer(instance['question']).input_ids,
+                'choices': instance['choices'],
+                'answer': dataloader.get_answer(instance)
+            }
+        )
+    for item in raw_output:
+        responses.append(
+            {
+                # 'prompt_token_ids': item.prompt_token_ids,
+                'prompt_token_ids': dataloader.tokenizer(get_question_from_input(item.prompt)).input_ids,
+                'answer_logprobs': get_chosen_answer(item.response_logprobs[0], dataloader.candidate_labels)
+            }
+        )
+    for correct_answer in correct_answers:
+        cnt_sum += 1
+        for response in responses:
+            if correct_answer['prompt_token_ids'] == response['prompt_token_ids']:
+                flag_fail = False
+                chosen_answer = max(response['answer_logprobs'], key=response['answer_logprobs'].get)
+                eval_case = {
+                    'question': correct_answer['prompt'],
+                    'choices': correct_answer['choices'],
+                    'correct_answer': correct_answer['answer'],
+                    'answer_logprobs': response['answer_logprobs'],
+                    'chosen_answer': chosen_answer
+                }
+                if correct_answer['answer'] == chosen_answer:
+                    cnt_match += 1
+                    eval_case['result'] = True
+                    true_cases.append(eval_case)
+                else:
+                    eval_case['result'] = False
+                    false_cases.append(eval_case)
+                break
+        if flag_fail:
+            cnt_fail += 1
+        else:
+            flag_fail = True
+        
+    return cnt_match, cnt_sum, true_cases, false_cases
+
+def get_question_from_input(input):
+    index_head = input.rfind('\n\n')
+    index_tail = input[index_head + 2:].find('\n')
+    return input[index_head + 2:][:index_tail]
+
+def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[str]):
+    answer_logprobs = {}
+    for logprob in logprobs:
+        key = next(iter(logprob.values())).decoded_token
+        value = next(iter(logprob.values())).logprob
+        if key in candidate_answers:
+            answer_logprobs[key] = value
+    # answer_logprobs = []
+    for label in candidate_answers:
+        if label not in answer_logprobs.keys():
+            answer_logprobs[label] = float('-inf')
+    return answer_logprobs
+    
+
 def main():
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
-    print(unparsed_args)
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('test_mmlu')
+    unparsed_args = {'output_dir': '/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/mmlu'}
+    dict_configs, infer_configs = read_eval_cfgs('mmlu')
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
@@ -90,7 +181,29 @@ def main():
     dataloader = MMLUDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
     eval_module = MMLUGeneratorVLLM(model_config, infer_configs)
-    eval_module.eval(test_data, eval_configs)
+    raw_outputs = eval_module.eval(test_data, eval_configs)
+
+    for task, _ in raw_outputs.items():
+        print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        print('task: ', task)
+        print('fwe_shot: ', eval_configs.n_shot)
+        # print('cot: ', )
+        print('-----------------------------------------------------------')
+        cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
+        print('num_match: ', cnt_match, '| num_sum: ', cnt_sum, '| acc: ', cnt_match / cnt_sum)
+        print('==============================TRUE CASE==============================')
+        print('Question: ', true_cases[0]['question'])
+        print('Choices: ', true_cases[0]['choices'])
+        print('Correct Answer: ', true_cases[0]['correct_answer'])
+        print('Logprobs of First Token:', true_cases[0]['answer_logprobs'])
+        print('Chosen Answer',  true_cases[0]['chosen_answer'])
+        print('==============================FALSE CASE==============================')
+        print('Question: ', false_cases[0]['question'])
+        print('Choices: ', false_cases[0]['choices'])
+        print('Correct Answer: ', false_cases[0]['correct_answer'])
+        print('Logprobs of First Token:', false_cases[0]['answer_logprobs'])
+        print('Chosen Answer',  false_cases[0]['chosen_answer'])
+
 
 if __name__ == '__main__':
     main()
