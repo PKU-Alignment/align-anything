@@ -81,7 +81,7 @@ class SupervisedTrainerBase:
             train_dataset,
             collate_fn=train_dataset.get_collator(),
             sampler=DistributedSampler(train_dataset, shuffle=True),
-            batch_size=self.cfgs.train_cfgs.per_device_train_batch_size,
+            batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
         )
         if self.cfgs.data_cfgs.eval_datasets:
             self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
@@ -100,7 +100,7 @@ class SupervisedTrainerBase:
                 eval_dataset,
                 collate_fn=eval_dataset.get_collator(),
                 sampler=DistributedSampler(eval_dataset, shuffle=True),
-                batch_size=self.cfgs.train_cfgs.per_device_train_batch_size,
+                batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
             )
             return train_dataloader, eval_dataloader
 

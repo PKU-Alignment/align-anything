@@ -188,7 +188,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         """Split a batch of PTX samples into micro-batches."""
         micro_batches = []
         total_batch_size = ptx_batch['input_ids'].size(0)
-        micro_batch_size = self.cfgs.train_cfgs.per_device_train_batch_size
+        micro_batch_size = int(self.cfgs.train_cfgs.per_device_train_batch_size)
         for i in range(0, total_batch_size, micro_batch_size):
             micro_batch = {key: value[i : i + micro_batch_size] for key, value in ptx_batch.items()}
             micro_batches.append(micro_batch)
@@ -238,7 +238,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         self.set_train(mode=False)
 
         total_batch_size = prompt_only_batch['input_ids'].size(0)
-        micro_batch_size = self.cfgs.train_cfgs.per_device_train_batch_size
+        micro_batch_size = int(self.cfgs.train_cfgs.per_device_train_batch_size)
         micro_inference_batches = []
         micro_training_batches = []
         mini_batch = {}

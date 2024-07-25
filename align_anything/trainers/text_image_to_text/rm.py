@@ -55,6 +55,7 @@ class RMTrainer(RMtextTrainer):
             trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
+            freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
         )
 
 
