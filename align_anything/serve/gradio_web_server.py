@@ -638,8 +638,6 @@ if __name__ == "__main__":
     model_names, model_templates = get_model_list()
     models = dict(zip(model_names, model_templates))
 
-    base_path = os.path.abspath(os.path.join(os.getcwd(), "..", "..", "logo.jpg"))
-    logger.print(args)
     demo = build_demo(args.embed, concurrency_count=args.concurrency_count)
     demo.queue(
         api_open=False
