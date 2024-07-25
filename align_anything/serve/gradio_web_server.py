@@ -29,8 +29,7 @@ from align_anything.configs.template import *
 from align_anything.utils.template_registry import get_template_class
 import hashlib
 import dataclasses
-from enum import auto, Enum
-from typing import List, Tuple
+from typing import List
 import base64
 from io import BytesIO
 from PIL import Image
@@ -39,7 +38,6 @@ server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR RE
 moderation_msg = "YOUR INPUT VIOLATES OUR CONTENT MODERATION GUIDELINES. PLEASE TRY AGAIN."
 
 LOGDIR = "."
-models = {}
 
 @dataclasses.dataclass
 class Conversation:
@@ -152,7 +150,16 @@ class Conversation:
                 else:
                     ret.append([msg, None])
             else:
-                ret[-1][-1] = msg
+                if type(msg) is tuple:
+                    msg, image, image_process_mode = msg
+                    img_b64_str = self.process_image(
+                        image, "Default", return_pil=False,
+                        image_format='JPEG')
+                    img_str = f'<img src="data:image/jpeg;base64,{img_b64_str}" alt="user upload image" />'
+                    msg = img_str + msg.replace('<image>', '').strip()
+                    ret[-1][-1] = msg
+                else:
+                    ret[-1][-1] = msg
         return ret
 
     def copy(self) -> 'Conversation':
@@ -180,11 +187,6 @@ headers = {"User-Agent": "LLaVA Client"}
 no_change_btn = gr.Button()
 enable_btn = gr.Button(interactive=True)
 disable_btn = gr.Button(interactive=False)
-
-priority = {
-    "vicuna-13b": "aaaaaaa",
-    "koala-13b": "aaaaaab",
-}
 
 def violates_moderation(text):
     """
@@ -319,7 +321,6 @@ def add_text(state, text, image, image_process_mode, videobox, audiobox, request
     if image is not None:
         text = text[:1200]  # Hard cut-off for images
         if '<image>' not in text:
-            # text = '<Image><image></Image>' + text
             text = text + '\n<image>'
         text = (text, image, image_process_mode)
         state = default_conversation.copy()
@@ -330,6 +331,7 @@ def add_text(state, text, image, image_process_mode, videobox, audiobox, request
 
 
 def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request: gr.Request):
+    logger.print(f"http_bot. ip: {request.client.host}")
     start_tstamp = time.time()
     model_name = model_selector
 
@@ -469,12 +471,6 @@ block_css = """
 }
 
 """
-logo_url = 'https://github.com/PKU-Alignment/align-anything/blob/main/assets/logo.jpg'
-
-html_logo = f"""
-<div style="text-align: center;">
-    <img src="{logo_url}" alt="Logo" style="width: 200px;">
-</div>"""
 
 def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
     textbox = gr.Textbox(show_label=False, placeholder="Enter text and press ENTER", container=False)
@@ -536,7 +532,6 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
                     upvote_btn = gr.Button(value="👍  Upvote", interactive=False)
                     downvote_btn = gr.Button(value="👎  Downvote", interactive=False)
                     flag_btn = gr.Button(value="⚠️  Flag", interactive=False)
-                    #stop_btn = gr.Button(value="⏹️  Stop Generation", interactive=False)
                     regenerate_btn = gr.Button(value="🔄  Regenerate", interactive=False)
                     clear_btn = gr.Button(value="🗑️  Clear", interactive=False)
 
@@ -640,11 +635,6 @@ if __name__ == "__main__":
 
     model_names, model_templates = get_model_list()
     models = dict(zip(model_names, model_templates))
-    print(model_names)
-    models = dict(zip(model_names, model_templates))
-
-    base_path = os.path.abspath(os.path.join(os.getcwd(), "..", "..", "logo.jpg"))
-    logger.print(args)
     demo = build_demo(args.embed, concurrency_count=args.concurrency_count)
     demo.queue(
         api_open=False

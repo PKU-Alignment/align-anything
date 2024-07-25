@@ -288,6 +288,37 @@ class PKUSafeRLHF(Template):
 ```
 # 推理
 
+## Gradio 界面
+要在本地启动一个 Gradio 演示，请按照以下步骤依次运行命令。如果你打算启动多个模型wo以比较不同的检查点，你只需要启动控制器和 Web 服务器一次。
+
+### 启动控制器
+```Shell
+python -m align_anything.serve.controller --host 0.0.0.0 --port 10000
+```
+
+### 启动 Gradio Web 服务器
+```Shell
+python -m align_anything.serve.gradio_web_server --controller http://localhost:10000 --model-list-mode reload
+```
+你现在已经启动了 Gradio Web 界面。接下来，你可以使用屏幕上打印出的 URL 打开 Web 界面。你可能会注意到目前还没有列出任何模型，不用担心，因为我们还没有启动任何模型worker。一旦启动了模型worker，模型列表将会自动更新。
+
+### 启动模型worker
+
+这是实际执行 GPU 推理的 *worker*。每个worker负责一个指定在 `--model-path` 中的单一模型，并且请参考 `align_anything/configs` 中的 `template.py` 文件找到相应的模板名称。
+
+```Shell
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/models/llava/llava-1.5-7b-hf --template "LLAVA"
+```
+等待进程完成模型加载，直到你看到 "Uvicorn running on ..." 的消息。然后刷新你的 Gradio Web 界面，你会在模型列表中看到刚刚启动的模型。
+
+你可以根据需要启动尽可能多的worker，并在同一 Gradio 界面内比较不同的模型检查点。确保 `--controller` 保持相同，但是更改 `--port` 和 `--worker` 为一个唯一的端口号，针对每一个worker。
+
+```Shell
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port <不同于 40000，例如 40001> --worker http://localhost:<相应改变，例如 40001> --model-path <ckpt2> --template "LLAVA"
+```
+
+如果你使用的是配备 M1 或 M2 芯片的 Apple 设备，你可以通过 `--device` 标志指定 `mps` 设备：`--device mps`。
+
 ## 可交互的Client
 
 ```bash
