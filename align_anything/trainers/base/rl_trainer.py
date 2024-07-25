@@ -42,6 +42,8 @@ class RLTrainerBase:
     def __init__(self, cfgs, ds_cfgs) -> None:
         """Initialize the RL trainer base."""
         self.cfgs = cfgs
+        self.lora_cfgs = cfgs.lora_cfgs
+        self.bnb_cfgs = cfgs.bnb_cfgs
 
     def init_logger(self) -> None:
         """Set logger."""
@@ -220,9 +222,9 @@ class RLTrainerBase:
         )
         self.reward_model.eval()
         # setup the gradient checkpointing
-        if self.cfgs.train_cfgs.actor_gradient_checkpointing:
+        if self.cfgs.train_cfgs.actor_gradient_checkpointing  and not self.lora_cfgs.use_lora:
             self.actor_model.gradient_checkpointing_enable()
-        if self.cfgs.train_cfgs.critic_gradient_checkpointing:
+        if self.cfgs.train_cfgs.critic_gradient_checkpointing and not self.lora_cfgs.use_lora:
             self.reward_critic_model.gradient_checkpointing_enable()
 
     def set_train(self, mode: bool = True) -> None:
@@ -230,12 +232,12 @@ class RLTrainerBase:
         if mode:
             self.actor_model.train()
             self.reward_critic_model.train()
-            if self.cfgs.train_cfgs.actor_gradient_checkpointing:
+            if self.cfgs.train_cfgs.actor_gradient_checkpointing and not self.lora_cfgs.use_lora:
                 self.actor_model.gradient_checkpointing_enable()
         else:
             self.actor_model.eval()
             self.reward_critic_model.eval()
-            if self.cfgs.train_cfgs.actor_gradient_checkpointing:
+            if self.cfgs.train_cfgs.actor_gradient_checkpointing and not self.lora_cfgs.use_lora:
                 self.actor_model.gradient_checkpointing_disable()
         return
 

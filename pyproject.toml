@@ -52,6 +52,7 @@ dependencies = [
     "pytest",
     "shortuuid",
     "diffusers",
+    "peft",
     "gradio",
     "uvicorn",
     "fastapi",

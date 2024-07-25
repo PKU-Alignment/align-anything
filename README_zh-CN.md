@@ -36,7 +36,7 @@
 
 <div align="center">
 
-[English](README.md) | 简体中文 ｜ [Our 100K Datasets](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) | 👋 加入我们的[微信群](assets/wechat.jpg)
+[English](README.md) | 简体中文 ｜ [Our 100K Datasets](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)
 
 </div>
 
