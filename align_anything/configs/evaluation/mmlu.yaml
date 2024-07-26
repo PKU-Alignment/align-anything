@@ -13,7 +13,7 @@ default:
     output_dir: null
     # Num shot
     n_shot: 5
-    # COT
+    # Use Chain of Thought
     cot: false
     # Evaluation method
     action: generation
