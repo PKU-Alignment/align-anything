@@ -235,5 +235,17 @@
         "answerKey": "C"
       }    
     ]
+<<<<<<< HEAD
+  },
+  "xwinograd": {
+    "ocp": [
+      {"sentence":"Sam sent an email to Jane after _ received the data.","option1":"Sam","option2":"Jane","answer":2,"lang":"en"},
+      {"sentence":"Emma called Jack before _ arrived at the station.","option1":"Emma","option2":"Jack","answer":1,"lang":"en"},
+      {"sentence":"Emma called Jack before _ left the office.","option1":"Emma","option2":"Jack","answer":2,"lang":"en"},
+      {"sentence":"Lucy invited Paul after _ saw the event flyer.","option1":"Lucy","option2":"Paul","answer":1,"lang":"en"},
+      {"sentence":"Lucy invited Paul after _ asked for an invitation.","option1":"Lucy","option2":"Paul","answer":2,"lang":"en"}
+    ]
+=======
+>>>>>>> origin/main
   }
 }
