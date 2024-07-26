@@ -1,5 +1,5 @@
 import os
-
+os.environ['CUDA_VISIBLE_DEVICES'] = '4, 5, 6, 7'
 import argparse
 from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm

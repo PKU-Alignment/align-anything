@@ -1,2 +1,2 @@
 python vllm_eval.py \
-  --output_dir /aifs4su/yaodong/panrui/align-anything/align_anything/evaluation/meta_test_output/truthfulQA
+  --output_dir /aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/truthfulQA

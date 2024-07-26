@@ -57,7 +57,7 @@ def update_results(output_dir:str,
             for item in output_detailed:
                 json_record = json.dumps(item, ensure_ascii=False)
                 file.write(json_record + '\n')
-                
+
 class BaseInferencer_vllm:
     '''
     
@@ -87,7 +87,7 @@ class BaseInferencer_vllm:
         self.llm_tokenizer_mode = self.vllm_cfgs_llm.tokenizer_mode
         self.llm_trust_remote_code = self.vllm_cfgs_llm.trust_remote_code
         self.llm_gpu_memory_utilization = self.vllm_cfgs_llm.gpu_memory_utilization
-        self.llm_tensor_parallel_size = 2
+        self.llm_tensor_parallel_size = 4
 
         self.model_id = self.model_cfgs.model_id
         self.model_name_or_path = self.model_cfgs.model_name_or_path

@@ -36,6 +36,7 @@ class BaseDataLoader:
         self.eval_cfgs, self.data_cfgs, self.model_cfgs = cfgs.default.eval_cfgs, cfgs.default.data_cfgs, cfgs.default.model_cfgs
         self.action = self.eval_cfgs.action if self.eval_cfgs.action else 'generation'
         self.num_shot = self.eval_cfgs.n_shot if self.eval_cfgs.n_shot else 0
+        self.cot = self.eval_cfgs.cot if self.eval_cfgs.cot else False
         self.chat_template = self.model_cfgs.chat_template
 
         self.model_name_or_path = self.model_cfgs.model_name_or_path
@@ -61,7 +62,7 @@ class BaseDataLoader:
         processed_inputs = {}
         for task in self.task_names:
             dataset = load_dataset(self.task_dir, task)
-            self.few_shot_data = self.set_fewshot_dataset(dataset)
+            self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, token_ids = self.preprocess(dataset)
             processed_inputs[task] = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
         return processed_inputs
@@ -73,7 +74,7 @@ class BaseDataLoader:
 
         return prompts, token_ids
 
-    def set_fewshot_dataset(self, dataset):
+    def set_fewshot_dataset(self, dataset, task: str=None):
         return None
     
     @abstractmethod

@@ -12,7 +12,7 @@ default:
     # Output directory name
     output_dir: /aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/truthfulQA
     # Num shot
-    n_shot: 5
+    n_shot: 0
     # Evaluation method
     action: generation
   # Configuration for data

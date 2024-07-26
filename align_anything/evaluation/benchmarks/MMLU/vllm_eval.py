@@ -28,7 +28,7 @@ class MMLUDataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task): 
         if self.cot:
-            with open('/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/benchmarks/MMLU/cot_few_shot/' + task + '.json', 'r', encoding='utf-8') as f:
+            with open('/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/benchmarks/MMLU/cot_fewshot/' + task + '.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
@@ -41,7 +41,7 @@ class MMLUDataLoader(BaseDataLoader):
 
     def build_prompt(self, data):
         prompt = f"The following are multiple choice questions (with answers).\n\n"
-        cot_prompt = f"Let's think step by step. "
+        cot_prompt = f" Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
         if len(few_shot_examples) == 0:
@@ -72,7 +72,7 @@ class MMLUDataLoader(BaseDataLoader):
         return question
 
 class MMLUGeneratorVLLM(BaseInferencer_vllm):
-
+    
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
         for task, input in data.items():
@@ -110,7 +110,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, tas
     for item in raw_output:
         responses.append(
             {
-                # 'prompt_token_ids': item.prompt_token_ids,
                 'prompt_token_ids': dataloader.tokenizer(get_question_from_input(item.prompt)).input_ids,
                 'answer_logprobs': get_chosen_answer(item.response_logprobs[0], dataloader.candidate_labels)
             }

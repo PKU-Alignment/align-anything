@@ -10,15 +10,17 @@ default:
     # Seed for random number generator
     seed: 0
     # Output directory name
-    output_dir: /aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/bbh
+    output_dir: null
     # Num shot
-    n_shot: 5
+    n_shot: 3
+    # COT
+    cot: True
     # Evaluation method
     action: generation
   # Configuration for data
   data_cfgs:
     # Task name
-    task: boolean_expressions
+    task: [boolean_expressions, disambiguation_qa, hyperbaton, tracking_shuffled_objects_five_objects]
     # Task directory
     task_dir: lukaemon/bbh
     # Evaluation split
