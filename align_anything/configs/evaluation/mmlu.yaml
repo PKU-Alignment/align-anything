@@ -13,6 +13,8 @@ default:
     output_dir: null
     # Num shot
     n_shot: 5
+    # COT
+    cot: false
     # Evaluation method
     action: generation
   # Configuration for data
@@ -36,4 +38,4 @@ default:
     # Whether to trust remote code
     trust_remote_code: True
     # The max token length
-    model_max_length: 2048
+    model_max_length: 128

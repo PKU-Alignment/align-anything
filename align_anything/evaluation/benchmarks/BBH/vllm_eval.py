@@ -1,5 +1,5 @@
 import os
-
+os.environ['CUDA_VISIBLE_DEVICES'] = '4, 5, 6, 7'
 import argparse
 from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
@@ -26,20 +26,12 @@ class BBHDataLoader(BaseDataLoader):
     def get_answer(self, data):
         return data['target']
 
-    def set_fewshot_dataset(self, dataset):
-        few_shot_examples = json.load(open("../few_shot.json", encoding='utf-8'))['bbh']['ocp']
-
-        formatted_data = []
-        for example in few_shot_examples:
-            formatted_data.append({
-                'input': example['input'],
-                'target': example['target']
-            })
-
-        return Dataset.from_dict({
-            'input': [item['input'] for item in formatted_data],
-            'target': [item['target'] for item in formatted_data]
-        })
+    def set_fewshot_dataset(self, dataset, task=None):
+        if self.cot:
+            few_shot_examples = json.load(open("./cot_fewshot/" + task + ".json", encoding='utf-8'))
+        else:
+            few_shot_examples = json.load(open("./fewshot/" + task + ".json", encoding='utf-8'))
+        return few_shot_examples
 
     def build_example_prompt(self, data, with_answer=True):
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
@@ -47,25 +39,24 @@ class BBHDataLoader(BaseDataLoader):
 
     def build_prompt(self, data):
         prompt = f"The following are questions (with answers).\n\n"
+        cot_prompt = f" Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
         if len(few_shot_examples) == 0:
             question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
         else:
-            few_shots = [
-                self.build_example_prompt(
-                    {key: value[i] for key, value in few_shot_examples.items()}, True
-                )
-                for i in range(len(few_shot_examples['input']))
-            ]
+            few_shots = [self.build_example_prompt(example, True)for example in few_shot_examples]
             question = []
             for item in data:
                 request = {}
                 for key, value in item.items():
                     request[key] = value
                 examples = few_shots + [self.build_example_prompt(request, False)]
-                question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
-        
+                if self.cot:
+                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt))
+                else:
+                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
+                    
         return question
 
 class BBHGeneratorVLLM(BaseInferencer_vllm):
@@ -80,7 +71,7 @@ class BBHGeneratorVLLM(BaseInferencer_vllm):
         model_id = self.model_cfgs.model_id
         detailed_filename = f'{model_id}_detailed'
         brief_filename = f'{model_id}_brief'
-        update_results(output_dir, brief_filename, detailed_filename,task2details) #这一步可以考虑能不能移到外面，目前是把里面的raw_output写了一下
+        update_results(output_dir, brief_filename, detailed_filename,task2details)
         
         return task2details
 
