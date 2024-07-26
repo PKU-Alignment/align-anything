@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 
-
 # training configurations
 train_cfgs:
   # The deepspeed configuration
@@ -54,6 +53,8 @@ train_cfgs:
   freeze_mm_proj: True
   # Freeze the vison tower model
   freeze_vision_tower: True
+  # Freeze the language model
+  freeze_language_model: True
 # Configuration for datasets
 data_cfgs:
   # Datasets to use for training

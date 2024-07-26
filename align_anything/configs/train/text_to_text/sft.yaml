@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 
-
 # training configurations
 train_cfgs:
   # The deepspeed configuration
@@ -50,10 +49,6 @@ train_cfgs:
   eval_strategy: epoch
   # The evaluation interval in step-wise evaluation case
   eval_interval: 10
-  # Freeze the multi modal projection layer
-  freeze_mm_proj: True
-  # Freeze the vison tower model
-  freeze_vision_tower: True
   # The max norm of gradient
   max_grad_norm: 1.0
 # Configuration for datasets
@@ -110,19 +105,19 @@ model_cfgs:
   model_max_length: 2048
 lora_cfgs:
   # Whether to use LoRA
-  use_lora: False 
+  use_lora: False
   # Task type for LoRA configuration
-  task_type: TaskType.CAUSAL_LM  
+  task_type: TaskType.CAUSAL_LM
   # Inference mode
-  inference_mode: False  
+  inference_mode: False
   # Rank of the low-rank adaptation matrices
-  r: 16  
+  r: 16
   # Alpha parameter for LoRA
-  lora_alpha: 16  
+  lora_alpha: 16
   # Dropout rate for LoRA
-  lora_dropout: 0.1  
+  lora_dropout: 0.1
   # Target modules for applying LoRA
-  target_modules: ["q_proj", "v_proj"]  
+  target_modules: ["q_proj", "v_proj"]
   # Whether to save the full model
   save_full_model: True
 bnb_cfgs:

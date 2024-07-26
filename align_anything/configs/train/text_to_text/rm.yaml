@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 
-
 # training configurations
 train_cfgs:
   # The deepspeed configuration
@@ -50,10 +49,6 @@ train_cfgs:
   eval_interval: 10
   # The reward modeling regularization
   regularization: 0.001
-  # Freeze the multi modal projection layer
-  freeze_mm_proj: True
-  # Freeze the vison tower model
-  freeze_vision_tower: True
 # Configuration for datasets
 data_cfgs:
   # Datasets to use for training
