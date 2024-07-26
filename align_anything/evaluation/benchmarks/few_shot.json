@@ -235,6 +235,7 @@
         "answerKey": "C"
       }    
     ]
+<<<<<<< HEAD
   },
   "xwinograd": {
     "ocp": [
@@ -244,5 +245,7 @@
       {"sentence":"Lucy invited Paul after _ saw the event flyer.","option1":"Lucy","option2":"Paul","answer":1,"lang":"en"},
       {"sentence":"Lucy invited Paul after _ asked for an invitation.","option1":"Lucy","option2":"Paul","answer":2,"lang":"en"}
     ]
+=======
+>>>>>>> origin/main
   }
 }

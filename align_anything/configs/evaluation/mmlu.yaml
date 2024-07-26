@@ -1,4 +1,4 @@
-eval_cfgs:
+infer_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
   vllm_cfgs: vllm_basic.json
@@ -6,7 +6,7 @@ eval_cfgs:
 default:
   # Evaluation configurations
   eval_cfgs:
-    batch_size: 1
+    # batch_size: 1
     # Seed for random number generator
     seed: 0
     # Output directory name
@@ -14,11 +14,11 @@ default:
     # Num shot
     n_shot: 5
     # Evaluation method
-    action: logits
+    action: generation
   # Configuration for data
   data_cfgs:
     # Task name
-    task: mmlu
+    task: [high_school_chemistry, high_school_biology]
     # Task directory
     task_dir: cais/mmlu
     # Evaluation split
@@ -28,9 +28,11 @@ default:
 
   # Model configurations
   model_cfgs:
-    model_id: Meta-Llama-3-70B
+    model_id: alpaca-7b-reproduced
     # Pretrained model name or path
-    model_name_or_path: meta-llama/Meta-Llama-3-8B
+    model_name_or_path: /aifs4su/yaodong/models/alpaca-7b-reproduced
+    # Chat template
+    chat_template: PKUSafeRLHF
     # Whether to trust remote code
     trust_remote_code: True
     # The max token length
