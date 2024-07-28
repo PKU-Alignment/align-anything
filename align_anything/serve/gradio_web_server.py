@@ -481,7 +481,7 @@ def build_demo(embed_mode, cur_dir=None, concurrency_count=10):
             with gr.Column(scale=3):
                 if not embed_mode:
                     with gr.Row():
-                        gr.Image(value=f'{os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}/assets/logo.jpg')
+                        gr.Image(value=f'{os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))}/assets/logo.jpg')
                         gr.Markdown(title_markdown)
                 with gr.Row(elem_id="model_selector_row"):
                     model_selector = gr.Dropdown(
@@ -642,5 +642,5 @@ if __name__ == "__main__":
         server_name=args.host,
         server_port=args.port,
         share=args.share,
-        allowed_paths=[f'{os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}/assets/logo.jpg']
+        allowed_paths=[f'{os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))}/assets/logo.jpg']
     )
