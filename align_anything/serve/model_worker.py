@@ -178,8 +178,8 @@ class ModelWorker:
         else:
             images = None
 
-        temperature = float(params.get("temperature", 1.0))
-        top_p = float(params.get("top_p", 1.0))
+        temperature = float(params.get("temperature", 0.6))
+        top_p = float(params.get("top_p", 0.9))
         max_context_length = getattr(model.config, 'max_position_embeddings', 2048)
         max_new_tokens = min(int(params.get("max_new_tokens", 256)), 1024)
         stop_str = params.get("stop", None)
