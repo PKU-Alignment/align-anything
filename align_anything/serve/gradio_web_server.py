@@ -165,7 +165,7 @@ class Conversation:
     def copy(self) -> 'Conversation':
         return Conversation(
             roles=self.roles,
-            messages=self.messages,
+            messages=self.messages.copy(),
             offset=self.offset,
             template=self.template,
             skip_next=self.skip_next
@@ -432,7 +432,7 @@ def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request:
         }
         fout.write(json.dumps(data) + "\n")
 
-title_markdown = ("""
+title_markdown = ("""# Align-Anything
 [[Project Page](https://align-anything.com)] [[Code](https://github.com/PKU-Alignment/align-anything)]
 """)
 
