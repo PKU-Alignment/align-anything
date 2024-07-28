@@ -160,7 +160,7 @@ class LLAVA:
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations']
         raw_prompt = raw_conversations[0]['value'].replace('<image>\n', '').replace('\n<image>', '')
 
@@ -176,11 +176,39 @@ class LLAVA:
             f"{self.assistant_prompt.format(output='')}"
         )
 
-        image_file = raw_sample['image']
+        image_file = os.path.join(path, 'images', raw_sample['image'])
         return {
             'text': text,
             'prompt': prompt,
-            'image': load_image(image_file),
+            'image': Image.open(image_file),
+        }
+
+@register_template('LLAVA-CC3M')
+class LLAVA_CC3M:
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        raw_conversations = raw_sample['conversations']
+        question = raw_conversations[0]['value']
+        answer = raw_conversations[1]['value']
+        image = raw_sample['image']
+
+        text = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=answer)}"
+        )
+
+        prompt = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+
+        image_file = os.path.join(path, 'images', image)
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': Image.open(image_file),
         }
 
 

@@ -16,10 +16,12 @@
 
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
+import numpy as np
+import random
 
 import torch
 import transformers
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, BatchSampler
 from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
@@ -42,14 +44,18 @@ __all__ = [
 class SupervisedSample(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (L,)
     labels: torch.LongTensor  # size = (L,)
-    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    image_pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    audio_pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    is_longer: torch.BoolTensor | None  # size = (B,)
 
 
 class SupervisedBatch(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (B, L)
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
-    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    image_pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    audio_pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    is_longer: torch.BoolTensor | None  # size = (B,)
 
 
 class SupervisedDataset(Dataset):
@@ -103,9 +109,16 @@ class SupervisedDataset(Dataset):
         return_dict['labels'] = labels
 
         raw_image = formatted_sample['image']
-        return_dict['pixel_values'] = self.processor.image_processor(
+        return_dict['image_pixel_values'] = self.processor.image_processor(
             raw_image, return_tensors='pt'
         )['pixel_values'][0]
+        
+        raw_audio = formatted_sample['audio']
+        audio = self.processor.audio_processor(
+            raw_audio, return_tensors='pt'
+        )
+        return_dict['audio_pixel_values'] = audio['input_features'][0]
+        return_dict['is_longer'] = audio['is_longer'][0]
 
         return return_dict
 
@@ -168,35 +181,111 @@ class SupervisedCollator:
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
         )
 
-        if 'pixel_values' in samples[0].keys():
+        if 'image_pixel_values' in samples[0].keys():
 
             a = return_dict['attention_mask'].shape[0]
-
-            if samples[0]['pixel_values'].dim() == 4:
+            
+            if samples[0]['image_pixel_values'].dim() == 4:
                 # init list for pixel_values
-                return_dict['image_sizes'] = [
-                    sample['pixel_values'].to(current_device).size(0) for sample in samples
-                ]
-
+                return_dict['image_sizes'] = [ sample['image_pixel_values'].to(current_device).size(0) for sample in samples ]
+                
                 _pixel_values_list = []
                 for sample in samples:
-                    pixel_values = sample['pixel_values']  # size = (P, C, H, W)
+                    pixel_values = sample['image_pixel_values']  # size = (P, C, H, W)
                     _pixel_values_list.append(pixel_values)
-
-                return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(
-                    current_device
-                )
-                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W)
-
+                
+                return_dict['image_pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
+                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
+                
                 # image_sizes
-                b = samples[0]['pixel_values'].shape[2]
-                c = samples[0]['pixel_values'].shape[3]
+                b = samples[0]['image_pixel_values'].shape[2]
+                c = samples[0]['image_pixel_values'].shape[3]
                 image_size = torch.tensor([b, c], device=current_device)
-
             else:
-                # original code for non-patches
-                return_dict['pixel_values'] = torch.stack(
-                    [sample['pixel_values'] for sample in samples]
+                # original code for non-patches 
+                return_dict['image_pixel_values'] = torch.stack(
+                    [sample['image_pixel_values'] for sample in samples]
+                ).to(current_device)
+
+        if 'audio_pixel_values' in samples[0].keys():
+            
+            if samples[0]['audio_pixel_values'].dim() == 4:
+                # init list for pixel_values
+                return_dict['audio_sizes'] = [ sample['audio_pixel_values'].to(current_device).size(0) for sample in samples ]
+                
+                _pixel_values_list = []
+                _is_longer_list = []
+                for sample in samples:
+                    pixel_values = sample['audio_pixel_values']  # size = (P, C, H, W)
+                    _pixel_values_list.append(pixel_values)
+                    
+                    is_longer = sample['is_longer']
+                    _is_longer_list.append(is_longer)
+                
+                return_dict['audio_pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
+                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
+                
+                return_dict['is_longer'] = torch.cat(_is_longer_list, dim=0).to(current_device) 
+                
+                # image_sizes
+                b = samples[0]['audio_pixel_values'].shape[2]
+                c = samples[0]['audio_pixel_values'].shape[3]
+                image_size = torch.tensor([b, c], device=current_device)
+            else:
+                # original code for non-patches 
+                return_dict['audio_pixel_values'] = torch.stack(
+                    [sample['audio_pixel_values'] for sample in samples]
+                ).to(current_device)
+                
+                return_dict['is_longer'] = torch.stack(
+                    [sample['is_longer'] for sample in samples]
                 ).to(current_device)
 
         return return_dict
+
+class CombinedDataset(Dataset):
+    def __init__(self, datasets):
+        self.datasets = datasets
+        self.dataset_lengths = [len(d) for d in datasets]
+
+    def __len__(self):
+        return sum(self.dataset_lengths)
+
+    def __getitem__(self, idx):
+        for i, length in enumerate(self.dataset_lengths):
+            if idx < length:
+                return self.datasets[i][idx]
+            idx -= length
+
+class RandomDatasetSampler(BatchSampler):
+    def __init__(self, datasets, batch_size, drop_last=False):
+        self.datasets = datasets
+        self.batch_size = batch_size
+        self.drop_last = drop_last
+        self.dataset_lengths = [len(d) for d in datasets]
+
+    def __iter__(self):
+        indices_list = []
+        indices_start = 0
+        for length in self.dataset_lengths:
+            count = length // self.batch_size if self.drop_last else (length + self.batch_size - 1) // self.batch_size
+            indices = random.sample(range(indices_start, indices_start + length), length)[:count * self.batch_size]
+            chunked_indices = [
+                random.sample(
+                    indices[i:i + self.batch_size], 
+                    self.batch_size
+                ) 
+                for i in range(0, len(indices) - len(indices) % self.batch_size, self.batch_size)
+            ]
+            indices_list.extend(chunked_indices)
+            indices_start += length
+        random.shuffle(indices_list)
+        
+        for indices in indices_list:
+            yield indices
+
+    def __len__(self):
+        if self.drop_last:
+            return sum(l // self.batch_size for l in self.dataset_lengths)
+        else:
+            return sum((l + self.batch_size - 1) // self.batch_size for l in self.dataset_lengths)

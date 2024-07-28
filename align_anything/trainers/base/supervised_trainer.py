@@ -30,6 +30,7 @@ from diffusers.utils.torch_utils import is_compiled_module
 from peft.utils import get_peft_model_state_dict
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
+from torch.optim.adamw import AdamW
 from tqdm import tqdm
 from transformers import CONFIG_NAME, PreTrainedModel, get_scheduler
 
@@ -120,7 +121,12 @@ class SupervisedTrainerBase:
             self.model,
             self.cfgs.train_cfgs.weight_decay,
         )
-        optimizer = FusedAdam(
+        # optimizer = FusedAdam(
+        #     optimizer_grouped_parameters,
+        #     lr=self.cfgs.train_cfgs.learning_rate,
+        #     betas=self.cfgs.train_cfgs.adam_betas,
+        # )
+        optimizer = AdamW(
             optimizer_grouped_parameters,
             lr=self.cfgs.train_cfgs.learning_rate,
             betas=self.cfgs.train_cfgs.adam_betas,
