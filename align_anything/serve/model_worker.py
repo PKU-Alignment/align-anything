@@ -293,7 +293,7 @@ if __name__ == "__main__":
     parser.add_argument("--limit-model-concurrency", type=int, default=5)
     parser.add_argument("--stream-interval", type=int, default=1)
     parser.add_argument("--no-register", action="store_true")
-    parser.add_argument("--is-multimodal", need=True)
+    parser.add_argument("--is-multimodal", required=True, type=bool)
     parser.add_argument("--template", type=str, default="Dialogue")
     args = parser.parse_args()
     logger.print(f"args: {args}")
