@@ -29,8 +29,7 @@ from align_anything.configs.template import *
 from align_anything.utils.template_registry import get_template_class
 import hashlib
 import dataclasses
-from enum import auto, Enum
-from typing import List, Tuple
+from typing import List
 import base64
 from io import BytesIO
 from PIL import Image
@@ -39,7 +38,6 @@ server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR RE
 moderation_msg = "YOUR INPUT VIOLATES OUR CONTENT MODERATION GUIDELINES. PLEASE TRY AGAIN."
 
 LOGDIR = "."
-models = {}
 
 @dataclasses.dataclass
 class Conversation:
@@ -323,7 +321,6 @@ def add_text(state, text, image, image_process_mode, videobox, audiobox, request
     if image is not None:
         text = text[:1200]  # Hard cut-off for images
         if '<image>' not in text:
-            # text = '<Image><image></Image>' + text
             text = text + '\n<image>'
         text = (text, image, image_process_mode)
         state = default_conversation.copy()
@@ -334,6 +331,7 @@ def add_text(state, text, image, image_process_mode, videobox, audiobox, request
 
 
 def http_bot(state, model_selector, temperature, top_p, max_new_tokens, request: gr.Request):
+    logger.print(f"http_bot. ip: {request.client.host}")
     start_tstamp = time.time()
     model_name = model_selector
 
@@ -637,7 +635,6 @@ if __name__ == "__main__":
 
     model_names, model_templates = get_model_list()
     models = dict(zip(model_names, model_templates))
-
     demo = build_demo(args.embed, concurrency_count=args.concurrency_count)
     demo.queue(
         api_open=False

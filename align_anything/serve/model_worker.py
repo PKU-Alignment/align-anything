@@ -30,7 +30,6 @@ import uvicorn
 from functools import partial
 
 from align_anything.utils.constants import WORKER_HEART_BEAT_INTERVAL
-server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR REFRESH THIS PAGE.**"
 from align_anything.utils.logger import Logger
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.utils.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN, DEFAULT_IMAGE_PATCH_TOKEN
@@ -39,6 +38,7 @@ from threading import Thread
 import base64
 from io import BytesIO
 from PIL import Image
+server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR REFRESH THIS PAGE.**"
 
 
 def pretty_print_semaphore(semaphore):
@@ -174,9 +174,7 @@ class ModelWorker:
             replace_token = DEFAULT_IMAGE_TOKEN
             if getattr(self.model.config, 'mm_use_im_start_end', False):
                 replace_token = DEFAULT_IM_START_TOKEN + replace_token + DEFAULT_IM_END_TOKEN
-            prompt = prompt.replace(DEFAULT_IMAGE_TOKEN, replace_token)
-            # num_image_tokens = prompt.count(replace_token) * model.get_vision_tower().num_patches
-            
+            prompt = prompt.replace(DEFAULT_IMAGE_TOKEN, replace_token)            
         else:
             images = None
 
@@ -198,7 +196,6 @@ class ModelWorker:
                 attention_mask=inputs['attention_mask'].to(self.device),
                 pixel_values = inputs['pixel_values'].to(self.device))
         keywords = [stop_str]
-        # stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
         streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True, timeout=15)
 
         max_new_tokens = min(max_new_tokens, max_context_length - inputs['input_ids'].shape[-1] - num_image_tokens)
@@ -300,9 +297,6 @@ if __name__ == "__main__":
     parser.add_argument("--template", type=str, default="Dialogue")
     args = parser.parse_args()
     logger.print(f"args: {args}")
-
-    if args.multi_modal:
-        logger.warning("Multimodal mode is automatically detected with model name, please make sure `llava` is included in the model path.")
 
     worker = ModelWorker(args.controller_address,
                          args.worker_address,

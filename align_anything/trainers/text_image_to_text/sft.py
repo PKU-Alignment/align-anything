@@ -55,6 +55,7 @@ class SuperviseTrainer(SupervisedtextTrainer):
             trust_remote_code=True,
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
+            freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
         )
 
 

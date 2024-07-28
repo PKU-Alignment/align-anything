@@ -31,6 +31,7 @@ def load_pretrained_model_with_value_head(
     auto_device_mapping: bool = False,
     freeze_vision_tower: bool = True,
     freeze_mm_proj: bool = True,
+    freeze_language_model: bool = False,
     dtype: torch.dtype | str | None = 'auto',
     *,
     cache_dir: str | os.PathLike | None = None,
@@ -72,6 +73,8 @@ def load_pretrained_model_with_value_head(
         forbidden_modules.add('vision_tower')
     if freeze_mm_proj:
         forbidden_modules.add('multi_modal_projector')
+    if freeze_language_model:
+        forbidden_modules.add('language_model')
     for name, param in model.named_parameters():
         if not any(forbidden_module in name for forbidden_module in forbidden_modules):
             if dtype == torch.float32:
