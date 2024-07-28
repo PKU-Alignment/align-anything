@@ -167,7 +167,7 @@ class Conversation:
     def copy(self) -> 'Conversation':
         return Conversation(
             roles=self.roles,
-            messages=self.messages,
+            messages=self.messages.copy(),
             offset=self.offset,
             template=self.template,
             skip_next=self.skip_next
