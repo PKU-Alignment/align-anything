@@ -69,7 +69,7 @@ class ModelWorker:
     def __init__(self, controller_addr, worker_addr,
                  worker_id, no_register,
                  model_path, model_name,
-                 device, template=None):
+                 device, is_multimodal, template=None):
         self.controller_addr = controller_addr
         self.worker_addr = worker_addr
         self.worker_id = worker_id
@@ -93,7 +93,7 @@ class ModelWorker:
             auto_device_mapping=True,
             padding_side='right',
             trust_remote_code=True)
-        self.is_multimodal = 'llava' in self.model_name.lower()
+        self.is_multimodal = is_multimodal
 
         if not no_register:
             self.register_to_controller()
@@ -290,10 +290,10 @@ if __name__ == "__main__":
     parser.add_argument("--model-path", type=str, default="facebook/opt-350m")
     parser.add_argument("--model-name", type=str)
     parser.add_argument("--device", type=str, default="cuda")
-    parser.add_argument("--multi-modal", action="store_true", help="Multimodal mode is automatically detected with model name, please make sure `llava` is included in the model path.")
     parser.add_argument("--limit-model-concurrency", type=int, default=5)
     parser.add_argument("--stream-interval", type=int, default=1)
     parser.add_argument("--no-register", action="store_true")
+    parser.add_argument("--is-multimodal", need=True)
     parser.add_argument("--template", type=str, default="Dialogue")
     args = parser.parse_args()
     logger.print(f"args: {args}")
@@ -305,5 +305,6 @@ if __name__ == "__main__":
                          args.model_path,
                          args.model_name,
                          args.device,
+                         args.is_multimodal,
                          args.template)
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
