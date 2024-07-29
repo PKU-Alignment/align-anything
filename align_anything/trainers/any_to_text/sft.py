@@ -23,7 +23,7 @@ import deepspeed
 import torch
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.text_image_to_text import SupervisedDataset
+from align_anything.datasets.any_to_text import SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.sft import SupervisedTrainer as SupervisedtextTrainer
 from align_anything.utils.multi_process import get_current_device
@@ -40,7 +40,7 @@ class SuperviseTrainer(SupervisedtextTrainer):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+        self.train_dataloader, self.eval_dataloader = self.get_multi_dataloaders(
             SupervisedDataset, SupervisedDataset
         )
 
@@ -66,8 +66,11 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('text_image_audio_to_text', 'sft')
+    task = os.path.join('any_to_text', 'sft')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
+    print(dict_cfgs)
+    print(ds_cfgs)
+    print("="*100)
 
     # get custom configs from command line
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -81,6 +84,10 @@ def main():
     # setup training
     cfgs = dict_to_namedtuple(dict_cfgs)
     seed_everything(cfgs.train_cfgs.seed)
+    
+    print(cfgs)
+    print(ds_cfgs)
+    exit()
 
     # finetune the model
     trainer = SuperviseTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)

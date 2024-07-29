@@ -38,7 +38,7 @@ from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import is_main_process
 from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import get_optimizer_grouped_parameters, namedtuple_to_dict
-
+from align_anything.datasets.any_to_text import CombinedDataset, CombinedDatasetSampler
 
 class SupervisedTrainerBase:
 
@@ -81,6 +81,56 @@ class SupervisedTrainerBase:
             data_files=self.cfgs.data_cfgs.train_data_files,
             optional_args=self.cfgs.data_cfgs.train_optional_args,
         )
+        train_dataloader = DataLoader(
+            train_dataset,
+            collate_fn=train_dataset.get_collator(),
+            sampler=DistributedSampler(train_dataset, shuffle=True),
+            batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
+        )
+        if self.cfgs.data_cfgs.eval_datasets:
+            self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
+            eval_dataset = eval_data_dtype(
+                path=self.cfgs.data_cfgs.eval_datasets,
+                template=self.cfgs.data_cfgs.eval_template,
+                tokenizer=self.tokenizer,
+                processor=self.processor,
+                split=self.cfgs.data_cfgs.eval_split,
+                size=self.cfgs.data_cfgs.eval_size,
+                subset=self.cfgs.data_cfgs.eval_subset,
+                data_files=self.cfgs.data_cfgs.eval_data_files,
+                optional_args=self.cfgs.data_cfgs.eval_optional_args,
+            )
+            eval_dataloader = DataLoader(
+                eval_dataset,
+                collate_fn=eval_dataset.get_collator(),
+                sampler=DistributedSampler(eval_dataset, shuffle=True),
+                batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
+            )
+            return train_dataloader, eval_dataloader
+
+        return train_dataloader, None
+    
+    def get_multi_dataloaders(self, train_data_dtype, eval_data_dtype) -> None:
+        """Get the dataloaders based on data_dtype."""
+        self.train_template = get_template_class(self.cfgs.data_cfgs.train_template)
+        self.eval_template = None
+        train_datasets = []
+        for i in range(len(self.cfgs.data_cfgs.train_datasets)):
+            train_dataset = train_data_dtype(
+                path=self.cfgs.data_cfgs.train_datasets[i],
+                template=self.cfgs.data_cfgs.train_template[i],
+                tokenizer=self.tokenizer,
+                processor=self.processor,
+                size=self.cfgs.data_cfgs.train_size[i] if self.cfgs.data_cfgs.train_size else None,
+                split=self.cfgs.data_cfgs.train_split[i] if self.cfgs.data_cfgs.train_split else None,
+                subset=self.cfgs.data_cfgs.train_subset[i] if self.cfgs.data_cfgs.train_subset else None,
+                data_files=self.cfgs.data_cfgs.train_data_files[i] if self.cfgs.data_cfgs.train_data_files else None,
+                optional_args=self.cfgs.data_cfgs.train_optional_args[i] if len(self.cfgs.data_cfgs.train_optional_args)>0 else [],
+            )
+            train_datasets.append(train_dataset)
+        train_dataset = CombinedDataset(train_datasets)
+        
+        
         train_dataloader = DataLoader(
             train_dataset,
             collate_fn=train_dataset.get_collator(),

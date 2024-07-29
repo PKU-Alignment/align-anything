@@ -16,12 +16,10 @@
 
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
-import numpy as np
-import random
 
 import torch
 import transformers
-from torch.utils.data import Dataset, BatchSampler
+from torch.utils.data import Dataset
 from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
@@ -242,50 +240,3 @@ class SupervisedCollator:
                 ).to(current_device)
 
         return return_dict
-
-class CombinedDataset(Dataset):
-    def __init__(self, datasets):
-        self.datasets = datasets
-        self.dataset_lengths = [len(d) for d in datasets]
-
-    def __len__(self):
-        return sum(self.dataset_lengths)
-
-    def __getitem__(self, idx):
-        for i, length in enumerate(self.dataset_lengths):
-            if idx < length:
-                return self.datasets[i][idx]
-            idx -= length
-
-class RandomDatasetSampler(BatchSampler):
-    def __init__(self, datasets, batch_size, drop_last=False):
-        self.datasets = datasets
-        self.batch_size = batch_size
-        self.drop_last = drop_last
-        self.dataset_lengths = [len(d) for d in datasets]
-
-    def __iter__(self):
-        indices_list = []
-        indices_start = 0
-        for length in self.dataset_lengths:
-            count = length // self.batch_size if self.drop_last else (length + self.batch_size - 1) // self.batch_size
-            indices = random.sample(range(indices_start, indices_start + length), length)[:count * self.batch_size]
-            chunked_indices = [
-                random.sample(
-                    indices[i:i + self.batch_size], 
-                    self.batch_size
-                ) 
-                for i in range(0, len(indices) - len(indices) % self.batch_size, self.batch_size)
-            ]
-            indices_list.extend(chunked_indices)
-            indices_start += length
-        random.shuffle(indices_list)
-        
-        for indices in indices_list:
-            yield indices
-
-    def __len__(self):
-        if self.drop_last:
-            return sum(l // self.batch_size for l in self.dataset_lengths)
-        else:
-            return sum((l + self.batch_size - 1) // self.batch_size for l in self.dataset_lengths)

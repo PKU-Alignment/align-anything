@@ -262,6 +262,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     forbidden_modules = set()
     if freeze_vision_tower:
         forbidden_modules.add('vision_tower')
+    # attribute name of llava
     if freeze_mm_proj:
         forbidden_modules.add('multi_modal_projector')
     if freeze_language_model:
