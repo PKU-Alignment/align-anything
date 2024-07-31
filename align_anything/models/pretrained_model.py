@@ -170,6 +170,8 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     auto_device_mapping: bool = False,
     freeze_vision_tower: bool = True,
     freeze_mm_proj: bool = True,
+    freeze_vision_proj: bool = True,
+    freeze_audio_proj: bool = True,
     freeze_language_model: bool = False,
     dtype: torch.dtype | str | None = torch.bfloat16,
     *,
@@ -264,6 +266,10 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
         forbidden_modules.add('vision_tower')
     # attribute name of llava
     if freeze_mm_proj:
+        forbidden_modules.add('multi_modal_projector')
+    if freeze_vision_proj:
+        forbidden_modules.add('multi_modal_projector')
+    if freeze_audio_proj:
         forbidden_modules.add('multi_modal_projector')
     if freeze_language_model:
         forbidden_modules.add('language_model')

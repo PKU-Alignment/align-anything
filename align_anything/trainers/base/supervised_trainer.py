@@ -38,7 +38,7 @@ from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import is_main_process
 from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import get_optimizer_grouped_parameters, namedtuple_to_dict
-from align_anything.datasets.any_to_text import CombinedDataset, CombinedDatasetSampler
+from align_anything.datasets.any_to_text import CombinedDataset, DistributedCombinedDatasetBatchSampler
 
 class SupervisedTrainerBase:
 
@@ -68,8 +68,6 @@ class SupervisedTrainerBase:
 
     def get_dataloaders(self, train_data_dtype, eval_data_dtype) -> None:
         """Get the dataloaders based on data_dtype."""
-        self.train_template = get_template_class(self.cfgs.data_cfgs.train_template)
-        self.eval_template = None
         train_dataset = train_data_dtype(
             path=self.cfgs.data_cfgs.train_datasets,
             template=self.cfgs.data_cfgs.train_template,
@@ -88,7 +86,6 @@ class SupervisedTrainerBase:
             batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
         )
         if self.cfgs.data_cfgs.eval_datasets:
-            self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
             eval_dataset = eval_data_dtype(
                 path=self.cfgs.data_cfgs.eval_datasets,
                 template=self.cfgs.data_cfgs.eval_template,
@@ -112,49 +109,61 @@ class SupervisedTrainerBase:
     
     def get_multi_dataloaders(self, train_data_dtype, eval_data_dtype) -> None:
         """Get the dataloaders based on data_dtype."""
-        self.train_template = get_template_class(self.cfgs.data_cfgs.train_template)
-        self.eval_template = None
         train_datasets = []
         for i in range(len(self.cfgs.data_cfgs.train_datasets)):
-            train_dataset = train_data_dtype(
-                path=self.cfgs.data_cfgs.train_datasets[i],
-                template=self.cfgs.data_cfgs.train_template[i],
-                tokenizer=self.tokenizer,
-                processor=self.processor,
-                size=self.cfgs.data_cfgs.train_size[i] if self.cfgs.data_cfgs.train_size else None,
-                split=self.cfgs.data_cfgs.train_split[i] if self.cfgs.data_cfgs.train_split else None,
-                subset=self.cfgs.data_cfgs.train_subset[i] if self.cfgs.data_cfgs.train_subset else None,
-                data_files=self.cfgs.data_cfgs.train_data_files[i] if self.cfgs.data_cfgs.train_data_files else None,
-                optional_args=self.cfgs.data_cfgs.train_optional_args[i] if len(self.cfgs.data_cfgs.train_optional_args)>0 else [],
+            train_datasets.append(
+                train_data_dtype(
+                    path=self.cfgs.data_cfgs.train_datasets[i],
+                    template=self.cfgs.data_cfgs.train_template[i],
+                    tokenizer=self.tokenizer,
+                    processor=self.processor,
+                    size=self.cfgs.data_cfgs.train_size[i] if self.cfgs.data_cfgs.train_size else None,
+                    split=self.cfgs.data_cfgs.train_split[i] if self.cfgs.data_cfgs.train_split else None,
+                    subset=self.cfgs.data_cfgs.train_subset[i] if self.cfgs.data_cfgs.train_subset else None,
+                    data_files=self.cfgs.data_cfgs.train_data_files[i] if self.cfgs.data_cfgs.train_data_files else None,
+                    optional_args=self.cfgs.data_cfgs.train_optional_args[i] if len(self.cfgs.data_cfgs.train_optional_args)>0 else [],
+                )
             )
-            train_datasets.append(train_dataset)
-        train_dataset = CombinedDataset(train_datasets)
-        
+        combined_train_dataset = CombinedDataset(train_datasets)
         
         train_dataloader = DataLoader(
-            train_dataset,
-            collate_fn=train_dataset.get_collator(),
-            sampler=DistributedSampler(train_dataset, shuffle=True),
-            batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
+            combined_train_dataset,
+            collate_fn=combined_train_dataset.get_collator(),
+            sampler=DistributedCombinedDatasetBatchSampler(
+                train_datasets, 
+                shuffle=True,
+                drop_last=True,
+                batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size)
+            ),
         )
+
         if self.cfgs.data_cfgs.eval_datasets:
-            self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
-            eval_dataset = eval_data_dtype(
-                path=self.cfgs.data_cfgs.eval_datasets,
-                template=self.cfgs.data_cfgs.eval_template,
-                tokenizer=self.tokenizer,
-                processor=self.processor,
-                split=self.cfgs.data_cfgs.eval_split,
-                size=self.cfgs.data_cfgs.eval_size,
-                subset=self.cfgs.data_cfgs.eval_subset,
-                data_files=self.cfgs.data_cfgs.eval_data_files,
-                optional_args=self.cfgs.data_cfgs.eval_optional_args,
-            )
+            eval_datasets = []
+            for i in range(len(self.cfgs.data_cfgs.eval_datasets)):
+                eval_datasets.append(
+                    eval_data_dtype(
+                        path=self.cfgs.data_cfgs.eval_datasets[i],
+                        template=self.cfgs.data_cfgs.eval_template[i],
+                        tokenizer=self.tokenizer,
+                        processor=self.processor,
+                        split=self.cfgs.data_cfgs.eval_split[i],
+                        size=self.cfgs.data_cfgs.eval_size[i],
+                        subset=self.cfgs.data_cfgs.eval_subset[i],
+                        data_files=self.cfgs.data_cfgs.eval_data_files[i],
+                        optional_args=self.cfgs.data_cfgs.eval_optional_args[i],
+                    )
+                )
+            combined_eval_dataset = CombinedDataset(eval_datasets)
+            
             eval_dataloader = DataLoader(
-                eval_dataset,
-                collate_fn=eval_dataset.get_collator(),
-                sampler=DistributedSampler(eval_dataset, shuffle=True),
-                batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
+                combined_eval_dataset,
+                collate_fn=combined_eval_dataset.get_collator(),
+                sampler=DistributedCombinedDatasetBatchSampler(
+                    eval_datasets, 
+                    shuffle=True,
+                    drop_last=True,
+                    batch_size=int(self.cfgs.eval_cfgs.per_device_eval_batch_size)
+                ),
             )
             return train_dataloader, eval_dataloader
 
@@ -336,6 +345,7 @@ class SupervisedTrainerBase:
             if self.processor is not None:
                 self.processor.save_pretrained(self.cfgs.logger_cfgs.output_dir)
 
+<<<<<<< HEAD
         if not self.lora_enabled:
             self.logger.print('Saving 16-bit model...')
             save_file_name = f'pytorch_model_{tag}.bin' if tag else 'pytorch_model.bin'
@@ -351,6 +361,23 @@ class SupervisedTrainerBase:
             model_to_be_saved = model.merge_and_unload()
             model_to_be_saved.save_pretrained(self.cfgs.logger_cfgs.output_dir)
             self.logger.print('Model saved!')
+=======
+        # if not self.lora_cfgs.use_lora:
+        #     self.logger.print('Saving 16-bit model...')
+        #     save_file_name = f'pytorch_model_{tag}.bin' if tag else 'pytorch_model.bin'
+        #     model.save_16bit_model(self.cfgs.logger_cfgs.output_dir, save_filename=save_file_name)
+        #     self.logger.print('Model saved!')
+        # if self.lora_cfgs.use_lora and not self.lora_cfgs.save_full_model:
+        #     self.logger.print('LoRA used.Saving model as LoRA adapters...')
+        #     model.save_pretrained(self.cfgs.logger_cfgs.output_dir)
+        #     self.logger.print('Model saved!')
+        # if self.lora_cfgs.use_lora and self.lora_cfgs.save_full_model:
+        #     self.logger.print('LoRA used.Saving full model...')
+        #     model = model.module 
+        #     model_to_be_saved = model.merge_and_unload()
+        #     model_to_be_saved.save_pretrained(self.cfgs.logger_cfgs.output_dir)
+        #     self.logger.print('Model saved!')
+>>>>>>> 3a54092 (a commit)
 
     def save_diffusers(
         self,

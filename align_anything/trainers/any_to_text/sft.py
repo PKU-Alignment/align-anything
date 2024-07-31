@@ -54,6 +54,8 @@ class SuperviseTrainer(SupervisedtextTrainer):
             padding_side='right',
             trust_remote_code=True,
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
+            freeze_vision_proj=self.cfgs.train_cfgs.freeze_vision_proj,
+            freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
         )
@@ -68,9 +70,6 @@ def main():
     # read default configs from the yaml file
     task = os.path.join('any_to_text', 'sft')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
-    print(dict_cfgs)
-    print(ds_cfgs)
-    print("="*100)
 
     # get custom configs from command line
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -84,10 +83,6 @@ def main():
     # setup training
     cfgs = dict_to_namedtuple(dict_cfgs)
     seed_everything(cfgs.train_cfgs.seed)
-    
-    print(cfgs)
-    print(ds_cfgs)
-    exit()
 
     # finetune the model
     trainer = SuperviseTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)

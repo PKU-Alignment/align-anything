@@ -19,10 +19,16 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any
 
+<<<<<<< HEAD
+=======
+import random
+import requests
+>>>>>>> 3a54092 (a commit)
 import librosa
 import requests
 from PIL import Image
 from torchvision.io import read_video
+import torchaudio
 
 from align_anything.utils.template_registry import register_template
 
@@ -203,14 +209,112 @@ class LLAVA_CC3M:
             f'{self.user_prompt.format(input=question)}'
             f"{self.assistant_prompt.format(output='')}"
         )
-
         image_file = os.path.join(path, 'images', image)
+
         return {
             'text': text,
             'prompt': prompt,
             'image': Image.open(image_file),
         }
 
+@register_template('AudioCaps')
+class AudioCaps:
+    qustions = [
+        "Summarize the audio's contents.",
+        "Give an overview of what's in the audio.",
+        "Detail the audio's subject matter.",
+        "Explain the material covered in the audio.",
+        "Outline the information in the audio.",
+        "Break down the audio's key points.",
+        "Describe the topics discussed in the audio.",
+        "Highlight the main ideas in the audio.",
+        "Recap the content of the audio.",
+        "Provide a synopsis of the audio's content.",
+        "Please recount what you listened to.",
+        "Share the details of what reached your ears.",
+        "Let me know the sounds you picked up.",
+        "Could you describe the information you've heard?",
+        "What did you catch from the conversation?",
+        "Please inform me of the auditory information you've gathered.",
+        "Relay the things you've heard, if you would.",
+        "What have your ears caught wind of?",
+        "I'm curious to know the reports you've heard.",
+        "Let me in on the auditory details you're aware of.",
+    ]
+    user_prompt: str = 'USER: <audio>{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        caption = raw_sample['caption']
+        audiocap_id = raw_sample['audiocap_id']
+        question = random.choice(self.qustions)
+        
+        text = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=caption)}"
+        )
+
+        prompt = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        audio, sample_rate = torchaudio.load(os.path.join(path, f"data/train/{audiocap_id}.wav"))
+        print(len(audio.squeeze().tolist()[0]), len(audio.squeeze().tolist()[1]))
+        if len(audio.squeeze().tolist()[0]) == 0:
+            print(os.path.join(path, f"data/train/{audiocap_id}.wav"))
+        return {
+            'text': text,
+            'prompt': prompt,
+            'audio': audio.squeeze().tolist(),
+            'sample_rate': sample_rate
+        }
+
+@register_template('AudioSet')
+class AudioSet:
+    qustions = [
+        "Summarize the audio's contents.",
+        "Give an overview of what's in the audio.",
+        "Detail the audio's subject matter.",
+        "Explain the material covered in the audio.",
+        "Outline the information in the audio.",
+        "Break down the audio's key points.",
+        "Describe the topics discussed in the audio.",
+        "Highlight the main ideas in the audio.",
+        "Recap the content of the audio.",
+        "Provide a synopsis of the audio's content.",
+        "Please recount what you listened to.",
+        "Share the details of what reached your ears.",
+        "Let me know the sounds you picked up.",
+        "Could you describe the information you've heard?",
+        "What did you catch from the conversation?",
+        "Please inform me of the auditory information you've gathered.",
+        "Relay the things you've heard, if you would.",
+        "What have your ears caught wind of?",
+        "I'm curious to know the reports you've heard.",
+        "Let me in on the auditory details you're aware of.",
+    ]
+    user_prompt: str = 'USER: <audio>{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        caption = f"The content of audio is {', '.join(raw_sample['captions'])}."
+        question = random.choice(self.qustions)
+        
+        text = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=caption)}"
+        )
+
+        prompt = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        audio, sample_rate = torchaudio.load(os.path.join(path, raw_sample["audio"]))
+
+        return {
+            'text': text,
+            'prompt': prompt,
+            'audio': audio.squeeze().tolist(),
+            'sample_rate': sample_rate
+        }
 
 @register_template('DiffusionDB')
 class DiffusionDB:

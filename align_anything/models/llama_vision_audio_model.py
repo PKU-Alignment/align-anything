@@ -124,6 +124,7 @@ class LlamaVisionAudioProcessor(ProcessorMixin):
         padding: Union[bool, str, PaddingStrategy] = False,
         truncation: Union[bool, str, TruncationStrategy] = None,
         max_length=None,
+        sampling_rate=48_000,
         return_tensors: Optional[Union[str, TensorType]] = TensorType.PYTORCH,
     ) -> BatchFeature:
         if images is not None:
@@ -131,7 +132,7 @@ class LlamaVisionAudioProcessor(ProcessorMixin):
         else:
             image_inputs = {}
         if raw_speech is not None:
-            audio_inputs = self.audio_processor(raw_speech, return_tensors=return_tensors)
+            audio_inputs = self.audio_processor(raw_speech, sampling_rate=sampling_rate, return_tensors=return_tensors)
         else:
             audio_inputs = {}
         if text is not None:
@@ -484,6 +485,7 @@ class LlamaVisionAudioForConditionalGeneration(LlamaVisionAudioPreTrainedModel):
 
             # 2. Merge text and images
             if image_pixel_values is not None and input_ids.shape[1] != 1:
+                image_pixel_values = image_pixel_values.to(inputs_embeds.dtype)
                 image_outputs = self.vision_tower(
                     image_pixel_values, 
                     output_hidden_states=True
@@ -498,6 +500,7 @@ class LlamaVisionAudioForConditionalGeneration(LlamaVisionAudioPreTrainedModel):
                 )
             # 3. Merge text and audios
             if audio_pixel_values is not None and input_ids.shape[1] != 1:
+                audio_pixel_values = audio_pixel_values.to(inputs_embeds.dtype)
                 audio_outputs = self.audio_tower(
                     input_features=audio_pixel_values, 
                     is_longer=is_longer,
