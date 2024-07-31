@@ -244,5 +244,121 @@
       {"sentence":"Lucy invited Paul after _ saw the event flyer.","option1":"Lucy","option2":"Paul","answer":1,"lang":"en"},
       {"sentence":"Lucy invited Paul after _ asked for an invitation.","option1":"Lucy","option2":"Paul","answer":2,"lang":"en"}
     ]
+  },
+  "humaneval": {
+    "ocp": [
+      {
+        "task_id": "HumanEval/0",
+        "prompt": "from typing import List\n\n\ndef sum_of_squares(numbers: List[int]) -> int:\n    \"\"\" Given a list of integers, return the sum of their squares.\n    >>> sum_of_squares([1, 2, 3])\n    14\n    >>> sum_of_squares([0, -1, -2])\n    5\n    \"\"\"\n",
+        "canonical_solution": "    return sum(x**2 for x in numbers)\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 3]) == 14\n    assert candidate([0, -1, -2]) == 5\n    assert candidate([4, 5, 6]) == 77\n    assert candidate([-3, -4, -5]) == 50\n    assert candidate([]) == 0\n",
+        "entry_point": "sum_of_squares"
+      },
+      {
+        "task_id": "HumanEval/1",
+        "prompt": "def is_palindrome(s: str) -> bool:\n    \"\"\" Given a string, return True if it is a palindrome, False otherwise.\n    A palindrome is a word that reads the same backward as forward.\n    Ignore case and non-alphanumeric characters.\n    >>> is_palindrome('A man, a plan, a canal, Panama')\n    True\n    >>> is_palindrome('racecar')\n    True\n    >>> is_palindrome('hello')\n    False\n    \"\"\"\n",
+        "canonical_solution": "    import re\n    s = re.sub(r'[^a-zA-Z0-9]', '', s).lower()\n    return s == s[::-1]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate('A man, a plan, a canal, Panama') == True\n    assert candidate('racecar') == True\n    assert candidate('hello') == False\n    assert candidate('No lemon, no melon') == True\n    assert candidate('Was it a car or a cat I saw?') == True\n",
+        "entry_point": "is_palindrome"
+      },
+      {
+        "task_id": "HumanEval/2",
+        "prompt": "from typing import List\n\n\ndef rotate_list(lst: List[int], k: int) -> List[int]:\n    \"\"\" Rotate the list to the right by k steps.\n    >>> rotate_list([1, 2, 3, 4, 5, 6, 7], 3)\n    [5, 6, 7, 1, 2, 3, 4]\n    >>> rotate_list([1, 2, 3, 4, 5], 2)\n    [4, 5, 1, 2, 3]\n    \"\"\"\n",
+        "canonical_solution": "    n = len(lst)\n    k = k % n\n    return lst[-k:] + lst[:-k]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 3, 4, 5, 6, 7], 3) == [5, 6, 7, 1, 2, 3, 4]\n    assert candidate([1, 2, 3, 4, 5], 2) == [4, 5, 1, 2, 3]\n    assert candidate([1, 2], 3) == [2, 1]\n    assert candidate([1], 1) == [1]\n    assert candidate([1, 2, 3, 4, 5], 0) == [1, 2, 3, 4, 5]\n",
+        "entry_point": "rotate_list"
+      },
+      {
+        "task_id": "HumanEval/3",
+        "prompt": "from typing import List\n\n\ndef merge_sorted_lists(list1: List[int], list2: List[int]) -> List[int]:\n    \"\"\" Merge two sorted lists into a single sorted list.\n    >>> merge_sorted_lists([1, 3, 5], [2, 4, 6])\n    [1, 2, 3, 4, 5, 6]\n    >>> merge_sorted_lists([], [1, 2, 3])\n    [1, 2, 3]\n    >>> merge_sorted_lists([1, 2, 3], [])\n    [1, 2, 3]\n    >>> merge_sorted_lists([1, 2], [1, 2])\n    [1, 1, 2, 2]\n    \"\"\"\n",
+        "canonical_solution": "    merged_list = []\n    i, j = 0, 0\n    while i < len(list1) and j < len(list2):\n        if list1[i] < list2[j]:\n            merged_list.append(list1[i])\n            i += 1\n        else:\n            merged_list.append(list2[j])\n            j += 1\n    merged_list.extend(list1[i:])\n    merged_list.extend(list2[j:])\n    return merged_list\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\n    assert candidate([], [1, 2, 3]) == [1, 2, 3]\n    assert candidate([1, 2, 3], []) == [1, 2, 3]\n    assert candidate([1, 2], [1, 2]) == [1, 1, 2, 2]\n    assert candidate([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\n",
+        "entry_point": "merge_sorted_lists"
+      },
+      {
+        "task_id": "HumanEval/4",
+        "prompt": "from typing import List\n\n\ndef common_elements(list1: List[int], list2: List[int]) -> List[int]:\n    \"\"\" Find the common elements between two lists and return them in sorted order.\n    >>> common_elements([1, 2, 3, 4], [3, 4, 5, 6])\n    [3, 4]\n    >>> common_elements([1, 1, 2, 2], [2, 2, 3, 3])\n    [2]\n    >>> common_elements([1, 2, 3], [4, 5, 6])\n    []\n    >>> common_elements([], [1, 2, 3])\n    []\n    \"\"\"\n",
+        "canonical_solution": "    return sorted(set(list1) & set(list2))\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 3, 4], [3, 4, 5, 6]) == [3, 4]\n    assert candidate([1, 1, 2, 2], [2, 2, 3, 3]) == [2]\n    assert candidate([1, 2, 3], [4, 5, 6]) == []\n    assert candidate([], [1, 2, 3]) == []\n    assert candidate([1, 2, 3], [2, 2, 3]) == [2, 3]\n",
+        "entry_point": "common_elements"
+      },
+      {
+        "task_id": "HumanEval/5",
+        "prompt": "def find_maximum_subarray(arr: List[int]) -> List[int]:\n    \"\"\" Find the contiguous subarray (containing at least one number) which has the largest sum and return it.\n    >>> find_maximum_subarray([1, -2, 3, 4, -1, 2, 1, -5, 4])\n    [3, 4, -1, 2, 1]\n    >>> find_maximum_subarray([-1, -2, -3, -4])\n    [-1]\n    \"\"\"\n",
+        "canonical_solution": "    max_sum = current_sum = arr[0]\n    start = end = s = 0\n    for i in range(1, len(arr)):\n        if arr[i] > current_sum + arr[i]:\n            current_sum = arr[i]\n            s = i\n        else:\n            current_sum += arr[i]\n        if current_sum > max_sum:\n            max_sum = current_sum\n            start = s\n            end = i\n    return arr[start:end+1]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, -2, 3, 4, -1, 2, 1, -5, 4]) == [3, 4, -1, 2, 1]\n    assert candidate([-1, -2, -3, -4]) == [-1]\n    assert candidate([5, -1, 2, 3, -4, 6, -2, 1]) == [5, -1, 2, 3, -4, 6]\n    assert candidate([1, 2, 3, 4]) == [1, 2, 3, 4]\n    assert candidate([-3, -2, -1]) == [-1]\n",
+        "entry_point": "find_maximum_subarray"
+      },
+      {
+        "task_id": "HumanEval/6",
+        "prompt": "def count_occurrences(s: str, sub: str) -> int:\n    \"\"\" Count the number of non-overlapping occurrences of `sub` in `s`.\n    >>> count_occurrences('abababab', 'ab')\n    4\n    >>> count_occurrences('aaaaaa', 'aa')\n    3\n    >>> count_occurrences('hello world', 'o')\n    2\n    \"\"\"\n",
+        "canonical_solution": "    return s.count(sub)\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate('abababab', 'ab') == 4\n    assert candidate('aaaaaa', 'aa') == 3\n    assert candidate('hello world', 'o') == 2\n    assert candidate('test test test', 'test') == 3\n    assert candidate('123123123', '123') == 3\n",
+        "entry_point": "count_occurrences"
+      },
+      {
+        "task_id": "HumanEval/7",
+        "prompt": "def unique_elements(lst: List[int]) -> List[int]:\n    \"\"\" Return a list of unique elements in the input list, preserving the original order.\n    >>> unique_elements([1, 2, 2, 3, 4, 4])\n    [1, 2, 3, 4]\n    >>> unique_elements([5, 5, 5, 5])\n    [5]\n    >>> unique_elements([7, 8, 8, 7, 9, 10])\n    [7, 8, 9, 10]\n    \"\"\"\n",
+        "canonical_solution": "    seen = set()\n    unique = []\n    for x in lst:\n        if x not in seen:\n            unique.append(x)\n            seen.add(x)\n    return unique\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 2, 3, 4, 4]) == [1, 2, 3, 4]\n    assert candidate([5, 5, 5, 5]) == [5]\n    assert candidate([7, 8, 8, 7, 9, 10]) == [7, 8, 9, 10]\n    assert candidate([1, 2, 3, 1, 2, 3]) == [1, 2, 3]\n    assert candidate([10, 10, 10, 10, 10, 10]) == [10]\n",
+        "entry_point": "unique_elements"
+      },
+      {
+        "task_id": "HumanEval/8",
+        "prompt": "from typing import List\n\n\ndef flatten_list(lst: List[List[int]]) -> List[int]:\n    \"\"\" Flatten a list of lists into a single list.\n    >>> flatten_list([[1, 2], [3, 4], [5]])\n    [1, 2, 3, 4, 5]\n    >>> flatten_list([[1], [2], [3], [4]])\n    [1, 2, 3, 4]\n    >>> flatten_list([[], [1, 2, 3], [4, 5]])\n    [1, 2, 3, 4, 5]\n    \"\"\"\n",
+        "canonical_solution": "    return [item for sublist in lst for item in sublist]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([[1, 2], [3, 4], [5]]) == [1, 2, 3, 4, 5]\n    assert candidate([[1], [2], [3], [4]]) == [1, 2, 3, 4]\n    assert candidate([[], [1, 2, 3], [4, 5]]) == [1, 2, 3, 4, 5]\n    assert candidate([[], []]) == []\n    assert candidate([[1, 2, 3]]) == [1, 2, 3]\n",
+        "entry_point": "flatten_list"
+      },
+      {
+        "task_id": "HumanEval/9",
+        "prompt": "def reverse_string(s: str) -> str:\n    \"\"\" Given a string, return it reversed.\n    >>> reverse_string('hello')\n    'olleh'\n    >>> reverse_string('Python')\n    'nohtyP'\n    \"\"\"\n",
+        "canonical_solution": "    return s[::-1]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate('hello') == 'olleh'\n    assert candidate('Python') == 'nohtyP'\n    assert candidate('12345') == '54321'\n    assert candidate('') == ''\n",
+        "entry_point": "reverse_string"
+      },
+      {
+        "task_id": "HumanEval/10",
+        "prompt": "def factorial(n: int) -> int:\n    \"\"\" Given a non-negative integer n, return the factorial of n.\n    >>> factorial(5)\n    120\n    >>> factorial(0)\n    1\n    \"\"\"\n",
+        "canonical_solution": "    if n == 0:\n        return 1\n    result = 1\n    for i in range(1, n + 1):\n        result *= i\n    return result\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate(5) == 120\n    assert candidate(0) == 1\n    assert candidate(1) == 1\n    assert candidate(3) == 6\n    assert candidate(10) == 3628800\n",
+        "entry_point": "factorial"
+      },
+      {
+        "task_id": "HumanEval/11",
+        "prompt": "def fibonacci(n: int) -> int:\n    \"\"\" Given a non-negative integer n, return the nth Fibonacci number.\n    >>> fibonacci(0)\n    0\n    >>> fibonacci(1)\n    1\n    >>> fibonacci(7)\n    13\n    \"\"\"\n",
+        "canonical_solution": "    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    a, b = 0, 1\n    for _ in range(n - 1):\n        a, b = b, a + b\n    return b\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate(0) == 0\n    assert candidate(1) == 1\n    assert candidate(7) == 13\n    assert candidate(10) == 55\n    assert candidate(15) == 610\n",
+        "entry_point": "fibonacci"
+      },
+      {
+        "task_id": "HumanEval/12",
+        "prompt": "from typing import List\n\n\ndef even_numbers(lst: List[int]) -> List[int]:\n    \"\"\" Given a list of integers, return a list of the even numbers.\n    >>> even_numbers([1, 2, 3, 4, 5, 6])\n    [2, 4, 6]\n    >>> even_numbers([0, -1, -2, -3])\n    [0, -2]\n    \"\"\"\n",
+        "canonical_solution": "    return [x for x in lst if x % 2 == 0]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 3, 4, 5, 6]) == [2, 4, 6]\n    assert candidate([0, -1, -2, -3]) == [0, -2]\n    assert candidate([7, 8, 10]) == [8, 10]\n    assert candidate([11, 13, 15]) == []\n    assert candidate([2, 4, 6, 8, 10]) == [2, 4, 6, 8, 10]\n",
+        "entry_point": "even_numbers"
+      },
+      {
+        "task_id": "HumanEval/13",
+        "prompt": "def count_vowels(s: str) -> int:\n    \"\"\" Given a string, return the number of vowels in it.\n    >>> count_vowels('hello')\n    2\n    >>> count_vowels('aeiou')\n    5\n    \"\"\"\n",
+        "canonical_solution": "    return sum(1 for char in s if char in 'aeiouAEIOU')\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate('hello') == 2\n    assert candidate('aeiou') == 5\n    assert candidate('bcdfg') == 0\n    assert candidate('') == 0\n    assert candidate('AaEeIiOoUu') == 10\n",
+        "entry_point": "count_vowels"
+      },
+      {
+        "task_id": "HumanEval/14",
+        "prompt": "from typing import List\n\n\ndef cumulative_sum(lst: List[int]) -> List[int]:\n    \"\"\" Given a list of integers, return a list where each element is the cumulative sum of the previous elements.\n    >>> cumulative_sum([1, 2, 3])\n    [1, 3, 6]\n    >>> cumulative_sum([0, -1, -2])\n    [0, -1, -3]\n    \"\"\"\n",
+        "canonical_solution": "    result = []\n    total = 0\n    for num in lst:\n        total += num\n        result.append(total)\n    return result\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 3]) == [1, 3, 6]\n    assert candidate([0, -1, -2]) == [0, -1, -3]\n    assert candidate([4, 5, 6]) == [4, 9, 15]\n    assert candidate([-3, -4, -5]) == [-3, -7, -12]\n    assert candidate([]) == []\n",
+        "entry_point": "cumulative_sum"
+      },
+      {
+        "task_id": "HumanEval/15",
+        "prompt": "from typing import List\n\n\ndef unique_squares(lst: List[int]) -> List[int]:\n    \"\"\" Given a list of integers, return a list of the unique squares of the integers, sorted in ascending order.\n    >>> unique_squares([1, 2, -2, 3, -3])\n    [1, 4, 9]\n    >>> unique_squares([0, -1, -1, 2])\n    [0, 1, 4]\n    \"\"\"\n",
+        "canonical_solution": "    return sorted(set(x**2 for x in lst))\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, -2, 3, -3]) == [1, 4, 9]\n    assert candidate([0, -1, -1, 2]) == [0, 1, 4]\n    assert candidate([4, -4, 5, -5]) == [16, 25]\n    assert candidate([1, 1, 1, 1]) == [1]\n    assert candidate([-3, -3, -3, -3]) == [9]\n",
+        "entry_point": "unique_squares"
+      }
+    ]
   }
 }
