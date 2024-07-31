@@ -4,7 +4,7 @@
 # License: Apache-2.0 license
 
 '''
-
+import torch
 from typing import List, Optional, Union, Dict
 from dataclasses import dataclass
 from vllm.outputs import CompletionOutput, RequestOutput
@@ -24,12 +24,21 @@ class InferenceInput:
             
     '''
     text: str
+    token_ids: torch.LongTensor = None
+    
     image_url: Optional[str] = None
+    pixel_values: torch.FloatTensor = None
     
 
-    def __init__(self, text: str, token_ids):
+    def __init__(self, 
+                 text: str, 
+                 token_ids: torch.LongTensor, 
+                 image_url: Optional[str] = None, 
+                 pixel_values: torch.FloatTensor = None):
         self.text = text
         self.token_ids = token_ids
+        self.image_url = image_url
+        self.pixel_values = pixel_values
 
     def __repr__(self):
         return (f"InferenceInput("
@@ -108,9 +117,18 @@ class InferenceOutput:
             raw_output=data if store_raw else None
         )
     
-    def from_deepspeed_output(self, deepspeed_output: Dict):
-        # todo
-        pass
+    @classmethod
+    def from_deepspeed_output(cls, deepspeed_output: Dict, store_raw: bool = False):
+        return cls(
+            engine="deepspeed",
+            prompt=deepspeed_output.get("prompt"),
+            prompt_token_ids=deepspeed_output.get("prompt_token_ids"),
+            prompt_logprobs=deepspeed_output.get("prompt_logprobs"),
+            response=deepspeed_output.get("response"),
+            response_token_ids=deepspeed_output.get("response_token_ids"),
+            response_logprobs=deepspeed_output.get("response_logprobs"),
+            raw_output=deepspeed_output if store_raw else None
+        )
 
     def __repr__(self):
         return (
