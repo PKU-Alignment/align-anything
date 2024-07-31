@@ -1,31 +1,19 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
 import argparse
 import json
+from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import List, Dict, Any
-from datasets import load_dataset
+from typing import Union, List, Dict, Any, Tuple
+from datasets import load_dataset, DatasetDict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results
-from align_anything.evaluation.eval_logger import EvalLogger
 
 class PAWSXDataLoader(BaseDataLoader):
+
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -40,7 +28,7 @@ class PAWSXDataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task): 
         if self.cot:
-            with open('../cot_fewshot/PAWSX/' + task + '.json', 'r', encoding='utf-8') as f:
+            with open('/aifs4su/yaodong/panrui/align-anything-evaluation/align_anything/evaluation/benchmarks/PAWSX/cot_few_shot/' + task + '.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
@@ -83,6 +71,13 @@ class PAWSXDataLoader(BaseDataLoader):
                     question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
         
         return question
+    
+    def preprocess(self, data):
+        prompts = self.build_prompt(data[self.split])
+        
+        token_ids = self.tokenizer(prompts)
+
+        return prompts, token_ids
 
 class PAWSXGeneratorVLLM(BaseInferencer_vllm):
 
@@ -101,6 +96,7 @@ class PAWSXGeneratorVLLM(BaseInferencer_vllm):
         return task2details
 
 def evaluator(raw_output: List[InferenceOutput], dataloader: PAWSXDataLoader, task: str):
+    
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
     correct_answers = []
     responses = []
@@ -115,20 +111,25 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: PAWSXDataLoader, ta
             {
                 'sentence_1': instance['sentence1'],
                 'sentence_2': instance['sentence2'],
+                'prompt_token_ids_1': dataloader.tokenizer(instance['sentence1']).input_ids,
+                'prompt_token_ids_2': dataloader.tokenizer(instance['sentence2']).input_ids,
                 'answer': dataloader.get_answer(instance)
             }
         )
     for item in raw_output:
+        sentence_1, sentence_2 = get_question_from_input(item.prompt)
+        tmp = item.response[0] if item.response else ""
         responses.append(
             {
-                'prompt': (item.prompt),
+                'prompt_token_ids_1': dataloader.tokenizer(sentence_1).input_ids,
+                'prompt_token_ids_2': dataloader.tokenizer(sentence_2).input_ids,
                 'answer_logprobs': get_chosen_answer(item.response_logprobs[0], dataloader.candidate_labels)
             }
         )
     for correct_answer in correct_answers:
         cnt_sum += 1
         for response in responses:
-            if correct_answer['sentence_1'] in response['prompt'] and correct_answer['sentence_2'] in response['prompt']:
+            if correct_answer['prompt_token_ids_1'] == response['prompt_token_ids_1'] and correct_answer['prompt_token_ids_2'] == response['prompt_token_ids_2']:
                 flag_fail = False
                 chosen_answer = max(response['answer_logprobs'], key=response['answer_logprobs'].get)
                 eval_case = {
@@ -153,6 +154,13 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: PAWSXDataLoader, ta
         
     return cnt_match, cnt_sum, true_cases, false_cases
 
+def get_question_from_input(input):
+    index_head = input.rfind('\n\n##sentence1:')
+    index_tail = input[index_head + 14:].find('\n')
+    index_head_2 = input.rfind('\n##sentence2:')
+    index_tail_2 = input[index_head_2 + 13:].find('\n')
+    return input[index_head + 14:][:index_tail], input[index_head_2 + 13:][:index_tail_2]
+
 def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[str]):
     answer_logprobs = {}
     for logprob in logprobs:
@@ -167,24 +175,15 @@ def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[st
     
 
 def main():
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    logger = EvalLogger('Evaluation')
-
-    dict_configs, infer_configs = read_eval_cfgs('paws-x', 'vLLM')
-    
-    try:
-        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
-    except AssertionError as e:
-        logger.log('error', "Config file is not exist or incomplete.")
-        exit()
-
+    unparsed_args = {'output_dir': '/aifs4su/yaodong/panrui/align-anything-evaluation/align_anything/evaluation/meta_test_output/paws-x'}
+    dict_configs, infer_configs = read_eval_cfgs('paws-x')
     for k, v in unparsed_args.items():
-        if v == '' or v is None:
-            continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
     
@@ -197,43 +196,31 @@ def main():
     eval_module = PAWSXGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
 
-    tasks, num_matches, num_instances, acc = [], [], [], []
     for task, _ in raw_outputs.items():
-
+        print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        print('task: ', task)
+        print('few_shot: ', eval_configs.n_shot)
+        # print('cot: ', )
+        print('-----------------------------------------------------------')
         cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
+        print('num_match: ', cnt_match, '| num_sum: ', cnt_sum, '| acc: ', cnt_match / cnt_sum)
+        with open('/aifs4su/yaodong/panrui/align-anything-evaluation/align_anything/evaluation/benchmarks/output/PAWS-X_eval.txt', 'w') as f:
+            f.write(f"cnt_match: {cnt_match}\n")
+            f.write(f"cnt_sum: {cnt_sum}\n")
+            f.write(f"acc: {cnt_match / cnt_sum}\n")
+        print('==============================TRUE CASE==============================')
+        print('Sentence_1: ', true_cases[0]['sentence_1'])
+        print('Sentence_2: ', true_cases[0]['sentence_2'])
+        print('Correct Answer: ', true_cases[0]['correct_answer'])
+        print('Logprobs of First Token:', true_cases[0]['answer_logprobs'])
+        print('Chosen Answer',  true_cases[0]['chosen_answer'])
+        print('==============================FALSE CASE==============================')
+        print('Sentence_1: ', false_cases[0]['sentence_1'])
+        print('Sentence_2: ', false_cases[0]['sentence_2'])
+        print('Correct Answer: ', false_cases[0]['correct_answer'])
+        print('Logprobs of First Token:', false_cases[0]['answer_logprobs'])
+        print('Chosen Answer',  false_cases[0]['chosen_answer'])
 
-        tasks.append(task)
-        num_matches.append(cnt_match)
-        num_instances.append(cnt_sum)
-        acc.append(cnt_match / cnt_sum)
-
-        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        logger.log('info', f"task: {task}")
-        logger.log('info', '==============================TRUE CASE==============================')
-        if true_cases:
-            logger.log('info', f'Sentence_1: {true_cases[0]["sentence_1"]}')
-            logger.log('info', f'Sentence_2: {true_cases[0]["sentence_2"]}')
-            logger.log('info', f'Correct Answer: {true_cases[0]["correct_answer"]}')
-            logger.log('info', f'Logprobs of First Token: {true_cases[0]["answer_logprobs"]}')
-            logger.log('info', f'Chosen Answer: {true_cases[0]["chosen_answer"]}')
-        logger.log('info', '==============================FALSE CASE==============================')
-        if false_cases:
-            logger.log('info', f'Sentence_1: {false_cases[0]["sentence_1"]}')
-            logger.log('info', f'Sentence_2: {false_cases[0]["sentence_2"]}')
-            logger.log('info', f'Correct Answer: {false_cases[0]["correct_answer"]}')
-            logger.log('info', f'Logprobs of First Token: {false_cases[0]["answer_logprobs"]}')
-            logger.log('info', f'Chosen Answer: {false_cases[0]["chosen_answer"]}')
-        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-
-    eval_results = {
-            'task': tasks,
-            'num_fewshot': [eval_configs.n_shot] * len(tasks),
-            'chain_of_thought': [eval_configs.cot] * len(tasks),
-            'num_match': num_matches,
-            'num_sum': num_instances,
-            'acc': acc
-            }
-    logger.print_table(title="Evaluation Results", data = eval_results)
 
 if __name__ == '__main__':
     main()
