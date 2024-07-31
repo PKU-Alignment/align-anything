@@ -191,8 +191,8 @@ class LLAVA:
 
 @register_template('LLAVA-CC3M')
 class LLAVA_CC3M:
-    user_prompt: str = 'USER: {input}'
-    assistant_prompt: str = '\nASSISTANT: {output}'
+    user_prompt: str = '<|start_header_id|>user<|end_header_id|>\n{input}'
+    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>\n{output}'
     
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations']

@@ -106,17 +106,25 @@ class SupervisedDataset(Dataset):
         labels[: len(self.tokenize(formatted_prompt))] = IGNORE_INDEX
         return_dict['labels'] = labels
 
-        raw_image = formatted_sample['image']
-        return_dict['image_pixel_values'] = self.processor.image_processor(
-            raw_image, return_tensors='pt'
-        )['pixel_values'][0]
-        
-        raw_audio = formatted_sample['audio']
-        audio = self.processor.audio_processor(
-            raw_audio, return_tensors='pt'
-        )
-        return_dict['audio_pixel_values'] = audio['input_features'][0]
-        return_dict['is_longer'] = audio['is_longer'][0]
+
+        if 'image' in formatted_sample.keys():
+            raw_image = formatted_sample['image']
+            return_dict['image_pixel_values'] = self.processor.image_processor(
+                raw_image, return_tensors='pt'
+            )['pixel_values'][0]
+        else:
+            return_dict['image_pixel_values'] = None
+            
+        if 'audio' in formatted_sample.keys():
+            raw_audio = formatted_sample['audio']
+            audio = self.processor.audio_processor(
+                raw_audio, return_tensors='pt'
+            )
+            return_dict['audio_pixel_values'] = audio['input_features'][0]
+            return_dict['is_longer'] = audio['is_longer'][0]
+        else:
+            return_dict['audio_pixel_values'] = None
+            return_dict['is_longer'] = None
 
         return return_dict
 
@@ -164,7 +172,6 @@ class SupervisedCollator:
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
         return_dict = {}
         current_device = get_current_device()
-
         return_dict['input_ids'] = right_padding(
             [sample['input_ids'] for sample in samples],
             padding_value=self.pad_token_id,
@@ -179,10 +186,7 @@ class SupervisedCollator:
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
         )
 
-        if 'image_pixel_values' in samples[0].keys():
-
-            a = return_dict['attention_mask'].shape[0]
-            
+        if samples[0]['image_pixel_values'] is not None:
             if samples[0]['image_pixel_values'].dim() == 4:
                 # init list for pixel_values
                 return_dict['image_sizes'] = [ sample['image_pixel_values'].to(current_device).size(0) for sample in samples ]
@@ -195,18 +199,15 @@ class SupervisedCollator:
                 return_dict['image_pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
                 # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
                 
-                # image_sizes
-                b = samples[0]['image_pixel_values'].shape[2]
-                c = samples[0]['image_pixel_values'].shape[3]
-                image_size = torch.tensor([b, c], device=current_device)
             else:
                 # original code for non-patches 
                 return_dict['image_pixel_values'] = torch.stack(
                     [sample['image_pixel_values'] for sample in samples]
                 ).to(current_device)
+        else:
+            return_dict['image_pixel_values'] = None
 
-        if 'audio_pixel_values' in samples[0].keys():
-            
+        if samples[0]['audio_pixel_values'] is not None:
             if samples[0]['audio_pixel_values'].dim() == 4:
                 # init list for pixel_values
                 return_dict['audio_sizes'] = [ sample['audio_pixel_values'].to(current_device).size(0) for sample in samples ]
@@ -225,10 +226,6 @@ class SupervisedCollator:
                 
                 return_dict['is_longer'] = torch.cat(_is_longer_list, dim=0).to(current_device) 
                 
-                # image_sizes
-                b = samples[0]['audio_pixel_values'].shape[2]
-                c = samples[0]['audio_pixel_values'].shape[3]
-                image_size = torch.tensor([b, c], device=current_device)
             else:
                 # original code for non-patches 
                 return_dict['audio_pixel_values'] = torch.stack(
@@ -238,5 +235,8 @@ class SupervisedCollator:
                 return_dict['is_longer'] = torch.stack(
                     [sample['is_longer'] for sample in samples]
                 ).to(current_device)
+        else:
+            return_dict['audio_pixel_values'] = None
+            return_dict['is_longer'] = None
 
         return return_dict
