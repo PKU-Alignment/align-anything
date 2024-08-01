@@ -26,25 +26,21 @@ class ARCDataLoader(BaseDataLoader):
     def get_answer(self, data):
         return data['answerKey']
 
-    def set_fewshot_dataset(self, dataset):
-        few_shot_examples = json.load(open("../few_shot.json", encoding='utf-8'))['arc']['ocp']
-
-        formatted_data = []
-        for example in few_shot_examples:
-            question = example['question']
-            choices = " ".join([f"{label}: {text}" for label, text in zip(example['choices']['label'], example['choices']['text'])])
-            questions = f"Question: {question} Choices: {choices}"
-            formatted_data.append({
-                'question': questions,
-                'answerKey': example['answerKey']
-            })
-
-        return Dataset.from_dict({
-            'question': [item['question'] for item in formatted_data],
-            'answerKey': [item['answerKey'] for item in formatted_data]
-        })
+    def set_fewshot_dataset(self, dataset, task=None):
+        return dataset['validation']
 
     def build_example_prompt(self, data, with_answer=True):
+        choices_text = []
+        for label in data['choices']['label']:
+            if ord('A') <= ord(label) <= ord('Z'):
+                choice_id = label
+                choices_text.append(f'{choice_id}: {data["choices"]["text"][ord(choice_id) - 65]}' )
+            else:
+                choice_id = int(label)
+                choices_text.append(f'{choice_id}: {data["choices"]["text"][choice_id - 1]}' )
+
+        # choices = '\n'.join(f'{label}: {data["choices"]["text"][ord(label) - 65]}' )
+        choices = '\n'.join(choices_text)
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
         return f"{data['question']}\n{answer}"
 
@@ -94,7 +90,8 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('test_arc')
+    # unparsed_args = {'output_dir': '/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/arc'}
+    dict_configs, infer_configs = read_eval_cfgs('arc', 'vllm')
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))

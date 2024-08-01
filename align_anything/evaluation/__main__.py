@@ -1,18 +1,3 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-
 import importlib
 import os
 import yaml
@@ -46,11 +31,7 @@ def parse_eval_args() -> argparse.Namespace:
         "--benchmark",
         "-b",
         default=None,
-        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME.",
-        choices=[
-            "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
-            "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA", "MME"
-        ]
+        help="The benchmark you want to test on",
     )
     parser.add_argument(
         "--task",
@@ -74,12 +55,7 @@ def parse_eval_args() -> argparse.Namespace:
         default=False,
         help="If True, chain-of-thought will be implemented during generation",
     )
-    parser.add_argument(
-        "--batch_size",
-        type=str,
-        default=1,
-        help="Batch size for generation (when using deepspeed backend).",
-    )
+    parser.add_argument("--batch_size", type=str, default=1)
     parser.add_argument(
         "--device",
         type=str,
@@ -109,6 +85,7 @@ def parse_eval_args() -> argparse.Namespace:
     args = parser.parse_args()
     return args
 
+
 def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     if not args:
         args = parse_eval_args()
@@ -117,7 +94,7 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     if len(sys.argv) == 1:
         print("┌─────────────────────────────────────────────────────────────────────────────────┐")
         print("│ Please provide arguments to evaluate the model. e.g.                            │")
-        print("│ `align-anything-eval --model_path llava-hf/llava-1.5-7b-hf --benchmark MME`     │")
+        print("│ `align-anything-eval --model_path liuhaotian/llava-v1.6-7b --benchmark MME`     │")
         print("│ More default configs can be refered in `align-anything/align_anything/configs`  │")
         print("└─────────────────────────────────────────────────────────────────────────────────┘")
         sys.exit(1)
@@ -126,8 +103,11 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     subfolder = args.benchmark
     args.generation_backend = args.generation_backend.lower()
     selected_subfolder_path = os.path.join(folder_path, subfolder)
+    sh_file_name = f"{args.generation_backend}_eval.sh"
+    sh_file_path = os.path.join(selected_subfolder_path, sh_file_name)
 
     run_benchmark(selected_subfolder_path, args)
+
 
 def run_benchmark(file_path, args):
     try:
@@ -141,7 +121,7 @@ def run_benchmark(file_path, args):
             else:
                 eval_logger.log('info', 'Generating responses using vLLM backend.')
         else:
-            if 'ds_infer.py' not in file_names:
+            if 'ds_eval.py' not in file_names:
                 eval_logger.log('warning', 'Deepspeed backend is not support for this benchmark.')
                 if 'vllm_eval.py' in file_names:
                     eval_logger.log('info', 'Generating responses using vLLM backend.')
@@ -166,4 +146,5 @@ def run_benchmark(file_path, args):
         print(f"Error executing {file_path}: {e}")
 
 if __name__ == "__main__":
+    
     cli_evaluate()

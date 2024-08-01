@@ -83,7 +83,7 @@ class BaseInferencer_vllm:
         self.vllm_cfgs_sp, self.vllm_cfgs_llm = vllm_cfgs.SamplingParams, vllm_cfgs.LLM
         self.model_cfgs = model_cfgs
         # TODO: Resolve conflicts with torch.cuda.is_available
-
+        print(vllm_cfgs)
         self.sp_n = self.vllm_cfgs_sp.n
         self.sp_top_k = self.vllm_cfgs_sp.top_k
         self.sp_top_p = self.vllm_cfgs_sp.top_p
@@ -245,8 +245,8 @@ class BaseInferencer_deepspeed:
     def _generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
         assert isinstance(inputs, list)
         
+        batch_size = self.infer_cfgs['inference_batch_size']
         num_sequences = 4
-        batch_size = 4
         dataset = ListDataset(inputs)
         sampler = DistributedSampler(dataset) if torch.distributed.is_initialized() else None
         
@@ -292,13 +292,10 @@ class BaseInferencer_deepspeed:
                         "prompt": text,
                         "prompt_token_ids": token_ids,
                         "prompt_logprobs": transition_score[:, :input_length],
-                        "response": response[0][len(text):],
-                        "response_token_ids": output[0, input_length:],
+                        "response": response[:][len(text):],
+                        "response_token_ids": output[:, input_length:],
                         "response_logprobs": transition_score[:, input_length:],
-                        "raw_output":  {
-                            "batch_size": batch_size,
-                            "num_sequences": num_sequences,
-                        }
+                        "raw_output":  outputs[i*num_sequences:(i+1)*num_sequences]
                     }, store_raw=True)
                 )
         # 将每个rank的InferenceOutputs保存为pickle文件，后缀为rank数
