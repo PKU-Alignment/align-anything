@@ -1,8 +1,8 @@
 infer_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
-  # vllm_cfgs: vllm_basic.json
-
+  vllm_cfgs: vllm_basic.json
+  
 default:
   # Evaluation configurations
   eval_cfgs:
@@ -13,6 +13,8 @@ default:
     output_dir: null
     # Num shot
     n_shot: 5
+    # Chain of Thought
+    cot: false
     # Evaluation method
     action: generation
   # Configuration for data
