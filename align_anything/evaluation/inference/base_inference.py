@@ -295,7 +295,10 @@ class BaseInferencer_deepspeed:
                         "response": response[0][len(text):],
                         "response_token_ids": output[0, input_length:],
                         "response_logprobs": transition_score[:, input_length:],
-                        "raw_output":  {}
+                        "raw_output":  {
+                            "batch_size": batch_size,
+                            "num_sequences": num_sequences,
+                        }
                     }, store_raw=True)
                 )
         # 将每个rank的InferenceOutputs保存为pickle文件，后缀为rank数
