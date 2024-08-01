@@ -1,5 +1,5 @@
 import os
-
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1, 2, 3, 4"
 import argparse
 from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm, BaseInferencer_deepspeed
@@ -24,7 +24,7 @@ class ARCDataLoader(BaseDataLoader):
     def get_answer(self, data):
         return data['answerKey']
 
-    def set_fewshot_dataset(self, dataset):
+    def set_fewshot_dataset(self, dataset, task: str=None):
         return dataset['validation']
 
     def build_example_prompt(self, data, with_answer=True):
@@ -81,9 +81,9 @@ def main():
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
-    # unparsed_args = dict(zip(keys, values))
-    unparsed_args = {'output_dir': '/aifs4su/yaodong/xuyao/evaluation/align-anything-eval/align_anything/evaluation/meta_test_output/arc'}
-    dict_configs, infer_configs = read_eval_cfgs('arc')
+    unparsed_args = dict(zip(keys, values))
+    # unparsed_args = {'output_dir': '/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/arc'}
+    dict_configs, infer_configs = read_eval_cfgs('arc', 'deepspeed')
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))

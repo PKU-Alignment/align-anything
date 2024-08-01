@@ -137,26 +137,28 @@ def read_cfgs(mode: str, task: str) -> list[dict[str, Any], dict[str, Any]]:
 
     return configs, ds_cfgs
 
-def read_eval_cfgs(task: str) -> dict[str, Any]:
+def read_eval_cfgs(task: str, backend: str) -> dict[str, Any]:
     current_file_path = os.path.abspath(__file__)
     parent_path = os.path.dirname(os.path.dirname(current_file_path))
-    yaml_path = os.path.join(parent_path, 'configs', 'evaluation', f'{task}.yaml')
+    yaml_path = os.path.join(parent_path, 'configs', 'evaluation', 'benchmarks', f'{task}.yaml')
     with open(yaml_path, encoding='utf-8') as f:
         try:
             configs = yaml.safe_load(f)
         except FileNotFoundError as exc:
             raise FileNotFoundError(f'{yaml_path} error: {exc}') from exc
-    if 'vllm_cfgs' in configs['infer_cfgs'].keys():
+    if backend.lower() == 'vllm':
         infer_cfgs_path = os.path.join(
             parent_path,
             'configs',
+            'evaluation',
             'vllm',
             configs['infer_cfgs']['vllm_cfgs'],
         )
-    else: 
+    else:
         infer_cfgs_path = os.path.join(
             parent_path,
             'configs',
+            'evaluation',
             'deepspeed',
             configs['infer_cfgs']['ds_cfgs'],
         )

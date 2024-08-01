@@ -1,3 +1,5 @@
+#!/bin/bash
+
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR"
 
@@ -22,13 +24,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-  export CUDA_VISIBLE_DEVICES=0,1,2,3
-
 if [ "$backend" = "vllm" ]; then
   python vllm_eval.py \
     --output_dir "$output"
 else
-  deepspeed \
-    --module ds_eval \
-    --output_dir $output
+  bash deepspeed_eval.sh \
+    --output_dir "$output"
 fi

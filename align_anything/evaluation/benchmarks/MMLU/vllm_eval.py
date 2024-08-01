@@ -1,5 +1,4 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '4, 5, 6, 7'
 import argparse
 import json
 from align_anything.evaluation.eval.base_eval import BaseEval_vllm
@@ -11,7 +10,7 @@ from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, updat
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results
-
+from align_anything.evaluation.eval_logger import EvalLogger
 class MMLUDataLoader(BaseDataLoader):
 
     def get_task_names(self):
@@ -111,7 +110,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, tas
         responses.append(
             {
                 'prompt_token_ids': dataloader.tokenizer(get_question_from_input(item.prompt)).input_ids,
-                'answer_logprobs': get_chosen_answer(item.response_logprobs[0], dataloader.candidate_labels)
+                'answer_logprobs': get_chosen_answer(item.response_logprobs[-1], dataloader.candidate_labels)
             }
         )
     for correct_answer in correct_answers:
@@ -169,7 +168,16 @@ def main():
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
     unparsed_args = {'output_dir': '/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/mmlu'}
+    logger = EvalLogger('Evaluation')
+
     dict_configs, infer_configs = read_eval_cfgs('mmlu')
+
+    try:
+        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        logger.log('error', "Config file is not exist or incomplete.")
+        exit()
+    
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
@@ -177,32 +185,49 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
+    logger.log_dir = eval_configs.output_dir
     dataloader = MMLUDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
     eval_module = MMLUGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
 
+    tasks, num_matches, num_instances, acc = [], [], [], []
     for task, _ in raw_outputs.items():
-        print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        print('task: ', task)
-        print('fwe_shot: ', eval_configs.n_shot)
-        # print('cot: ', )
-        print('-----------------------------------------------------------')
-        cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
-        print('num_match: ', cnt_match, '| num_sum: ', cnt_sum, '| acc: ', cnt_match / cnt_sum)
-        print('==============================TRUE CASE==============================')
-        print('Question: ', true_cases[0]['question'])
-        print('Choices: ', true_cases[0]['choices'])
-        print('Correct Answer: ', true_cases[0]['correct_answer'])
-        print('Logprobs of First Token:', true_cases[0]['answer_logprobs'])
-        print('Chosen Answer',  true_cases[0]['chosen_answer'])
-        print('==============================FALSE CASE==============================')
-        print('Question: ', false_cases[0]['question'])
-        print('Choices: ', false_cases[0]['choices'])
-        print('Correct Answer: ', false_cases[0]['correct_answer'])
-        print('Logprobs of First Token:', false_cases[0]['answer_logprobs'])
-        print('Chosen Answer',  false_cases[0]['chosen_answer'])
 
+        cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
+
+        tasks.append(task)
+        num_matches.append(cnt_match)
+        num_instances.append(cnt_sum)
+        acc.append(cnt_match / cnt_sum)
+
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.log('info', f"task: {task}")
+        logger.log('info', '==============================TRUE CASE==============================')
+        if true_cases:
+            logger.log('info', f'Question: {true_cases[0]["question"]}')
+            logger.log('info', f'Choices: {true_cases[0]["choices"]}')
+            logger.log('info', f'Correct Answer: {true_cases[0]["correct_answer"]}')
+            logger.log('info', f'Logprobs of First Token: {true_cases[0]["answer_logprobs"]}')
+            logger.log('info', f'Chosen Answer: {true_cases[0]["chosen_answer"]}')
+        logger.log('info', '==============================FALSE CASE==============================')
+        if false_cases:
+            logger.log('info', f'Question: {false_cases[0]["question"]}')
+            logger.log('info', f'Choices: {false_cases[0]["choices"]}')
+            logger.log('info', f'Correct Answer: {false_cases[0]["correct_answer"]}')
+            logger.log('info', f'Logprobs of First Token: {false_cases[0]["answer_logprobs"]}')
+            logger.log('info', f'Chosen Answer: {false_cases[0]["chosen_answer"]}')
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    eval_results = {
+            'task': tasks,
+            'num_fewshot': [eval_configs.n_shot] * len(tasks),
+            'chan of thought': [eval_configs.cot] * len(tasks),
+            'num_match': num_matches,
+            'num_sum': num_instances,
+            'acc': acc
+            }
+    logger.print_table(title="Evaluation Results", data = eval_results)
 
 if __name__ == '__main__':
     main()

@@ -24,11 +24,21 @@ class ARCDataLoader(BaseDataLoader):
     def get_answer(self, data):
         return data['answerKey']
 
-    def set_fewshot_dataset(self, dataset):
+    def set_fewshot_dataset(self, dataset, task=None):
         return dataset['validation']
 
     def build_example_prompt(self, data, with_answer=True):
-        choices = '\n'.join([f'{label}: {data["choices"]["text"][ord(label) - 65]}' for label in data['choices']['label']])
+        choices_text = []
+        for label in data['choices']['label']:
+            if ord('A') <= ord(label) <= ord('Z'):
+                choice_id = label
+                choices_text.append(f'{choice_id}: {data["choices"]["text"][ord(choice_id) - 65]}' )
+            else:
+                choice_id = int(label)
+                choices_text.append(f'{choice_id}: {data["choices"]["text"][choice_id - 1]}' )
+
+        # choices = '\n'.join(f'{label}: {data["choices"]["text"][ord(label) - 65]}' )
+        choices = '\n'.join(choices_text)
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
         return f"{data['question']}\n{choices}\n{answer}"
 
@@ -78,9 +88,9 @@ def main():
     print(unparsed_args)
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
-    # unparsed_args = dict(zip(keys, values))
-    unparsed_args = {'output_dir': '/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/arc'}
-    dict_configs, infer_configs = read_eval_cfgs('arc')
+    unparsed_args = dict(zip(keys, values))
+    # unparsed_args = {'output_dir': '/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/arc'}
+    dict_configs, infer_configs = read_eval_cfgs('arc', 'vllm')
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))

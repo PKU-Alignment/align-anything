@@ -6,7 +6,7 @@ infer_cfgs:
 default:
   # Evaluation configurations
   eval_cfgs:
-    # batch_size: 1
+    batch_size: 4
     # Seed for random number generator
     seed: 0
     # Output directory name
