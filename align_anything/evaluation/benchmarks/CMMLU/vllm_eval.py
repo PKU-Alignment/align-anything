@@ -207,10 +207,6 @@ def main():
         all_cnt_match += cnt_match
         all_cnt_sum += cnt_sum
     print('all_cnt_match: ', all_cnt_match, '| all_cnt_sum: ', all_cnt_sum, '| all_acc: ', all_cnt_match / all_cnt_sum)
-    with open('/aifs4su/yaodong/panrui/align-anything-evaluation/align_anything/evaluation/benchmarks/output/CMMLU_eval.txt', 'w') as f:
-        f.write(f"all_cnt_match: {all_cnt_match}\n")
-        f.write(f"all_cnt_sum: {all_cnt_sum}\n")
-        f.write(f"all_acc: {all_cnt_match / all_cnt_sum}\n")
 
 if __name__ == '__main__':
     main()

@@ -40,11 +40,11 @@ default:
   #   # The max token length
   #   model_max_length: 2048
   model_cfgs:
-    model_id: Meta-Llama-3-8B-Instruct
+    model_id: alpaca-7b-reproduced
     # Pretrained model name or path
-    model_name_or_path: /aifs4su/yaodong/models/Meta-Llama-3-8B-Instruct
+    model_name_or_path: /aifs4su/yaodong/models/alpaca-7b-reproduced
     # Chat template
-    chat_template: Llama3
+    chat_template: PKUSafeRLHF
     # Whether to trust remote code
     trust_remote_code: True
     # The max token length
