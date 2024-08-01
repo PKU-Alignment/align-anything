@@ -11,8 +11,9 @@ from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, updat
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results
+import re
 
-class BelebeleDataLoader(BaseDataLoader):
+class GSM8KDataLoader(BaseDataLoader):
 
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
@@ -24,23 +25,22 @@ class BelebeleDataLoader(BaseDataLoader):
             return task_names
 
     def get_answer(self, data):
-        return chr(64 + int(data['correct_answer_num']))
+        return data['answer']
 
     def set_fewshot_dataset(self, dataset, task): 
         if self.cot:
-            with open('/aifs4su/yaodong/panrui/align-anything-evaluation/align_anything/evaluation/benchmarks/Belebele/cot_few_shot/' + task + '.json', 'r', encoding='utf-8') as f:
+            with open('/aifs4su/yaodong/panrui/few_shot/GSM8K/cot_few_shot/gsm8k.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
-            return dataset['afr_Latn']
-        
+            return dataset['train']
+    
     def build_example_prompt(self, data, with_answer=True, cot=False):
-        choices = '(A): ' + data["mc_answer1"] + '\n(B): ' + data["mc_answer2"] + '\n(C): ' + data["mc_answer3"] + '\n(D): ' + data["mc_answer4"]
-        answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
-        return f"{data['flores_passage']}\n\n{data['question']}\n{choices}\n{answer}"
+        answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
+        return f"@@@@@@{data['question']}\n{answer}"
 
     def build_prompt(self, data):
-        prompt = f"The following is passage (with multiple choice questions and answer).\n\n"
+        prompt = "The following are diverse grade school math word problems (with answers). Please provide the final answer after '####'.\n\n"
         cot_prompt = f"Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
@@ -78,7 +78,7 @@ class BelebeleDataLoader(BaseDataLoader):
 
         return prompts, token_ids
 
-class BelebeleGeneratorVLLM(BaseInferencer_vllm):
+class GSM8KGeneratorVLLM(BaseInferencer_vllm):
 
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
@@ -94,7 +94,7 @@ class BelebeleGeneratorVLLM(BaseInferencer_vllm):
         
         return task2details
 
-def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader, task: str):
+def evaluator(raw_output: List[InferenceOutput], dataloader: GSM8KDataLoader, task: str):
     
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
     correct_answers = []
@@ -108,9 +108,8 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader,
     for instance in dataset:
         correct_answers.append(
             {
-                'prompt': instance['question'],
+                'question': instance['question'],
                 'prompt_token_ids': dataloader.tokenizer(instance['question']).input_ids,
-                'choices': [instance['mc_answer1'], instance['mc_answer2'], instance['mc_answer3'], instance['mc_answer4']],
                 'answer': dataloader.get_answer(instance)
             }
         )
@@ -119,7 +118,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader,
             {
                 # 'prompt_token_ids': item.prompt_token_ids,
                 'prompt_token_ids': dataloader.tokenizer(get_question_from_input(item.prompt)).input_ids,
-                'answer_logprobs': get_chosen_answer(item.response_logprobs[0], dataloader.candidate_labels)
+                'generated_answer': item.response[0] if item.response else ""
             }
         )
     for correct_answer in correct_answers:
@@ -127,15 +126,14 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader,
         for response in responses:
             if correct_answer['prompt_token_ids'] == response['prompt_token_ids']:
                 flag_fail = False
-                chosen_answer = max(response['answer_logprobs'], key=response['answer_logprobs'].get)
+                answer = get_correct_answer(correct_answer['answer'])
+                generated_answer = get_generated_answer(response['generated_answer'])
                 eval_case = {
-                    'question': correct_answer['prompt'],
-                    'choices': correct_answer['choices'],
+                    'question': correct_answer['question'],
                     'correct_answer': correct_answer['answer'],
-                    'answer_logprobs': response['answer_logprobs'],
-                    'chosen_answer': chosen_answer
+                    'generated_answer': response['generated_answer']
                 }
-                if correct_answer['answer'] == chosen_answer:
+                if generated_answer == answer:
                     cnt_match += 1
                     eval_case['result'] = True
                     true_cases.append(eval_case)
@@ -151,10 +149,28 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader,
     return cnt_match, cnt_sum, true_cases, false_cases
 
 def get_question_from_input(input):
-    token_head = input.rfind('\n\n')
-    index_head = input[:token_head].rfind('\n\n')
-    index_tail = input[index_head + 2:].find('\n')
-    return input[index_head + 2:][:index_tail]
+    prefix = '@@@@@@'
+    len_prefix = len(prefix)
+    index_head = input.rfind(prefix)
+    index_tail = input[index_head + len_prefix:].find('\n')
+    return input[index_head + len_prefix:][:index_tail]
+
+def get_last_number(data):
+    numbers = re.findall(r'\d+', data)
+    if numbers:
+        return numbers[-1]
+    else:
+        return ''
+    
+def get_correct_answer(data):
+    index = data.rfind('####') + len('####')
+    return data[index:].strip()
+
+def get_generated_answer(data):
+    if '####' in data:
+        return get_last_number(get_correct_answer(data))
+    else:
+        return get_last_number(data)
 
 def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[str]):
     answer_logprobs = {}
@@ -177,8 +193,8 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    unparsed_args = {'output_dir': '/aifs4su/yaodong/panrui/align-anything-evaluation/align_anything/evaluation/meta_test_output/belebele'}
-    dict_configs, infer_configs = read_eval_cfgs('belebele')
+    unparsed_args = {'output_dir': '/aifs4su/yaodong/panrui/PR/align-anything/align_anything/evaluation/meta_test_output/gsm8k'}
+    dict_configs, infer_configs = read_eval_cfgs('gsm8k')
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
@@ -186,10 +202,9 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    dataloader = BelebeleDataLoader(dict_configs)
-    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
+    dataloader = GSM8KDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
-    eval_module = BelebeleGeneratorVLLM(model_config, infer_configs)
+    eval_module = GSM8KGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
 
     for task, _ in raw_outputs.items():
@@ -200,18 +215,20 @@ def main():
         print('-----------------------------------------------------------')
         cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
         print('num_match: ', cnt_match, '| num_sum: ', cnt_sum, '| acc: ', cnt_match / cnt_sum)
-        print('==============================TRUE CASE==============================')
-        print('Question: ', true_cases[0]['question'])
-        print('Choices: ', true_cases[0]['choices'])
-        print('Correct Answer: ', true_cases[0]['correct_answer'])
-        print('Logprobs of First Token:', true_cases[0]['answer_logprobs'])
-        print('Chosen Answer',  true_cases[0]['chosen_answer'])
-        print('==============================FALSE CASE==============================')
-        print('Question: ', false_cases[0]['question'])
-        print('Choices: ', false_cases[0]['choices'])
-        print('Correct Answer: ', false_cases[0]['correct_answer'])
-        print('Logprobs of First Token:', false_cases[0]['answer_logprobs'])
-        print('Chosen Answer',  false_cases[0]['chosen_answer'])
+        with open('/aifs4su/yaodong/panrui/PR/align-anything/align_anything/evaluation/benchmarks/output/GSM8K_eval.txt', 'w') as f:
+            f.write(f"cnt_match: {cnt_match}\n")
+            f.write(f"cnt_sum: {cnt_sum}\n")
+            f.write(f"acc: {cnt_match / cnt_sum}\n")
+        if true_cases:
+            print('==============================TRUE CASE==============================')
+            print('Question: ', true_cases[0]['question'])
+            print('Correct Answer: ', true_cases[0]['correct_answer'])
+            print('Generated answer: ',  true_cases[0]['generated_answer'])
+        if false_cases:
+            print('==============================FALSE CASE==============================')
+            print('Question: ', false_cases[0]['question'])
+            print('Correct Answer: ', false_cases[0]['correct_answer'])
+            print('Generated answer: ',  false_cases[0]['generated_answer'])
 
 
 if __name__ == '__main__':
