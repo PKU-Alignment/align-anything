@@ -1,5 +1,5 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1,2,3,7'
 import argparse
 import json
 from align_anything.evaluation.eval.base_eval import BaseEval_vllm
@@ -40,7 +40,9 @@ class GSM8KDataLoader(BaseDataLoader):
         return f"@@@@@@{data['question']}\n{answer}"
 
     def build_prompt(self, data):
+        # prompt = f"The following are diverse grade school math word problems. (with answers).\n\n"
         prompt = "The following are diverse grade school math word problems (with answers). Please provide the final answer after '####'.\n\n"
+        # prompt = "The following are diverse grade school math word problems (with answers). Please provide the final numeric answer after '####' without any additional symbols or characters.\n\n"
         cot_prompt = f"Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
@@ -72,7 +74,7 @@ class GSM8KDataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        prompts = self.build_prompt(data[self.split])
+        prompts = self.build_prompt(data[self.split].select(range(20)))
         
         token_ids = self.tokenizer(prompts)
 
@@ -127,7 +129,23 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: GSM8KDataLoader, ta
             if correct_answer['prompt_token_ids'] == response['prompt_token_ids']:
                 flag_fail = False
                 answer = get_correct_answer(correct_answer['answer'])
+                # generated_answer = get_generated_answer(response)
                 generated_answer = get_generated_answer(response['generated_answer'])
+                print("Press Enter to ...*********************************************")
+                print("Press Enter to continue...response--response--response--response--response")
+                print(type(generated_answer))
+                print(type(generated_answer))
+                print(generated_answer)
+                import getpass
+
+                print("Press Enter to ...*********************************************")
+                print("Press Enter to ...ans--ans--ans--ans--ans--ans")
+                print(type(answer))
+                print(type(answer))
+                print(answer)
+                print("Press Enter to ...*********************************************")
+
+                # getpass.getpass(prompt="")
                 eval_case = {
                     'question': correct_answer['question'],
                     'correct_answer': correct_answer['answer'],
@@ -203,6 +221,7 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = GSM8KDataLoader(dict_configs)
+    # assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = GSM8KGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
@@ -215,20 +234,14 @@ def main():
         print('-----------------------------------------------------------')
         cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
         print('num_match: ', cnt_match, '| num_sum: ', cnt_sum, '| acc: ', cnt_match / cnt_sum)
-        with open('/aifs4su/yaodong/panrui/PR/align-anything/align_anything/evaluation/benchmarks/output/GSM8K_eval.txt', 'w') as f:
-            f.write(f"cnt_match: {cnt_match}\n")
-            f.write(f"cnt_sum: {cnt_sum}\n")
-            f.write(f"acc: {cnt_match / cnt_sum}\n")
-        if true_cases:
-            print('==============================TRUE CASE==============================')
-            print('Question: ', true_cases[0]['question'])
-            print('Correct Answer: ', true_cases[0]['correct_answer'])
-            print('Generated answer: ',  true_cases[0]['generated_answer'])
-        if false_cases:
-            print('==============================FALSE CASE==============================')
-            print('Question: ', false_cases[0]['question'])
-            print('Correct Answer: ', false_cases[0]['correct_answer'])
-            print('Generated answer: ',  false_cases[0]['generated_answer'])
+        print('==============================TRUE CASE==============================')
+        print('Question: ', true_cases[0]['question'])
+        print('Correct Answer: ', true_cases[0]['correct_answer'])
+        print('Generated answer',  true_cases[0]['generated_answer'])
+        print('==============================FALSE CASE==============================')
+        print('Question: ', false_cases[0]['question'])
+        print('Correct Answer: ', false_cases[0]['correct_answer'])
+        print('Generated answer',  false_cases[0]['generated_answer'])
 
 
 if __name__ == '__main__':

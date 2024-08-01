@@ -200,10 +200,6 @@ def main():
         print('-----------------------------------------------------------')
         cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
         print('num_match: ', cnt_match, '| num_sum: ', cnt_sum, '| acc: ', cnt_match / cnt_sum)
-        with open('/aifs4su/yaodong/panrui/align-anything-evaluation/align_anything/evaluation/benchmarks/output/Belebele_eval.txt', 'w') as f:
-            f.write(f"cnt_match: {cnt_match}\n")
-            f.write(f"cnt_sum: {cnt_sum}\n")
-            f.write(f"acc: {cnt_match / cnt_sum}\n")
         print('==============================TRUE CASE==============================')
         print('Question: ', true_cases[0]['question'])
         print('Choices: ', true_cases[0]['choices'])
