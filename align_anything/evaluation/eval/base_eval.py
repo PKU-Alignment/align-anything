@@ -75,9 +75,10 @@ def template_function_example(input):
     assert isinstance(input, ArenaInput)
     return "test:Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}".format(prompt=input.prompt, response1=input.response1, response2=input.response2)
 
+
+
 class BaseAPI_Eval(BaseEval):
     def __init__(self,
-                    judge_prompt: str,
                     model: str = 'deepseek-chat',
                     num_workers: int = 1,
                     cache_dir : str = None,
@@ -85,7 +86,6 @@ class BaseAPI_Eval(BaseEval):
                     base_url: str = None,
                     template_function = None,
                     **kwargs):
-        self.judge_prompt = judge_prompt
         self.model = model
         self.kwargs = kwargs
         self.api_key = api_key
@@ -95,32 +95,46 @@ class BaseAPI_Eval(BaseEval):
         self.template_function = template_function
 
     def _evaluate(self, processed_inputs : List[List[dict]]) -> List[ChatCompletion | Exception]:
-        print(processed_inputs)
+        #print(processed_inputs)
         responses = batch_request_openai(
             type="Arena",
             inputs=processed_inputs,
             num_workers=self.num_workers,
             model = self.model,
             cache_dir=self.cache_dir,
+            openai_api_keys = self.api_key,
+            openai_base_url = self.base_url,
             kwargs=self.kwargs
         )
         return responses
 
+    def build_gpt_input(self, judge_prompt: str, user_prompt : str):
+            input = [{'role': 'system', 'content': judge_prompt},
+                    {'role': 'user', 'content': user_prompt}]
+        
+            return input
 
 class API_Single_Eval(BaseAPI_Eval):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+    
 
-    def evaluate(self, inputs : List[SingleInput]) -> List[EvalOutput]:
-        assert isinstance(inputs, list)
+    def evaluate(self, system_prompts: List[str], user_prompts: List[str]) -> List[EvalOutput]:
+        assert isinstance(system_prompts, list)
+        assert isinstance(user_prompts, list)
         processed_inputs = []
-        for input in inputs:
-            gpt_input = input.build_gpt_input(judge_prompt=self.judge_prompt, template_function=self.template_function)
+        for system_prompt, user_prompt in zip(system_prompts, user_prompts):
+            # print(system_prompt)
+            # print(user_prompt)
+            gpt_input = self.build_gpt_input(system_prompt, user_prompt)
             processed_inputs.append(gpt_input)
+        #print(processed_inputs)    
         responses = self._evaluate(processed_inputs)
-        results = [EvalOutput(evalEngine="gpt_evaluation", input=input, raw_output=response) for input, response in zip(inputs, responses)]
+        results = [EvalOutput(evalEngine="gpt_evaluation", input=input, raw_output=response) for input, response in zip(user_prompts, responses)]
         return filter_out_exception(results)
+    
+    
         
 
 class API_Pair_Eval(BaseAPI_Eval):
@@ -130,22 +144,29 @@ class API_Pair_Eval(BaseAPI_Eval):
         if self.template_function is None:
             self.template_function = template_function_example
 
-    def evaluate(self, inputs : List[ArenaInput]) -> List[EvalOutput]:
-        assert isinstance(inputs, list)
+    def evaluate(self, system_prompts:List[str], user_prompts : List[str]) -> List[EvalOutput]:
+        assert isinstance(user_prompts, list)
+        assert isinstance(user_prompts, list)
         processed_inputs = []
-        for input in inputs:
-            gpt_input = input.build_gpt_input(judge_prompt=self.judge_prompt, template_function=self.template_function)
+        for system_prompt , user_prompt in zip(system_prompts,user_prompts):
+            gpt_input = self.build_gpt_input(judge_prompt=system_prompt, user_prompt = user_prompt, template_function = self.template_function)
             processed_inputs.append(gpt_input)
         responses = self._evaluate(processed_inputs)
-        results = [EvalOutput(evalEngine="gpt_evaluation", input=input, raw_output=response) for input, response in zip(inputs, responses)]
+        results = [EvalOutput(evalEngine="gpt_evaluation", input=input, raw_output=response) for input, response in zip(user_prompts, responses)]
         return filter_out_exception(results)
-        
+
+    
+
+
 if __name__ == "__main__":
     
     import os
-    os.environ["OPENAI_API_KEY"] = "sk-xxx"
-    # judger = API_Single_Eval(judge_prompt="judge how good it is, in a [0,10] scores. Response should start with 'SCORE[X]',where X is the socres", model='deepseek-chat', num_workers=2, temperature=0.5)
-    # print(judger.evaluate(InferenceOutput(prompt="what is 1+2+3", response="1+2+3=1")))
     
-    judger = API_Pair_Eval(judge_prompt="judge which response is better,response should start with '[1]' or '[2]'", model='deepseek-chat', num_workers=2, temperature=0.7, template_function=template_function_example)
-    print(judger.evaluate(ArenaInput(prompt="what is 1+2+3", response1="1+2+3=1", response2="1+2+3=6")))
+    os.environ["OPENAI_API_KEY"] = "sk-8t0NVGcNB48SxJdm2635566eD24144E7Ae8f8302F4778868"
+    os.environ["OPENAI_API_BASE_URL"] = "https://api.61798.cn/v1/"
+    judger = API_Single_Eval(judge_prompt="You are a helpful assistent", model='gpt-4o', num_workers=2, temperature=0.5)
+    print(judger.evaluate(["hello, please describe Paris for me."]))
+    
+
+    # judger = API_Pair_Eval(judge_prompt="judge which response is better,response should start with '[1]' or '[2]'", model='deepseek-chat', num_workers=2, temperature=0.7, template_function=template_function_example)
+    # print(judger.evaluate(ArenaInput(prompt="what is 1+2+3", response1="1+2+3=1", response2="1+2+3=6")))
