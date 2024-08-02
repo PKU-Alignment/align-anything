@@ -17,9 +17,9 @@
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
+import numpy as np
 import torch
 import transformers
-import numpy as np
 from torch.utils.data import Dataset
 from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy

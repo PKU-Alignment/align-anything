@@ -179,34 +179,37 @@ class PreferenceCollator:
         )  # size = (2 * B, L)
 
         if 'pixel_values' in samples[0].keys():
-            
+
             a = return_dict['attention_mask'].shape[0]
-            
+
             if samples[0]['pixel_values'].dim() == 4:
                 # init list for pixel_values
-                ori_patches = [ sample['pixel_values'].to(current_device).size(0) for sample in samples ]
+                ori_patches = [
+                    sample['pixel_values'].to(current_device).size(0) for sample in samples
+                ]
                 ori_patches_tensor = torch.tensor(ori_patches)
-                double_ori_patches_tensor = torch.cat([ori_patches_tensor, ori_patches_tensor], dim=0)
+                double_ori_patches_tensor = torch.cat(
+                    [ori_patches_tensor, ori_patches_tensor], dim=0
+                )
                 return_dict['image_sizes'] = double_ori_patches_tensor.to(current_device)
-                
+
                 _pixel_values_list = []
                 for sample in samples:
                     pixel_values = sample['pixel_values']  # size = (P, C, H, W)
                     _pixel_values_list.append(pixel_values)
-                
-                pixel_values_tensor = torch.cat(_pixel_values_list, dim=0).to(current_device) 
+
+                pixel_values_tensor = torch.cat(_pixel_values_list, dim=0).to(current_device)
                 double_stacked = torch.cat([pixel_values_tensor, pixel_values_tensor], dim=0)
                 return_dict['pixel_values'] = double_stacked.to(current_device)
 
-                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
-                
+                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W)
+
             else:
-                # original code for non-patches 
+                # original code for non-patches
                 pixel_values_tensor = torch.stack(
                     [sample['pixel_values'] for sample in samples]
                 ).to(current_device)
                 double_stacked = torch.cat([pixel_values_tensor, pixel_values_tensor], dim=0)
                 return_dict['pixel_values'] = double_stacked.to(current_device)
-
 
         return return_dict

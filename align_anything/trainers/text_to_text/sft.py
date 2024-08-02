@@ -60,7 +60,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
     def init_check(self) -> None:
         """Initial configuration checking."""
-        return
+        super().init_check()
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
@@ -73,10 +73,9 @@ class SupervisedTrainer(SupervisedTrainerBase):
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=True,
-            bnb_cfgs = self.bnb_cfgs,
-            lora_cfgs = self.lora_cfgs,
+            bnb_cfgs=self.bnb_cfgs,
+            lora_cfgs=self.lora_cfgs,
         )
-
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""

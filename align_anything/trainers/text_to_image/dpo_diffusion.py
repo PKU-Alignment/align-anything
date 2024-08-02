@@ -79,7 +79,7 @@ class DPOTrainer(SupervisedTrainerBase):
 
     def init_check(self) -> None:
         """Initial configuration checking."""
-        return
+        super().init_check()
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""

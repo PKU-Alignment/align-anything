@@ -61,6 +61,7 @@ dependencies = [
     "soundfile",
     "torchaudio",
     "torchvision",
+    "bitsandbytes",
 ]
 
 dynamic = ["version"]

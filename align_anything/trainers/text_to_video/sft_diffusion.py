@@ -18,20 +18,19 @@
 import os
 import sys
 from typing import Any
-from einops import rearrange
 
 import deepspeed
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
 from accelerate import Accelerator
-from tqdm import tqdm
-
 from diffusers import TextToVideoSDPipeline
 from diffusers.loaders import LoraLoaderMixin
 from diffusers.utils import convert_state_dict_to_diffusers
 from diffusers.utils.torch_utils import is_compiled_module
+from einops import rearrange
 from peft.utils import get_peft_model_state_dict
+from tqdm import tqdm
 
 from align_anything.datasets.text_to_video import SupervisedBatch, SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_video_diffusion_models
@@ -76,7 +75,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
     def init_check(self) -> None:
         """Initial configuration checking."""
-        return
+        super().init_check()
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
@@ -107,7 +106,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
     def loss(self, batch: SupervisedBatch) -> dict[str, torch.Tensor]:
         """Loss function for supervised finetuning."""
-        videos = batch["pixel_values"].to(self.vae.dtype)
+        videos = batch['pixel_values'].to(self.vae.dtype)
         b, _, t, _, _ = videos.shape
         videos = rearrange(videos, 'b c t h w -> (b t) c h w')
         latents = self.vae.encode(videos).latent_dist.sample()

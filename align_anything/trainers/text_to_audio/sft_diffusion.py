@@ -24,13 +24,12 @@ import torch
 import torch.distributed as dist
 import torch.nn.functional as F
 from accelerate import Accelerator
-from tqdm import tqdm
-
 from diffusers import AudioLDMPipeline
 from diffusers.loaders import LoraLoaderMixin
 from diffusers.utils import convert_state_dict_to_diffusers
 from diffusers.utils.torch_utils import is_compiled_module
 from peft.utils import get_peft_model_state_dict
+from tqdm import tqdm
 
 from align_anything.datasets.text_to_audio import SupervisedBatch, SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_audio_diffusion_models
@@ -75,7 +74,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
     def init_check(self) -> None:
         """Initial configuration checking."""
-        return
+        super().init_check()
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
@@ -89,11 +88,11 @@ class SupervisedTrainer(SupervisedTrainerBase):
             )
         )
         self.processor = get_audio_processor(
-                clips_per_audio=int(self.cfgs.train_cfgs.clips_per_audio),
-                mel_first=self.cfgs.train_cfgs.mel_first, 
-                num_mel_bins=int(self.cfgs.train_cfgs.num_mel_bins), 
-                max_frames=int(self.cfgs.train_cfgs.max_frames)
-            )
+            clips_per_audio=int(self.cfgs.train_cfgs.clips_per_audio),
+            mel_first=self.cfgs.train_cfgs.mel_first,
+            num_mel_bins=int(self.cfgs.train_cfgs.num_mel_bins),
+            max_frames=int(self.cfgs.train_cfgs.max_frames),
+        )
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
@@ -129,11 +128,12 @@ class SupervisedTrainer(SupervisedTrainerBase):
             )
 
         model_pred = self.model(
-            noisy_latents, 
-            timesteps, 
+            noisy_latents,
+            timesteps,
             encoder_hidden_states=None,
-            class_labels=prompt_embeds, 
-            return_dict=False)[0]
+            class_labels=prompt_embeds,
+            return_dict=False,
+        )[0]
         loss = F.mse_loss(model_pred.float(), target.float(), reduction='mean')
 
         return {
@@ -207,7 +207,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
                     f'\n***** Evaluating at epoch {epoch + 1}/{self.cfgs.train_cfgs.epochs} *****',
                 )
                 self.logger.log(self.eval(), step=self.global_step)
-                
+
     def save_diffusers(
         self,
         tag: int | None = None,
@@ -219,9 +219,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
             model = self.accelerator.unwrap_model(self.model)
             if self.cfgs.train_cfgs.lora_unet:
                 model = model.to(torch.float32)
-                pipeline = AudioLDMPipeline.from_pretrained(
-                    self.cfgs.model_cfgs.model_name_or_path
-                )
+                pipeline = AudioLDMPipeline.from_pretrained(self.cfgs.model_cfgs.model_name_or_path)
                 unet_lora_state_dict = convert_state_dict_to_diffusers(
                     get_peft_model_state_dict(model)
                 )

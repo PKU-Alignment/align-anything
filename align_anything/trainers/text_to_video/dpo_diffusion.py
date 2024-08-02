@@ -18,20 +18,19 @@
 import os
 import sys
 from typing import Any
-from einops import rearrange
 
 import deepspeed
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
 from accelerate import Accelerator
-from tqdm import tqdm
-
 from diffusers import TextToVideoSDPipeline
 from diffusers.loaders import LoraLoaderMixin
 from diffusers.utils import convert_state_dict_to_diffusers
 from diffusers.utils.torch_utils import is_compiled_module
+from einops import rearrange
 from peft.utils import get_peft_model_state_dict
+from tqdm import tqdm
 
 from align_anything.datasets.text_to_video import PreferenceBatch, PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_video_diffusion_models
@@ -86,7 +85,7 @@ class DPOTrainer(SupervisedTrainerBase):
 
     def init_check(self) -> None:
         """Initial configuration checking."""
-        return
+        super().init_check()
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
@@ -104,7 +103,7 @@ class DPOTrainer(SupervisedTrainerBase):
             sample_frames=int(self.cfgs.train_cfgs.sample_frames),
             do_resize=self.cfgs.train_cfgs.do_resize,
         )
-        
+
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
@@ -117,10 +116,10 @@ class DPOTrainer(SupervisedTrainerBase):
 
     def loss(self, batch: PreferenceBatch) -> dict[str, torch.Tensor]:
         """Loss function for DPO finetuning."""
-        videos = batch["pixel_values"].to(self.vae.dtype)
+        videos = batch['pixel_values'].to(self.vae.dtype)
         videos = torch.cat(videos.chunk(2, dim=1))
         b, _, t, _, _ = videos.shape
-        
+
         videos = rearrange(videos, 'b c t h w -> (b t) c h w')
         latents = self.vae.encode(videos).latent_dist.sample()
         latents = latents.view(b, t, *latents.shape[1:]).permute(0, 2, 1, 3, 4)
@@ -268,7 +267,7 @@ class DPOTrainer(SupervisedTrainerBase):
                     f'\n***** Evaluating at epoch {epoch + 1}/{self.cfgs.train_cfgs.epochs} *****',
                 )
                 self.logger.log(self.eval(), step=self.global_step)
-                
+
     def save_diffusers(
         self,
         tag: int | None = None,
