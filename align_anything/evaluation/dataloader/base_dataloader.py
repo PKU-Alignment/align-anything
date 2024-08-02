@@ -27,7 +27,6 @@ ACTION_GENERATION = 'generation'
 
 
 class BaseDataLoader:
-
     action_map = {
         ACTION_GENERATION: 'generation',
     }
@@ -38,15 +37,11 @@ class BaseDataLoader:
         self.num_shot = self.eval_cfgs.n_shot if self.eval_cfgs.n_shot else 0
         self.cot = self.eval_cfgs.cot if self.eval_cfgs.cot else False
         self.chat_template = self.model_cfgs.chat_template
-
         self.model_name_or_path = self.model_cfgs.model_name_or_path
-
         self.split = self.data_cfgs.split
         self.task_dir = self.data_cfgs.task_dir
         self.candidate_labels = self.data_cfgs.candidate_labels
-        
         self.task_names = self.get_task_names()
-
         self.init_tokenizer()
 
     def init_tokenizer(self):
@@ -68,10 +63,8 @@ class BaseDataLoader:
         return processed_inputs
 
     def preprocess(self, data):
-        prompts = self.build_prompt(data[self.split])
-        
+        prompts = self.build_prompt(data[self.split].select(range(10)))
         token_ids = self.tokenizer(prompts)
-
         return prompts, token_ids
 
     def set_fewshot_dataset(self, dataset, task: str=None):

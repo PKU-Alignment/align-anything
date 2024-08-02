@@ -1,16 +1,11 @@
-import os
-
 import argparse
-from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import Union, List, Dict, Any, Tuple
+from typing import List, Dict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results
-from datasets import Dataset
-import json
 
 class CoQADataLoader(BaseDataLoader):
 
@@ -56,14 +51,13 @@ class CoQAGeneratorVLLM(BaseInferencer_vllm):
         model_id = self.model_cfgs.model_id
         detailed_filename = f'{model_id}_detailed'
         brief_filename = f'{model_id}_brief'
-        update_results(output_dir, brief_filename, detailed_filename,task2details) #这一步可以考虑能不能移到外面，目前是把里面的raw_output写了一下
+        update_results(output_dir, brief_filename, detailed_filename,task2details)
         
         return task2details
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
-    print(unparsed_args)
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))

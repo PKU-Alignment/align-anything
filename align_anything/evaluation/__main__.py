@@ -144,5 +144,4 @@ def run_benchmark(file_path, args):
         print(f"Error executing {file_path}: {e}")
 
 if __name__ == "__main__":
-    
     cli_evaluate()

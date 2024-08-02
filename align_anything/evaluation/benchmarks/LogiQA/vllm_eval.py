@@ -1,7 +1,4 @@
-import os
-
 import argparse
-from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import Union, List, Dict, Any, Tuple
@@ -72,7 +69,6 @@ class LogiQAGeneratorVLLM(BaseInferencer_vllm):
         return task2details
 
 def main():
-
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     print(unparsed_args)

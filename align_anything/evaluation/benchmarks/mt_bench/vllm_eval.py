@@ -1,18 +1,17 @@
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '4, 5, 6, 7'
 import argparse
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import Union, List, Dict, Any, Tuple
+from typing import List, Dict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from datasets import load_dataset, DatasetDict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results
-
 from align_anything.evaluation.eval.base_eval import API_Single_Eval
+from align_anything.evaluation.eval_logger import EvalLogger
 import re
 import json
+
 class MTBenchDataLoader(BaseDataLoader):
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
@@ -68,9 +67,7 @@ class MTBenchDataLoader(BaseDataLoader):
     
     def preprocess(self, data, responses_r1=None):
         prompts = self.build_prompt(data[self.split], responses_r1)
-        
         token_ids = self.tokenizer(prompts)
-
         return prompts, token_ids
 
 class MTBenchGeneratorVLLM(BaseInferencer_vllm):
@@ -107,16 +104,9 @@ class API_Eval(API_Single_Eval):
         return input
 
 
-#使用gpt_eval模块对回答进行evaluation；具体操作为，首先，从question中取出问题，并与output_data_round2中的回答进行匹配；其次通过匹配将output_data_round2中的内容整理成template对应格式，再次，将该对应格式应用于gpt prompt的拼接，最后，识别prompt中的评分并得到均分等数据。
 def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOutput], dataloader: MTBenchDataLoader, task: str, eval_configs= None):
-    
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
-    # os.environ["OPENAI_API_KEY"] = "sk-8t0NVGcNB48SxJdm2635566eD24144E7Ae8f8302F4778868"
-    # os.environ["OPENAI_API_BASE_URL"] = "https://api.61798.cn/v1/"
-    
-    # 用于提取mt_bench标准的system_prompt与user_prompt
     prompts= []
-    #file_path = "./judge_prompts.jsonl"
     file_path = "/home/yangyaodong/projects/wangkaile/align-anything-kaile/align_anything/evaluation/benchmarks/mt_bench/judge_prompts.jsonl"
     with open(file_path, 'r', encoding='utf-8') as file:
         for line in file:
@@ -126,8 +116,8 @@ def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOut
     
     questions=[]
     raw_responses = []
-    responses = []   #用于将raw_output拆解，以得到适合gpt_eval的格式
-    eval_case = []   #用于解析存储gpt_evaluation的结果
+    responses = []
+    eval_case = []
     for instance in dataset :
         questions.append(
             {
@@ -137,7 +127,6 @@ def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOut
                 'reference': instance['reference']
             }
         )
-    # print(question[0]['turns'])
     
     for item1,item2 in zip(raw_output1,raw_output2) :
         raw_responses.append(
@@ -147,9 +136,6 @@ def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOut
                 'response_2': item2.response
             }
         )
-    # print("question:", question[0])
-    # print("raw_responses:", raw_responses[0])
-    # exit()
     for question, raw_response in zip(questions,raw_responses):
         question_turns = question['turns']
         question_1 = question_turns[0]
@@ -196,9 +182,7 @@ def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOut
             user_prompts.append(user_prompt)
     
     results = judger.evaluate(system_prompts, user_prompts)
-    #print(results)
     for response, system_prompt, user_prompt, result in zip(responses, system_prompts, user_prompts, results):
-            #print(result)
             output = result.raw_output.choices[0].message.content
             score = get_score(output)
             time = 0
@@ -223,12 +207,6 @@ def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOut
              )       
     
     return responses, eval_case
-    
-    
-
-    
-
-
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -236,7 +214,16 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('mt_bench')
+    logger = EvalLogger('Evaluation')
+    
+    dict_configs, infer_configs = read_eval_cfgs('mt_bench', 'vLLM')
+
+    try:
+        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        logger.log('error', "Config file is not exist or incomplete.")
+        exit()
+
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
@@ -245,12 +232,9 @@ def main():
     
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    
-    # print(eval_configs.openai_api_base_url)
-    # print(eval_configs.openai_api_key)
-    # exit()
 
     dataloader = MTBenchDataLoader(dict_configs)
+    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data_round1 = dataloader.load_dataset()
     eval_module = MTBenchGeneratorVLLM(model_config, infer_configs)
     output_data_round1 = eval_module.eval(test_data_round1, eval_configs)
@@ -261,12 +245,10 @@ def main():
     responses=[]
     evals=[]
     for task, _ in output_data_round2.items():
-        print('task: ', task)
         responses,evals = evaluator(output_data_round1[task],output_data_round2[task], dataloader, task, eval_configs)
     
     merged_list=[]
     for resp, eval_ in zip(responses, evals):
-        # 合并两个字典
         merged_dict = {**resp, **eval_}
         merged_list.append(merged_dict)
 
@@ -306,51 +288,33 @@ def main():
         
     for cate in category_list:
         cate['average_score'] = float(cate['total_score'])/(cate['count'])
-    
-    # result_file = "/home/yangyaodong/projects/wangkaile/align-anything-kaile/align_anything/evaluation/benchmarks/mt_bench/result.jsonl"
-    # with open(result_file, 'w') as file:
-    #     for item in category_list:
-    #         json.dump(item, file)
-    #         file.write('\n')
-
     for cate in category_list:
-        print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        print('Category: ', cate['category'])
-        print('Average Score: ', cate['average_score'])
-        print('Num of Question: ', cate['count'])
-        print('===============================EXAMPLE===============================')
-        print('Question_1: ', cate['example']['question_1'])
-        print('Answer_1: ', cate['example']['answer_1'])
-        if not cate['example']['ref_answer_1']:
-            print('Reference_1: ', cate['example']['ref_answer_1'])
-        print('Question_2: ', cate['example']['question_2'])
-        print('Answer_2: ', cate['example']['answer_2'])
-        if not cate['example']['ref_answer_2']:
-            print('Reference_2: ', cate['example']['ref_answer_2'])
-        print('Score: ', cate['example']['score'])
-        print('Reasoning: ', cate['example']['response'])
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.log('info', f'Category: {cate["category"]}')
+        logger.log('info', f'Average Score: {cate["average_score"]}')
+        logger.log('info', f'Num of Question: {cate["count"]}')
+        logger.log('info', '===============================EXAMPLE===============================')
+        logger.log('info', f'Question_1: {cate["example"]["question_1"]}')
+        logger.log('info', f'Answer_1: {cate["example"]["answer_1"]}')
+        if not cate["example"]["ref_answer_1"]:
+            logger.log('info', f'Reference_1: {cate["example"]["ref_answer_1"]}')
+        logger.log('info', f'Question_2: {cate["example"]["question_2"]}')
+        logger.log('info', f'Answer_2: {cate["example"]["answer_2"]}')
+        if not cate["example"]["ref_answer_2"]:
+            logger.log('info', f'Reference_2: {cate["example"]["ref_answer_2"]}')
+        logger.log('info', f'Score: {cate["example"]["score"]}')
+        logger.log('info', f'Reasoning: {cate["example"]["response"]}')
     
     total_average = float(total_score)/float(total_count)
-    print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    print('Average Score: ', total_average, 'Total question: ', total_count)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f'Average Score: {total_average}Total question: {total_count}')
      
-    total=[]
-    total.append(
-        {
-            'total average': float(total_average),
-            'total question': total_count
-        }
-    )
-    result_file = eval_configs.output_dir+file_name+"_result.jsonl"
-    with open(result_file, 'w') as file:
-        for item in category_list:
-            json.dump(item, file)
-            file.write('\n')
-        file.write('\n')
-        file.write('\n')
-        for line in total:
-            json.dump(line, file)
+    eval_results = {
+            'total average': [float(total_average)],
+            'total question': [total_count]
+            }
+    logger.print_table(title="Evaluation Results", data=eval_results)
 
 if __name__ == '__main__':
     main()
