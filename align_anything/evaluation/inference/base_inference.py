@@ -37,7 +37,7 @@ from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, read_
 from vllm import LLM, SamplingParams
 
 
-ACTION_GENERATION = 'generation'
+
 
 def update_results(output_dir:str,
                      brief_filename:str,
@@ -72,9 +72,6 @@ class BaseInferencer_vllm:
     
     '''
 
-    action_map = {
-        ACTION_GENERATION: 'generation',
-    }
 
     def __init__(self, 
                  model_cfgs: Dict[str, Any],
@@ -88,7 +85,7 @@ class BaseInferencer_vllm:
         self.sp_top_k = self.vllm_cfgs_sp.top_k
         self.sp_top_p = self.vllm_cfgs_sp.top_p
         self.sp_temperature = self.vllm_cfgs_sp.temperature
-        self.sp_max_tokens = self.vllm_cfgs_sp.max_tokens
+        self.sp_max_tokens = self.model_cfgs.model_max_length
         self.sp_frequency_penalty = self.vllm_cfgs_sp.frequency_penalty
         self.sp_prompt_logprobs = self.vllm_cfgs_sp.prompt_logprobs
         self.sp_logprobs = self.vllm_cfgs_sp.logprobs
@@ -96,7 +93,7 @@ class BaseInferencer_vllm:
         self.llm_tokenizer_mode = self.vllm_cfgs_llm.tokenizer_mode
         self.llm_trust_remote_code = self.vllm_cfgs_llm.trust_remote_code
         self.llm_gpu_memory_utilization = self.vllm_cfgs_llm.gpu_memory_utilization
-        self.llm_tensor_parallel_size = 4
+        self.llm_tensor_parallel_size = 1
 
         self.model_id = self.model_cfgs.model_id
         self.model_name_or_path = self.model_cfgs.model_name_or_path
@@ -130,7 +127,8 @@ class BaseInferencer_vllm:
             tokenizer_mode=self.llm_tokenizer_mode,
             trust_remote_code=self.llm_trust_remote_code,
             tensor_parallel_size=self.llm_tensor_parallel_size,
-            gpu_memory_utilization=self.llm_gpu_memory_utilization
+            gpu_memory_utilization=self.llm_gpu_memory_utilization,
+            max_num_seqs = 1
         )
 
     def generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
@@ -185,16 +183,10 @@ def get_world_size():
         return 1
     return dist.get_world_size()
 
-
-
 class BaseInferencer_deepspeed:
     '''
     
     '''
-
-    action_map = {
-        ACTION_GENERATION: 'generation',
-    }
 
     def __init__(self, 
                  model_cfgs: Dict[str, Any],

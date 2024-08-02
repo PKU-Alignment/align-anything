@@ -1,22 +1,17 @@
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
 import argparse
 import json
-from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import Union, List, Dict, Any, Tuple
-from datasets import load_dataset, DatasetDict
+from typing import List, Dict
+from datasets import load_dataset
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from align_anything.evaluation.eval_logger import EvalLogger
 from datasets import Dataset
 import multiprocessing
 import torch
-import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
 class HumanEvalDataLoader(BaseDataLoader):
 
     def get_task_names(self):
@@ -54,7 +49,7 @@ class HumanEvalDataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task): 
         if self.cot:
-            with open('/aifs4su/yaodong/panrui/align-anything/align_anything/evaluation/benchmarks/HumanEval/cot_fewshot/' + task + '.json', 'r', encoding='utf-8') as f:
+            with open('/align-anything/align_anything/evaluation/benchmarks/cot_fewshot/HumanEval/' + task + '.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
@@ -96,13 +91,6 @@ class HumanEvalDataLoader(BaseDataLoader):
         
         return question
     
-    def preprocess(self, data):
-        prompts = self.build_prompt(data[self.split])
-        
-        token_ids = self.tokenizer(prompts)
-
-        return prompts, token_ids
-
 class HumanEvalGeneratorVLLM(BaseInferencer_vllm):
 
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
@@ -120,7 +108,6 @@ class HumanEvalGeneratorVLLM(BaseInferencer_vllm):
         return task2details
 
 def evaluator(raw_output: List[InferenceOutput], dataloader: HumanEvalDataLoader, task: str):
-    
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
     correct_answers = []
     responses = []
@@ -134,7 +121,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: HumanEvalDataLoader
         correct_answers.append(
             {
                 'prompt': instance['prompt'],
-                'prompt_token_ids': dataloader.tokenizer(instance['prompt']).input_ids,
                 'test_data': instance['test'],
                 'entry_point': instance['entry_point'],
                 'answer': dataloader.get_answer(instance)
@@ -143,14 +129,14 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: HumanEvalDataLoader
     for item in raw_output:
         responses.append(
             {
-                'prompt_token_ids': dataloader.tokenizer(get_question_from_input(item.prompt)).input_ids,
+                'prompt': (item.prompt),
                 'generated_answer': item.response[0] if item.response else ""
             }
         )
     for correct_answer in correct_answers:
         cnt_sum += 1
         for response in responses:
-            if correct_answer['prompt_token_ids'] == response['prompt_token_ids']:
+            if correct_answer['prompt'] in response['prompt']:
                 flag_fail = False
                 generated_answer = get_generated_answer(response)
                 eval_case = {
@@ -173,14 +159,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: HumanEvalDataLoader
             flag_fail = True
         
     return cnt_match, cnt_sum, true_cases, false_cases
-
-def get_question_from_input(input):
-    prefix_1 = 'Function description: '
-    prefix_2 = '\nCanonical_solution: '
-    len_prefix_1 = len(prefix_1)
-    index_head = input.rfind(prefix_1)
-    index_tail = input[index_head + len_prefix_1:].find(prefix_2)
-    return input[index_head + len_prefix_1:][:index_tail]
 
 def get_generated_answer(response):
     prefix_1 = '```python'
@@ -214,16 +192,8 @@ def code_test(code: str, time_limit: int) -> str:
         try:
             exec_globals = {}
             exec(code, exec_globals)
-            print("passed")
             result_queue.put(1)
         except Exception as e:
-            print(f"failed: {e}")
-            # print("Press Enter to continue...")
-            # print(code)
-            # import getpass
-
-            # print("Press Enter to continue...")
-            # getpass.getpass(prompt="")
             result_queue.put(0)
 
     result_queue = multiprocessing.Queue()
@@ -234,7 +204,6 @@ def code_test(code: str, time_limit: int) -> str:
     if process.is_alive():
         process.terminate()
         process.join()
-        print("timed out")
         result_queue.put(0)
     return result_queue.get()
 
@@ -248,14 +217,21 @@ def judge_answer(data, response):
     return code_test(check_program, time_limit=time_limit)
 
 def main():
-
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    unparsed_args = {'output_dir': '/aifs4su/yaodong/panrui/align-anything-evaluation/align_anything/evaluation/meta_test_output/humaneval'}
-    dict_configs, infer_configs = read_eval_cfgs('humaneval')
+    logger = EvalLogger('Evaluation')
+    
+    dict_configs, infer_configs = read_eval_cfgs('humaneval', 'vLLM')
+
+    try:
+        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        logger.log('error', "Config file is not exist or incomplete.")
+        exit()
+
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
@@ -269,25 +245,41 @@ def main():
     eval_module = HumanEvalGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
 
+    tasks, num_matches, num_instances, acc = [], [], [], []
     for task, _ in raw_outputs.items():
-        print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        print('task: ', task)
-        print('few_shot: ', eval_configs.n_shot)
-        # print('cot: ', )
-        print('-----------------------------------------------------------')
-        cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
-        print('num_match: ', cnt_match, '| num_sum: ', cnt_sum, '| acc: ', cnt_match / cnt_sum)
-        print('==============================TRUE CASE==============================')
-        print('Prompt: ', true_cases[0]['prompt'])
-        print('test_data: ', true_cases[0]['test_data'])
-        print('Correct Answer: ', true_cases[0]['correct_answer'])
-        print('Generated Answer',  true_cases[0]['generated_answer'])
-        print('==============================FALSE CASE==============================')
-        print('Prompt: ', false_cases[0]['prompt'])
-        print('test_data: ', false_cases[0]['test_data'])
-        print('Correct Answer: ', false_cases[0]['correct_answer'])
-        print('Generated Answer',  false_cases[0]['generated_answer'])
 
+        cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
+
+        tasks.append(task)
+        num_matches.append(cnt_match)
+        num_instances.append(cnt_sum)
+        acc.append(cnt_match / cnt_sum)
+
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.log('info', f"task: {task}")
+        logger.log('info', '==============================TRUE CASE==============================')
+        if true_cases:
+            logger.log('info', f'Prompt: {true_cases[0]["prompt"]}')
+            logger.log('info', f'Test data: {true_cases[0]["test_data"]}')
+            logger.log('info', f'Correct Answer: {true_cases[0]["correct_answer"]}')
+            logger.log('info', f'ChoGeneratedsen Answer: {true_cases[0]["generated_answer"]}')
+        logger.log('info', '==============================FALSE CASE==============================')
+        if false_cases:
+            logger.log('info', f'Prompt: {false_cases[0]["prompt"]}')
+            logger.log('info', f'Test data: {false_cases[0]["test_data"]}')
+            logger.log('info', f'Correct Answer: {false_cases[0]["correct_answer"]}')
+            logger.log('info', f'Generated Answer: {false_cases[0]["generated_answer"]}')
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    eval_results = {
+            'task': tasks,
+            'num_fewshot': [eval_configs.n_shot] * len(tasks),
+            'chan of thought': [eval_configs.cot] * len(tasks),
+            'num_match': num_matches,
+            'num_sum': num_instances,
+            'acc': acc
+            }
+    logger.print_table(title="Evaluation Results", data = eval_results)
 
 if __name__ == '__main__':
     main()
