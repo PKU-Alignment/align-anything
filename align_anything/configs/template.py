@@ -258,9 +258,6 @@ class AudioCaps:
             f"{self.assistant_prompt.format(output='')}"
         )
         audio, sample_rate = torchaudio.load(os.path.join(path, f"data/train/{audiocap_id}.wav"))
-        print(len(audio.squeeze().tolist()[0]), len(audio.squeeze().tolist()[1]))
-        if len(audio.squeeze().tolist()[0]) == 0:
-            print(os.path.join(path, f"data/train/{audiocap_id}.wav"))
         return {
             'text': text,
             'prompt': prompt,

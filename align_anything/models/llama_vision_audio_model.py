@@ -560,7 +560,15 @@ class LlamaVisionAudioForConditionalGeneration(LlamaVisionAudioPreTrainedModel):
         )
 
     def prepare_inputs_for_generation(
-        self, input_ids, past_key_values=None, inputs_embeds=None, image_pixel_values=None, audio_pixel_values=None, attention_mask=None, **kwargs
+        self, 
+        input_ids, 
+        past_key_values=None, 
+        inputs_embeds=None, 
+        image_pixel_values=None, 
+        audio_pixel_values=None, 
+        is_longer=None,
+        attention_mask=None, 
+        **kwargs
     ):
         if past_key_values is not None:
             if isinstance(past_key_values, Cache):
@@ -611,6 +619,7 @@ class LlamaVisionAudioForConditionalGeneration(LlamaVisionAudioPreTrainedModel):
                 "attention_mask": attention_mask,
                 "image_pixel_values": image_pixel_values,
                 "audio_pixel_values": audio_pixel_values,
+                "is_longer": is_longer,
             }
         )
         return model_inputs

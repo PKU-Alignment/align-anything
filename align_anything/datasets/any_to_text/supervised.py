@@ -110,7 +110,8 @@ class SupervisedDataset(Dataset):
         if 'image' in formatted_sample.keys():
             raw_image = formatted_sample['image']
             return_dict['image_pixel_values'] = self.processor.image_processor(
-                raw_image, return_tensors='pt'
+                raw_image, 
+                return_tensors='pt'
             )['pixel_values'][0]
         else:
             return_dict['image_pixel_values'] = None
@@ -118,7 +119,9 @@ class SupervisedDataset(Dataset):
         if 'audio' in formatted_sample.keys():
             raw_audio = formatted_sample['audio']
             audio = self.processor.audio_processor(
-                raw_audio, return_tensors='pt'
+                raw_audio, 
+                sampling_rate = 48000,
+                return_tensors='pt'
             )
             return_dict['audio_pixel_values'] = audio['input_features'][0]
             return_dict['is_longer'] = audio['is_longer'][0]

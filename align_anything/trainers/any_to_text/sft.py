@@ -57,6 +57,7 @@ class SuperviseTrainer(SupervisedtextTrainer):
             freeze_vision_proj=self.cfgs.train_cfgs.freeze_vision_proj,
             freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
+            freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
         )
 
