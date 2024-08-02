@@ -165,5 +165,4 @@ class PromptOnlyCollator:
         return_dict['attention_mask'] = left_padding(attention_mask, padding_value=0).to(
             current_device
         )
-
         return return_dict

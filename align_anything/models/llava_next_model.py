@@ -26,11 +26,11 @@ from torch import nn
 from transformers import LlavaNextPreTrainedModel
 from transformers.models.llava_next.configuration_llava_next import LlavaNextConfig
 from transformers.models.llava_next.modeling_llava_next import (
-    image_size_to_num_patches,
-    unpad_image,
-    get_anyres_image_grid_shape,
     LlavaNextCausalLMOutputWithPast,
     LlavaNextForConditionalGeneration,
+    get_anyres_image_grid_shape,
+    image_size_to_num_patches,
+    unpad_image,
 )
 
 
@@ -186,7 +186,9 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
                         i j Y Y Y Y Y k l m n
                     ]
         """
-        image_token_index = image_token_index if image_token_index is not None else self.config.image_token_index
+        image_token_index = (
+            image_token_index if image_token_index is not None else self.config.image_token_index
+        )
         ignore_index = ignore_index if ignore_index is not None else self.config.ignore_index
 
         with torch.no_grad():
@@ -194,7 +196,9 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
             num_images = feature_lens.size(0)
             num_image_features, embed_dim = image_features.shape
             if feature_lens.sum() != num_image_features:
-                raise ValueError(f"{feature_lens=} / {feature_lens.sum()} != {image_features.shape=}")
+                raise ValueError(
+                    f'{feature_lens=} / {feature_lens.sum()} != {image_features.shape=}'
+                )
             batch_size = input_ids.shape[0]
             _left_padding = torch.any(attention_mask[:, 0] == 0)
             _right_padding = torch.any(attention_mask[:, -1] == 0)
@@ -207,7 +211,7 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
                     left_padding = False
                 elif not _left_padding and not _right_padding:
                     # both side is 1, so cannot tell
-                    left_padding = self.padding_side == "left"
+                    left_padding = self.padding_side == 'left'
                 else:
                     # invalid attention_mask
                     left_padding = False
@@ -223,19 +227,25 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
             total_num_special_image_tokens = torch.sum(special_image_token_mask)
             if total_num_special_image_tokens != num_images:
                 raise ValueError(
-                    f"Number of image tokens in input_ids ({total_num_special_image_tokens}) different from num_images ({num_images})."
+                    f'Number of image tokens in input_ids ({total_num_special_image_tokens}) different from num_images ({num_images}).'
                 )
             # Compute the maximum embed dimension
             # max_image_feature_lens is max_feature_lens per batch
             feature_lens = feature_lens.to(input_ids.device)
             feature_lens_batch = feature_lens.split(num_special_image_tokens.tolist(), dim=0)
-            feature_lens_batch_sum = torch.tensor([x.sum() for x in feature_lens_batch], device=input_ids.device)
+            feature_lens_batch_sum = torch.tensor(
+                [x.sum() for x in feature_lens_batch], device=input_ids.device
+            )
             embed_sequence_lengths = (
-                (attention_mask == 1).long().sum(-1) - num_special_image_tokens + feature_lens_batch_sum
+                (attention_mask == 1).long().sum(-1)
+                - num_special_image_tokens
+                + feature_lens_batch_sum
             )
             max_embed_dim = embed_sequence_lengths.max()
 
-            batch_indices, non_image_indices = torch.where((input_ids != image_token_index) & (attention_mask == 1))
+            batch_indices, non_image_indices = torch.where(
+                (input_ids != image_token_index) & (attention_mask == 1)
+            )
             # 2. Compute the positions where text should be written
             # Calculate new positions for text tokens in merged image-text sequence.
             # `special_image_token_mask` identifies image tokens. Each image token will be replaced by `nb_text_tokens_per_images` text tokens.
@@ -255,13 +265,20 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
 
         # 3. Create the full embedding, already padded to the maximum position
         final_embedding = torch.zeros(
-            batch_size, max_embed_dim, embed_dim, dtype=inputs_embeds.dtype, device=inputs_embeds.device
+            batch_size,
+            max_embed_dim,
+            embed_dim,
+            dtype=inputs_embeds.dtype,
+            device=inputs_embeds.device,
         )
         final_attention_mask = torch.zeros(
             batch_size, max_embed_dim, dtype=attention_mask.dtype, device=inputs_embeds.device
         )
         final_input_ids = torch.full(
-            (batch_size, max_embed_dim), self.pad_token_id, dtype=input_ids.dtype, device=inputs_embeds.device
+            (batch_size, max_embed_dim),
+            self.pad_token_id,
+            dtype=input_ids.dtype,
+            device=inputs_embeds.device,
         )
         # In case the Vision model or the Language model has been offloaded to CPU, we need to manually
         # set the corresponding tensors into their correct target device.
@@ -276,14 +293,22 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
 
         # 4. Fill the embeddings based on the mask. If we have ["hey" "<image>", "how", "are"]
         # we need to index copy on [0, 577, 578, 579] for the text and [1:576] for the image features
-        final_embedding[batch_indices, text_to_overwrite] = inputs_embeds[batch_indices, non_image_indices]
-        final_attention_mask[batch_indices, text_to_overwrite] = attention_mask[batch_indices, non_image_indices]
-        final_input_ids[batch_indices, text_to_overwrite] = input_ids[batch_indices, non_image_indices]
+        final_embedding[batch_indices, text_to_overwrite] = inputs_embeds[
+            batch_indices, non_image_indices
+        ]
+        final_attention_mask[batch_indices, text_to_overwrite] = attention_mask[
+            batch_indices, non_image_indices
+        ]
+        final_input_ids[batch_indices, text_to_overwrite] = input_ids[
+            batch_indices, non_image_indices
+        ]
         final_labels = None
         if labels is not None:
             labels = labels.to(target_device)
             final_labels = torch.full_like(final_attention_mask, ignore_index).to(torch.long)
-            final_labels[batch_indices, text_to_overwrite] = labels[batch_indices, non_image_indices]
+            final_labels[batch_indices, text_to_overwrite] = labels[
+                batch_indices, non_image_indices
+            ]
 
         # 5. Fill the embeddings corresponding to the images. Anything that is not `text_positions` needs filling (#29835)
         with torch.no_grad():
@@ -306,25 +331,34 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
 
             if image_to_overwrite.sum() != num_image_features:
                 raise ValueError(
-                    f"{image_to_overwrite.sum()=} != {num_image_features=} The input provided to the model are wrong. "
-                    f"The number of image tokens is {torch.sum(special_image_token_mask)} while"
-                    f" the number of image given to the model is {num_images}. "
-                    f"This prevents correct indexing and breaks batch generation."
+                    f'{image_to_overwrite.sum()=} != {num_image_features=} The input provided to the model are wrong. '
+                    f'The number of image tokens is {torch.sum(special_image_token_mask)} while'
+                    f' the number of image given to the model is {num_images}. '
+                    f'This prevents correct indexing and breaks batch generation.'
                 )
-        final_embedding[image_to_overwrite] = image_features.contiguous().reshape(-1, embed_dim).to(target_device)
+        final_embedding[image_to_overwrite] = (
+            image_features.contiguous().reshape(-1, embed_dim).to(target_device)
+        )
         final_attention_mask |= image_to_overwrite
-        position_ids = (final_attention_mask.cumsum(-1) - 1).masked_fill_((final_attention_mask == 0), 1)
-        
+        position_ids = (final_attention_mask.cumsum(-1) - 1).masked_fill_(
+            (final_attention_mask == 0), 1
+        )
 
-
-        return final_embedding, final_attention_mask, position_ids, final_labels, final_input_ids, image_to_overwrite
+        return (
+            final_embedding,
+            final_attention_mask,
+            position_ids,
+            final_labels,
+            final_input_ids,
+            image_to_overwrite,
+        )
 
     def forward(
         self,
         input_ids: torch.LongTensor = None,
         pixel_values: torch.FloatTensor = None,
         # ori_image_num_patches: Optional[torch.LongTensor] = None,  # special design for llava-next patches recovery
-        image_sizes: Optional[torch.LongTensor] = None,         # ori_image_num_patches
+        image_sizes: Optional[torch.LongTensor] = None,  # ori_image_num_patches
         attention_mask: Optional[torch.Tensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         past_key_values: Optional[List[torch.FloatTensor]] = None,
@@ -375,14 +409,20 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
         a = pixel_values.shape[2]
         b = pixel_values.shape[3]
         image_sizes = [[a, b]] * len(image_sizes)
-        
-        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+
+        output_attentions = (
+            output_attentions if output_attentions is not None else self.config.output_attentions
+        )
         output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+            output_hidden_states
+            if output_hidden_states is not None
+            else self.config.output_hidden_states
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
         vision_feature_layer = (
-            vision_feature_layer if vision_feature_layer is not None else self.config.vision_feature_layer
+            vision_feature_layer
+            if vision_feature_layer is not None
+            else self.config.vision_feature_layer
         )
         vision_feature_select_strategy = (
             vision_feature_select_strategy
@@ -410,45 +450,48 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
                     for imsize in image_sizes
                 ]
 
-                
                 rec_pixel_values = []
                 start_idx = 0
-                
+
                 for patches in ori_image_num_patches:
                     end_idx = start_idx + patches
-                    rec_pixel_value = pixel_values[start_idx:end_idx, :, :, :]  # recover original pixel values
+                    rec_pixel_value = pixel_values[
+                        start_idx:end_idx, :, :, :
+                    ]  # recover original pixel values
                     rec_pixel_values.append(rec_pixel_value)
                     start_idx = end_idx
-                
-                
-                    
+
                 # figure out if pixel_values is concatenated or stacked
                 if pixel_values.dim() == 5:
                     # stacking when input is (batch_size, num_patches, num_channels, height, width)
                     _pixel_values_list = [
-                        pix_val[:num_patch] for pix_val, num_patch in zip(pixel_values, image_num_patches)
+                        pix_val[:num_patch]
+                        for pix_val, num_patch in zip(pixel_values, image_num_patches)
                     ]
                     pixel_values = torch.cat(_pixel_values_list, dim=0)
                 elif pixel_values.dim() != 4:
                     # otherwise has to be stacked from list of (num_patches, num_channels, height, width)
-                    raise ValueError(f"pixel_values of shape {pixel_values.shape}, expect to be of 4 or 5 dimensions")
+                    raise ValueError(
+                        f'pixel_values of shape {pixel_values.shape}, expect to be of 4 or 5 dimensions'
+                    )
 
                 _pixel_values_list = [
-                        pix_val[:num_patch] for pix_val, num_patch in zip(rec_pixel_values, image_num_patches)
-                    ]
-                
+                    pix_val[:num_patch]
+                    for pix_val, num_patch in zip(rec_pixel_values, image_num_patches)
+                ]
+
                 pixel_values = torch.cat(_pixel_values_list, dim=0)
-                
+
                 # if pixel_values.len() = image_sizes:
 
                 image_features = self.vision_tower(pixel_values, output_hidden_states=True)
                 selected_image_feature = image_features.hidden_states[vision_feature_layer]
 
-                if vision_feature_select_strategy == "default":
+                if vision_feature_select_strategy == 'default':
                     selected_image_feature = selected_image_feature[:, 1:]
-                elif vision_feature_select_strategy == "full":
+                elif vision_feature_select_strategy == 'full':
                     selected_image_feature = selected_image_feature
-                
+
                 image_features = self.multi_modal_projector(selected_image_feature)
                 image_features = torch.split(image_features, image_num_patches, dim=0)
 
@@ -461,15 +504,17 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
                 )
 
                 inputs_embeds = inputs_embeds.to(image_features.dtype)
-                
-                inputs_embeds, attention_mask, position_ids, labels, _, image_to_overwrite = self._merge_input_ids_with_image_features(
-                    image_features,
-                    feature_lens,
-                    inputs_embeds,
-                    input_ids,
-                    attention_mask,
-                    position_ids,
-                    labels=labels,
+
+                inputs_embeds, attention_mask, position_ids, labels, _, image_to_overwrite = (
+                    self._merge_input_ids_with_image_features(
+                        image_features,
+                        feature_lens,
+                        inputs_embeds,
+                        input_ids,
+                        attention_mask,
+                        position_ids,
+                        labels=labels,
+                    )
                 )
 
             # pixel_values is not None but is empty ---> text only cases
@@ -479,13 +524,17 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
 
             # In case input_ids.shape[1] == 1 & pixel_values==None & past_key_values != None, we are in the case of
             # generation with cache
-            elif past_key_values is not None and pixel_values is not None and input_ids.shape[1] == 1:
+            elif (
+                past_key_values is not None and pixel_values is not None and input_ids.shape[1] == 1
+            ):
                 # Retrieve the first layer to inspect the logits and mask out the hidden states
                 # that are set to 0
                 first_layer_past_key_value = past_key_values[0][0][:, :, :, 0]
 
                 # Sum all dimensions of head_dim (-2) to avoid random errors such as: https://github.com/huggingface/transformers/pull/28032#issuecomment-1863691941
-                batch_index, non_attended_tokens = torch.where(first_layer_past_key_value.float().sum(-2) == 0)
+                batch_index, non_attended_tokens = torch.where(
+                    first_layer_past_key_value.float().sum(-2) == 0
+                )
 
                 # Get the target length
                 target_length = input_ids.shape[1]
@@ -507,7 +556,9 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
                 # Zero-out the places where we don't need to attend
                 extended_attention_mask[new_batch_index, new_non_attended_tokens] = 0
 
-                attention_mask = torch.cat((extended_attention_mask, attention_mask[:, -target_length:]), dim=1)
+                attention_mask = torch.cat(
+                    (extended_attention_mask, attention_mask[:, -target_length:]), dim=1
+                )
 
                 position_ids = torch.sum(attention_mask, dim=1).unsqueeze(-1) - 1
 
@@ -529,22 +580,26 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
             # Shift so that tokens < n predict n
             if attention_mask is not None:
                 shift_attention_mask = attention_mask[..., 1:]
-                shift_logits = logits[..., :-1, :][shift_attention_mask.to(logits.device) != 0].contiguous()
-                shift_labels = labels[..., 1:][shift_attention_mask.to(labels.device) != 0].contiguous()
+                shift_logits = logits[..., :-1, :][
+                    shift_attention_mask.to(logits.device) != 0
+                ].contiguous()
+                shift_labels = labels[..., 1:][
+                    shift_attention_mask.to(labels.device) != 0
+                ].contiguous()
             else:
                 shift_logits = logits[..., :-1, :].contiguous()
                 shift_labels = labels[..., 1:].contiguous()
             # Flatten the tokens
             loss_fct = nn.CrossEntropyLoss()
             loss = loss_fct(
-                shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1).to(shift_logits.device)
+                shift_logits.view(-1, shift_logits.size(-1)),
+                shift_labels.view(-1).to(shift_logits.device),
             )
 
         if not return_dict:
             output = (logits,) + outputs[1:]
             return (loss,) + output if loss is not None else output
 
-        
         if image_to_overwrite is None:
             return AccustomedLlavaNextOutput(
                 loss=loss,
@@ -552,9 +607,8 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
                 past_key_values=outputs.past_key_values,
                 hidden_states=outputs.hidden_states,
                 attentions=outputs.attentions,
-                
             )
-            
+
         else:
             return AccustomedLlavaNextOutput(
                 loss=loss,
@@ -562,5 +616,5 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
                 past_key_values=outputs.past_key_values,
                 hidden_states=outputs.hidden_states,
                 attentions=outputs.attentions,
-                image_to_overwrite = image_to_overwrite,
+                image_to_overwrite=image_to_overwrite,
             )

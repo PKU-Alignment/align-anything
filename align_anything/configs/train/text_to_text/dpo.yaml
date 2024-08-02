@@ -104,23 +104,25 @@ model_cfgs:
   trust_remote_code: True
   # The max token length
   model_max_length: 2048
+# Configuration for training with LoRA
 lora_cfgs:
   # Whether to use LoRA
-  use_lora: False 
+  use_lora: False
   # Task type for LoRA configuration
-  task_type: TaskType.CAUSAL_LM  
+  task_type: TaskType.CAUSAL_LM
   # Inference mode
-  inference_mode: False  
+  inference_mode: False
   # Rank of the low-rank adaptation matrices
-  r: 16  
+  r: 16
   # Alpha parameter for LoRA
-  lora_alpha: 16  
+  lora_alpha: 16
   # Dropout rate for LoRA
-  lora_dropout: 0.1  
+  lora_dropout: 0.1
   # Target modules for applying LoRA
-  target_modules: ["q_proj", "v_proj"]  
+  target_modules: ["q_proj", "v_proj"]
   # Whether to save the full model
   save_full_model: True
+# Configuration for training with QLoRA
 bnb_cfgs:
   # Whether to use BNB(For QLoRA)
   use_bnb: False

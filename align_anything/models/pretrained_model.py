@@ -28,19 +28,16 @@ import deepspeed
 import torch
 import torch.nn as nn
 from accelerate.state import AcceleratorState
-
 from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel, UNet3DConditionModel
 from peft import LoraConfig, get_peft_model
-
-
 from transformers import (
     AutoProcessor,
     AutoTokenizer,
+    BitsAndBytesConfig,
+    ClapTextModelWithProjection,
     CLIPTextModel,
     PreTrainedModel,
     PreTrainedTokenizerBase,
-    BitsAndBytesConfig,
-    ClapTextModelWithProjection,
 )
 
 
@@ -50,7 +47,6 @@ except ImportError:
     from transformers import is_deepspeed_zero3_enabled
 
 from transformers.utils import ContextManagers
-
 
 from align_anything.models.model_registry import AnyModel
 from align_anything.utils.multi_process import get_current_device, is_main_process
@@ -199,44 +195,46 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
         if bnb_cfgs.use_bnb:
             quantization_config = BitsAndBytesConfig(
                 load_in_4bit=bnb_cfgs.load_in_4bit,
-                load_in_8bit=bnb_cfgs.load_in_8bit,                   
+                load_in_8bit=bnb_cfgs.load_in_8bit,
                 bnb_4bit_quant_type=bnb_cfgs.bnb_4bit_quant_type,
                 bnb_4bit_use_double_quant=bnb_cfgs.bnb_4bit_use_double_quant,
                 bnb_4bit_compute_dtype=bnb_cfgs.bnb_4bit_compute_dtype,
-                ) 
+            )
         if lora_cfgs.use_lora:
             lora_config = LoraConfig(
-                task_type=lora_cfgs.task_type, 
+                task_type=lora_cfgs.task_type,
                 inference_mode=lora_cfgs.inference_mode,
-                r= lora_cfgs.r,
+                r=lora_cfgs.r,
                 lora_alpha=lora_cfgs.lora_alpha,
                 lora_dropout=lora_cfgs.lora_dropout,
-                target_modules=lora_cfgs.target_modules,  
+                target_modules=lora_cfgs.target_modules,
             )
         if bnb_cfgs.use_bnb and not lora_cfgs.use_lora:
-            raise ValueError("bnb only is not compatible with deepspeeed, try working with peft + bnb + deepspeed by setting lora_cfgs.use_lora = True")
+            raise ValueError(
+                'bnb only is not compatible with deepspeeed, try working with peft + bnb + deepspeed by setting lora_cfgs.use_lora = True'
+            )
         if lora_cfgs.use_lora and not bnb_cfgs.use_bnb:
             model = AnyModel.from_pretrained(
-            model_name_or_path,
-            *auto_model_args,
-            cache_dir=cache_dir,
-            device_map=device_map,
-            torch_dtype=dtype,
-            trust_remote_code=trust_remote_code,
-            **auto_model_kwargs,   
+                model_name_or_path,
+                *auto_model_args,
+                cache_dir=cache_dir,
+                device_map=device_map,
+                torch_dtype=dtype,
+                trust_remote_code=trust_remote_code,
+                **auto_model_kwargs,
             )
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
-        if lora_cfgs.use_lora and bnb_cfgs.use_bnb: 
+        if lora_cfgs.use_lora and bnb_cfgs.use_bnb:
             model = AnyModel.from_pretrained(
-            model_name_or_path,
-            *auto_model_args,
-            cache_dir=cache_dir,
-            device_map=device_map,
-            torch_dtype=dtype,
-            trust_remote_code=trust_remote_code,
-            **auto_model_kwargs,
-            quantization_config = quantization_config,   
+                model_name_or_path,
+                *auto_model_args,
+                cache_dir=cache_dir,
+                device_map=device_map,
+                torch_dtype=dtype,
+                trust_remote_code=trust_remote_code,
+                **auto_model_kwargs,
+                quantization_config=quantization_config,
             )
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
@@ -248,18 +246,18 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
                 device_map=device_map,
                 torch_dtype=dtype,
                 trust_remote_code=trust_remote_code,
-                **auto_model_kwargs,   
+                **auto_model_kwargs,
             )
     else:
         model = AnyModel.from_pretrained(
-                model_name_or_path,
-                *auto_model_args,
-                cache_dir=cache_dir,
-                device_map=device_map,
-                torch_dtype=dtype,
-                trust_remote_code=trust_remote_code,
-                **auto_model_kwargs,   
-            )
+            model_name_or_path,
+            *auto_model_args,
+            cache_dir=cache_dir,
+            device_map=device_map,
+            torch_dtype=dtype,
+            trust_remote_code=trust_remote_code,
+            **auto_model_kwargs,
+        )
 
     forbidden_modules = set()
     if freeze_vision_tower:
@@ -384,6 +382,7 @@ def load_pretrained_image_diffusion_models(  # pylint: disable=too-many-argument
 
     return unet, vae, text_encoder, noise_scheduler, tokenizer
 
+
 def load_pretrained_video_diffusion_models(  # pylint: disable=too-many-arguments
     model_name_or_path: str | os.PathLike,
     dtype: torch.dtype = torch.bfloat16,
@@ -469,6 +468,7 @@ def load_pretrained_video_diffusion_models(  # pylint: disable=too-many-argument
     resize_tokenizer_embedding(tokenizer=tokenizer, model=text_encoder)
 
     return unet, vae, text_encoder, noise_scheduler, tokenizer
+
 
 def load_pretrained_audio_diffusion_models(  # pylint: disable=too-many-arguments
     model_name_or_path: str | os.PathLike,

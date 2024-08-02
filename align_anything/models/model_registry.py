@@ -46,7 +46,6 @@ from align_anything.models.llava_model import AccustomedLlavaModel
 from align_anything.models.llava_next_model import AccustomedLlavaNextModel
 
 
-
 @dataclass
 class ScoreModelOutput(ModelOutput):
     """Output of the score model."""
@@ -159,7 +158,7 @@ class AnyBaseModelCLS(AutoModel):
 
 
 def register_model(auto_model: AutoModelForCausalLM) -> AutoModelForCausalLM:
-    auto_model.register(LlavaConfig, LlavaForConditionalGeneration)    
+    auto_model.register(LlavaConfig, LlavaForConditionalGeneration)
     auto_model.register(LlavaNextConfig, AccustomedLlavaNextModel)
     if CHAMELEON_AVALIABLE:
         auto_model.register(ChameleonConfig, ChameleonForConditionalGeneration)

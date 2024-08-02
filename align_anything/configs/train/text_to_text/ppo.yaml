@@ -154,6 +154,7 @@ model_cfgs:
   top_p: 1.0
   # The parameter for repetition penalty. 1.0 means no penalty.
   repetition_penalty: 1.0
+# Configuration for training with LoRA
 lora_cfgs:
   # Whether to use LoRA
   use_lora: False
@@ -171,6 +172,7 @@ lora_cfgs:
   target_modules: ["q_proj", "v_proj"]
   # Whether to save the full model
   save_full_model: True
+# Configuration for training with QLoRA
 bnb_cfgs:
   # Whether to use BNB(For QLoRA)
   use_bnb: False

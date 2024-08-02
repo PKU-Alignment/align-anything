@@ -69,7 +69,7 @@ class DPOTrainer(SupervisedTrainerBase):
 
     def init_check(self) -> None:
         """Initial configuration checking."""
-        return
+        super().init_check()
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
@@ -84,16 +84,16 @@ class DPOTrainer(SupervisedTrainerBase):
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
             trust_remote_code=True,
-            bnb_cfgs = self.bnb_cfgs,
-            lora_cfgs = self.lora_cfgs,
+            bnb_cfgs=self.bnb_cfgs,
+            lora_cfgs=self.lora_cfgs,
         )
         self.reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
             trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
-            bnb_cfgs = self.bnb_cfgs,
-            lora_cfgs = self.lora_cfgs,
+            bnb_cfgs=self.bnb_cfgs,
+            lora_cfgs=self.lora_cfgs,
         )
 
     def init_datasets(self) -> None:

@@ -40,8 +40,6 @@ from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
     gather_log_probabilities,
-    get_optimizer_grouped_parameters,
-    namedtuple_to_dict,
     prepare_ds_eval_cfgs,
     prepare_ds_train_cfgs,
     read_cfgs,
@@ -71,7 +69,7 @@ class ORPOTrainer(SupervisedTrainerBase):
 
     def init_check(self) -> None:
         """Initial configuration checking."""
-        return
+        super().init_check()
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
@@ -86,16 +84,16 @@ class ORPOTrainer(SupervisedTrainerBase):
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
             trust_remote_code=True,
-            bnb_cfgs = self.bnb_cfgs,
-            lora_cfgs = self.lora_cfgs,
+            bnb_cfgs=self.bnb_cfgs,
+            lora_cfgs=self.lora_cfgs,
         )
         self.reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
             trust_remote_code=True,
-            bnb_cfgs = self.bnb_cfgs,
-            lora_cfgs = self.lora_cfgs,
+            bnb_cfgs=self.bnb_cfgs,
+            lora_cfgs=self.lora_cfgs,
         )
 
     def init_datasets(self) -> None:

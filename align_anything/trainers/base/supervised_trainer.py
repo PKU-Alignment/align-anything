@@ -47,7 +47,10 @@ class SupervisedTrainerBase:
 
     def init_check(self) -> None:
         """Initial configuration checking."""
-        return
+        self.lora_enabled = False
+        if self.cfgs.lora_cfgs and self.cfgs.lora_cfgs.use_lora:
+            self.lora_enabled = True
+            self.save_full_model = self.cfgs.lora_cfgs.save_full_model
 
     def init_logger(self) -> None:
         """Set logger."""
@@ -136,7 +139,7 @@ class SupervisedTrainerBase:
             lr_scheduler=lr_scheduler,
             dist_init_required=True,
         )
-        if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_cfgs.use_lora:
+        if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_enabled:
             self.model.gradient_checkpointing_enable()
 
     def init_accelerate_engines(self) -> None:
@@ -160,7 +163,7 @@ class SupervisedTrainerBase:
             num_warmup_steps=num_warmup_steps,
             num_training_steps=total_training_steps,
         )
-        if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_cfgs.use_lora:
+        if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_enabled:
             self.model.enable_gradient_checkpointing()
         self.model, self.optimizer, self.train_dataloader, self.lr_scheduler = (
             self.accelerator.prepare(
@@ -228,7 +231,7 @@ class SupervisedTrainerBase:
             return {}
 
         self.model.eval()
-        if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_cfgs.use_lora:
+        if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_enabled:
             self.model.gradient_checkpointing_disable()
 
         eval_dataloader = tqdm(
@@ -250,7 +253,7 @@ class SupervisedTrainerBase:
             return {}
 
         self.model.train()
-        if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_cfgs.use_lora:
+        if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_enabled:
             self.model.gradient_checkpointing_enable()
 
         return {'eval/loss': sum(eval_loss) / len(eval_loss)}
@@ -277,18 +280,18 @@ class SupervisedTrainerBase:
             if self.processor is not None:
                 self.processor.save_pretrained(self.cfgs.logger_cfgs.output_dir)
 
-        if not self.lora_cfgs.use_lora:
+        if not self.lora_enabled:
             self.logger.print('Saving 16-bit model...')
             save_file_name = f'pytorch_model_{tag}.bin' if tag else 'pytorch_model.bin'
             model.save_16bit_model(self.cfgs.logger_cfgs.output_dir, save_filename=save_file_name)
             self.logger.print('Model saved!')
-        if self.lora_cfgs.use_lora and not self.lora_cfgs.save_full_model:
-            self.logger.print('LoRA used.Saving model as LoRA adapters...')
+        if self.lora_enabled and not self.lora_cfgs.save_full_model:
+            self.logger.print('LoRA used. Saving model as LoRA adapters...')
             model.save_pretrained(self.cfgs.logger_cfgs.output_dir)
             self.logger.print('Model saved!')
-        if self.lora_cfgs.use_lora and self.lora_cfgs.save_full_model:
-            self.logger.print('LoRA used.Saving full model...')
-            model = model.module 
+        if self.lora_enabled and self.lora_cfgs.save_full_model:
+            self.logger.print('LoRA used. Saving full model...')
+            model = model.module
             model_to_be_saved = model.merge_and_unload()
             model_to_be_saved.save_pretrained(self.cfgs.logger_cfgs.output_dir)
             self.logger.print('Model saved!')
