@@ -63,7 +63,7 @@ class BaseDataLoader:
         return processed_inputs
 
     def preprocess(self, data):
-        prompts = self.build_prompt(data[self.split].select(range(10)))
+        prompts = self.build_prompt(data[self.split])
         token_ids = self.tokenizer(prompts)
         return prompts, token_ids
 
