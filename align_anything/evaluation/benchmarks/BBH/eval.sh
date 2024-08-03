@@ -28,4 +28,9 @@ else
   deepspeed \
     --module ds_infer \
     --output_dir $output
+  python ds_eval.py \
+    --output_dir "$output"
 fi
+
+rm -rf .cache
+rm -rf __pycache__
