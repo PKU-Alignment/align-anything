@@ -412,7 +412,7 @@ def main():
     eval_results = {
             'task': tasks,
             'num_fewshot': [eval_configs.n_shot] * len(tasks),
-            'chan of thought': [eval_configs.cot] * len(tasks),
+            'chain_of_thought': [eval_configs.cot] * len(tasks),
             'num_match': num_matches,
             'num_sum': num_instances,
             'acc': acc

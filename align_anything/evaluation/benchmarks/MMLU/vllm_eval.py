@@ -149,10 +149,10 @@ def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[st
             answer_logprobs[label] = float('-inf')
     return answer_logprobs
 
-def judge_answer(correct_answer, chosen_answer, s):
+def judge_answer(correct_answer, chosen_answer, response):
     if correct_answer == chosen_answer:
         return True
-    match = re.search(r'(?<![a-zA-Z])[A-Z](?![a-zA-Z])', s)
+    match = re.search(r'(?<![a-zA-Z])[A-Z](?![a-zA-Z])', response)
     if match:
         return correct_answer == match.group()
     return False
@@ -217,7 +217,7 @@ def main():
     eval_results = {
             'task': tasks,
             'num_fewshot': [eval_configs.n_shot] * len(tasks),
-            'chan of thought': [eval_configs.cot] * len(tasks),
+            'chain_of_thought': [eval_configs.cot] * len(tasks),
             'num_match': num_matches,
             'num_sum': num_instances,
             'acc': acc
