@@ -74,7 +74,12 @@ def parse_eval_args() -> argparse.Namespace:
         default=False,
         help="If True, chain-of-thought will be implemented during generation",
     )
-    parser.add_argument("--batch_size", type=str, default=1)
+    parser.add_argument(
+        "--batch_size",
+        type=str,
+        default=1,
+        help="Batch size for generation (when using deepspeed backend).",
+    )
     parser.add_argument(
         "--device",
         type=str,
