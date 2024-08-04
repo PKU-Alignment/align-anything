@@ -1,18 +1,16 @@
-import os
 import argparse
 import json
-from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import Union, List, Dict, Any, Tuple
-from datasets import load_dataset, DatasetDict
+from typing import List, Dict, Any
+from datasets import load_dataset
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results
 from align_anything.evaluation.eval_logger import EvalLogger
+import re
 class MMLUDataLoader(BaseDataLoader):
-
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -27,7 +25,7 @@ class MMLUDataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task): 
         if self.cot:
-            with open('/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/benchmarks/MMLU/cot_fewshot/' + task + '.json', 'r', encoding='utf-8') as f:
+            with open('/align-anything/align_anything/evaluation/benchmarks/cot_fewshot/MMLU/' + task + '.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
@@ -71,7 +69,6 @@ class MMLUDataLoader(BaseDataLoader):
         return question
 
 class MMLUGeneratorVLLM(BaseInferencer_vllm):
-    
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
         for task, input in data.items():
@@ -85,9 +82,8 @@ class MMLUGeneratorVLLM(BaseInferencer_vllm):
         update_results(output_dir, brief_filename, detailed_filename,task2details)
         
         return task2details
-
-def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, task: str):
     
+def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, task: str):
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
     correct_answers = []
     responses = []
@@ -101,7 +97,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, tas
         correct_answers.append(
             {
                 'prompt': instance['question'],
-                'prompt_token_ids': dataloader.tokenizer(instance['question']).input_ids,
                 'choices': instance['choices'],
                 'answer': dataloader.get_answer(instance)
             }
@@ -109,14 +104,15 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, tas
     for item in raw_output:
         responses.append(
             {
-                'prompt_token_ids': dataloader.tokenizer(get_question_from_input(item.prompt)).input_ids,
-                'answer_logprobs': get_chosen_answer(item.response_logprobs[-1], dataloader.candidate_labels)
+                'prompt': (item.prompt),
+                'answer_logprobs': get_chosen_answer(item.response_logprobs[-1], dataloader.candidate_labels),
+                'answer': item.response[0]
             }
         )
     for correct_answer in correct_answers:
         cnt_sum += 1
         for response in responses:
-            if correct_answer['prompt_token_ids'] == response['prompt_token_ids']:
+            if correct_answer['prompt'] in response['prompt']:
                 flag_fail = False
                 chosen_answer = max(response['answer_logprobs'], key=response['answer_logprobs'].get)
                 eval_case = {
@@ -126,7 +122,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, tas
                     'answer_logprobs': response['answer_logprobs'],
                     'chosen_answer': chosen_answer
                 }
-                if correct_answer['answer'] == chosen_answer:
+                if judge_answer(correct_answer['answer'], chosen_answer, response['answer']):
                     cnt_match += 1
                     eval_case['result'] = True
                     true_cases.append(eval_case)
@@ -141,11 +137,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, tas
         
     return cnt_match, cnt_sum, true_cases, false_cases
 
-def get_question_from_input(input):
-    index_head = input.rfind('\n\n')
-    index_tail = input[index_head + 2:].find('\n')
-    return input[index_head + 2:][:index_tail]
-
 def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[str]):
     answer_logprobs = {}
     for logprob in logprobs:
@@ -153,24 +144,28 @@ def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[st
         value = next(iter(logprob.values())).logprob
         if key in candidate_answers:
             answer_logprobs[key] = value
-    # answer_logprobs = []
     for label in candidate_answers:
         if label not in answer_logprobs.keys():
             answer_logprobs[label] = float('-inf')
     return answer_logprobs
-    
+
+def judge_answer(correct_answer, chosen_answer, response):
+    if correct_answer == chosen_answer:
+        return True
+    match = re.search(r'(?<![a-zA-Z])[A-Z](?![a-zA-Z])', response)
+    if match:
+        return correct_answer == match.group()
+    return False
 
 def main():
-
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    unparsed_args = {'output_dir': '/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/mmlu'}
     logger = EvalLogger('Evaluation')
 
-    dict_configs, infer_configs = read_eval_cfgs('mmlu')
+    dict_configs, infer_configs = read_eval_cfgs('mmlu', 'vLLM')
 
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
@@ -222,7 +217,7 @@ def main():
     eval_results = {
             'task': tasks,
             'num_fewshot': [eval_configs.n_shot] * len(tasks),
-            'chan of thought': [eval_configs.cot] * len(tasks),
+            'chain_of_thought': [eval_configs.cot] * len(tasks),
             'num_match': num_matches,
             'num_sum': num_instances,
             'acc': acc

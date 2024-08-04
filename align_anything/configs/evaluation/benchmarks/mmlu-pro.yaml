@@ -1,0 +1,32 @@
+infer_cfgs:
+  # The deepspeed configuration
+  ds_cfgs: ds_z3_config.json
+  vllm_cfgs: vllm_basic.json
+  
+default:
+  # Evaluation configurations
+  eval_cfgs:
+    # Output directory name
+    output_dir: null
+    # Num shot
+    n_shot: 5
+    # Use Chain of Thought
+    cot: false
+  # Configuration for data
+  data_cfgs:
+    # Task name
+    task: ''
+    # Task directory
+    task_dir: TIGER-Lab/MMLU-Pro
+    # Evaluation split
+    split: test
+
+  # Model configurations
+  model_cfgs:
+    model_id: Meta-Llama-3-8B-Instruct
+    # Pretrained model name or path
+    model_name_or_path: /aifs4su/yaodong/models/Meta-Llama-3-8B-Instruct
+    # Chat template
+    chat_template: Llama3
+    # The max token length
+    model_max_length: 2048

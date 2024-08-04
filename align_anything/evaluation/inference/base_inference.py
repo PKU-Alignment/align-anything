@@ -17,28 +17,18 @@ import os
 import json
 import re
 import torch
-import random
-import pickle
-import numpy as np
 from tqdm import tqdm
-from pprint import pprint
-from abc import abstractmethod
-from typing import Union, List, Dict, Any, Tuple
+from typing import List, Dict, Any
 from torch.nn.utils.rnn import pad_sequence
 import torch.distributed as dist
 from torch.utils.data import Dataset, DataLoader, DistributedSampler
-
 import deepspeed
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
-
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.utils.tools import requestoutput_to_dict
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, read_cfgs
 from vllm import LLM, SamplingParams
-
-
-ACTION_GENERATION = 'generation'
+import pickle
 
 def update_results(output_dir:str,
                      brief_filename:str,
@@ -69,27 +59,17 @@ def update_results(output_dir:str,
                 file.write(json_record + '\n')
 
 class BaseInferencer_vllm:
-    '''
-    
-    '''
-
-    action_map = {
-        ACTION_GENERATION: 'generation',
-    }
-
     def __init__(self, 
                  model_cfgs: Dict[str, Any],
                  vllm_cfgs,
                  **kwargs):
         self.vllm_cfgs_sp, self.vllm_cfgs_llm = vllm_cfgs.SamplingParams, vllm_cfgs.LLM
         self.model_cfgs = model_cfgs
-        # TODO: Resolve conflicts with torch.cuda.is_available
-        print(vllm_cfgs)
         self.sp_n = self.vllm_cfgs_sp.n
         self.sp_top_k = self.vllm_cfgs_sp.top_k
         self.sp_top_p = self.vllm_cfgs_sp.top_p
         self.sp_temperature = self.vllm_cfgs_sp.temperature
-        self.sp_max_tokens = self.vllm_cfgs_sp.max_tokens
+        self.sp_max_tokens = self.model_cfgs.model_max_length
         self.sp_frequency_penalty = self.vllm_cfgs_sp.frequency_penalty
         self.sp_prompt_logprobs = self.vllm_cfgs_sp.prompt_logprobs
         self.sp_logprobs = self.vllm_cfgs_sp.logprobs
@@ -97,23 +77,19 @@ class BaseInferencer_vllm:
         self.llm_tokenizer_mode = self.vllm_cfgs_llm.tokenizer_mode
         self.llm_trust_remote_code = self.vllm_cfgs_llm.trust_remote_code
         self.llm_gpu_memory_utilization = self.vllm_cfgs_llm.gpu_memory_utilization
-        self.llm_tensor_parallel_size = 4
+        self.llm_tensor_parallel_size = 1
 
         self.model_id = self.model_cfgs.model_id
         self.model_name_or_path = self.model_cfgs.model_name_or_path
-        self.llm_trust_remote_code = self.model_cfgs.trust_remote_code # rewrite this??
-        self.sp_max_tokens = self.model_cfgs.model_max_length # rewrite this??
+        self.llm_trust_remote_code = self.model_cfgs.trust_remote_code
+        self.sp_max_tokens = self.model_cfgs.model_max_length
 
         self.task2details = {}
         self.detailed_filename = f'{self.model_id}_detailed'
         self.brief_filename = f'{self.model_id}_brief'
-
-
         self.init_model()
-        
 
     def init_model(self) -> None:
-        
         self.samplingparams = SamplingParams(
             n=self.sp_n,
             top_k=self.sp_top_k,
@@ -131,7 +107,8 @@ class BaseInferencer_vllm:
             tokenizer_mode=self.llm_tokenizer_mode,
             trust_remote_code=self.llm_trust_remote_code,
             tensor_parallel_size=self.llm_tensor_parallel_size,
-            gpu_memory_utilization=self.llm_gpu_memory_utilization
+            gpu_memory_utilization=self.llm_gpu_memory_utilization,
+            max_num_seqs = 1
         )
 
     def generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
@@ -186,29 +163,18 @@ def get_world_size():
         return 1
     return dist.get_world_size()
 
-
-
 class BaseInferencer_deepspeed:
-    '''
-    
-    '''
-
-    action_map = {
-        ACTION_GENERATION: 'generation',
-    }
-
     def __init__(self, 
                  model_cfgs: Dict[str, Any],
                  infer_cfgs,
                  **kwargs):
         self.infer_cfgs = infer_cfgs
         self.model_cfgs = model_cfgs
-        # TODO: Resolve conflicts with torch.cuda.is_available
 
         self.model_id = self.model_cfgs.model_id
         self.model_name_or_path = self.model_cfgs.model_name_or_path
-        self.llm_trust_remote_code = self.model_cfgs.trust_remote_code # rewrite this??
-        self.sp_max_tokens = self.model_cfgs.model_max_length # rewrite this??
+        self.llm_trust_remote_code = self.model_cfgs.trust_remote_code
+        self.sp_max_tokens = self.model_cfgs.model_max_length
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.batch_size = self.infer_cfgs['inference_batch_size']
@@ -328,11 +294,10 @@ class BaseInferencer_deepspeed:
                         "raw_output":  outputs[i*num_sequences:(i+1)*num_sequences]
                     }, store_raw=True)
                 )
-        # self.save_pickle(InferenceOutputs)
+                
         return InferenceOutputs
     
     def save_pickle(self, output_data: List[InferenceOutput]):
-        # 将每个rank的InferenceOutputs保存为pickle文件，后缀为rank数
         os.makedirs(".cache", exist_ok=True)
         
         if dist.is_initialized():

@@ -1,10 +1,7 @@
-import os
-
 import argparse
-from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import Union, List, Dict, Any, Tuple
+from typing import List, Dict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
@@ -13,7 +10,6 @@ from datasets import Dataset
 import json
 
 class XwinogradDataLoader(BaseDataLoader):
-
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -86,10 +82,8 @@ class XwinogradGeneratorVLLM(BaseInferencer_vllm):
         return task2details
 
 def main():
-
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
-    print(unparsed_args)
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))

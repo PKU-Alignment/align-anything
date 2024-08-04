@@ -119,7 +119,7 @@ def run_benchmark(file_path, args):
             else:
                 eval_logger.log('info', 'Generating responses using vLLM backend.')
         else:
-            if 'ds_eval.py' not in file_names:
+            if 'ds_infer.py' not in file_names:
                 eval_logger.log('warning', 'Deepspeed backend is not support for this benchmark.')
                 if 'vllm_eval.py' in file_names:
                     eval_logger.log('info', 'Generating responses using vLLM backend.')
@@ -144,5 +144,4 @@ def run_benchmark(file_path, args):
         print(f"Error executing {file_path}: {e}")
 
 if __name__ == "__main__":
-    
     cli_evaluate()

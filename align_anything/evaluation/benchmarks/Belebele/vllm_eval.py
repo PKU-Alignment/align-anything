@@ -1,16 +1,15 @@
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
 import argparse
 import json
-from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import Union, List, Dict, Any, Tuple
-from datasets import load_dataset, DatasetDict
+from typing import List, Dict, Any
+from datasets import load_dataset
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results
+from align_anything.evaluation.eval_logger import EvalLogger
+import re
 
 class BelebeleDataLoader(BaseDataLoader):
 
@@ -70,16 +69,8 @@ class BelebeleDataLoader(BaseDataLoader):
                     question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
         
         return question
-    
-    def preprocess(self, data):
-        prompts = self.build_prompt(data[self.split])
-        
-        token_ids = self.tokenizer(prompts)
-
-        return prompts, token_ids
 
 class BelebeleGeneratorVLLM(BaseInferencer_vllm):
-
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
         for task, input in data.items():
@@ -95,7 +86,6 @@ class BelebeleGeneratorVLLM(BaseInferencer_vllm):
         return task2details
 
 def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader, task: str):
-    
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
     correct_answers = []
     responses = []
@@ -109,7 +99,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader,
         correct_answers.append(
             {
                 'prompt': instance['question'],
-                'prompt_token_ids': dataloader.tokenizer(instance['question']).input_ids,
                 'choices': [instance['mc_answer1'], instance['mc_answer2'], instance['mc_answer3'], instance['mc_answer4']],
                 'answer': dataloader.get_answer(instance)
             }
@@ -117,15 +106,15 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader,
     for item in raw_output:
         responses.append(
             {
-                # 'prompt_token_ids': item.prompt_token_ids,
-                'prompt_token_ids': dataloader.tokenizer(get_question_from_input(item.prompt)).input_ids,
-                'answer_logprobs': get_chosen_answer(item.response_logprobs[0], dataloader.candidate_labels)
+                'prompt': (item.prompt),
+                'answer_logprobs': get_chosen_answer(item.response_logprobs[0], dataloader.candidate_labels),
+                'answer': item.response[0]
             }
         )
     for correct_answer in correct_answers:
         cnt_sum += 1
         for response in responses:
-            if correct_answer['prompt_token_ids'] == response['prompt_token_ids']:
+            if correct_answer['prompt'] in response['prompt']:
                 flag_fail = False
                 chosen_answer = max(response['answer_logprobs'], key=response['answer_logprobs'].get)
                 eval_case = {
@@ -135,7 +124,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader,
                     'answer_logprobs': response['answer_logprobs'],
                     'chosen_answer': chosen_answer
                 }
-                if correct_answer['answer'] == chosen_answer:
+                if judge_answer(correct_answer['answer'], chosen_answer, response['answer']):
                     cnt_match += 1
                     eval_case['result'] = True
                     true_cases.append(eval_case)
@@ -150,12 +139,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader,
         
     return cnt_match, cnt_sum, true_cases, false_cases
 
-def get_question_from_input(input):
-    token_head = input.rfind('\n\n')
-    index_head = input[:token_head].rfind('\n\n')
-    index_tail = input[index_head + 2:].find('\n')
-    return input[index_head + 2:][:index_tail]
-
 def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[str]):
     answer_logprobs = {}
     for logprob in logprobs:
@@ -163,22 +146,35 @@ def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[st
         value = next(iter(logprob.values())).logprob
         if key in candidate_answers:
             answer_logprobs[key] = value
-    # answer_logprobs = []
     for label in candidate_answers:
         if label not in answer_logprobs.keys():
             answer_logprobs[label] = float('-inf')
     return answer_logprobs
     
+def judge_answer(correct_answer, chosen_answer, response):
+    if correct_answer == chosen_answer:
+        return True
+    match = re.search(r'(?<![a-zA-Z])[A-Z](?![a-zA-Z])', response)
+    if match:
+        return correct_answer == match.group()
+    return False
 
 def main():
-
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    unparsed_args = {'output_dir': '/aifs4su/yaodong/panrui/align-anything-evaluation/align_anything/evaluation/meta_test_output/belebele'}
-    dict_configs, infer_configs = read_eval_cfgs('belebele')
+    logger = EvalLogger('Evaluation')
+    
+    dict_configs, infer_configs = read_eval_cfgs('belebele', 'vLLM')
+
+    try:
+        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        logger.log('error', "Config file is not exist or incomplete.")
+        exit()
+        
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
@@ -192,27 +188,43 @@ def main():
     eval_module = BelebeleGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
 
+    tasks, num_matches, num_instances, acc = [], [], [], []
     for task, _ in raw_outputs.items():
-        print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        print('task: ', task)
-        print('few_shot: ', eval_configs.n_shot)
-        # print('cot: ', )
-        print('-----------------------------------------------------------')
-        cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
-        print('num_match: ', cnt_match, '| num_sum: ', cnt_sum, '| acc: ', cnt_match / cnt_sum)
-        print('==============================TRUE CASE==============================')
-        print('Question: ', true_cases[0]['question'])
-        print('Choices: ', true_cases[0]['choices'])
-        print('Correct Answer: ', true_cases[0]['correct_answer'])
-        print('Logprobs of First Token:', true_cases[0]['answer_logprobs'])
-        print('Chosen Answer',  true_cases[0]['chosen_answer'])
-        print('==============================FALSE CASE==============================')
-        print('Question: ', false_cases[0]['question'])
-        print('Choices: ', false_cases[0]['choices'])
-        print('Correct Answer: ', false_cases[0]['correct_answer'])
-        print('Logprobs of First Token:', false_cases[0]['answer_logprobs'])
-        print('Chosen Answer',  false_cases[0]['chosen_answer'])
 
+        cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
+
+        tasks.append(task)
+        num_matches.append(cnt_match)
+        num_instances.append(cnt_sum)
+        acc.append(cnt_match / cnt_sum)
+
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.log('info', f"task: {task}")
+        logger.log('info', '==============================TRUE CASE==============================')
+        if true_cases:
+            logger.log('info', f'Question: {true_cases[0]["question"]}')
+            logger.log('info', f'Choices: {true_cases[0]["choices"]}')
+            logger.log('info', f'Correct Answer: {true_cases[0]["correct_answer"]}')
+            logger.log('info', f'Logprobs of First Token: {true_cases[0]["answer_logprobs"]}')
+            logger.log('info', f'Chosen Answer: {true_cases[0]["chosen_answer"]}')
+        logger.log('info', '==============================FALSE CASE==============================')
+        if false_cases:
+            logger.log('info', f'Question: {false_cases[0]["question"]}')
+            logger.log('info', f'Choices: {false_cases[0]["choices"]}')
+            logger.log('info', f'Correct Answer: {false_cases[0]["correct_answer"]}')
+            logger.log('info', f'Logprobs of First Token: {false_cases[0]["answer_logprobs"]}')
+            logger.log('info', f'Chosen Answer: {false_cases[0]["chosen_answer"]}')
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    eval_results = {
+            'task': tasks,
+            'num_fewshot': [eval_configs.n_shot] * len(tasks),
+            'chain_of_thought': [eval_configs.cot] * len(tasks),
+            'num_match': num_matches,
+            'num_sum': num_instances,
+            'acc': acc
+            }
+    logger.print_table(title="Evaluation Results", data = eval_results)
 
 if __name__ == '__main__':
     main()

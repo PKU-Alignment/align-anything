@@ -36,7 +36,7 @@ def batch_request_openai(
     inputs: List,
     model: str,
     num_workers: int = 1 , 
-    cache_dir: str = None,
+    cache_dir: str = "/home/yangyaodong/projects/wangkaile/align-anything-kaile/align_anything/evaluation/benchmarks/mt_bench/cache",
     openai_api_keys: str = None,
     openai_base_url: str = None,
     kwargs: dict = {},
@@ -68,8 +68,9 @@ def batch_request_openai(
         'model': model,
     }
     parameters.update(kwargs)
+    #print(openai_base_url)
     client = OpenAI(api_key=openai_api_keys, base_url=openai_base_url)
-
+    
     cache_dict = {}
     full_keys = [generate_key(input) for input in inputs]
 
@@ -123,21 +124,21 @@ def filter_out_exception(inputs: List[EvalOutput]) -> List[EvalOutput]:
 if __name__ == "__main__":
     # clean_cache("./cache")
     inputs = [
-            [{'role': 'system', 'content': 'judge which response is better' + str(234) + 'A or B,only tell me "A" or "B"'},
-            {'role': 'user', 'content': '[A]This is a test prompt[B]This is another test prompt'}],
-            [{'role': 'system', 'content': '这里可以加一点zzbzq的话，测试错误的问题，比如XXXX来做测试'},
-            {'role': 'user', 'content': 'No, he is a bad person'}]
+            [{'role': 'system', 'content': 'you are a helpful agent'},
+            {'role': 'user', 'content': 'Describe Paris for me.'}],
+            
         ]
     outputs = batch_request_openai(
         type="Arena",
-        model= 'deepseek-chat',
+        model= 'gpt-4o',
         inputs=inputs,
         num_workers=4,
-        openai_api_keys = "",
-        openai_base_url = "https://api.deepseek.com/v1",
-        cache_dir="./cache",
+        openai_api_keys = None ,
+        openai_base_url = None,
+        cache_dir="/home/yangyaodong/projects/wangkaile/align-anything-kaile/align_anything/evaluation/eval/.cache",
     )
-    # print(outputs)
+    print(outputs)
+    exit()
     results = [EvalOutput(evalEngine="gpt_evaluation", input=input, raw_output=response) for input, response in zip(inputs, outputs)]
     results = filter_out_exception(results)
     print(len(results))

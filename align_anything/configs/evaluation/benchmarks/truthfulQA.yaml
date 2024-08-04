@@ -1,0 +1,32 @@
+infer_cfgs:
+  # The deepspeed configuration
+  ds_cfgs: ds_z3_config.json
+  vllm_cfgs: vllm_basic.json
+  
+default:
+  # Evaluation configurations
+  eval_cfgs:
+    # Output directory name
+    output_dir: null
+    # Num shot
+    n_shot: 0
+    # Chain of Thought
+    cot: false
+  # Configuration for data
+  data_cfgs:
+    # Task name
+    task: generation
+    # Task directory
+    task_dir: truthfulqa/truthful_qa
+    # Evaluation split
+    split: validation
+
+  # Model configurations
+  model_cfgs:
+    model_id: alpaca-7b-reproduced
+    # Pretrained model name or path
+    model_name_or_path: /aifs4su/yaodong/models/alpaca-7b-reproduced
+    # Chat template
+    chat_template: PKUSafeRLHF
+    # The max token length
+    model_max_length: 2048

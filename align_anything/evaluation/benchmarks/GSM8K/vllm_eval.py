@@ -1,17 +1,15 @@
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5,6,7'
 import argparse
 import json
-from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import Union, List, Dict, Any, Tuple
-from datasets import load_dataset, DatasetDict
+from typing import List, Dict, Any
+from datasets import load_dataset
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results
 import re
+from align_anything.evaluation.eval_logger import EvalLogger
 
 class GSM8KDataLoader(BaseDataLoader):
 
@@ -29,7 +27,7 @@ class GSM8KDataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task): 
         if self.cot:
-            with open('/aifs4su/yaodong/panrui/few_shot/GSM8K/cot_few_shot/gsm8k.json', 'r', encoding='utf-8') as f:
+            with open('../cot_fewshot/GSM8K/gsm8k.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
@@ -37,7 +35,7 @@ class GSM8KDataLoader(BaseDataLoader):
     
     def build_example_prompt(self, data, with_answer=True, cot=False):
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
-        return f"@@@@@@{data['question']}\n{answer}"
+        return f"{data['question']}\n{answer}"
 
     def build_prompt(self, data):
         prompt = "The following are diverse grade school math word problems (with answers). Please provide the final answer after '####'.\n\n"
@@ -70,13 +68,6 @@ class GSM8KDataLoader(BaseDataLoader):
                     question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
         
         return question
-    
-    def preprocess(self, data):
-        prompts = self.build_prompt(data[self.split])
-        
-        token_ids = self.tokenizer(prompts)
-
-        return prompts, token_ids
 
 class GSM8KGeneratorVLLM(BaseInferencer_vllm):
 
@@ -109,22 +100,20 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: GSM8KDataLoader, ta
         correct_answers.append(
             {
                 'question': instance['question'],
-                'prompt_token_ids': dataloader.tokenizer(instance['question']).input_ids,
                 'answer': dataloader.get_answer(instance)
             }
         )
     for item in raw_output:
         responses.append(
             {
-                # 'prompt_token_ids': item.prompt_token_ids,
-                'prompt_token_ids': dataloader.tokenizer(get_question_from_input(item.prompt)).input_ids,
+                'prompt': (item.prompt),
                 'generated_answer': item.response[0] if item.response else ""
             }
         )
     for correct_answer in correct_answers:
         cnt_sum += 1
         for response in responses:
-            if correct_answer['prompt_token_ids'] == response['prompt_token_ids']:
+            if correct_answer['question'] in response['prompt']:
                 flag_fail = False
                 answer = get_correct_answer(correct_answer['answer'])
                 generated_answer = get_generated_answer(response['generated_answer'])
@@ -148,13 +137,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: GSM8KDataLoader, ta
         
     return cnt_match, cnt_sum, true_cases, false_cases
 
-def get_question_from_input(input):
-    prefix = '@@@@@@'
-    len_prefix = len(prefix)
-    index_head = input.rfind(prefix)
-    index_tail = input[index_head + len_prefix:].find('\n')
-    return input[index_head + len_prefix:][:index_tail]
-
 def get_last_number(data):
     numbers = re.findall(r'\d+', data)
     if numbers:
@@ -171,21 +153,7 @@ def get_generated_answer(data):
         return get_last_number(get_correct_answer(data))
     else:
         return get_last_number(data)
-
-def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[str]):
-    answer_logprobs = {}
-    for logprob in logprobs:
-        key = next(iter(logprob.values())).decoded_token
-        value = next(iter(logprob.values())).logprob
-        if key in candidate_answers:
-            answer_logprobs[key] = value
-    # answer_logprobs = []
-    for label in candidate_answers:
-        if label not in answer_logprobs.keys():
-            answer_logprobs[label] = float('-inf')
-    return answer_logprobs
     
-
 def main():
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -193,8 +161,16 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    unparsed_args = {'output_dir': '/aifs4su/yaodong/panrui/PR/align-anything/align_anything/evaluation/meta_test_output/gsm8k'}
-    dict_configs, infer_configs = read_eval_cfgs('gsm8k')
+    logger = EvalLogger('Evaluation')
+    
+    dict_configs, infer_configs = read_eval_cfgs('gsm8k', 'vLLM')
+    
+    try:
+        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        logger.log('error', "Config file is not exist or incomplete.")
+        exit()
+
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
@@ -207,29 +183,39 @@ def main():
     eval_module = GSM8KGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
 
+    tasks, num_matches, num_instances, acc = [], [], [], []
     for task, _ in raw_outputs.items():
-        print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        print('task: ', task)
-        print('few_shot: ', eval_configs.n_shot)
-        # print('cot: ', )
-        print('-----------------------------------------------------------')
-        cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
-        print('num_match: ', cnt_match, '| num_sum: ', cnt_sum, '| acc: ', cnt_match / cnt_sum)
-        with open('/aifs4su/yaodong/panrui/PR/align-anything/align_anything/evaluation/benchmarks/output/GSM8K_eval.txt', 'w') as f:
-            f.write(f"cnt_match: {cnt_match}\n")
-            f.write(f"cnt_sum: {cnt_sum}\n")
-            f.write(f"acc: {cnt_match / cnt_sum}\n")
-        if true_cases:
-            print('==============================TRUE CASE==============================')
-            print('Question: ', true_cases[0]['question'])
-            print('Correct Answer: ', true_cases[0]['correct_answer'])
-            print('Generated answer: ',  true_cases[0]['generated_answer'])
-        if false_cases:
-            print('==============================FALSE CASE==============================')
-            print('Question: ', false_cases[0]['question'])
-            print('Correct Answer: ', false_cases[0]['correct_answer'])
-            print('Generated answer: ',  false_cases[0]['generated_answer'])
 
+        cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
+
+        tasks.append(task)
+        num_matches.append(cnt_match)
+        num_instances.append(cnt_sum)
+        acc.append(cnt_match / cnt_sum)
+
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.log('info', f"task: {task}")
+        logger.log('info', '==============================TRUE CASE==============================')
+        if true_cases:
+            logger.log('info', f'Question: {true_cases[0]["question"]}')
+            logger.log('info', f'Correct Answer: {true_cases[0]["correct_answer"]}')
+            logger.log('info', f'Generated Answer: {true_cases[0]["generated_answer"]}')
+        logger.log('info', '==============================FALSE CASE==============================')
+        if false_cases:
+            logger.log('info', f'Question: {false_cases[0]["question"]}')
+            logger.log('info', f'Correct Answer: {false_cases[0]["correct_answer"]}')
+            logger.log('info', f'Generated Answer: {false_cases[0]["generated_answer"]}')
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    eval_results = {
+            'task': tasks,
+            'num_fewshot': [eval_configs.n_shot] * len(tasks),
+            'chain_of_thought': [eval_configs.cot] * len(tasks),
+            'num_match': num_matches,
+            'num_sum': num_instances,
+            'acc': acc
+            }
+    logger.print_table(title="Evaluation Results", data = eval_results)
 
 if __name__ == '__main__':
     main()

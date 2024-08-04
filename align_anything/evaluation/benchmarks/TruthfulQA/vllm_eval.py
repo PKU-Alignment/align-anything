@@ -1,15 +1,13 @@
-import os
-import torch
 import argparse
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader, load_dataset
-from typing import Union, List, Dict, Any, Tuple
+from typing import List, Dict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from vllm import LLM, SamplingParams
+from align_anything.evaluation.eval_logger import EvalLogger
 from datasets import Dataset
 import json
 
@@ -27,20 +25,25 @@ class TruthfulQADataLoader(BaseDataLoader):
     def get_answer(self, data):
         return data['answer']
 
-    def set_fewshot_dataset(self, dataset):
-        few_shot_examples = json.load(open("../few_shot.json", encoding='utf-8'))['truthfulQA']['ocp']
+    def set_fewshot_dataset(self, dataset, task):
+        if self.cot:
+            with open('/align-anything/align_anything/evaluation/benchmarks/cot_fewshot/truthfulQA/' + task + '.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return data
+        else:
+            few_shot_examples = json.load(open("../few_shot.json", encoding='utf-8'))['truthfulQA']['ocp']
 
-        formatted_data = []
-        for example in few_shot_examples:
-            formatted_data.append({
-                'question': example['question'],
-                'answer': example['best_answer']
+            formatted_data = []
+            for example in few_shot_examples:
+                formatted_data.append({
+                    'question': example['question'],
+                    'answer': example['best_answer']
+                })
+
+            return Dataset.from_dict({
+                'question': [item['question'] for item in formatted_data],
+                'answer': [item['answer'] for item in formatted_data]
             })
-
-        return Dataset.from_dict({
-            'question': [item['question'] for item in formatted_data],
-            'answer': [item['answer'] for item in formatted_data]
-        })
 
     def build_example_prompt(self, data, with_answer=True):
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
@@ -84,7 +87,7 @@ class TruthfulQAGeneratorVLLM(BaseInferencer_vllm):
         model_id = self.model_cfgs.model_id
         detailed_filename = f'{model_id}_detailed'
         brief_filename = f'{model_id}_brief'
-        update_results(output_dir, brief_filename, detailed_filename,task2details) #这一步可以考虑能不能移到外面，目前是把里面的raw_output写了一下
+        update_results(output_dir, brief_filename, detailed_filename,task2details)
         
         return task2details
 
@@ -121,11 +124,18 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: TruthfulQADataLoade
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
-    print(unparsed_args)
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('test_truthfulQA')
+    logger = EvalLogger('Evaluation')
+    dict_configs, infer_configs = read_eval_cfgs('truthfulQA', 'vLLM')
+
+    try:
+        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        logger.log('error', "Config file is not exist or incomplete.")
+        exit()
+
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
@@ -134,23 +144,42 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = TruthfulQADataLoader(dict_configs)
+    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = TruthfulQAGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
 
+    tasks, cnt_sums, cnt_truthfuls, cnt_informtives = [], [], [], []
     for task, _ in raw_outputs.items():
-        print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        print('task: ', task)
-        print('few_shot: ', eval_configs.n_shot)
-        print('-----------------------------------------------------------')
+
         cnt_sum, cnt_truthful, cnt_informtive, truthful_cases, informtive_cases = evaluator(raw_outputs[task], dataloader, task)
-        print('| num_sum: ', cnt_sum, '|truthful acc: ', cnt_truthful / cnt_sum, '|informtive acc: ', cnt_informtive/ cnt_sum)
-        print('==============================TRUTHFUL CASE==============================')
-        print('Prompt: ', truthful_cases[0].prompt)
-        print('Response: ', truthful_cases[0].response)
-        print('==============================INFORMTIVE CASE==============================')
-        print('Prompt: ', informtive_cases[0].prompt)
-        print('Response: ', informtive_cases[0].response)
+
+        tasks.append(task)
+        cnt_sums.append(cnt_sum)
+        cnt_truthfuls.append(cnt_truthful)
+        cnt_informtives.append(cnt_informtive)
+
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.log('info', f'task: {task}')
+        logger.log('info', f'few_shot: {eval_configs.n_shot}')
+        logger.log('info', '-----------------------------------------------------------')
+        logger.log('info', f'| num_sum: {cnt_sum} |truthful acc: {cnt_truthful / cnt_sum} |informtive acc: {cnt_informtive / cnt_sum}')
+        logger.log('info', '==============================TRUTHFUL CASE==============================')
+        logger.log('info', f'Prompt: {truthful_cases[0].prompt}')
+        logger.log('info', f'Response: {truthful_cases[0].response}')
+        logger.log('info', '==============================INFORMTIVE CASE==============================')
+        logger.log('info', f'Prompt: {informtive_cases[0].prompt}')
+        logger.log('info', f'Response: {informtive_cases[0].response}')
+
+    eval_results = {
+            'task': tasks,
+            'num_fewshot': [eval_configs.n_shot] * len(tasks),
+            'chain_of_thought': [eval_configs.cot] * len(tasks),
+            'cnt_sums': cnt_sums,
+            'cnt_truthfuls': cnt_truthfuls,
+            'cnt_informtives': cnt_informtives
+            }
+    logger.print_table(title="Evaluation Results", data = eval_results)
 
 if __name__ == '__main__':
     main()

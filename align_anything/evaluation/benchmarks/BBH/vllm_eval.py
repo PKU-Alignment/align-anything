@@ -1,23 +1,18 @@
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '4, 5, 6, 7'
 import argparse
-from align_anything.evaluation.eval.base_eval import BaseEval_vllm
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import Union, List, Dict, Any, Tuple
+from typing import List, Dict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results
-from datasets import Dataset, load_dataset
-import json
-
-import random
-import re
+from datasets import load_dataset
+from align_anything.evaluation.eval_logger import EvalLogger
 import string
+import json
+import re
 
 class BBHDataLoader(BaseDataLoader):
-
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -32,7 +27,7 @@ class BBHDataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task=None):
         if self.cot:
-            few_shot_examples = json.load(open("./cot_fewshot/" + task + ".json", encoding='utf-8'))
+            few_shot_examples = json.load(open("../cot_fewshot/BBH/" + task + ".json", encoding='utf-8'))
         else:
             few_shot_examples = json.load(open("./fewshot/" + task + ".json", encoding='utf-8'))
         return few_shot_examples
@@ -64,7 +59,6 @@ class BBHDataLoader(BaseDataLoader):
         return question
 
 class BBHGeneratorVLLM(BaseInferencer_vllm):
-
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
         for task, input in data.items():
@@ -78,7 +72,6 @@ class BBHGeneratorVLLM(BaseInferencer_vllm):
         update_results(output_dir, brief_filename, detailed_filename,task2details)
         
         return task2details
-            
 
 def is_ordered_substrings(long_str, substrings):
     last_index = 0
@@ -316,13 +309,7 @@ def check_ans(input, target, output):
         return t in substrings or full in substrings
     return False
 
-def get_question_from_input(input):
-    index_head = input.rfind('\n\n')
-    index_tail = input[index_head + 2:].find('\n')
-    return input[index_head + 2:][:index_tail]
-
 def evaluator(raw_output: List[InferenceOutput], dataloader: BBHDataLoader, task: str):
-    
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
     correct_answers = []
     responses = []
@@ -336,7 +323,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BBHDataLoader, task
         correct_answers.append(
             {
                 'prompt': instance['input'],
-                'prompt_token_ids': dataloader.tokenizer(instance['input']).input_ids,
                 'answer': dataloader.get_answer(instance)
             }
         )
@@ -344,42 +330,49 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BBHDataLoader, task
         responses.append(
             {
                 'prompt': (output.prompt),
-                'prompt_token_ids': dataloader.tokenizer((output.prompt)).input_ids,
                 'answer': output.response[0]
             }
         )
-    cnt_fail = 0
-    cnt_wrong = 0
     for correct_answer in correct_answers:
-
-        flag = 1
+        cnt_sum += 1
         for response in responses:
-            #if correct_answer['prompt_token_ids'] == response['prompt_token_ids']:
             if correct_answer['prompt'] in response['prompt']:
-                flag = 0
-
-                cnt_sum += 1
+                flag_fail = False
+                eval_case = {
+                    'question': correct_answer['prompt'],
+                    'correct_answer': correct_answer['answer'],
+                    'chosen_answer': response['answer']
+                }
                 if check_ans(correct_answer['prompt'], correct_answer['answer'], response['answer']):
                     cnt_match += 1
-                    true_cases.append(correct_answer['prompt'])
+                    eval_case['result'] = True
+                    true_cases.append(eval_case)
                 else:
-                    false_cases.append(correct_answer['prompt'])
-                    cnt_wrong += 1
+                    eval_case['result'] = False
+                    false_cases.append(eval_case)
                 break
-        if flag == 1:
+        if flag_fail:
             cnt_fail += 1
-    if cnt_fail > 0:
-        print(task, "failed cases:", cnt_fail)
+        else:
+            flag_fail = True
+
     return cnt_match , cnt_sum, true_cases, false_cases
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
-    print(unparsed_args)
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('test_bbh')
+    dict_configs, infer_configs = read_eval_cfgs('bbh', 'vLLM')
+    logger = EvalLogger('Evaluation')
+
+    try:
+        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        logger.log('error', "Config file is not exist or incomplete.")
+        exit()
+
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
@@ -390,23 +383,41 @@ def main():
     dataloader = BBHDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
     eval_module = BBHGeneratorVLLM(model_config, infer_configs)
-    outputs = eval_module.eval(test_data, eval_configs)
-    all_correct = 0
-    all_total = 0
-    for task, raw_output in outputs.items():
-        print(f"Evaluating task: {task}")
-        correct, total, true_cases, false_cases = evaluator(raw_output, dataloader, task)
-        
-        print(f"Correct: {correct}/{total}")
-        if total != 0:
-            print(f"Accuracy: {correct/total}")
-        #print(f"True cases: {true_cases}")
-        #print(f"False cases: {false_cases}")
-        all_correct += correct
-        all_total += total
-        print("\n")
-    print(f"Total correct: {all_correct}/{all_total}")
-    if all_total != 0:
-        print(f"Total accuracy: {all_correct/all_total}")
+    raw_outputs = eval_module.eval(test_data, eval_configs)
+
+    tasks, num_matches, num_instances, acc = [], [], [], []
+    for task, _ in raw_outputs.items():
+
+        cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
+
+        tasks.append(task)
+        num_matches.append(cnt_match)
+        num_instances.append(cnt_sum)
+        acc.append(cnt_match / cnt_sum)
+
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.log('info', f"task: {task}")
+        logger.log('info', '==============================TRUE CASE==============================')
+        if true_cases:
+            logger.log('info', f'Question: {true_cases[0]["question"]}')
+            logger.log('info', f'Correct Answer: {true_cases[0]["correct_answer"]}')
+            logger.log('info', f'Chosen Answer: {true_cases[0]["chosen_answer"]}')
+        logger.log('info', '==============================FALSE CASE==============================')
+        if false_cases:
+            logger.log('info', f'Question: {false_cases[0]["question"]}')
+            logger.log('info', f'Correct Answer: {false_cases[0]["correct_answer"]}')
+            logger.log('info', f'Chosen Answer: {false_cases[0]["chosen_answer"]}')
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    eval_results = {
+            'task': tasks,
+            'num_fewshot': [eval_configs.n_shot] * len(tasks),
+            'chain_of_thought': [eval_configs.cot] * len(tasks),
+            'num_match': num_matches,
+            'num_sum': num_instances,
+            'acc': acc
+            }
+    logger.print_table(title="Evaluation Results", data = eval_results)
+
 if __name__ == '__main__':
     main()
