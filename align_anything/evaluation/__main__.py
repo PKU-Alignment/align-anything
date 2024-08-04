@@ -103,8 +103,6 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     subfolder = args.benchmark
     args.generation_backend = args.generation_backend.lower()
     selected_subfolder_path = os.path.join(folder_path, subfolder)
-    sh_file_name = f"{args.generation_backend}_eval.sh"
-    sh_file_path = os.path.join(selected_subfolder_path, sh_file_name)
 
     run_benchmark(selected_subfolder_path, args)
 

@@ -15,7 +15,7 @@ def main():
     for file in files:
         if file.endswith(".pkl"):
             InferenceOutputs.extend(load_pickle(os.path.join(cache_path, file)))
-    pprint(InferenceOutputs[0])
+    pprint([InferenceOutputs[i].response for i in range(10)])
     pprint(len(InferenceOutputs))
     
 if __name__=="__main__":
