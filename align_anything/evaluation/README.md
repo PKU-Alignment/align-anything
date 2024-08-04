@@ -21,6 +21,8 @@ Then, We have a roadmap for future development work `align-anything`:
 To prepare for evaluation,  the script is located in the `./scripts`. Parameters that require user input have been left empty and must be filled in prior to initiating the evaluation process. For example, for `evaluate.sh`:
 
 ~~~bash
+cd ../align_anything/evaluation
+
 BENCHMARK=""
 OUTPUT_DIR=""
 GENERATION_BACKEND=""
