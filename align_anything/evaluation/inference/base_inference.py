@@ -29,6 +29,7 @@ from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.utils.tools import requestoutput_to_dict
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from vllm import LLM, SamplingParams
+import pickle
 
 def update_results(output_dir:str,
                      brief_filename:str,
@@ -296,6 +297,7 @@ class BaseInferencer_deepspeed:
                         "raw_output":  outputs[i*num_sequences:(i+1)*num_sequences]
                     }, store_raw=True)
                 )
+                
         return InferenceOutputs
     
     def save_pickle(self, output_data: List[InferenceOutput]):

@@ -37,7 +37,7 @@ python __main__.py \
 - `OUTPUT_DIR`: 用于保存评估结果和输出文件的目录。
 - `GENERATION_BACKEND`: 进行大语言模型推理的框架，包括`deepspeed` 和 `vLLM` 。
 
-此外，我们还应修改 `./align_anything/configs/evaluation/benchmarks` 下与基准测试对应的配置文件，以适应特定的评估任务，并指定测试模型。
+此外，你还应修改 `./align_anything/configs/evaluation/benchmarks` 下与基准测试对应的配置文件，以适应特定的评估任务，并指定测试模型。
 
 例如，对于 `arc.yaml`：
 

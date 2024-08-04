@@ -15,6 +15,7 @@
 # limitations under the License.
 # ==============================================================================
 
+
 cd ../align_anything/evaluation
 
 BENCHMARK=""

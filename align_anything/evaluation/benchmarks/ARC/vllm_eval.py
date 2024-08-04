@@ -58,7 +58,7 @@ class ARCDataLoader(BaseDataLoader):
                 choices_text.append(f'({choice_id}): {data["choices"]["text"][choice_id - 1]}' )
         choices = '\n'.join(choices_text)
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
-        return f"{data['question']}\n{answer}"
+        return f"{data['question']}\n{choices}\n{answer}"
 
     def build_prompt(self, data):
         prompt = f"The following are multiple choice questions (with answers).\n\n"
@@ -103,7 +103,7 @@ class ARCGeneratorVLLM(BaseInferencer_vllm):
         model_id = self.model_cfgs.model_id
         detailed_filename = f'{model_id}_detailed'
         brief_filename = f'{model_id}_brief'
-        update_results(output_dir, brief_filename, detailed_filename,task2details) #这一步可以考虑能不能移到外面，目前是把里面的raw_output写了一下
+        update_results(output_dir, brief_filename, detailed_filename,task2details)
         
         return task2details
     
