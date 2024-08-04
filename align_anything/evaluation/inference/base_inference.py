@@ -263,7 +263,6 @@ class BaseInferencer_deepspeed:
                 )
             else:
                 outputs = self.model.generate(
-                    # inputs=batch["pad_token_ids"].to(self.model.device),
                     inputs=batch["pad_token_ids"].to(f"cuda:{local_rank}"),
                     pixel_values=batch['pixel_values'].to(f"cuda:{local_rank}"),
                     return_dict_in_generate=True, 
@@ -309,7 +308,6 @@ class BaseInferencer_deepspeed:
         else:
             with open(f".cache/outputs.pkl", 'wb') as f:
                 pickle.dump(output_data, f, protocol=4)
-        exit(0)
 
 class BaseInferencer:
     def __init__(self,

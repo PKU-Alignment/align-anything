@@ -49,7 +49,6 @@ def evaluator(test_dataset, output_data):
                         question_id.add(output_item['question_id'])
                         the_other_result[output_item['question_id']] = False
 
-    # print(f"Matched {num_match} out of {num_sum} questions.")
     return num_q_match, num_q_sum, num_p_match, len(question_id)
                 
 
