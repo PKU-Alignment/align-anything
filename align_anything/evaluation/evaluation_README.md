@@ -18,7 +18,7 @@ Then, We have a roadmap for future development work `align-anything`:
 
 ## Quick Start
 
-To prepare for evaluation,  the script is located in the `./align_anything/scripts`. Parameters that require user input have been left empty and must be filled in prior to initiating the evaluation process. For example, for `evaluate.sh`:
+To prepare for evaluation,  the script is located in the `./scripts`. Parameters that require user input have been left empty and must be filled in prior to initiating the evaluation process. For example, for `evaluate.sh`:
 
 ~~~bash
 BENCHMARK=""
