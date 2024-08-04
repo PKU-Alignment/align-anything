@@ -76,7 +76,7 @@ class BaseInferencer_vllm:
         self.llm_tokenizer_mode = self.vllm_cfgs_llm.tokenizer_mode
         self.llm_trust_remote_code = self.vllm_cfgs_llm.trust_remote_code
         self.llm_gpu_memory_utilization = self.vllm_cfgs_llm.gpu_memory_utilization
-        self.llm_tensor_parallel_size = 1
+        # self.llm_tensor_parallel_size = 8
 
         self.model_id = self.model_cfgs.model_id
         self.model_name_or_path = self.model_cfgs.model_name_or_path
@@ -105,7 +105,7 @@ class BaseInferencer_vllm:
             tokenizer=self.model_name_or_path,
             tokenizer_mode=self.llm_tokenizer_mode,
             trust_remote_code=self.llm_trust_remote_code,
-            tensor_parallel_size=self.llm_tensor_parallel_size,
+            # tensor_parallel_size=self.llm_tensor_parallel_size,
             gpu_memory_utilization=self.llm_gpu_memory_utilization,
             max_num_seqs = 1
         )

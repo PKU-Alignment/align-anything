@@ -107,7 +107,7 @@ class API_Eval(API_Single_Eval):
 def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOutput], dataloader: MTBenchDataLoader, task: str, eval_configs= None):
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
     prompts= []
-    file_path = "/home/yangyaodong/projects/wangkaile/align-anything-kaile/align_anything/evaluation/benchmarks/mt_bench/judge_prompts.jsonl"
+    file_path = "./judge_prompts.jsonl"
     with open(file_path, 'r', encoding='utf-8') as file:
         for line in file:
             prompt = json.loads(line.strip())
