@@ -1,3 +1,18 @@
+# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
 from typing import List
 from abc import abstractmethod
 
@@ -154,19 +169,3 @@ class API_Pair_Eval(BaseAPI_Eval):
         responses = self._evaluate(processed_inputs)
         results = [EvalOutput(evalEngine="gpt_evaluation", input=input, raw_output=response) for input, response in zip(user_prompts, responses)]
         return filter_out_exception(results)
-
-    
-
-
-if __name__ == "__main__":
-    
-    import os
-    
-    os.environ["OPENAI_API_KEY"] = "sk-8t0NVGcNB48SxJdm2635566eD24144E7Ae8f8302F4778868"
-    os.environ["OPENAI_API_BASE_URL"] = "https://api.61798.cn/v1/"
-    judger = API_Single_Eval(judge_prompt="You are a helpful assistent", model='gpt-4o', num_workers=2, temperature=0.5)
-    print(judger.evaluate(["hello, please describe Paris for me."]))
-    
-
-    # judger = API_Pair_Eval(judge_prompt="judge which response is better,response should start with '[1]' or '[2]'", model='deepseek-chat', num_workers=2, temperature=0.7, template_function=template_function_example)
-    # print(judger.evaluate(ArenaInput(prompt="what is 1+2+3", response1="1+2+3=1", response2="1+2+3=6")))
