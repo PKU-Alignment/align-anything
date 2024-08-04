@@ -20,11 +20,11 @@ import torch
 from tqdm import tqdm
 from typing import List, Dict, Any
 from torch.nn.utils.rnn import pad_sequence
-# import torch.distributed as dist
+import torch.distributed as dist
 from torch.utils.data import Dataset, DataLoader, DistributedSampler
-# import deepspeed
+import deepspeed
 from vllm.utils import cuda_device_count_stateless
-# from transformers.integrations.deepspeed import HfDeepSpeedConfig
+from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.utils.tools import requestoutput_to_dict
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
@@ -129,7 +129,7 @@ class BaseInferencer_vllm:
                 for output in outputs
         ]
         return InferenceOutputs
-'''
+
 class ListDataset(Dataset):
     def __init__(self, data):
         self.data = data
@@ -308,7 +308,7 @@ class BaseInferencer_deepspeed:
             with open(f".cache/outputs.pkl", 'wb') as f:
                 pickle.dump(output_data, f, protocol=4)
         exit(0)
-'''
+
 class BaseInferencer:
     def __init__(self,
                  type,

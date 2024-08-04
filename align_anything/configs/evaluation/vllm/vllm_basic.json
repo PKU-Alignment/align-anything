@@ -7,13 +7,13 @@
         "temperature": 0.05,
         "frequency_penalty": 1.2,
         "prompt_logprobs": 0,
-        "logprobs": 10
+        "logprobs": 5
     },
     "LLM":
     {
         "tokenizer_mode": "auto",
         "trust_remote_code": false,
-        "gpu_memory_utilization": 0.95,
-        "max_num_seqs": 32
+        "gpu_memory_utilization": 0.9,
+        "max_num_seqs": 1
     }
 }
