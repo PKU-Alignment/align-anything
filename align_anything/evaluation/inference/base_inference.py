@@ -20,11 +20,11 @@ import torch
 from tqdm import tqdm
 from typing import List, Dict, Any
 from torch.nn.utils.rnn import pad_sequence
-import torch.distributed as dist
+# import torch.distributed as dist
 from torch.utils.data import Dataset, DataLoader, DistributedSampler
-import deepspeed
+# import deepspeed
 from vllm.utils import cuda_device_count_stateless
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
+# from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.utils.tools import requestoutput_to_dict
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
@@ -77,6 +77,7 @@ class BaseInferencer_vllm:
         self.llm_tokenizer_mode = self.vllm_cfgs_llm.tokenizer_mode
         self.llm_trust_remote_code = self.vllm_cfgs_llm.trust_remote_code
         self.llm_gpu_memory_utilization = self.vllm_cfgs_llm.gpu_memory_utilization
+        self.llm_max_num_seqs = self.vllm_cfgs_llm.max_num_seqs
         self.llm_tensor_parallel_size = cuda_device_count_stateless()
 
         self.model_id = self.model_cfgs.model_id
@@ -109,7 +110,7 @@ class BaseInferencer_vllm:
             tensor_parallel_size=self.llm_tensor_parallel_size,
             gpu_memory_utilization=self.llm_gpu_memory_utilization,
             distributed_executor_backend="ray",
-            max_num_seqs = 1
+            max_num_seqs = self.llm_max_num_seqs
         )
 
     def generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
@@ -128,7 +129,7 @@ class BaseInferencer_vllm:
                 for output in outputs
         ]
         return InferenceOutputs
-
+'''
 class ListDataset(Dataset):
     def __init__(self, data):
         self.data = data
@@ -296,7 +297,18 @@ class BaseInferencer_deepspeed:
                     }, store_raw=True)
                 )
         return InferenceOutputs
-
+    
+    def save_pickle(self, output_data: List[InferenceOutput]):
+        os.makedirs(".cache", exist_ok=True)
+        
+        if dist.is_initialized():
+            with open(f".cache/outputs_{get_rank()}.pkl", 'wb') as f:
+                pickle.dump(output_data, f, protocol=4)
+        else:
+            with open(f".cache/outputs.pkl", 'wb') as f:
+                pickle.dump(output_data, f, protocol=4)
+        exit(0)
+'''
 class BaseInferencer:
     def __init__(self,
                  type,

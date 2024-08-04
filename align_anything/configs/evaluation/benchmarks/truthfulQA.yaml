@@ -23,10 +23,10 @@ default:
 
   # Model configurations
   model_cfgs:
-    model_id: alpaca-7b-reproduced
+    model_id: Meta-Llama-3-8B-Instruct
     # Pretrained model name or path
-    model_name_or_path: /aifs4su/yaodong/models/alpaca-7b-reproduced
+    model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
     # Chat template
-    chat_template: PKUSafeRLHF
+    chat_template: Llama3
     # The max token length
     model_max_length: 2048

@@ -26,7 +26,7 @@ class MMLUPRODataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task): 
         if self.cot:
-            with open('/align-anything/align_anything/evaluation/benchmarks/cot_fewshot/MMLUPRO/' + task + '.json', 'r', encoding='utf-8') as f:
+            with open('../cot_fewshot/MMLUPRO/' + task + '.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
