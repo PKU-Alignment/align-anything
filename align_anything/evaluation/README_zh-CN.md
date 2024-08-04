@@ -21,6 +21,8 @@
 评估启动脚本位于 `./scripts` 目录下。需要用户输入的参数已留空，必须在启动评估过程之前填写。例如，对于 `evaluate.sh`：
 
 ~~~bash
+cd ../align_anything/evaluation
+
 BENCHMARK=""
 OUTPUT_DIR=""
 GENERATION_BACKEND=""
