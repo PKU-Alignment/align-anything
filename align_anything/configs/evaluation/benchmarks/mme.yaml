@@ -1,4 +1,4 @@
-eval_cfgs:
+infer_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
   vllm_cfgs: vllm_basic.json
@@ -18,17 +18,19 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: mme
+    task: default
     # Task directory
-    task_dir: null
+    task_dir: lmms-lab/MME
     # Evaluation split
-    split: val
+    split: test
 
   # Model configurations
   model_cfgs:
     model_id: llava-1.5-7b-hf
     # Pretrained model name or path
-    model_name_or_path: llava-hf/llava-1.5-7b-hf
+    model_name_or_path: /aifs4su/yaodong/models/llava/llava-1.5-7b-hf
+    # Chat template
+    chat_template: LLAVA
     # Whether to trust remote code
     trust_remote_code: True
     # The max token length

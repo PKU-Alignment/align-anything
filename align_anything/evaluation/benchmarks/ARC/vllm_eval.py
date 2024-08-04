@@ -86,11 +86,9 @@ class ARCGeneratorVLLM(BaseInferencer_vllm):
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
-    print(unparsed_args)
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    # unparsed_args = {'output_dir': '/aifs4su/yaodong/donghai/align-anything/align_anything/evaluation/meta_test_output/arc'}
     dict_configs, infer_configs = read_eval_cfgs('arc', 'vllm')
     for k, v in unparsed_args.items():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))

@@ -1,30 +1,18 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-
 import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1, 2, 3, 4"
 import argparse
-from align_anything.evaluation.inference.base_inference import BaseInferencer_deepspeed, ListDataset
+from PIL import Image
+from align_anything.evaluation.eval.base_eval import BaseEval_vllm
+from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm, BaseInferencer_deepspeed, ListDataset
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import List, Dict, Any
+from typing import Union, List, Dict, Any, Tuple
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.base_inference import update_results, get_rank
 from torch.nn.utils.rnn import pad_sequence
 import torch.distributed as dist
-from torch.utils.data import DataLoader, DistributedSampler
+from torch.utils.data import Dataset, DataLoader, DistributedSampler
 from datasets import load_dataset, DatasetDict
 import pickle
 import time
@@ -47,6 +35,7 @@ class MMEDataLoader(BaseDataLoader):
         return data['answerKey']
 
     def set_fewshot_dataset(self, dataset, task: str=None):
+        # return dataset['validation']
         return None
 
     def build_example_prompt(self, data, with_answer=True):
@@ -93,6 +82,8 @@ class MMEGeneratorDS(BaseInferencer_deepspeed):
                     item.response[i] = item.response[i][len(re.sub('<image>', ' ', item.prompt, count=1)):]
             task2details[task] = raw_output
             self.save_pickle(raw_output, task)
+
+        exit(0)
 
     def load_data_distributed(self, inputs: List[InferenceInput]) -> List[InferenceInput]:
         dataset = ListDataset(inputs)
@@ -180,6 +171,7 @@ class MMEGeneratorDS(BaseInferencer_deepspeed):
 
 
 def main():
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[1::2]]
@@ -187,11 +179,10 @@ def main():
     unparsed_args = dict(zip(keys, values))
     dict_configs, infer_configs = read_eval_cfgs('mme', 'deepspeed')
     for k, v in unparsed_args.items():
-        if v == '' or v is None:
-            continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
     
+    # TODO
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
@@ -199,6 +190,7 @@ def main():
     test_data = dataloader.load_dataset()
     eval_module = MMEGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)
+
 
 if __name__ == '__main__':
     main()

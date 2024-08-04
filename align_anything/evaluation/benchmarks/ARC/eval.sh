@@ -22,7 +22,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-  export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 if [ "$backend" = "vllm" ]; then
   python vllm_eval.py \
