@@ -1,0 +1,14 @@
+[
+    {
+        "input": "not ( ( not not True ) ) is",
+        "target": "False"
+    },
+    {
+        "input": "True and False and not True and True is",
+        "target": "False"
+    },
+    {
+        "input": "not not ( not ( False ) ) is",
+        "target": "True"
+    }
+]
