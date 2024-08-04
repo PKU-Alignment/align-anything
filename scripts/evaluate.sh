@@ -15,10 +15,13 @@
 # limitations under the License.
 # ==============================================================================
 
-
 cd ../align_anything/evaluation
 
+BENCHMARK=""
+OUTPUT_DIR=""
+GENERATION_BACKEND=""
+
 python __main__.py \
-    -b ARC \
-    --output_dir ./meta_test_output/arc \
-    --generation_backend vllm
+    --benchmark ${BENCHMARK} \
+    --output_dir ${OUTPUT_DIR} \
+    --generation_backend ${GENERATION_BACKEND}
