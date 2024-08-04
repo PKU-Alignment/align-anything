@@ -27,7 +27,6 @@ import re
 from align_anything.evaluation.eval_logger import EvalLogger
 
 class GSM8KDataLoader(BaseDataLoader):
-
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -85,7 +84,6 @@ class GSM8KDataLoader(BaseDataLoader):
         return question
 
 class GSM8KGeneratorVLLM(BaseInferencer_vllm):
-
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
         for task, input in data.items():
@@ -170,7 +168,6 @@ def get_generated_answer(data):
         return get_last_number(data)
     
 def main():
-
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[0::2]]

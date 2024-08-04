@@ -45,7 +45,6 @@ def create_openai_chat_completion(client : OpenAI,messages: List[dict], paramete
     except Exception as e:
         return (e, messages, key, retry_steps)
 
-
 def batch_request_openai(
     type: str,
     inputs: List,
@@ -74,7 +73,6 @@ def batch_request_openai(
             f.write(str(response))
         return None
 
-    # Load environment variables
     if openai_api_keys is None:
         openai_api_keys = os.getenv("OPENAI_API_KEY")
     if openai_base_url is None:
@@ -83,13 +81,11 @@ def batch_request_openai(
         'model': model,
     }
     parameters.update(kwargs)
-    #print(openai_base_url)
     client = OpenAI(api_key=openai_api_keys, base_url=openai_base_url)
     
     cache_dict = {}
     full_keys = [generate_key(input) for input in inputs]
 
-    # Load cache
     if cache_dir is not None:
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir, exist_ok=True)
@@ -98,7 +94,6 @@ def batch_request_openai(
             if response is not None:
                 cache_dict[key] = response
 
-    # Filter out cached inputs
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
         futures = []
         for id, key, input in zip(range(len(inputs)), full_keys, inputs):
@@ -117,9 +112,7 @@ def batch_request_openai(
                     if retry_steps < MAX_RETRY_STEPS:
                         future = executor.submit(create_openai_chat_completion, client, input, parameters, key, retry_steps + 1)
                         new_futures.append(future)
-                # key = generate_key(input)
                 cache_dict[key] = response
-                # Save cache
                 if cache_dir is not None:
                     write_cache(key, response)
             time.sleep(1)

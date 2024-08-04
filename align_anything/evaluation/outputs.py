@@ -107,7 +107,6 @@ class InferenceOutput:
         )
     
     def from_deepspeed_output(self, deepspeed_output: Dict):
-        # todo
         pass
 
     def __repr__(self):
@@ -121,9 +120,6 @@ class InferenceOutput:
             f"response_token_ids={self.response_token_ids!r}, "
             f"response_logprobs={self.response_logprobs!r})"
         )
-
-
-
 
 @dataclass 
 class SingleInput:
@@ -165,7 +161,7 @@ Arena GPT eval: [ArenaInput] -> [EvalOutput]
 def function1(ArenaInput):
     return "Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}".format(prompt=ArenaInput.prompt, response1=ArenaInput.response1, response2=ArenaInput.response2)
 
-MMdata = Dict[str,any] # MultiModal data,like {'text':'','image_url':''}
+MMdata = Dict[str,any]
 @dataclass
 class ArenaInput:
     """The input data of a pairwise evaluation request.

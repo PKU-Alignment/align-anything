@@ -21,9 +21,6 @@ infer_cfgs:
 default:
   # Evaluation configurations
   eval_cfgs:
-    batch_size: 1
-    # Seed for random number generator
-    seed: 0
     # Output directory name
     output_dir: null
     # Num shot

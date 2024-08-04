@@ -44,7 +44,6 @@ class MTBenchDataLoader(BaseDataLoader):
             current_file_path = os.path.abspath(__file__)
             current_dir = os.path.dirname(current_file_path)
             dataset = load_dataset(os.path.join(current_dir, self.data_cfgs.task_dir))
-            # dataset = load_dataset(self.task_dir, task)
             prompts, token_ids = self.preprocess(dataset)
             processed_inputs[task] = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
         return processed_inputs

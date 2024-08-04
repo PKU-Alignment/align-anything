@@ -18,7 +18,6 @@
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR"
 
-# 手动解析长选项
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --output_dir)
