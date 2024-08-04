@@ -1,3 +1,18 @@
+# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
 from typing import List
 from openai import OpenAI
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -36,7 +51,7 @@ def batch_request_openai(
     inputs: List,
     model: str,
     num_workers: int = 1 , 
-    cache_dir: str = "/home/yangyaodong/projects/wangkaile/align-anything-kaile/align_anything/evaluation/benchmarks/mt_bench/cache",
+    cache_dir: str = "./.cache",
     openai_api_keys: str = None,
     openai_base_url: str = None,
     kwargs: dict = {},
@@ -120,25 +135,3 @@ def clean_cache(cache_dir: str):
 
 def filter_out_exception(inputs: List[EvalOutput]) -> List[EvalOutput]:
     return [input for input in inputs if not isinstance(input.raw_output, Exception)]
-
-if __name__ == "__main__":
-    # clean_cache("./cache")
-    inputs = [
-            [{'role': 'system', 'content': 'you are a helpful agent'},
-            {'role': 'user', 'content': 'Describe Paris for me.'}],
-            
-        ]
-    outputs = batch_request_openai(
-        type="Arena",
-        model= 'gpt-4o',
-        inputs=inputs,
-        num_workers=4,
-        openai_api_keys = None ,
-        openai_base_url = None,
-        cache_dir="/home/yangyaodong/projects/wangkaile/align-anything-kaile/align_anything/evaluation/eval/.cache",
-    )
-    print(outputs)
-    exit()
-    results = [EvalOutput(evalEngine="gpt_evaluation", input=input, raw_output=response) for input, response in zip(inputs, outputs)]
-    results = filter_out_exception(results)
-    print(len(results))
