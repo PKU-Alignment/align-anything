@@ -1,3 +1,18 @@
+# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
 import logging
 from typing import Any, List, Dict, Optional
 from rich.console import Console
@@ -105,32 +120,3 @@ class EvalLogger:
                 for i in range(num_rows):
                     row = [data[col][i] for col in columns]
                     writer.writerow(row)
-
-
-if __name__ == "__main__":
-
-    log_directory = 'logs'
-    custom_logger = EvalLogger('MyApp', log_dir=log_directory)
-    
-    custom_logger.log('debug', 'This is a debug message')
-    custom_logger.log('info', 'This is an info message')
-    custom_logger.log('warning', 'This is a warning message')
-    custom_logger.log('error', 'This is an error message')
-    custom_logger.log('critical', 'This is a critical message')
-   
-    title = "User Information"
-    
-    columns = ["Name", "Age", "City"]
-    rows = [
-        ["Alice", 30, "New York"],
-        ["Bob", 25, "San Francisco"],
-        ["Charlie", 35, "Los Angeles"]
-    ]
-    custom_logger.print_table(title=title, columns=columns, rows=rows, to_csv=True)
-
-    data = {
-        "Name": ["Alice", "Bob", "Charlie"],
-        "Age": [30, 25, 35],
-        "City": ["New York", "San Francisco", "Los Angeles"]
-    }
-    custom_logger.print_table(title=title, data=data, to_csv=True)

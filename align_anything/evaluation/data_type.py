@@ -1,9 +1,18 @@
-'''
-# This file uses code from the vllm library.
-# vllm: https://github.com/vllm-project/vllm
-# License: Apache-2.0 license
+# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
 
-'''
 import torch
 from typing import List, Optional, Union, Dict
 from dataclasses import dataclass
@@ -185,7 +194,7 @@ Arena GPT eval: [ArenaInput] -> [EvalOutput]
 def function1(ArenaInput):
     return "Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}".format(prompt=ArenaInput.prompt, response1=ArenaInput.response1, response2=ArenaInput.response2)
 
-MMdata = Dict[str,any] # MultiModal data,like {'text':'','image_url':''}
+MMdata = Dict[str,any]
 @dataclass
 class ArenaInput:
     """The input data of a pairwise evaluation request.
