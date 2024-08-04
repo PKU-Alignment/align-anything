@@ -1,3 +1,4 @@
+import os
 import argparse
 from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
@@ -25,7 +26,10 @@ class MTBenchDataLoader(BaseDataLoader):
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
         for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)
+            current_file_path = os.path.abspath(__file__)
+            current_dir = os.path.dirname(current_file_path)
+            dataset = load_dataset(os.path.join(current_dir, self.data_cfgs.task_dir))
+            # dataset = load_dataset(self.task_dir, task)
             prompts, token_ids = self.preprocess(dataset)
             processed_inputs[task] = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
         return processed_inputs
@@ -59,7 +63,9 @@ class MTBenchDataLoader(BaseDataLoader):
     def load_dataset_round2(self, outputs_r1: Dict[str, List[InferenceOutput]]):
         processed_inputs = {}
         for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)
+            current_file_path = os.path.abspath(__file__)
+            current_dir = os.path.dirname(current_file_path)
+            dataset = load_dataset(os.path.join(current_dir, self.data_cfgs.task_dir))
             responses_r1 = [output_r1.response[0] for output_r1 in outputs_r1[task]]
             prompts, token_ids = self.preprocess(data=dataset, responses_r1=responses_r1)
             processed_inputs[task] = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
@@ -105,7 +111,9 @@ class API_Eval(API_Single_Eval):
 
 
 def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOutput], dataloader: MTBenchDataLoader, task: str, eval_configs= None):
-    dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
+    current_file_path = os.path.abspath(__file__)
+    current_dir = os.path.dirname(current_file_path)
+    dataset = load_dataset(task, data_files=os.path.join(current_dir, eval_configs.task_dir))[dataloader.split]
     prompts= []
     file_path = "./judge_prompts.jsonl"
     with open(file_path, 'r', encoding='utf-8') as file:

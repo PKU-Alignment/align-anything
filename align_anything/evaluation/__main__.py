@@ -94,7 +94,7 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     if len(sys.argv) == 1:
         print("┌─────────────────────────────────────────────────────────────────────────────────┐")
         print("│ Please provide arguments to evaluate the model. e.g.                            │")
-        print("│ `align-anything-eval --model_path liuhaotian/llava-v1.6-7b --benchmark MME`     │")
+        print("│ `align-anything-eval --model_path llava-hf/llava-1.5-7b-hf --benchmark MME`     │")
         print("│ More default configs can be refered in `align-anything/align_anything/configs`  │")
         print("└─────────────────────────────────────────────────────────────────────────────────┘")
         sys.exit(1)
