@@ -456,7 +456,8 @@ class LLAVA:
             f"{self.assistant_prompt.format(output='')}"
         )
 
-        image_file = os.path.join(path, 'images', raw_sample['image'])
+        base_coco_url = 'http://images.cocodataset.org/train2017/'
+        image_file = base_coco_url + raw_sample['image']
         return {
             'text': text,
             'prompt': prompt,
