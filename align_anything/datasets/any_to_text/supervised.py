@@ -64,6 +64,7 @@ class SupervisedDataset(Dataset):
         template: str,
         tokenizer: transformers.PreTrainedTokenizer,
         processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        name: str | None = None,
         size: int | None = None,
         split: str | None = None,
         subset: str | None = None,
@@ -78,9 +79,9 @@ class SupervisedDataset(Dataset):
         self.processor = processor
         self.raw_data = load_dataset(
             path,
-            split=split,
-            data_files=data_files,
-            subset=subset,
+            name=name if name and name!="None" else None,
+            split=split if split and split!="None" else None,
+            data_files=data_files if data_files and data_files!="None" else None,
             *optional_args,
             trust_remote_code=True,
         )
@@ -109,22 +110,29 @@ class SupervisedDataset(Dataset):
 
         if 'image' in formatted_sample.keys():
             raw_image = formatted_sample['image']
-            return_dict['image_pixel_values'] = self.processor.image_processor(
-                raw_image, 
-                return_tensors='pt'
-            )['pixel_values'][0]
+            try:
+                return_dict['image_pixel_values'] = self.processor.image_processor(
+                    raw_image, 
+                    return_tensors='pt'
+                )['pixel_values'][0]
+            except Exception as e:
+                return_dict['image_pixel_values'] = None
         else:
             return_dict['image_pixel_values'] = None
             
         if 'audio' in formatted_sample.keys():
             raw_audio = formatted_sample['audio']
-            audio = self.processor.audio_processor(
-                raw_audio, 
-                sampling_rate = 48000,
-                return_tensors='pt'
-            )
-            return_dict['audio_pixel_values'] = audio['input_features'][0]
-            return_dict['is_longer'] = audio['is_longer'][0]
+            try:
+                audio = self.processor.audio_processor(
+                    raw_audio, 
+                    sampling_rate = 48000,
+                    return_tensors='pt'
+                )
+                return_dict['audio_pixel_values'] = audio['input_features'][0]
+                return_dict['is_longer'] = audio['is_longer'][0]
+            except Exception as e:
+                return_dict['audio_pixel_values'] = None
+                return_dict['is_longer'] = None
         else:
             return_dict['audio_pixel_values'] = None
             return_dict['is_longer'] = None
@@ -241,5 +249,4 @@ class SupervisedCollator:
         else:
             return_dict['audio_pixel_values'] = None
             return_dict['is_longer'] = None
-
         return return_dict

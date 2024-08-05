@@ -73,6 +73,7 @@ class SupervisedTrainerBase:
             template=self.cfgs.data_cfgs.train_template,
             tokenizer=self.tokenizer,
             processor=self.processor,
+            name=self.cfgs.data_cfgs.train_name,
             size=self.cfgs.data_cfgs.train_size,
             split=self.cfgs.data_cfgs.train_split,
             subset=self.cfgs.data_cfgs.train_subset,
@@ -91,6 +92,7 @@ class SupervisedTrainerBase:
                 template=self.cfgs.data_cfgs.eval_template,
                 tokenizer=self.tokenizer,
                 processor=self.processor,
+                name=self.cfgs.data_cfgs.eval_name,
                 split=self.cfgs.data_cfgs.eval_split,
                 size=self.cfgs.data_cfgs.eval_size,
                 subset=self.cfgs.data_cfgs.eval_subset,
@@ -117,6 +119,7 @@ class SupervisedTrainerBase:
                     template=self.cfgs.data_cfgs.train_template[i],
                     tokenizer=self.tokenizer,
                     processor=self.processor,
+                    name=self.cfgs.data_cfgs.train_name[i] if self.cfgs.data_cfgs.train_name else None,
                     size=self.cfgs.data_cfgs.train_size[i] if self.cfgs.data_cfgs.train_size else None,
                     split=self.cfgs.data_cfgs.train_split[i] if self.cfgs.data_cfgs.train_split else None,
                     subset=self.cfgs.data_cfgs.train_subset[i] if self.cfgs.data_cfgs.train_subset else None,
@@ -146,6 +149,7 @@ class SupervisedTrainerBase:
                         template=self.cfgs.data_cfgs.eval_template[i],
                         tokenizer=self.tokenizer,
                         processor=self.processor,
+                        name=self.cfgs.data_cfgs.eval_name[i],
                         split=self.cfgs.data_cfgs.eval_split[i],
                         size=self.cfgs.data_cfgs.eval_size[i],
                         subset=self.cfgs.data_cfgs.eval_subset[i],
@@ -180,16 +184,12 @@ class SupervisedTrainerBase:
             self.model,
             self.cfgs.train_cfgs.weight_decay,
         )
-        # optimizer = FusedAdam(
-        #     optimizer_grouped_parameters,
-        #     lr=self.cfgs.train_cfgs.learning_rate,
-        #     betas=self.cfgs.train_cfgs.adam_betas,
-        # )
-        optimizer = AdamW(
+        optimizer = FusedAdam(
             optimizer_grouped_parameters,
             lr=self.cfgs.train_cfgs.learning_rate,
             betas=self.cfgs.train_cfgs.adam_betas,
         )
+
         num_warmup_steps = int(self.cfgs.train_cfgs.lr_warmup_ratio * total_training_steps)
         lr_scheduler = get_scheduler(
             name=self.cfgs.train_cfgs.lr_scheduler_type,
@@ -256,6 +256,7 @@ class SupervisedTrainerBase:
             self.model.train()
 
             for batch in self.train_dataloader:
+                dist.barrier()
                 info = self.train_step(batch)
                 torch.cuda.empty_cache()
 
