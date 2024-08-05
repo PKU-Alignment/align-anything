@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-
+import json
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
@@ -70,16 +70,23 @@ class SupervisedDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        self.raw_data = load_dataset(
-            path,
-            split=split,
-            data_files=data_files,
-            subset=subset,
-            *optional_args,
-            trust_remote_code=True,
-        )
-        if size:
-            self.raw_data = self.raw_data.select(range(int(size)))
+        if 'json' in path:
+            with open(path,'r',encoding='utf-8') as f:
+                self.raw_data = json.load(f)
+            if size:
+                self.raw_data = self.raw_data[:int(size)]  
+        else:
+            self.raw_data = load_dataset(
+                path,
+                split=split,
+                data_files=data_files,
+                subset=subset,
+                *optional_args,
+                trust_remote_code=True,
+            )
+            if size:
+                size = min(size, len(self.raw_data))
+                self.raw_data = self.raw_data.select(range(int(size)))
         self.template = get_template_class(template)
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:

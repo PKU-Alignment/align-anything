@@ -573,8 +573,8 @@ class AudioSet:
             'sampling_rate': sample_rate
         }
 
-@register_template('DiffusionDB')
-class DiffusionDB:
+@register_template('DiffusionDB_critique')
+class DiffusionDB_critique:
     system_prompt: str = ''
     user_prompt: str = 'USER: {input}'
     assistant_prompt: str = ' ASSISTANT:{output}'
