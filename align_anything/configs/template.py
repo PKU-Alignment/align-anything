@@ -1154,19 +1154,19 @@ class Llama2_hf(Dialogue):
 
 @register_template('Llama3')
 class Llama3(Dialogue):
-    system_prompt: str = '<bos>system\n\n'
-    user_prompt: str = 'user\n\n{input}<|eot_id|>'
-    assistant_prompt: str = 'assistant\n\n{output}'
+    system_prompt: str = '<bos><|start_header_id|>system<|end_header_id|>\n\n'
+    user_prompt: str = '<|start_header_id|>user<|end_header_id|>\n\n{input}<|eot_id|>'
+    assistant_prompt: str = '<|start_header_id|>assistant<|end_header_id|>\n\n{output}'
     separator: str = ''
 
 
 @register_template('Llama3_hf')
 class Llama3_hf(Dialogue):
     system_prompt: str = (
-        "<bos>system\n\n    You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."
+        "<bos><|start_header_id|>system<|end_header_id|>\n\n    You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."
     )
-    user_prompt: str = 'user\n\n{input}<|eot_id|>'
-    assistant_prompt: str = 'assistant\n\n{output}'
+    user_prompt: str = '<|start_header_id|>user<|end_header_id|>\n\n{input}<|eot_id|>'
+    assistant_prompt: str = '<|start_header_id|>assistant<|end_header_id|>\n\n{output}'
     separator: str = ''
 
 
@@ -1197,8 +1197,8 @@ class Openchat(Dialogue):
 @register_template('Openchat3')
 class Openchat3(Dialogue):
     system_prompt: str = '<bos>'
-    user_prompt: str = 'GPT4 Correct User\n\n{input}<|eot_id|>'
-    assistant_prompt: str = 'GPT4 Correct Assistant\n\n'
+    user_prompt: str = '<|start_header_id|>GPT4 Correct User<|end_header_id|>\n\n{input}<|eot_id|>'
+    assistant_prompt: str = '<|start_header_id|>GPT4 Correct Assistant<|end_header_id|>\n\n'
     separator: str = ''
 
 
