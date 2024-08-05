@@ -456,12 +456,12 @@ class LLAVA:
             f"{self.assistant_prompt.format(output='')}"
         )
 
-        base_coco_url = 'http://images.cocodataset.org/train2017/'
-        image_file = base_coco_url + raw_sample['image']
+        # base_coco_url = 'http://images.cocodataset.org/train2017/'
+        image_file = raw_sample['image']
         return {
             'text': text,
             'prompt': prompt,
-            'image': Image.open(requests.get(image_file, stream=True).raw),
+            'image': load_image(image_file),
         }
 
 @register_template('LLAVA-CC3M')
@@ -574,8 +574,8 @@ class AudioSet:
             'sampling_rate': sample_rate
         }
 
-@register_template('DiffusionDB')
-class DiffusionDB:
+@register_template('DiffusionDB_critique')
+class DiffusionDB_critique:
     system_prompt: str = ''
     user_prompt: str = 'USER: {input}'
     assistant_prompt: str = ' ASSISTANT:{output}'
