@@ -10,6 +10,7 @@ from torch.utils.data import Dataset, BatchSampler
 
 __all__ = [
     'CombinedDataset',
+    'CombinedDatasetBatchSampler',
     'DistributedCombinedDatasetBatchSampler',
 ]
 
@@ -34,6 +35,52 @@ class CombinedDataset(Dataset):
             return [self.__getitem__(i) for i in idx]
         else:
             raise TypeError(f"Unsupported index type: {type(idx)}")
+
+class CombinedDatasetBatchSampler(BatchSampler):
+    def __init__(self, datasets: List[Dataset], batch_size: int, shuffle: bool = True, 
+                 seed: int = 0, drop_last: bool = False) -> None:
+        self.epoch = 0
+        self.seed = seed
+        self.shuffle = shuffle
+        self.datasets = datasets
+        self.drop_last = drop_last
+        self.batch_size = batch_size
+        self.dataset_lengths = [len(d) for d in datasets]
+        
+        if self.shuffle:
+            random.seed(self.seed + self.epoch)
+            
+        self.indices = self.combine_indices()
+        
+    def combine_indices(self) -> List[List[List[int]]]:
+        indices_list = []
+        start_index = 0
+        for length in self.dataset_lengths:
+            indices_dataset = []
+            indices = list(range(start_index, start_index + length))
+            start_index += length
+            if self.shuffle:
+                random.shuffle(indices)
+            count = (length + self.batch_size - 1) // self.batch_size if not self.drop_last else length // self.batch_size
+            
+            for i in range(count):
+                batch_indices = indices[i * self.batch_size: (i + 1) * self.batch_size]
+                if len(batch_indices) < self.batch_size and not self.drop_last:
+                    batch_indices += batch_indices[:self.batch_size - len(batch_indices)]
+                if len(batch_indices) == self.batch_size:
+                    indices_dataset.append(batch_indices)
+                    
+            if self.shuffle:
+                random.shuffle(indices_dataset)
+            indices_list.append(indices_dataset)
+            
+        return indices_list
+
+    def __iter__(self)-> iter:
+        return iter(self.indices)
+
+    def __len__(self) -> int:
+        return len(self.indices)
         
 class DistributedCombinedDatasetBatchSampler(BatchSampler):
     def __init__(self, datasets: List[Dataset], batch_size: int, num_replicas: Optional[int] = None,
