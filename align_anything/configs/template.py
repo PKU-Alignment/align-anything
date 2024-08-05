@@ -193,9 +193,9 @@ class PKUSafeRLHF(Template):
 @register_template('ShareGPT')
 class ShareGPT:
     system_prompt: str = ''
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: {input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}'
-    split_token: str = 'assistant:'
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
     end_token: str = '<|end_of_text|>'
 
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
@@ -226,9 +226,9 @@ class ShareGPT:
 @register_template('VQAv2')
 class VQAv2:
     system_prompt: str = ''
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: \n<image>{input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}'
-    split_token: str = 'assistant:'
+    user_prompt: str = 'USER: \n<image>{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
 
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         question = raw_sample['question']
@@ -255,9 +255,9 @@ class VQAv2:
 @register_template('GQA')
 class GQA:
     system_prompt: str = ''
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: \n<image>{input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}'
-    split_token: str = 'assistant:'
+    user_prompt: str = 'USER: \n<image>{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
 
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         question = raw_sample['question']
@@ -285,9 +285,9 @@ class GQA:
 @register_template('OK-VQA')
 class OKVQA:
     system_prompt: str = ''
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: \n<image>{input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}'
-    split_token: str = 'assistant:'
+    user_prompt: str = 'USER: \n<image>{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
 
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         question = raw_sample['question']
@@ -314,9 +314,9 @@ class OKVQA:
 @register_template('A-OKVQA')
 class AOKVQA:
     system_prompt: str = ''
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: \n<image>{input} give me your rationales.'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}, the rationales is that {rationales}'
-    split_token: str = 'assistant:'
+    user_prompt: str = 'USER: \n<image>{input} give me your rationales.'
+    assistant_prompt: str = '\nASSISTANT: {output}, the rationales is that {rationales}'
+    split_token: str = 'ASSISTANT:'
 
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         question = raw_sample['question']
@@ -344,9 +344,9 @@ class AOKVQA:
 @register_template('OCRVQA')
 class OCRVQA:
     system_prompt: str = ''
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: \n<image> According to the content of the pictures, answer the following questions in order.\n{input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}'
-    split_token: str = 'assistant:'
+    user_prompt: str = 'USER: \n<image> According to the content of the pictures, answer the following questions in order.\n{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
 
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         questions = raw_sample['questions']
@@ -375,9 +375,9 @@ class OCRVQA:
 @register_template('VisualGenome')
 class VisualGenome:
     system_prompt: str = ''
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: \n<image> According to the content of the pictures, answer the following questions in order.\n{input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}'
-    split_token: str = 'assistant:'
+    user_prompt: str = 'USER: \n<image> According to the content of the pictures, answer the following questions in order.\n{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
 
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         questions = raw_sample['questions']
@@ -406,9 +406,9 @@ class VisualGenome:
 @register_template('ShareGPT-4o')
 class ShareGPT4o:
     system_prompt: str = ''
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: {input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}'
-    split_token: str = 'assistant:'
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
 
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations']
@@ -434,14 +434,10 @@ class ShareGPT4o:
     
 @register_template('LLAVA')
 class LLAVA:
-    # system_prompt: str = ''
-    # user_prompt: str = 'USER: \n<image>{input}'
-    # assistant_prompt: str = '\nASSISTANT:{output}'
-    # split_token: str = 'ASSISTANT:'
     system_prompt: str = ''
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: \n<image>{input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}'
-    split_token: str = 'assistant:'
+    user_prompt: str = 'USER: \n<image>{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
@@ -469,8 +465,8 @@ class LLAVA:
 
 @register_template('LLAVA-CC3M')
 class LLAVA_CC3M:
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>\n{input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>\n{output}'
+    user_prompt: str = 'USER: \n{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
     
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations']
@@ -497,8 +493,8 @@ class LLAVA_CC3M:
 
 @register_template('AudioCaps')
 class AudioCaps:
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: {input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}'
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         caption = raw_sample['caption']
         audiocap_path = raw_sample['audiocap_path']
@@ -525,8 +521,8 @@ class AudioCaps:
 
 @register_template('LibriSpeech')
 class LibriSpeech:
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: {input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}'
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         caption = raw_sample['text'].lower()
         question = random.choice(SPEECH_QUESTIONS)
@@ -551,8 +547,8 @@ class LibriSpeech:
 
 @register_template('AudioSet')
 class AudioSet:
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>: {input}'
-    assistant_prompt: str = '\n<|start_header_id|>assistant<|end_header_id|>: {output}'
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
     def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         caption = f"The content of audio is {', '.join(raw_sample['captions'])}."
         question = random.choice(AUDIO_QUESTIONS)
@@ -1158,19 +1154,19 @@ class Llama2_hf(Dialogue):
 
 @register_template('Llama3')
 class Llama3(Dialogue):
-    system_prompt: str = '<bos><|start_header_id|>system<|end_header_id|>\n\n'
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>\n\n{input}<|eot_id|>'
-    assistant_prompt: str = '<|start_header_id|>assistant<|end_header_id|>\n\n{output}'
+    system_prompt: str = '<bos>system\n\n'
+    user_prompt: str = 'user\n\n{input}<|eot_id|>'
+    assistant_prompt: str = 'assistant\n\n{output}'
     separator: str = ''
 
 
 @register_template('Llama3_hf')
 class Llama3_hf(Dialogue):
     system_prompt: str = (
-        "<bos><|start_header_id|>system<|end_header_id|>\n\n    You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."
+        "<bos>system\n\n    You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."
     )
-    user_prompt: str = '<|start_header_id|>user<|end_header_id|>\n\n{input}<|eot_id|>'
-    assistant_prompt: str = '<|start_header_id|>assistant<|end_header_id|>\n\n{output}'
+    user_prompt: str = 'user\n\n{input}<|eot_id|>'
+    assistant_prompt: str = 'assistant\n\n{output}'
     separator: str = ''
 
 
@@ -1201,8 +1197,8 @@ class Openchat(Dialogue):
 @register_template('Openchat3')
 class Openchat3(Dialogue):
     system_prompt: str = '<bos>'
-    user_prompt: str = '<|start_header_id|>GPT4 Correct User<|end_header_id|>\n\n{input}<|eot_id|>'
-    assistant_prompt: str = '<|start_header_id|>GPT4 Correct Assistant<|end_header_id|>\n\n'
+    user_prompt: str = 'GPT4 Correct User\n\n{input}<|eot_id|>'
+    assistant_prompt: str = 'GPT4 Correct Assistant\n\n'
     separator: str = ''
 
 
