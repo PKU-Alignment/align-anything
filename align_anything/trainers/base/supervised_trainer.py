@@ -256,7 +256,6 @@ class SupervisedTrainerBase:
             self.model.train()
 
             for batch in self.train_dataloader:
-                dist.barrier()
                 info = self.train_step(batch)
                 torch.cuda.empty_cache()
 
