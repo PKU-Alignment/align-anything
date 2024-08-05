@@ -83,6 +83,8 @@ data_cfgs:
   eval_datasets: null
   # The format template for evaluation
   eval_template: null
+  # The name of evaluation datasets
+  eval_name: null
   # The total number for evaluation
   eval_size: null
   # The split of evaluation datasets
