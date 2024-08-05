@@ -461,7 +461,7 @@ class LLAVA:
         return {
             'text': text,
             'prompt': prompt,
-            'image': Image.open(image_file),
+            'image': Image.open(requests.get(image_file, stream=True).raw),
         }
 
 @register_template('LLAVA-CC3M')
