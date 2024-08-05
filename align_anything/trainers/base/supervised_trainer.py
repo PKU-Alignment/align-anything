@@ -352,7 +352,6 @@ class SupervisedTrainerBase:
 
         self.logger.print('Model saved!')
 
-<<<<<<< HEAD
         if not self.lora_enabled:
             self.logger.print('Saving 16-bit model...')
             save_file_name = f'pytorch_model_{tag}.bin' if tag else 'pytorch_model.bin'
@@ -368,23 +367,6 @@ class SupervisedTrainerBase:
             model_to_be_saved = model.merge_and_unload()
             model_to_be_saved.save_pretrained(self.cfgs.logger_cfgs.output_dir)
             self.logger.print('Model saved!')
-=======
-        # if not self.lora_cfgs.use_lora:
-        #     self.logger.print('Saving 16-bit model...')
-        #     save_file_name = f'pytorch_model_{tag}.bin' if tag else 'pytorch_model.bin'
-        #     model.save_16bit_model(self.cfgs.logger_cfgs.output_dir, save_filename=save_file_name)
-        #     self.logger.print('Model saved!')
-        # if self.lora_cfgs.use_lora and not self.lora_cfgs.save_full_model:
-        #     self.logger.print('LoRA used.Saving model as LoRA adapters...')
-        #     model.save_pretrained(self.cfgs.logger_cfgs.output_dir)
-        #     self.logger.print('Model saved!')
-        # if self.lora_cfgs.use_lora and self.lora_cfgs.save_full_model:
-        #     self.logger.print('LoRA used.Saving full model...')
-        #     model = model.module 
-        #     model_to_be_saved = model.merge_and_unload()
-        #     model_to_be_saved.save_pretrained(self.cfgs.logger_cfgs.output_dir)
-        #     self.logger.print('Model saved!')
->>>>>>> 3a54092 (a commit)
 
     def save_diffusers(
         self,
