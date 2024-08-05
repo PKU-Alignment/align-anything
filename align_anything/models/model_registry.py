@@ -35,10 +35,12 @@ from transformers import (
 
 try:
     from transformers import ChameleonConfig, ChameleonForConditionalGeneration
-
+    # from align_anything.models.chameleon.modeling_chameleon import ChameleonForConditionalGeneration
+    from align_anything.models.chameleon_model import AccustomedChameleonModel
     CHAMELEON_AVALIABLE = True
 except ImportError:
     CHAMELEON_AVALIABLE = False
+    print("Chameleon is currently not available.")
 
 from transformers.utils.generic import ModelOutput
 
@@ -161,7 +163,7 @@ def register_model(auto_model: AutoModelForCausalLM) -> AutoModelForCausalLM:
     auto_model.register(LlavaConfig, LlavaForConditionalGeneration)
     auto_model.register(LlavaNextConfig, AccustomedLlavaNextModel)
     if CHAMELEON_AVALIABLE:
-        auto_model.register(ChameleonConfig, ChameleonForConditionalGeneration)
+        auto_model.register(ChameleonConfig, AccustomedChameleonModel)
     return auto_model
 
 

@@ -13,8 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 
-import json
+import copy
 from typing import Any, Callable
+from regex import D
 from typing_extensions import TypedDict  # Python 3.10+
 
 import torch
@@ -33,6 +34,7 @@ IGNORE_INDEX = -100
 
 __all__ = [
     'SupervisedDataset',
+    'SupervisedTokenizedDataset',
     'SupervisedCollator',
     'SupervisedSample',
     'SupervisedBatch',
@@ -42,12 +44,14 @@ __all__ = [
 class SupervisedSample(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (L,)
     labels: torch.LongTensor  # size = (L,)
+    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
 class SupervisedBatch(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (B, L)
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
+    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
 class SupervisedDataset(Dataset):
@@ -69,23 +73,16 @@ class SupervisedDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        if 'json' in path:
-            with open(path,'r',encoding='utf-8') as f:
-                self.raw_data = json.load(f)
-            if size:
-                self.raw_data = self.raw_data[:int(size)]  
-        else:
-            self.raw_data = load_dataset(
-                path,
-                split=split,
-                data_files=data_files,
-                subset=subset,
-                *optional_args,
-                trust_remote_code=True,
-            )
-            if size:
-                size = min(size, len(self.raw_data))
-                self.raw_data = self.raw_data.select(range(int(size)))
+        self.raw_data = load_dataset(
+            path,
+            split=split,
+            data_files=data_files,
+            subset=subset,
+            *optional_args,
+            trust_remote_code=True,
+        )
+        if size:
+            self.raw_data = self.raw_data.select(range(int(size)))
         self.template = get_template_class(template)
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
@@ -98,14 +95,24 @@ class SupervisedDataset(Dataset):
             raw_text = formatted_sample['text'] + self.tokenizer.eos_token
         else:
             raise NotImplementedError
-        return_dict['input_ids'] = self.tokenize(raw_text)
+        
+        text_dict = self.processor(raw_text, formatted_sample['image'], return_tensors='pt').to(dtype = torch.bfloat16)
+        
+        return_dict['input_ids'] = text_dict['input_ids'].squeeze()
 
         formatted_prompt = formatted_sample['prompt']
+        prompt_dict = self.processor(formatted_prompt, formatted_sample['input_image'], return_tensors='pt').to(dtype = torch.bfloat16)
+        
         labels = return_dict['input_ids'].clone()
         # mask non-assistant input
-        labels[: len(self.tokenize(formatted_prompt))] = IGNORE_INDEX
+        labels[: len(prompt_dict['input_ids'])] = IGNORE_INDEX
         return_dict['labels'] = labels
 
+        return_dict['pixel_values'] = text_dict['pixel_values']
+        
+        # print(f"Input id shape: {return_dict['input_ids'].shape}")
+        # print(f"Pixel value shape: {return_dict['pixel_values'].shape}")
+        
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
@@ -143,6 +150,45 @@ class SupervisedDataset(Dataset):
         return len(self.raw_data)
 
 
+class SupervisedTokenizedDataset(Dataset):
+
+    def __init__(
+        self,
+        path: str,
+        template: str | None = None,
+        tokenizer: transformers.PreTrainedTokenizer | None = None,
+        processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        size: int | None = None,
+        split: str | None = None,
+        subset: str | None = None,
+        data_files: str | None = None,
+        optional_args: list | str = [],
+    ):
+        super().__init__()
+        assert path, f'You must set the valid datasets path! Here is {path}'
+        assert template, f'You must set the valid template path! Here is {template}'
+        self.tokenizer = tokenizer
+        self.processor = processor
+
+        self.raw_data = torch.load(f"{path}/{data_files}", map_location=torch.device('cpu'))
+        if size:
+            self.raw_data = self.raw_data.select(range(int(size)))
+        self.template = get_template_class(template)
+
+    def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
+        return SupervisedCollator(self.tokenizer.pad_token_id)
+
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
+        """Get a tokenized data sample by index."""
+        raw_sample = self.raw_data[index]
+        # torch.set_printoptions(threshold=torch.inf)
+        # print(f"Input_id: {raw_sample['input_ids']}")
+        return raw_sample
+
+    def __len__(self) -> int:
+        """Get the number of samples in the dataset."""
+        return len(self.raw_data)
+    
 class SupervisedCollator:
 
     def __init__(self, pad_token_id: int) -> None:
@@ -167,4 +213,39 @@ class SupervisedCollator:
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
         )
 
+        if 'pixel_values' in samples[0].keys():
+        
+            a = return_dict['attention_mask'].shape[0]
+            
+            # return_dict['pixel_values'] = torch.cat(
+            #     [sample['pixel_values'] for sample in samples], dim=0
+            # ).to(current_device, dtype = torch.bfloat16)
+            
+            if samples[0]['pixel_values'].dim() == 4:
+                # init list for pixel_values
+                # return_dict['image_sizes'] = [ sample['pixel_values'].to(current_device, dtype = torch.bfloat16).size(0) for sample in samples ]
+                
+                _pixel_values_list = []
+                for sample in samples:
+                    pixel_values = sample['pixel_values']  # size = (P, C, H, W)
+                    _pixel_values_list.append(pixel_values)
+                
+                return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device, dtype = torch.bfloat16) 
+                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
+                
+                # image_sizes
+                b = samples[0]['pixel_values'].shape[2]
+                c = samples[0]['pixel_values'].shape[3]
+                image_size = torch.tensor([b, c], device=current_device, dtype = torch.bfloat16)
+                
+
+            else:
+                # original code for non-patches 
+                return_dict['pixel_values'] = torch.stack(
+                    [sample['pixel_values'] for sample in samples]
+                ).to(current_device, dtype = torch.bfloat16)
+
+
+        # print(f"Returning a input id {return_dict['input_ids'].shape}")
+        # print(f"Returning a pixel value {return_dict['pixel_values'].shape}")
         return return_dict
