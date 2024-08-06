@@ -538,11 +538,12 @@ class LibriSpeech:
             f"{self.assistant_prompt.format(output='')}"
         )
         audio = raw_sample['audio']['array']
+        sampling_rate = raw_sample['audio']['sampling_rate']
         return {
             'text': text,
             'prompt': prompt,
             'audio': audio,
-            'sampling_rate': None
+            'sampling_rate': sampling_rate
         }
 
 
