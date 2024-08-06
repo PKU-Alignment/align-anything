@@ -49,10 +49,6 @@ train_cfgs:
   eval_strategy: steps
   # The evaluation interval in step-wise evaluation case
   eval_interval: 1000
-  # Freeze the multi modal projection layer
-  # freeze_mm_proj: True
-  # Freeze the vison tower model
-  # freeze_vision_tower: True
   # Freeze the language model
   freeze_language_model: False
   # The max norm of gradient

@@ -104,14 +104,11 @@ class SupervisedDataset(Dataset):
         prompt_dict = self.processor(formatted_prompt, formatted_sample['input_image'], return_tensors='pt').to(dtype = torch.bfloat16)
         
         labels = return_dict['input_ids'].clone()
-        # mask non-assistant input
+
         labels[: len(prompt_dict['input_ids'])] = IGNORE_INDEX
         return_dict['labels'] = labels
 
         return_dict['pixel_values'] = text_dict['pixel_values']
-        
-        # print(f"Input id shape: {return_dict['input_ids'].shape}")
-        # print(f"Pixel value shape: {return_dict['pixel_values'].shape}")
         
         return return_dict
 
@@ -181,8 +178,6 @@ class SupervisedTokenizedDataset(Dataset):
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
         raw_sample = self.raw_data[index]
-        # torch.set_printoptions(threshold=torch.inf)
-        # print(f"Input_id: {raw_sample['input_ids']}")
         return raw_sample
 
     def __len__(self) -> int:
@@ -217,13 +212,7 @@ class SupervisedCollator:
         
             a = return_dict['attention_mask'].shape[0]
             
-            # return_dict['pixel_values'] = torch.cat(
-            #     [sample['pixel_values'] for sample in samples], dim=0
-            # ).to(current_device, dtype = torch.bfloat16)
-            
             if samples[0]['pixel_values'].dim() == 4:
-                # init list for pixel_values
-                # return_dict['image_sizes'] = [ sample['pixel_values'].to(current_device, dtype = torch.bfloat16).size(0) for sample in samples ]
                 
                 _pixel_values_list = []
                 for sample in samples:
@@ -246,6 +235,4 @@ class SupervisedCollator:
                 ).to(current_device, dtype = torch.bfloat16)
 
 
-        # print(f"Returning a input id {return_dict['input_ids'].shape}")
-        # print(f"Returning a pixel value {return_dict['pixel_values'].shape}")
         return return_dict

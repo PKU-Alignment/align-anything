@@ -176,7 +176,6 @@ class LLAVA:
             f"{self.assistant_prompt.format(output='')}"
         )
 
-        # base_coco_url = 'http://images.cocodataset.org/train2017/'
         image_file = raw_sample['image']
         return {
             'text': text,
@@ -185,8 +184,8 @@ class LLAVA:
         }
 
 
-@register_template('DiffusionDB_critique')
-class DiffusionDB_critique:
+@register_template('DiffusionDB')
+class DiffusionDB:
     system_prompt: str = ''
     user_prompt: str = 'USER: {input}'
     assistant_prompt: str = ' ASSISTANT:{output}'
@@ -216,11 +215,9 @@ class TI2TI:
         output_img = raw_sample['output_image']
         
         if isinstance(input_img, str):
-        # 单个图像
             input_images = [load_image(input_img)]
             num_imput_img = 1
         elif isinstance(input_img, list):
-            # 图像列表
             input_images = [load_image(img) for img in input_img]
             num_input_img = len(input_img)
         else:
@@ -269,18 +266,15 @@ class ANYTHING_TI2TI:
     separator: str = '###'
 
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        # print(raw_sample)
         input_text = raw_sample['question']
         output_text = raw_sample['response']
         input_img = raw_sample['image_url']
         output_img = raw_sample['output_image_url']
         
         if isinstance(input_img, str):
-        # 单个图像
             input_images = [load_image(input_img)]
             num_imput_img = 1
         elif isinstance(input_img, list):
-            # 图像列表
             input_images = [load_image(img) for img in input_img]
             num_input_img = len(input_img)
         else:
