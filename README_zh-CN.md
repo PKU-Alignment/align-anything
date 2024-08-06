@@ -71,6 +71,7 @@ Align-Anything 是一个基于 DeepSpeed 或 NeMo （目前正在开发中）的
 - :heavy_minus_sign: : 正在内部测试的功能，将尽快被更新。
 
 # 新闻
+- 2024-08-06 🔥 我们支持了text image混合输入输出模态的SFT trainer和Chemeleon系列模型！
 - 2024-07-23 🔥 我们支持了text-to-image，text-to-audio和text-to-video模态的SFT trainer和DPO trainer！
 - 2024-07-22 🔥 我们支持了目前热门的多模态大模型Chameleon的SFT trainer和DPO trainer！
 - 2024-07-17 🎉 我们很高兴宣布开源发布Align-Anything-Instruction-100K文本模态数据集。该数据集提供[英文版](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)和[中文版](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh)，它们分别来源于不同的数据集，并经过GPT-4的精细优化以确保质量。
