@@ -44,7 +44,10 @@ class MTBenchDataLoader(BaseDataLoader):
             current_file_path = os.path.abspath(__file__)
             current_dir = os.path.dirname(current_file_path)
             dataset = load_dataset(os.path.join(current_dir, self.data_cfgs.task_dir))
+<<<<<<< HEAD
             # dataset = load_dataset(self.task_dir, task)
+=======
+>>>>>>> upstream/dev-eval-2
             prompts, token_ids = self.preprocess(dataset)
             processed_inputs[task] = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
         return processed_inputs
@@ -128,7 +131,12 @@ class API_Eval(API_Single_Eval):
 def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOutput], dataloader: MTBenchDataLoader, task: str, eval_configs= None):
     current_file_path = os.path.abspath(__file__)
     current_dir = os.path.dirname(current_file_path)
+<<<<<<< HEAD
     dataset = load_dataset(task, data_files=os.path.join(current_dir, eval_configs.task_dir))[dataloader.split]
+=======
+    dataset = load_dataset(current_dir,task)[dataloader.split]
+    dataset = load_dataset(current_dir,split='train',data_files='test.jsonl')
+>>>>>>> upstream/dev-eval-2
     prompts= []
     file_path = "./judge_prompts.jsonl"
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -248,6 +256,11 @@ def main():
         exit()
 
     for k, v in unparsed_args.items():
+<<<<<<< HEAD
+=======
+        if v == '' or v is None:
+            continue
+>>>>>>> upstream/dev-eval-2
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
 
@@ -275,7 +288,12 @@ def main():
         merged_dict = {**resp, **eval_}
         merged_list.append(merged_dict)
 
+<<<<<<< HEAD
     raw_result_file = eval_configs.output_dir+file_name+"_raw_result.jsonl"
+=======
+    os.makedirs(eval_configs.output_dir,exist_ok=True)
+    raw_result_file = os.path.join(eval_configs.output_dir,file_name + "_raw_result.jsonl")
+>>>>>>> upstream/dev-eval-2
     with open(raw_result_file, 'w') as file:
         for item in merged_list:
             json.dump(item, file)

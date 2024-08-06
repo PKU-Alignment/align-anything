@@ -30,7 +30,9 @@ class InferenceInput:
     '''
     Args:
         text: The text to be completed.
-            
+        token_ids: The token IDs of the text to be completed.
+        image_url: The URL of the input image.
+        pixel_values: The pixel values of the input image.
     '''
     text: str
     token_ids: torch.LongTensor = None

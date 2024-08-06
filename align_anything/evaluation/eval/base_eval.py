@@ -66,7 +66,6 @@ class BaseEval_vllm(BaseEval):
         raise NotImplementedError
     
     def evaluate(self, inputs : List[SingleInput]) -> List[EvalOutput]:
-        # BaseInferencer_vllm(cfgs, vllm_cfgs)
         raise NotImplementedError
 
 class Reward_Single_eval_vllm(BaseEval_vllm):
@@ -78,23 +77,19 @@ class Reward_Single_eval_vllm(BaseEval_vllm):
         processed_inputs = []
         for input in inputs:
             prompt = input.build_prompt(judge_prompt=self.judge_prompt, template_function=self.template_function)
-            # TODO: fix it to template rather than hard code
 
             processed_inputs.append(prompt)
         responses = self._evaluate(processed_inputs) 
         results = [EvalOutput(evalEngine="vllm_evaluation", input=input, raw_output=response) for input, response in zip(inputs, responses)]
         return filter_out_exception(results)
 
-# this function should not be in this file, move it and fix it in the right place
 def template_function_example(input):
     assert isinstance(input, ArenaInput)
     return "test:Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}".format(prompt=input.prompt, response1=input.response1, response2=input.response2)
 
-
-
 class BaseAPI_Eval(BaseEval):
     def __init__(self,
-                    model: str = 'deepseek-chat',
+                    model: str = 'gpt-4',
                     num_workers: int = 1,
                     cache_dir : str = None,
                     api_key: str = None,
@@ -110,7 +105,6 @@ class BaseAPI_Eval(BaseEval):
         self.template_function = template_function
 
     def _evaluate(self, processed_inputs : List[List[dict]]) -> List[ChatCompletion | Exception]:
-        #print(processed_inputs)
         responses = batch_request_openai(
             type="Arena",
             inputs=processed_inputs,
@@ -130,28 +124,20 @@ class BaseAPI_Eval(BaseEval):
             return input
 
 class API_Single_Eval(BaseAPI_Eval):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-    
 
     def evaluate(self, system_prompts: List[str], user_prompts: List[str]) -> List[EvalOutput]:
         assert isinstance(system_prompts, list)
         assert isinstance(user_prompts, list)
         processed_inputs = []
         for system_prompt, user_prompt in zip(system_prompts, user_prompts):
-            # print(system_prompt)
-            # print(user_prompt)
             gpt_input = self.build_gpt_input(system_prompt, user_prompt)
             processed_inputs.append(gpt_input)
-        #print(processed_inputs)    
         responses = self._evaluate(processed_inputs)
         results = [EvalOutput(evalEngine="gpt_evaluation", input=input, raw_output=response) for input, response in zip(user_prompts, responses)]
         return filter_out_exception(results)
     
-    
-        
-
 class API_Pair_Eval(BaseAPI_Eval):
 
     def __init__(self, **kwargs):

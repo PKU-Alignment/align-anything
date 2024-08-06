@@ -79,7 +79,8 @@ class BaseInferencer_vllm:
         self.llm_trust_remote_code = self.vllm_cfgs_llm.trust_remote_code
         self.llm_gpu_memory_utilization = self.vllm_cfgs_llm.gpu_memory_utilization
         self.llm_max_num_seqs = self.vllm_cfgs_llm.max_num_seqs
-        self.llm_tensor_parallel_size = cuda_device_count_stateless()
+        tensor_ps = self.vllm_cfgs_llm.tensor_parallel_size
+        self.llm_tensor_parallel_size = tensor_ps if tensor_ps else cuda_device_count_stateless()
 
         self.model_id = self.model_cfgs.model_id
         self.model_name_or_path = self.model_cfgs.model_name_or_path
@@ -263,7 +264,6 @@ class BaseInferencer_deepspeed:
                 )
             else:
                 outputs = self.model.generate(
-                    # inputs=batch["pad_token_ids"].to(self.model.device),
                     inputs=batch["pad_token_ids"].to(f"cuda:{local_rank}"),
                     pixel_values=batch['pixel_values'].to(f"cuda:{local_rank}"),
                     return_dict_in_generate=True, 
@@ -309,7 +309,6 @@ class BaseInferencer_deepspeed:
         else:
             with open(f".cache/outputs.pkl", 'wb') as f:
                 pickle.dump(output_data, f, protocol=4)
-        exit(0)
 
 class BaseInferencer:
     def __init__(self,

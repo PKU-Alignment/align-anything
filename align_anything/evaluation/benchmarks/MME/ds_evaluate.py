@@ -49,7 +49,6 @@ def evaluator(test_dataset, output_data):
                         question_id.add(output_item['question_id'])
                         the_other_result[output_item['question_id']] = False
 
-    # print(f"Matched {num_match} out of {num_sum} questions.")
     return num_q_match, num_q_sum, num_p_match, len(question_id)
                 
 
@@ -83,6 +82,8 @@ def main():
     
     dict_configs, _ = read_eval_cfgs('mme', 'deepspeed')
     for k, v in unparsed_args.items():
+        if v == '' or v is None:
+            continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
     
     dict_configs = dict_to_namedtuple(dict_configs)

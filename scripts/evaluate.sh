@@ -15,12 +15,22 @@
 # limitations under the License.
 # ==============================================================================
 
+<<<<<<< HEAD
 cd ../align_anything/evaluation
 
 BENCHMARK=""
 OUTPUT_DIR=""
 GENERATION_BACKEND=""
 
+=======
+
+cd ../align_anything/evaluation
+
+BENCHMARK=""
+OUTPUT_DIR=""
+GENERATION_BACKEND=""
+
+>>>>>>> upstream/dev-eval-2
 python __main__.py \
     --benchmark ${BENCHMARK} \
     --output_dir ${OUTPUT_DIR} \

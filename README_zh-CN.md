@@ -36,7 +36,7 @@
 
 <div align="center">
 
-[English](README.md) | 简体中文 ｜ [Our 100K Datasets](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) | 👋 加入我们的[微信群](assets/wechat.jpg)
+[English](README.md) | 简体中文 ｜ [Our 100K Datasets](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)
 
 </div>
 
@@ -54,24 +54,25 @@ Align-Anything 是一个基于 DeepSpeed 或 NeMo （目前正在开发中）的
 我们为未来的开发工作制定了 `Align-Anything` 的路线图：
 
 - [ ] 支持在 `扩散模型`、`文本到任何模态的生成模型` 和其他 `视觉语言模型` 上的对齐算法。
-- [ ] 支持包括 `LoRA`、`QLoRA` 在内的多种训练参数。
+- [x] 支持包括 `LoRA`、`QLoRA` 在内的多种训练参数。
 - [ ] 支持用于训练的 `NeMo` 框架，以及用于评估的 `vllm` 框架。
 
-| 训练算法 | 文本 :arrow_right: 文本 | 文本+图像 :arrow_right: 文本 | 文本 :arrow_right: 图像 | 文本 :arrow_right: 视频 | 更多模态... |
+| 训练算法 | 文本 :arrow_right: 文本 | 文本+图像 :arrow_right: 文本 | 文本 :arrow_right: 图像 | 文本 :arrow_right: 视频 | 文本 :arrow_right: 语音 |
 |---|---|---|---|---|---|
-| SFT Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
-| RM Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
-| DPO Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
-| PPO Trainer | :white_check_mark: | :white_check_mark: | :airplane: | :car: | :car: |
-| KTO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
-| ORPO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
-| SimPO Trainer | :white_check_mark: | :car: | :car: | :car: | :car: |
+| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| RM Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| PPO Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| KTO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| ORPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| SimPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
 
 - :white_check_mark: : 目前支持的功能。
-- :airplane: : 正在内部测试的功能，将尽快被更新。
-- :car: : 正在开发的功能。
+- :heavy_minus_sign: : 正在内部测试的功能，将尽快被更新。
 
 # 新闻
+- 2024-07-23 🔥 我们支持了text-to-image，text-to-audio和text-to-video模态的SFT trainer和DPO trainer！
+- 2024-07-22 🔥 我们支持了目前热门的多模态大模型Chameleon的SFT trainer和DPO trainer！
 - 2024-07-17 🎉 我们很高兴宣布开源发布Align-Anything-Instruction-100K文本模态数据集。该数据集提供[英文版](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)和[中文版](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh)，它们分别来源于不同的数据集，并经过GPT-4的精细优化以确保质量。
 - 2024-07-14 🎉 我们开源了 `Align-Anything` 框架。
 
@@ -287,10 +288,41 @@ class PKUSafeRLHF(Template):
 ```
 # 推理
 
+## Gradio 界面
+要在本地启动一个 Gradio 演示，请按照以下步骤依次运行命令。如果你打算启动多个模型wo以比较不同的检查点，你只需要启动控制器和 Web 服务器一次。
+
+### 启动控制器
+```Shell
+python -m align_anything.serve.controller --host 0.0.0.0 --port 10000
+```
+
+### 启动 Gradio Web 服务器
+```Shell
+python -m align_anything.serve.gradio_web_server --controller http://localhost:10000 --model-list-mode reload
+```
+你现在已经启动了 Gradio Web 界面。接下来，你可以使用屏幕上打印出的 URL 打开 Web 界面。你可能会注意到目前还没有列出任何模型，不用担心，因为我们还没有启动任何模型worker。一旦启动了模型worker，模型列表将会自动更新。
+
+### 启动模型worker
+
+这是实际执行 GPU 推理的 *worker*。每个worker负责一个指定在 `--model-path` 中的单一模型，并且请参考 `align_anything/configs` 中的 `template.py` 文件找到相应的模板名称。
+
+```Shell
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/models/llava/llava-1.5-7b-hf --template "LLAVA"
+```
+等待进程完成模型加载，直到你看到 "Uvicorn running on ..." 的消息。然后刷新你的 Gradio Web 界面，你会在模型列表中看到刚刚启动的模型。
+
+你可以根据需要启动尽可能多的worker，并在同一 Gradio 界面内比较不同的模型检查点。确保 `--controller` 保持相同，但是更改 `--port` 和 `--worker` 为一个唯一的端口号，针对每一个worker。
+
+```Shell
+python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port <不同于 40000，例如 40001> --worker http://localhost:<相应改变，例如 40001> --model-path <ckpt2> --template "LLAVA"
+```
+
+如果你使用的是配备 M1 或 M2 芯片的 Apple 设备，你可以通过 `--device` 标志指定 `mps` 设备：`--device mps`。
+
 ## 可交互的Client
 
 ```bash
-python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path 
+python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
 ```
 
 ![cli_demo](assets/cli_demo.gif)
