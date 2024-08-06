@@ -127,7 +127,8 @@ class API_Eval(API_Single_Eval):
 def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOutput], dataloader: MTBenchDataLoader, task: str, eval_configs= None):
     current_file_path = os.path.abspath(__file__)
     current_dir = os.path.dirname(current_file_path)
-    dataset = load_dataset(task, data_files=os.path.join(current_dir, eval_configs.task_dir))[dataloader.split]
+    dataset = load_dataset(current_dir,task)[dataloader.split]
+    dataset = load_dataset(current_dir,split='train',data_files='test.jsonl')
     prompts= []
     file_path = "./judge_prompts.jsonl"
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -247,6 +248,8 @@ def main():
         exit()
 
     for k, v in unparsed_args.items():
+        if v == '' or v is None:
+            continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
 
@@ -274,7 +277,8 @@ def main():
         merged_dict = {**resp, **eval_}
         merged_list.append(merged_dict)
 
-    raw_result_file = eval_configs.output_dir+file_name+"_raw_result.jsonl"
+    os.makedirs(eval_configs.output_dir,exist_ok=True)
+    raw_result_file = os.path.join(eval_configs.output_dir,file_name + "_raw_result.jsonl")
     with open(raw_result_file, 'w') as file:
         for item in merged_list:
             json.dump(item, file)

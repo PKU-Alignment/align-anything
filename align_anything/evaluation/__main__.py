@@ -49,7 +49,7 @@ def parse_eval_args() -> argparse.Namespace:
         help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME.",
         choices=[
             "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
-            "MMLU", "MMLUPRO", "mt-bench", "PAWS-X", "RACE", "TruthfulQA", "MME"
+            "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA", "MME"
         ]
     )
     parser.add_argument(
@@ -109,7 +109,6 @@ def parse_eval_args() -> argparse.Namespace:
     args = parser.parse_args()
     return args
 
-
 def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     if not args:
         args = parse_eval_args()
@@ -129,7 +128,6 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     selected_subfolder_path = os.path.join(folder_path, subfolder)
 
     run_benchmark(selected_subfolder_path, args)
-
 
 def run_benchmark(file_path, args):
     try:
