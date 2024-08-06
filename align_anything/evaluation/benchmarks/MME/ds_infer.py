@@ -47,7 +47,6 @@ class MMEDataLoader(BaseDataLoader):
         return data['answerKey']
 
     def set_fewshot_dataset(self, dataset, task: str=None):
-        # return dataset['validation']
         return None
 
     def build_example_prompt(self, data, with_answer=True):
@@ -94,8 +93,6 @@ class MMEGeneratorDS(BaseInferencer_deepspeed):
                     item.response[i] = item.response[i][len(re.sub('<image>', ' ', item.prompt, count=1)):]
             task2details[task] = raw_output
             self.save_pickle(raw_output, task)
-
-        exit(0)
 
     def load_data_distributed(self, inputs: List[InferenceInput]) -> List[InferenceInput]:
         dataset = ListDataset(inputs)
@@ -183,7 +180,6 @@ class MMEGeneratorDS(BaseInferencer_deepspeed):
 
 
 def main():
-
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[1::2]]
@@ -191,10 +187,11 @@ def main():
     unparsed_args = dict(zip(keys, values))
     dict_configs, infer_configs = read_eval_cfgs('mme', 'deepspeed')
     for k, v in unparsed_args.items():
+        if v == '' or v is None:
+            continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
     
-    # TODO
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
@@ -202,7 +199,6 @@ def main():
     test_data = dataloader.load_dataset()
     eval_module = MMEGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)
-
 
 if __name__ == '__main__':
     main()

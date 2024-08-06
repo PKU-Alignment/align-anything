@@ -51,7 +51,20 @@ dependencies = [
     "pre-commit",
     "pytest",
     "shortuuid",
+    "diffusers",
+    "peft",
+    "gradio",
+    "uvicorn",
+    "fastapi",
+    "pillow",
+    "librosa",
+    "soundfile",
+    "torchaudio",
+    "torchvision",
+    "bitsandbytes",
+    "vllm",
 ]
+
 dynamic = ["version"]
 
 [project.optional-dependencies]

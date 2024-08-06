@@ -40,7 +40,7 @@ class PAWSXDataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task): 
         if self.cot:
-            with open('/aifs4su/yaodong/panrui/align-anything-evaluation/align_anything/evaluation/benchmarks/PAWSX/cot_few_shot/' + task + '.json', 'r', encoding='utf-8') as f:
+            with open('../cot_fewshot/PAWSX/' + task + '.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
@@ -183,6 +183,8 @@ def main():
         exit()
 
     for k, v in unparsed_args.items():
+        if v == '' or v is None:
+            continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
     

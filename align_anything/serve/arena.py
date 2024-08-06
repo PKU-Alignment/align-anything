@@ -90,7 +90,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         '--template',
         type=str,
-        default="Dialogue",
+        default='Dialogue',
         help='Model template',
     )
     parser.add_argument(

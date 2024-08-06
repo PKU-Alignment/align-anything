@@ -198,6 +198,8 @@ def main():
         exit()
     
     for k, v in unparsed_args.items():
+        if v == '' or v is None:
+            continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
     

@@ -14,11 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+<<<<<<< HEAD
+<<<<<<<< HEAD:align_anything/evaluation/benchmarks/Belebele/eval.sh
+=======
+>>>>>>> upstream/dev-eval-2
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR"
 
+<<<<<<< HEAD
 # 手动解析长选项
+=======
+>>>>>>> upstream/dev-eval-2
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --output_dir)
@@ -45,4 +52,16 @@ if [ "$backend" = "vllm" ]; then
 else
   bash deepspeed_eval.sh \
     --output_dir "$output"
+<<<<<<< HEAD
 fi
+========
+"""Dataset classes for text to text training."""
+
+
+from align_anything.datasets.text_image_to_text.preference import *
+from align_anything.datasets.text_image_to_text.prompt_only import *
+from align_anything.datasets.text_image_to_text.supervised import *
+>>>>>>>> upstream/dev-eval-2:align_anything/datasets/text_image_to_text/__init__.py
+=======
+fi
+>>>>>>> upstream/dev-eval-2

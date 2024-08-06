@@ -22,11 +22,6 @@ CRITIC_MODEL_NAME_OR_PATH=""
 REWARD_MODEL_NAME_OR_PATH=""
 TRAIN_DATASETS=""
 PTX_DATASETS=""
-ACTOR_MODEL_NAME_OR_PATH=""
-CRITIC_MODEL_NAME_OR_PATH=""
-REWARD_MODEL_NAME_OR_PATH=""
-TRAIN_DATASETS=""
-PTX_DATASETS=""
 OUTPUT_DIR=""
 
 # Source the setup script
@@ -35,7 +30,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
   --master_port ${MASTER_PORT} \
-  --module align_anything.trainers.ppo \
+  --module align_anything.trainers.text_to_text.ppo \
   --actor_model_name_or_path ${ACTOR_MODEL_NAME_OR_PATH} \
   --reward_model_name_or_path ${REWARD_MODEL_NAME_OR_PATH} \
   --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME_OR_PATH} \

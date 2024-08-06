@@ -26,11 +26,23 @@ from transformers import (
     LlamaPreTrainedModel,
     LlavaConfig,
     LlavaForConditionalGeneration,
+    LlavaNextConfig,
+    LlavaNextForConditionalGeneration,
     LlavaPreTrainedModel,
 )
+
+
+try:
+    from transformers import ChameleonConfig, ChameleonForConditionalGeneration
+
+    CHAMELEON_AVALIABLE = True
+except ImportError:
+    CHAMELEON_AVALIABLE = False
+
 from transformers.utils.generic import ModelOutput
 
 from align_anything.models.llava_model import AccustomedLlavaModel
+from align_anything.models.llava_next_model import AccustomedLlavaNextModel
 
 
 @dataclass
@@ -146,11 +158,15 @@ class AnyBaseModelCLS(AutoModel):
 
 def register_model(auto_model: AutoModelForCausalLM) -> AutoModelForCausalLM:
     auto_model.register(LlavaConfig, LlavaForConditionalGeneration)
+    auto_model.register(LlavaNextConfig, AccustomedLlavaNextModel)
+    if CHAMELEON_AVALIABLE:
+        auto_model.register(ChameleonConfig, ChameleonForConditionalGeneration)
     return auto_model
 
 
 def register_base_model(auto_model: AnyBaseModelCLS) -> AnyBaseModelCLS:
     auto_model.register(LlavaConfig, AccustomedLlavaModel)
+    auto_model.register(LlavaNextConfig, AccustomedLlavaNextModel)
     return auto_model
 
 
