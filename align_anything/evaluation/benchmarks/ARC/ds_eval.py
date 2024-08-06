@@ -201,17 +201,18 @@ def main():
     unparsed_args = dict(zip(keys, values))
     logger = EvalLogger('Evaluation')
 
-    dict_configs, infer_configs = read_eval_cfgs('arc', 'deepspeed')
+    dict_configs, _ = read_eval_cfgs('arc', 'deepspeed')
 
     try:
-        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
+        assert dict_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
         logger.log('error', "Config file is not exist or incomplete.")
         exit()
 
     for k, v in unparsed_args.items():
+        if v == '' or v is None:
+            continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
-        infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
     dict_configs = dict_to_namedtuple(dict_configs)
     eval_configs = dict_configs.default.eval_cfgs
     logger.log_dir = eval_configs.output_dir

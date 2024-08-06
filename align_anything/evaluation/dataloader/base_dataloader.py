@@ -25,7 +25,6 @@ from transformers import AutoProcessor, AutoTokenizer
 
 ACTION_GENERATION = 'generation'
 
-
 class BaseDataLoader:
     action_map = {
         ACTION_GENERATION: 'generation',

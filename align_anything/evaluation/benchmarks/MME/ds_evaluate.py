@@ -82,6 +82,8 @@ def main():
     
     dict_configs, _ = read_eval_cfgs('mme', 'deepspeed')
     for k, v in unparsed_args.items():
+        if v == '' or v is None:
+            continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
     
     dict_configs = dict_to_namedtuple(dict_configs)
