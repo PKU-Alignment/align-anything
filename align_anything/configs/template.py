@@ -456,7 +456,6 @@ class LLAVA:
             f"{self.assistant_prompt.format(output='')}"
         )
 
-        # base_coco_url = 'http://images.cocodataset.org/train2017/'
         image_file = raw_sample['image']
         return {
             'text': text,
@@ -574,8 +573,8 @@ class AudioSet:
             'sampling_rate': sample_rate
         }
 
-@register_template('DiffusionDB_critique')
-class DiffusionDB_critique:
+@register_template('DiffusionDB')
+class DiffusionDB:
     system_prompt: str = ''
     user_prompt: str = 'USER: {input}'
     assistant_prompt: str = ' ASSISTANT:{output}'

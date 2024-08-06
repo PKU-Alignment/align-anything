@@ -13,11 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 
-<<<<<<< HEAD
-
-=======
-import copy
->>>>>>> 6d451bf (Supporting Chameleon finetuning)
 from typing import Any, Callable
 from regex import D
 from typing_extensions import TypedDict  # Python 3.10+
@@ -108,22 +103,11 @@ class SupervisedDataset(Dataset):
         prompt_dict = self.processor(formatted_prompt, formatted_sample['input_image'], return_tensors='pt').to(dtype = torch.bfloat16)
         
         labels = return_dict['input_ids'].clone()
-<<<<<<< HEAD
-
-=======
-        # mask non-assistant input
->>>>>>> 6d451bf (Supporting Chameleon finetuning)
         labels[: len(prompt_dict['input_ids'])] = IGNORE_INDEX
         return_dict['labels'] = labels
 
         return_dict['pixel_values'] = text_dict['pixel_values']
-        
-<<<<<<< HEAD
-=======
-        # print(f"Input id shape: {return_dict['input_ids'].shape}")
-        # print(f"Pixel value shape: {return_dict['pixel_values'].shape}")
-        
->>>>>>> 6d451bf (Supporting Chameleon finetuning)
+
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
@@ -192,11 +176,6 @@ class SupervisedTokenizedDataset(Dataset):
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
         raw_sample = self.raw_data[index]
-<<<<<<< HEAD
-=======
-        # torch.set_printoptions(threshold=torch.inf)
-        # print(f"Input_id: {raw_sample['input_ids']}")
->>>>>>> 6d451bf (Supporting Chameleon finetuning)
         return raw_sample
 
     def __len__(self) -> int:
@@ -231,17 +210,7 @@ class SupervisedCollator:
         
             a = return_dict['attention_mask'].shape[0]
             
-<<<<<<< HEAD
             if samples[0]['pixel_values'].dim() == 4:
-=======
-            # return_dict['pixel_values'] = torch.cat(
-            #     [sample['pixel_values'] for sample in samples], dim=0
-            # ).to(current_device, dtype = torch.bfloat16)
-            
-            if samples[0]['pixel_values'].dim() == 4:
-                # init list for pixel_values
-                # return_dict['image_sizes'] = [ sample['pixel_values'].to(current_device, dtype = torch.bfloat16).size(0) for sample in samples ]
->>>>>>> 6d451bf (Supporting Chameleon finetuning)
                 
                 _pixel_values_list = []
                 for sample in samples:
@@ -263,10 +232,4 @@ class SupervisedCollator:
                     [sample['pixel_values'] for sample in samples]
                 ).to(current_device, dtype = torch.bfloat16)
 
-
-<<<<<<< HEAD
-=======
-        # print(f"Returning a input id {return_dict['input_ids'].shape}")
-        # print(f"Returning a pixel value {return_dict['pixel_values'].shape}")
->>>>>>> 6d451bf (Supporting Chameleon finetuning)
         return return_dict
