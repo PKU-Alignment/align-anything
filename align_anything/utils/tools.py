@@ -72,6 +72,51 @@ def namedtuple_to_dict(obj: Any) -> Any:
     else:
         return obj
 
+def requestoutput_to_dict(data, mode='brief'):
+    if mode == 'brief':
+        info = {
+            "prompt": data.prompt,
+            "outputs": []
+        }
+    else:
+        info = {
+            "prompt": data.prompt,
+            "prompt_token_ids": data.prompt_token_ids,
+            "prompt_logprobs": [vllm_logprob_to_dict(token_logprob) for token_logprob in data.prompt_logprobs[1:]],
+            'outputs': [],
+            'finished': data.finished,
+            'metrics':
+            {
+                'arrival_time': data.metrics.arrival_time,
+                'last_token_time': data.metrics.last_token_time,
+                'first_scheduled_time': data.metrics.first_scheduled_time,
+                'first_token_time': data.metrics.first_token_time,
+                'time_in_queue': data.metrics.time_in_queue,
+                'finished_time': data.metrics.finished_time,
+            }
+        }
+    for output in data.outputs:
+        if mode == 'brief':
+            output = {
+                'index': output.index,
+                'text': output.text,
+            }
+        else:
+            output = {
+                'index': output.index,
+                'text': output.text,
+                'token_ids': output.token_ids,
+                'cumulative_logprob': output.cumulative_logprob,
+                'logprobs': [vllm_logprob_to_dict(token_logprob) for token_logprob in output.logprobs],
+                'finish_reason': output.finish_reason,
+                'stop_reason': output.stop_reason
+            }
+        info['outputs'].append(output)
+        return info
+
+def vllm_logprob_to_dict(data):
+    # print([{v.decoded_token: v.logprob} for k, v in data.items()])
+    return [{v.decoded_token: v.logprob} for k, v in data.items()]
 
 def read_cfgs(mode: str, task: str) -> list[dict[str, Any], dict[str, Any]]:
     current_file_path = os.path.abspath(__file__)
@@ -93,6 +138,35 @@ def read_cfgs(mode: str, task: str) -> list[dict[str, Any], dict[str, Any]]:
 
     return configs, ds_cfgs
 
+def read_eval_cfgs(task: str, backend: str) -> dict[str, Any]:
+    current_file_path = os.path.abspath(__file__)
+    parent_path = os.path.dirname(os.path.dirname(current_file_path))
+    yaml_path = os.path.join(parent_path, 'configs', 'evaluation', 'benchmarks', f'{task}.yaml')
+    with open(yaml_path, encoding='utf-8') as f:
+        try:
+            configs = yaml.safe_load(f)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f'{yaml_path} error: {exc}') from exc
+    if backend.lower() == 'vllm':
+        infer_cfgs_path = os.path.join(
+            parent_path,
+            'configs',
+            'evaluation',
+            'vllm',
+            configs['infer_cfgs']['vllm_cfgs'],
+        )
+    else:
+        infer_cfgs_path = os.path.join(
+            parent_path,
+            'configs',
+            'evaluation',
+            'deepspeed',
+            configs['infer_cfgs']['ds_cfgs'],
+        )
+    with open(infer_cfgs_path) as f:
+        infer_cfgs = json.load(f)
+
+    return configs, infer_cfgs
 
 def get_optimizer_grouped_parameters(
     module: nn.Module,

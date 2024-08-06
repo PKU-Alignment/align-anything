@@ -62,6 +62,7 @@ dependencies = [
     "torchaudio",
     "torchvision",
     "bitsandbytes",
+    "vllm",
 ]
 
 dynamic = ["version"]

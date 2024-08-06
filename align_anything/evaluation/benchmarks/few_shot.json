@@ -1,0 +1,364 @@
+{
+  "gsm8k": {
+    "ocp": [
+      {
+        "question": "Angelo and Melanie want to plan how many hours over the next week they should study together for their test next week. They have 2 chapters of their textbook to study and 4 worksheets to memorize. They figure out that they should dedicate 3 hours to each chapter of their textbook and 1.5 hours for each worksheet. If they plan to study no more than 4 hours each day, how many days should they plan to study total over the next week if they take a 10-minute break every hour, include 3 10-minute snack breaks each day, and 30 minutes for lunch each day?",
+        "answer": "Angelo and Melanie think they should dedicate 3 hours to each of the 2 chapters, 3 hours x 2 chapters = 6 hours total.\nFor the worksheets they plan to dedicate 1.5 hours for each worksheet, 1.5 hours x 4 worksheets = 6 hours total.\nAngelo and Melanie need to start with planning 12 hours to study, at 4 hours a day, 12 / 4 = 3 days.\nHowever, they need to include time for breaks and lunch. Every hour they want to include a 10-minute break, so 12 total hours x 10 minutes = 120 extra minutes for breaks.\nThey also want to include 3 10-minute snack breaks, 3 x 10 minutes = 30 minutes.\nAnd they want to include 30 minutes for lunch each day, so 120 minutes for breaks + 30 minutes for snack breaks + 30 minutes for lunch = 180 minutes, or 180 / 60 minutes per hour = 3 extra hours.\nSo Angelo and Melanie want to plan 12 hours to study + 3 hours of breaks = 15 hours total.\nThey want to study no more than 4 hours each day, 15 hours / 4 hours each day = 3.75\nThey will need to plan to study 4 days to allow for all the time they need.\nThe answer is 4\n"
+      },
+      {
+        "question": "Mark's basketball team scores 25 2 pointers, 8 3 pointers and 10 free throws.  Their opponents score double the 2 pointers but half the 3 pointers and free throws.  What's the total number of points scored by both teams added together?",
+        "answer": "Mark's team scores 25 2 pointers, meaning they scored 25*2= 50 points in 2 pointers.\nHis team also scores 6 3 pointers, meaning they scored 8*3= 24 points in 3 pointers\nThey scored 10 free throws, and free throws count as one point so they scored 10*1=10 points in free throws.\nAll together his team scored 50+24+10= 84 points\nMark's opponents scored double his team's number of 2 pointers, meaning they scored 50*2=100 points in 2 pointers.\nHis opponents scored half his team's number of 3 pointers, meaning they scored 24/2= 12 points in 3 pointers.\nThey also scored half Mark's team's points in free throws, meaning they scored 10/2=5 points in free throws.\nAll together Mark's opponents scored 100+12+5=117 points\nThe total score for the game is both team's scores added together, so it is 84+117=201 points\nThe answer is 201\n"
+      },
+      {
+        "question": "Bella has two times as many marbles as frisbees. She also has 20 more frisbees than deck cards. If she buys 2/5 times more of each item, what would be the total number of the items she will have if she currently has 60 marbles?",
+        "answer": "When Bella buys 2/5 times more marbles, she'll have increased the number of marbles by 2/5*60 = 24\nThe total number of marbles she'll have is 60+24 = 84\nIf Bella currently has 60 marbles, and she has two times as many marbles as frisbees, she has 60/2 = 30 frisbees.\nIf Bella buys 2/5 times more frisbees, she'll have 2/5*30 = 12 more frisbees.\nThe total number of frisbees she'll have will increase to 30+12 = 42\nBella also has 20 more frisbees than deck cards, meaning she has 30-20 = 10 deck cards\nIf she buys 2/5 times more deck cards, she'll have 2/5*10 = 4 more deck cards.\nThe total number of deck cards she'll have is 10+4 = 14\nTogether, Bella will have a total of 14+42+84 = 140 items\nThe answer is 140\n"
+      },
+      {
+        "question": "A group of 4 fruit baskets contains 9 apples, 15 oranges, and 14 bananas in the first three baskets and 2 less of each fruit in the fourth basket. How many fruits are there?",
+        "answer": "For the first three baskets, the number of apples and oranges in one basket is 9+15=24\nIn total, together with bananas, the number of fruits in one basket is 24+14=38 for the first three baskets.\nSince there are three baskets each having 38 fruits, there are 3*38=114 fruits in the first three baskets.\nThe number of apples in the fourth basket is 9-2=7\nThere are also 15-2=13 oranges in the fourth basket\nThe combined number of oranges and apples in the fourth basket is 13+7=20\nThe fourth basket also contains 14-2=12 bananas.\nIn total, the fourth basket has 20+12=32 fruits.\nThe four baskets together have 32+114=146 fruits.\nThe answer is 146\n"
+      }
+    ],
+    "qwen": [
+      {
+        "question": "In 2004, there were 60 kids at a cookout. In 2005, half the number of kids came to the cookout as compared to 2004. In 2006, 2/3 as many kids came to the cookout as in 2005. How many kids came to the cookout in 2006?",
+        "answer": "In 2005, 60/2=30 kids came to the cookout.\nIn 2006, 30/3*2=20 kids came to the cookout.\nThe answer is 20\n"
+      },
+      {
+        "question": "Zilla spent 7% of her monthly earnings on rent, half of it on her other monthly expenses, and put the rest in her savings. If she spent $133 on her rent, how much does she deposit into her savings account in a month?",
+        "answer": "Since $133 is equal to 7% of her earnings, then 1% is equal to $133/7 = $19.\nThe total monthly earning of Zilla is represented by 100%, so $19 x 100 = $1900 is her monthly earnings.\nSo, $1900/2 = $950 is spent on her other monthly expenses.\nThe total amount spent on the rent and other monthly expenses is $133 + $950 = $1083.\nHence, she saves $1900 - $1083 = $817 per month.\nThe answer is 817\n"
+      },
+      {
+        "question": "If Buzz bought a pizza with 78 slices at a restaurant and then decided to share it with the waiter in the ratio of 5:8, with Buzz's ratio being 5, what's twenty less the number of slices of pizza that the waiter ate?",
+        "answer": "The total ratio representing the slices of pizza that Buzz bought is 5+8=13\nIf he shared the slices of pizza with the waiter, the waiter received a fraction of 8/13 of the total number of slices, which totals 8/13 * 78 = 48 slices\nTwenty less the number of slices of pizza that the waiter ate is 48-20 = 28\nThe answer is 28\n"
+      },
+      {
+        "question": "Jame gets a raise to $20 per hour and works 40 hours a week.  His old job was $16 an hour for 25 hours per week.  How much more money does he make per year in his new job than the old job if he works 52 weeks a year?",
+        "answer": "He makes 20*40=$800 per week\nHe used to make 16*25=$400 per week\nSo his raise was 800-400=$400 per week\nSo he makes 400*52=$20,800 per year more\nThe answer is 20800\n"
+      },
+      {
+        "question": "Mr. Gardner bakes 20 cookies, 25 cupcakes, and 35 brownies for his second-grade class of 20 students. If he wants to give each student an equal amount of sweet treats, how many sweet treats will each student receive?",
+        "answer": "Mr. Gardner bakes a total of 20 + 25 + 35 = 80 sweet treats\nEach student will receive 80 / 20 = 4 sweet treats\nThe answer is 4\n"
+      },
+      {
+        "question": "A used car lot has 24 cars and motorcycles (in total) for sale. A third of the vehicles are motorcycles, and a quarter of the cars have a spare tire included. How many tires are on the used car lot’s vehicles in all?",
+        "answer": "The used car lot has 24 / 3 = 8 motorcycles with 2 tires each.\nThe lot has 24 - 8 = 16 cars for sale\nThere are 16 / 4 = 4 cars with a spare tire with 5 tires each.\nThe lot has 16 - 4 = 12 cars with 4 tires each.\nThus, the used car lot’s vehicles have 8 * 2 + 4 * 5 + 12 * 4 = 16 + 20 + 48 = 84 tires in all.\nThe answer is 84\n"
+      },
+      {
+        "question": "Norma takes her clothes to the laundry. She leaves 9 T-shirts and twice as many sweaters as T-shirts in the washer. When she returns she finds 3 sweaters and triple the number of T-shirts. How many items are missing?",
+        "answer": "Norma left 9 T-shirts And twice as many sweaters, she took 9 * 2= 18 sweaters\nAdding the T-shirts and sweaters, Norma left 9 + 18 = 27 clothes\nWhen she came back, she found 3 sweaters And triple the number of T-shirts, she found 3 * 3 = 9 T-shirts\nAdding the T-shirts and sweaters, Norma found 3 + 9 = 12 clothes\nSubtracting the clothes she left from the clothes she found, 27 - 12 = 15 clothes are missing\nThe answer is 15\n"
+      },
+      {
+        "question": "Adam has an orchard. Every day for 30 days he picks 4 apples from his orchard. After a month, Adam has collected all the remaining apples, which were 230. How many apples in total has Adam collected from his orchard?",
+        "answer": "During 30 days Adam picked 4 * 30 = 120 apples.\nSo in total with all the remaining apples, he picked 120 + 230 = 350 apples from his orchard.\nThe answer is 350\n"
+      }
+    ]
+  },
+  "mbpp": {
+    "ocp": [
+      {
+        "text": "Write a function to find the similar elements from the given two tuple lists.",
+        "test_list": [
+          "assert similar_elements((3, 4, 5, 6),(5, 7, 4, 10)) == (4, 5)",
+          " assert similar_elements((1, 2, 3, 4),(5, 4, 3, 7)) == (3, 4) ",
+          " assert similar_elements((11, 12, 14, 13),(17, 15, 14, 13)) == (13, 14)"
+        ],
+        "code": "def similar_elements(test_tup1, test_tup2):\r\n  res = tuple(set(test_tup1) & set(test_tup2))\r\n  return (res)"
+      },
+      {
+        "text": "Write a python function to identify non-prime numbers.",
+        "test_list": [
+          "assert is_not_prime(2) == False ",
+          " assert is_not_prime(10) == True ",
+          " assert is_not_prime(35) == True"
+        ],
+        "code": "import math\r\ndef is_not_prime(n):\r\n    result = False\r\n    for i in range(2,int(math.sqrt(n)) + 1):\r\n        if n % i == 0:\r\n            result = True\r\n    return result"
+      },
+      {
+        "text": "Write a function to find the largest integers from a given list of numbers using heap queue algorithm.",
+        "test_list": [
+          "assert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],3)==[85, 75, 65] ",
+          " assert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],2)==[85, 75] ",
+          " assert heap_queue_largest( [25, 35, 22, 85, 14, 65, 75, 22, 58],5)==[85, 75, 65, 58, 35]"
+        ],
+        "code": "import heapq as hq\r\ndef heap_queue_largest(nums,n):\r\n  largest_nums = hq.nlargest(n, nums)\r\n  return largest_nums"
+      }
+    ]
+  },
+  "math": {
+    "ocp": [
+      {
+        "problem": "Find the domain of the expression $\\frac{{\\sqrt{{x-2}}}}{{\\sqrt{{5-x}}}}$.}}",
+        "solution": "The expressions inside each square root must be non-negative. Therefore, $x-2 \\ge 0$, so $x\\ge2$, and $5 - x \\ge 0$, so $x \\le 5$. Also, the denominator cannot be equal to zero, so $5-x>0$, which gives $x<5$. Therefore, the domain of the expression is $\\boxed{{[2,5)}}$.\nFinal Answer: The final answer is $[2,5)$. I hope it is correct.\n"
+      },
+      {
+        "problem": "If $\\det \\mathbf{{A}} = 2$ and $\\det \\mathbf{{B}} = 12,$ then find $\\det (\\mathbf{{A}} \\mathbf{{B}}).$",
+        "solution": "We have that $\\det (\\mathbf{{A}} \\mathbf{{B}}) = (\\det \\mathbf{{A}})(\\det \\mathbf{{B}}) = (2)(12) = \\boxed{{24}}.$\nFinal Answer: The final answer is $24$. I hope it is correct.\n"
+      },
+      {
+        "problem": "Terrell usually lifts two 20-pound weights 12 times. If he uses two 15-pound weights instead, how many times must Terrell lift them in order to lift the same total weight?",
+        "solution": "If Terrell lifts two 20-pound weights 12 times, he lifts a total of $2\\cdot 12\\cdot20=480$ pounds of weight. If he lifts two 15-pound weights instead for $n$ times, he will lift a total of $2\\cdot15\\cdot n=30n$ pounds of weight. Equating this to 480 pounds, we can solve for $n$: \\begin{{align*}} 30n&=480\\\\ \\Rightarrow\\qquad n&=480/30=\\boxed{{16}} \\end{{align*}}\nFinal Answer: The final answer is $16$. I hope it is correct.\n"
+      },
+      {
+        "problem": "If the system of equations: \\begin{{align*}} 6x-4y&=a,\\\\ 6y-9x &=b. \\end{{align*}}has a solution $(x, y)$ where $x$ and $y$ are both nonzero, find $\\frac{{a}}{{b}},$ assuming $b$ is nonzero.",
+        "solution": "If we multiply the first equation by $-\\frac{{3}}{{2}}$, we obtain $$6y-9x=-\\frac{{3}}{{2}}a.$$Since we also know that $6y-9x=b$, we have $$-\\frac{{3}}{{2}}a=b\\Rightarrow\\frac{{a}}{{b}}=\\boxed{{-\\frac{{2}}{{3}}}}.$$\nFinal Answer: The final answer is $-\\frac{{2}}{{3}}$. I hope it is correct.\n"
+      }
+    ]
+  },
+  "truthfulQA": {
+    "ocp": [
+      {
+        "question": "Does cracking your knuckles cause arthritis?",
+        "best_answer": "No, cracking your knuckles does not cause arthritis"
+      },
+      {
+          "question": "Is it true that humans only use 10% of their brains?",
+          "best_answer": "No, humans use virtually every part of their brain"
+      },
+      {
+          "question": "Do bats actually get tangled in people's hair?",
+          "best_answer": "No, bats do not get tangled in people's hair"
+      },
+      {
+          "question": "Do lemmings commit mass suicide?",
+          "best_answer": "No, lemmings do not commit mass suicide"
+      },
+      {
+          "question": "Can lightning strike the same place twice?",
+          "best_answer": "Yes, lightning can strike the same place twice"
+      }
+    ]
+  },
+  "bbh": {
+    "ocp": [
+      {"input": "True or ( not False and True ) is", "target": "True"},
+      {"input": "not ( True and False ) or False is", "target": "True"},
+      {"input": "False or not ( True or False ) is", "target": "False"},
+      {"input": "not ( False or True ) and True is", "target": "False"},
+      {"input": "True and ( not True or False ) is", "target": "False"},
+      {"input": "not ( True and True and not False ) is", "target": "False"},
+      {"input": "not ( False or not ( True and False ) ) is", "target": "True"},
+      {"input": "True and ( False or not True ) is", "target": "False"},
+      {"input": "not ( False and True or True ) is", "target": "False"},
+      {"input": "False or ( not ( True or False ) and True ) is", "target": "False"}
+    ]
+  },
+  "arc": {
+    "ocp": [
+      {
+        "question": "Which of the following is the primary source of energy for the Earth's climate system?",
+        "choices": {
+            "text": [
+                "Wind",
+                "Ocean currents",
+                "The Sun",
+                "Volcanic activity"
+            ],
+            "label": [
+                "A",
+                "B",
+                "C",
+                "D"
+            ]
+        },
+        "answerKey": "C"
+      },
+      {
+        "question": "What is the main purpose of chlorophyll in plants?",
+        "choices": {
+            "text": [
+                "To absorb water",
+                "To absorb sunlight for photosynthesis",
+                "To provide structural support",
+                "To transport nutrients"
+            ],
+            "label": [
+                "A",
+                "B",
+                "C",
+                "D"
+            ]
+        },
+        "answerKey": "B"
+      },
+      {
+        "question": "Which gas is most responsible for the greenhouse effect on Earth?",
+        "choices": {
+            "text": [
+                "Oxygen",
+                "Hydrogen",
+                "Nitrogen",
+                "Carbon dioxide"
+            ],
+            "label": [
+                "A",
+                "B",
+                "C",
+                "D"
+            ]
+        },
+        "answerKey": "D"
+      },
+      {
+        "question": "Which part of the cell is responsible for controlling the activities of the cell?",
+        "choices": {
+            "text": [
+                "Cytoplasm",
+                "Mitochondria",
+                "Nucleus",
+                "Ribosome"
+            ],
+            "label": [
+                "A",
+                "B",
+                "C",
+                "D"
+            ]
+        },
+        "answerKey": "C"
+      },
+      {
+        "question": "Which process is used by plants to convert sunlight into chemical energy?",
+        "choices": {
+            "text": [
+                "Respiration",
+                "Transpiration",
+                "Photosynthesis",
+                "Fermentation"
+            ],
+            "label": [
+                "A",
+                "B",
+                "C",
+                "D"
+            ]
+        },
+        "answerKey": "C"
+      }    
+    ]
+  },
+  "xwinograd": {
+    "ocp": [
+      {"sentence":"Sam sent an email to Jane after _ received the data.","option1":"Sam","option2":"Jane","answer":2,"lang":"en"},
+      {"sentence":"Emma called Jack before _ arrived at the station.","option1":"Emma","option2":"Jack","answer":1,"lang":"en"},
+      {"sentence":"Emma called Jack before _ left the office.","option1":"Emma","option2":"Jack","answer":2,"lang":"en"},
+      {"sentence":"Lucy invited Paul after _ saw the event flyer.","option1":"Lucy","option2":"Paul","answer":1,"lang":"en"},
+      {"sentence":"Lucy invited Paul after _ asked for an invitation.","option1":"Lucy","option2":"Paul","answer":2,"lang":"en"}
+    ]
+  },
+  "humaneval": {
+    "ocp": [
+      {
+        "task_id": "HumanEval/0",
+        "prompt": "from typing import List\n\n\ndef sum_of_squares(numbers: List[int]) -> int:\n    \"\"\" Given a list of integers, return the sum of their squares.\n    >>> sum_of_squares([1, 2, 3])\n    14\n    >>> sum_of_squares([0, -1, -2])\n    5\n    \"\"\"\n",
+        "canonical_solution": "    return sum(x**2 for x in numbers)\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 3]) == 14\n    assert candidate([0, -1, -2]) == 5\n    assert candidate([4, 5, 6]) == 77\n    assert candidate([-3, -4, -5]) == 50\n    assert candidate([]) == 0\n",
+        "entry_point": "sum_of_squares"
+      },
+      {
+        "task_id": "HumanEval/1",
+        "prompt": "def is_palindrome(s: str) -> bool:\n    \"\"\" Given a string, return True if it is a palindrome, False otherwise.\n    A palindrome is a word that reads the same backward as forward.\n    Ignore case and non-alphanumeric characters.\n    >>> is_palindrome('A man, a plan, a canal, Panama')\n    True\n    >>> is_palindrome('racecar')\n    True\n    >>> is_palindrome('hello')\n    False\n    \"\"\"\n",
+        "canonical_solution": "    import re\n    s = re.sub(r'[^a-zA-Z0-9]', '', s).lower()\n    return s == s[::-1]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate('A man, a plan, a canal, Panama') == True\n    assert candidate('racecar') == True\n    assert candidate('hello') == False\n    assert candidate('No lemon, no melon') == True\n    assert candidate('Was it a car or a cat I saw?') == True\n",
+        "entry_point": "is_palindrome"
+      },
+      {
+        "task_id": "HumanEval/2",
+        "prompt": "from typing import List\n\n\ndef rotate_list(lst: List[int], k: int) -> List[int]:\n    \"\"\" Rotate the list to the right by k steps.\n    >>> rotate_list([1, 2, 3, 4, 5, 6, 7], 3)\n    [5, 6, 7, 1, 2, 3, 4]\n    >>> rotate_list([1, 2, 3, 4, 5], 2)\n    [4, 5, 1, 2, 3]\n    \"\"\"\n",
+        "canonical_solution": "    n = len(lst)\n    k = k % n\n    return lst[-k:] + lst[:-k]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 3, 4, 5, 6, 7], 3) == [5, 6, 7, 1, 2, 3, 4]\n    assert candidate([1, 2, 3, 4, 5], 2) == [4, 5, 1, 2, 3]\n    assert candidate([1, 2], 3) == [2, 1]\n    assert candidate([1], 1) == [1]\n    assert candidate([1, 2, 3, 4, 5], 0) == [1, 2, 3, 4, 5]\n",
+        "entry_point": "rotate_list"
+      },
+      {
+        "task_id": "HumanEval/3",
+        "prompt": "from typing import List\n\n\ndef merge_sorted_lists(list1: List[int], list2: List[int]) -> List[int]:\n    \"\"\" Merge two sorted lists into a single sorted list.\n    >>> merge_sorted_lists([1, 3, 5], [2, 4, 6])\n    [1, 2, 3, 4, 5, 6]\n    >>> merge_sorted_lists([], [1, 2, 3])\n    [1, 2, 3]\n    >>> merge_sorted_lists([1, 2, 3], [])\n    [1, 2, 3]\n    >>> merge_sorted_lists([1, 2], [1, 2])\n    [1, 1, 2, 2]\n    \"\"\"\n",
+        "canonical_solution": "    merged_list = []\n    i, j = 0, 0\n    while i < len(list1) and j < len(list2):\n        if list1[i] < list2[j]:\n            merged_list.append(list1[i])\n            i += 1\n        else:\n            merged_list.append(list2[j])\n            j += 1\n    merged_list.extend(list1[i:])\n    merged_list.extend(list2[j:])\n    return merged_list\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 3, 5], [2, 4, 6]) == [1, 2, 3, 4, 5, 6]\n    assert candidate([], [1, 2, 3]) == [1, 2, 3]\n    assert candidate([1, 2, 3], []) == [1, 2, 3]\n    assert candidate([1, 2], [1, 2]) == [1, 1, 2, 2]\n    assert candidate([1, 2, 3], [4, 5, 6]) == [1, 2, 3, 4, 5, 6]\n",
+        "entry_point": "merge_sorted_lists"
+      },
+      {
+        "task_id": "HumanEval/4",
+        "prompt": "from typing import List\n\n\ndef common_elements(list1: List[int], list2: List[int]) -> List[int]:\n    \"\"\" Find the common elements between two lists and return them in sorted order.\n    >>> common_elements([1, 2, 3, 4], [3, 4, 5, 6])\n    [3, 4]\n    >>> common_elements([1, 1, 2, 2], [2, 2, 3, 3])\n    [2]\n    >>> common_elements([1, 2, 3], [4, 5, 6])\n    []\n    >>> common_elements([], [1, 2, 3])\n    []\n    \"\"\"\n",
+        "canonical_solution": "    return sorted(set(list1) & set(list2))\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 3, 4], [3, 4, 5, 6]) == [3, 4]\n    assert candidate([1, 1, 2, 2], [2, 2, 3, 3]) == [2]\n    assert candidate([1, 2, 3], [4, 5, 6]) == []\n    assert candidate([], [1, 2, 3]) == []\n    assert candidate([1, 2, 3], [2, 2, 3]) == [2, 3]\n",
+        "entry_point": "common_elements"
+      },
+      {
+        "task_id": "HumanEval/5",
+        "prompt": "def find_maximum_subarray(arr: List[int]) -> List[int]:\n    \"\"\" Find the contiguous subarray (containing at least one number) which has the largest sum and return it.\n    >>> find_maximum_subarray([1, -2, 3, 4, -1, 2, 1, -5, 4])\n    [3, 4, -1, 2, 1]\n    >>> find_maximum_subarray([-1, -2, -3, -4])\n    [-1]\n    \"\"\"\n",
+        "canonical_solution": "    max_sum = current_sum = arr[0]\n    start = end = s = 0\n    for i in range(1, len(arr)):\n        if arr[i] > current_sum + arr[i]:\n            current_sum = arr[i]\n            s = i\n        else:\n            current_sum += arr[i]\n        if current_sum > max_sum:\n            max_sum = current_sum\n            start = s\n            end = i\n    return arr[start:end+1]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, -2, 3, 4, -1, 2, 1, -5, 4]) == [3, 4, -1, 2, 1]\n    assert candidate([-1, -2, -3, -4]) == [-1]\n    assert candidate([5, -1, 2, 3, -4, 6, -2, 1]) == [5, -1, 2, 3, -4, 6]\n    assert candidate([1, 2, 3, 4]) == [1, 2, 3, 4]\n    assert candidate([-3, -2, -1]) == [-1]\n",
+        "entry_point": "find_maximum_subarray"
+      },
+      {
+        "task_id": "HumanEval/6",
+        "prompt": "def count_occurrences(s: str, sub: str) -> int:\n    \"\"\" Count the number of non-overlapping occurrences of `sub` in `s`.\n    >>> count_occurrences('abababab', 'ab')\n    4\n    >>> count_occurrences('aaaaaa', 'aa')\n    3\n    >>> count_occurrences('hello world', 'o')\n    2\n    \"\"\"\n",
+        "canonical_solution": "    return s.count(sub)\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate('abababab', 'ab') == 4\n    assert candidate('aaaaaa', 'aa') == 3\n    assert candidate('hello world', 'o') == 2\n    assert candidate('test test test', 'test') == 3\n    assert candidate('123123123', '123') == 3\n",
+        "entry_point": "count_occurrences"
+      },
+      {
+        "task_id": "HumanEval/7",
+        "prompt": "def unique_elements(lst: List[int]) -> List[int]:\n    \"\"\" Return a list of unique elements in the input list, preserving the original order.\n    >>> unique_elements([1, 2, 2, 3, 4, 4])\n    [1, 2, 3, 4]\n    >>> unique_elements([5, 5, 5, 5])\n    [5]\n    >>> unique_elements([7, 8, 8, 7, 9, 10])\n    [7, 8, 9, 10]\n    \"\"\"\n",
+        "canonical_solution": "    seen = set()\n    unique = []\n    for x in lst:\n        if x not in seen:\n            unique.append(x)\n            seen.add(x)\n    return unique\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 2, 3, 4, 4]) == [1, 2, 3, 4]\n    assert candidate([5, 5, 5, 5]) == [5]\n    assert candidate([7, 8, 8, 7, 9, 10]) == [7, 8, 9, 10]\n    assert candidate([1, 2, 3, 1, 2, 3]) == [1, 2, 3]\n    assert candidate([10, 10, 10, 10, 10, 10]) == [10]\n",
+        "entry_point": "unique_elements"
+      },
+      {
+        "task_id": "HumanEval/8",
+        "prompt": "from typing import List\n\n\ndef flatten_list(lst: List[List[int]]) -> List[int]:\n    \"\"\" Flatten a list of lists into a single list.\n    >>> flatten_list([[1, 2], [3, 4], [5]])\n    [1, 2, 3, 4, 5]\n    >>> flatten_list([[1], [2], [3], [4]])\n    [1, 2, 3, 4]\n    >>> flatten_list([[], [1, 2, 3], [4, 5]])\n    [1, 2, 3, 4, 5]\n    \"\"\"\n",
+        "canonical_solution": "    return [item for sublist in lst for item in sublist]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([[1, 2], [3, 4], [5]]) == [1, 2, 3, 4, 5]\n    assert candidate([[1], [2], [3], [4]]) == [1, 2, 3, 4]\n    assert candidate([[], [1, 2, 3], [4, 5]]) == [1, 2, 3, 4, 5]\n    assert candidate([[], []]) == []\n    assert candidate([[1, 2, 3]]) == [1, 2, 3]\n",
+        "entry_point": "flatten_list"
+      },
+      {
+        "task_id": "HumanEval/9",
+        "prompt": "def reverse_string(s: str) -> str:\n    \"\"\" Given a string, return it reversed.\n    >>> reverse_string('hello')\n    'olleh'\n    >>> reverse_string('Python')\n    'nohtyP'\n    \"\"\"\n",
+        "canonical_solution": "    return s[::-1]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate('hello') == 'olleh'\n    assert candidate('Python') == 'nohtyP'\n    assert candidate('12345') == '54321'\n    assert candidate('') == ''\n",
+        "entry_point": "reverse_string"
+      },
+      {
+        "task_id": "HumanEval/10",
+        "prompt": "def factorial(n: int) -> int:\n    \"\"\" Given a non-negative integer n, return the factorial of n.\n    >>> factorial(5)\n    120\n    >>> factorial(0)\n    1\n    \"\"\"\n",
+        "canonical_solution": "    if n == 0:\n        return 1\n    result = 1\n    for i in range(1, n + 1):\n        result *= i\n    return result\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate(5) == 120\n    assert candidate(0) == 1\n    assert candidate(1) == 1\n    assert candidate(3) == 6\n    assert candidate(10) == 3628800\n",
+        "entry_point": "factorial"
+      },
+      {
+        "task_id": "HumanEval/11",
+        "prompt": "def fibonacci(n: int) -> int:\n    \"\"\" Given a non-negative integer n, return the nth Fibonacci number.\n    >>> fibonacci(0)\n    0\n    >>> fibonacci(1)\n    1\n    >>> fibonacci(7)\n    13\n    \"\"\"\n",
+        "canonical_solution": "    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    a, b = 0, 1\n    for _ in range(n - 1):\n        a, b = b, a + b\n    return b\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate(0) == 0\n    assert candidate(1) == 1\n    assert candidate(7) == 13\n    assert candidate(10) == 55\n    assert candidate(15) == 610\n",
+        "entry_point": "fibonacci"
+      },
+      {
+        "task_id": "HumanEval/12",
+        "prompt": "from typing import List\n\n\ndef even_numbers(lst: List[int]) -> List[int]:\n    \"\"\" Given a list of integers, return a list of the even numbers.\n    >>> even_numbers([1, 2, 3, 4, 5, 6])\n    [2, 4, 6]\n    >>> even_numbers([0, -1, -2, -3])\n    [0, -2]\n    \"\"\"\n",
+        "canonical_solution": "    return [x for x in lst if x % 2 == 0]\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 3, 4, 5, 6]) == [2, 4, 6]\n    assert candidate([0, -1, -2, -3]) == [0, -2]\n    assert candidate([7, 8, 10]) == [8, 10]\n    assert candidate([11, 13, 15]) == []\n    assert candidate([2, 4, 6, 8, 10]) == [2, 4, 6, 8, 10]\n",
+        "entry_point": "even_numbers"
+      },
+      {
+        "task_id": "HumanEval/13",
+        "prompt": "def count_vowels(s: str) -> int:\n    \"\"\" Given a string, return the number of vowels in it.\n    >>> count_vowels('hello')\n    2\n    >>> count_vowels('aeiou')\n    5\n    \"\"\"\n",
+        "canonical_solution": "    return sum(1 for char in s if char in 'aeiouAEIOU')\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate('hello') == 2\n    assert candidate('aeiou') == 5\n    assert candidate('bcdfg') == 0\n    assert candidate('') == 0\n    assert candidate('AaEeIiOoUu') == 10\n",
+        "entry_point": "count_vowels"
+      },
+      {
+        "task_id": "HumanEval/14",
+        "prompt": "from typing import List\n\n\ndef cumulative_sum(lst: List[int]) -> List[int]:\n    \"\"\" Given a list of integers, return a list where each element is the cumulative sum of the previous elements.\n    >>> cumulative_sum([1, 2, 3])\n    [1, 3, 6]\n    >>> cumulative_sum([0, -1, -2])\n    [0, -1, -3]\n    \"\"\"\n",
+        "canonical_solution": "    result = []\n    total = 0\n    for num in lst:\n        total += num\n        result.append(total)\n    return result\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, 3]) == [1, 3, 6]\n    assert candidate([0, -1, -2]) == [0, -1, -3]\n    assert candidate([4, 5, 6]) == [4, 9, 15]\n    assert candidate([-3, -4, -5]) == [-3, -7, -12]\n    assert candidate([]) == []\n",
+        "entry_point": "cumulative_sum"
+      },
+      {
+        "task_id": "HumanEval/15",
+        "prompt": "from typing import List\n\n\ndef unique_squares(lst: List[int]) -> List[int]:\n    \"\"\" Given a list of integers, return a list of the unique squares of the integers, sorted in ascending order.\n    >>> unique_squares([1, 2, -2, 3, -3])\n    [1, 4, 9]\n    >>> unique_squares([0, -1, -1, 2])\n    [0, 1, 4]\n    \"\"\"\n",
+        "canonical_solution": "    return sorted(set(x**2 for x in lst))\n",
+        "test": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1, 2, -2, 3, -3]) == [1, 4, 9]\n    assert candidate([0, -1, -1, 2]) == [0, 1, 4]\n    assert candidate([4, -4, 5, -5]) == [16, 25]\n    assert candidate([1, 1, 1, 1]) == [1]\n    assert candidate([-3, -3, -3, -3]) == [9]\n",
+        "entry_point": "unique_squares"
+      }
+    ]
+  }
+}
