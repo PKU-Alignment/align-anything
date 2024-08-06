@@ -125,7 +125,7 @@ class SupervisedDataset(Dataset):
             try:
                 audio = self.processor.audio_processor(
                     raw_audio, 
-                    sampling_rate = 48000,
+                    sampling_rate = formatted_sample.get('sampling_rate', 48000),
                     return_tensors='pt'
                 )
                 return_dict['audio_pixel_values'] = audio['input_features'][0]

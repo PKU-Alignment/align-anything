@@ -436,7 +436,7 @@ class ShareGPT4o:
 class LLAVA:
     system_prompt: str = ''
     user_prompt: str = 'USER: \n<image>{input}'
-    assistant_prompt: str = '\nASSISTANT: {output}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
@@ -517,7 +517,7 @@ class AudioCaps:
             'text': text,
             'prompt': prompt,
             'audio': audio.squeeze().tolist(),
-            'sample_rate': sample_rate
+            'sampling_rate': sample_rate
         }
 
 @register_template('LibriSpeech')
@@ -542,7 +542,7 @@ class LibriSpeech:
             'text': text,
             'prompt': prompt,
             'audio': audio,
-            'sample_rate': 48000  
+            'sampling_rate': None
         }
 
 
@@ -570,7 +570,7 @@ class AudioSet:
             'text': text,
             'prompt': prompt,
             'audio': audio.squeeze().tolist(),
-            'sample_rate': sample_rate
+            'sampling_rate': sample_rate
         }
 
 @register_template('DiffusionDB')
