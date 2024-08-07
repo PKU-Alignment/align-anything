@@ -187,12 +187,7 @@ class SupervisedTrainerBase:
             self.model,
             self.cfgs.train_cfgs.weight_decay,
         )
-        # optimizer = FusedAdam(
-        #     optimizer_grouped_parameters,
-        #     lr=self.cfgs.train_cfgs.learning_rate,
-        #     betas=self.cfgs.train_cfgs.adam_betas,
-        # )
-        optimizer = AdamW(
+        optimizer = FusedAdam(
             optimizer_grouped_parameters,
             lr=self.cfgs.train_cfgs.learning_rate,
             betas=self.cfgs.train_cfgs.adam_betas,
