@@ -71,7 +71,7 @@ We have a roadmap for future development work `align-anything`:
 
 # News
 
-- 2024-08-06 🔥 We have restructured the evaluation framework to better support multimodal benchmarks. Based on this, we have implemented benchmarks for text-to-text and text+image-to-text models, with more benchmarks currently being adapted!
+- 2024-08-06 🔥 We have restructured the evaluation framework to better support multimodal benchmarks. Based on this, we have implemented benchmarks for text-to-text and text+image-to-text models, with more benchmarks currently being adapted! The supported list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
 - 2024-08-06 🔥 We have supported text+image interleaved input & output modality for the SFT trainer and Chameleon models!
 - 2024-07-23 🔥 We have supported text-to-image, text-to-audio, and text-to-video modalities for the SFT trainer and DPO trainer!
 - 2024-07-22 🔥 We have supported the currently popular multimodal large model Chameleon for the SFT trainer and DPO trainer!
