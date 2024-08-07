@@ -32,7 +32,7 @@ def evaluator(test_dataset, output_data):
     num_p_match = 0
     question_id = set()
     the_other_result = {}
-    for test_item in test_dataset['test']:
+    for test_item in test_dataset:
         for output_item in output_data:
             if test_item['question_id'] == output_item['question_id'] and test_item['question'] in output_item['prompt_text']:
                 
@@ -51,7 +51,6 @@ def evaluator(test_dataset, output_data):
 
     return num_q_match, num_q_sum, num_p_match, len(question_id)
                 
-
 def judger(target, output):
     if target not in output:
         return False
@@ -88,7 +87,7 @@ def main():
     
     dict_configs = dict_to_namedtuple(dict_configs)
     data_cfgs = dict_configs.default.data_cfgs
-    test_data = load_dataset(data_cfgs.task_dir, 'default')
+    test_data = load_dataset(data_cfgs.task_dir, 'default')[data_cfgs.split]
 
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
 
@@ -101,10 +100,9 @@ def main():
         'accuracy': [num_q_match / num_q_sum],
         'num_match_per_picture': [num_pic_match],
         'num_sum_per_picture': [num_pic_sum],
-        'accuracy+': [num_pic_match / num_pic_sum]
+        'accuracy': [num_pic_match / num_pic_sum]
     }
     logger.print_table(title='MME Benchmark', data=output_dict)
-
 
 if __name__=="__main__":
     main()

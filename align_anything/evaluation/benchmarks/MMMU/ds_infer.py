@@ -27,7 +27,6 @@ import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
 from datasets import load_dataset, DatasetDict
 import pickle
-import time
 import torch
 import re
 from tqdm import tqdm
@@ -48,16 +47,17 @@ class MMMUDataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task: str=None):
         return dataset['dev']
-        # return None
 
     def build_example_prompt(self, data, with_answer=True):
-        choices = '\n'.join([f'({label}) {data["options"][ord(label) - 65]}' for label in self.candidate_labels])
+        choices = ''
+        if data['question_type'] == 'multiple-choice':
+            choices = 'Please choose the correct answer from the following options:\n' + '\n'.join([f'({label}) {data["options"][ord(label) - 65]}' for label in self.candidate_labels])
         answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
-        return f"{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
+        return f"Question_type: {data['question_type']}\n{data['question']}{choices}\n{answer}"
 
     def build_prompt(self, data: Dict[str, Any]) -> str:
         assert self.num_shot == 0, "MMMU does not support few-shot learning."
-        prompt = f"The following are multiple choice questions (with answers).\n\n"
+        prompt = f""
         cot_prompt = f" Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
@@ -89,27 +89,21 @@ class MMMUDataLoader(BaseDataLoader):
                 question.append([base_prompt] * num_images)
 
         return question
-
+    
     def preprocess(self, data):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        raw_images = [item['image_1'] for item in data[self.split]]
+        raw_images = []
+        for item in data[self.split]:
+            images = [item[key] for key in get_image_keys(item)]
+            raw_images.append(images)
         prompts = self.build_prompt(data[self.split])
-        inputs = self.processor(prompts, raw_images, return_tensors='pt', padding=True)
+        
+        flat_images = [img for sublist in raw_images for img in sublist]
+        flat_prompts = [prompt for prompt, sublist in zip(prompts, raw_images) for _ in range(len(sublist))]
+
+        inputs = self.processor(flat_prompts, flat_images, return_tensors='pt', padding=True)
 
         return prompts, inputs
-    
-    # def preprocess(self, data):
-    #     self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    #     # raw_images = [item['image_1'] for item in data[self.split]]
-    #     raw_images = []
-    #     for item in data[self.split]:
-    #         images = [item[key] for key in get_image_keys(item)]
-    #         raw_images.append(images)
-    #     prompts = self.build_prompt(data[self.split])
-        
-    #     inputs = self.processor(prompts, raw_images, return_tensors='pt', padding=True)
-
-    #     return prompts, inputs
 
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
@@ -126,14 +120,16 @@ class MMMUDataLoader(BaseDataLoader):
 
 class MMMUGeneratorDS(BaseInferencer_deepspeed):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
-        task2details = {}
+        os.makedirs(".cache", exist_ok=True)
+        
         for task, input in data.items():
+            task_dir = f".cache/{task}"
+            os.makedirs(task_dir, exist_ok=True)
             raw_output = self.generation(input)
             for item in raw_output:
                 for i in range(len(item.response)):
                     item.response[i] = item.response[i][len(re.sub('<image>', ' ', item.prompt, count=1)):]
-            task2details[task] = raw_output
-            self.save_pickle(raw_output, task)
+            self.save_pickle(raw_output, task_dir)
 
     def load_data_distributed(self, inputs: List[InferenceInput]) -> List[InferenceInput]:
         dataset = ListDataset(inputs)
@@ -164,6 +160,7 @@ class MMMUGeneratorDS(BaseInferencer_deepspeed):
         
         for batch in tqdm(dataloader):
             local_rank = int(os.environ['LOCAL_RANK'])
+
             outputs = self.model.generate(
                 inputs=batch["pad_token_ids"].to(f"cuda:{local_rank}"),
                 pixel_values=batch['pixel_values'].to(f"cuda:{local_rank}"),
@@ -200,8 +197,7 @@ class MMMUGeneratorDS(BaseInferencer_deepspeed):
                 InferenceOutputs.append(inference_output)
         return InferenceOutputs
 
-    def save_pickle(self, output_data: List[InferenceOutput], task: str=None):
-        os.makedirs(".cache", exist_ok=True)
+    def save_pickle(self, output_data: List[InferenceOutput], task_dir: str=None):
         cache_data = []
         for item in output_data:
             cache_data.append(
@@ -211,11 +207,12 @@ class MMMUGeneratorDS(BaseInferencer_deepspeed):
                     'response': item.response
                 }
             )
-        if dist.is_initialized():
-            with open(f".cache/outputs_{task}_{get_rank()}.pkl", 'wb') as f:
-                pickle.dump(cache_data, f, protocol=4)
-        else:
-            with open(f".cache/outputs_{task}.pkl", 'wb') as f:
+            if dist.is_initialized():
+                file_path = f"{task_dir}/outputs_{get_rank()}.pkl"
+            else:
+                file_path = f"{task_dir}/outputs.pkl"
+            
+            with open(file_path, 'wb') as f:
                 pickle.dump(cache_data, f, protocol=4)
 
 def get_image_keys(data):

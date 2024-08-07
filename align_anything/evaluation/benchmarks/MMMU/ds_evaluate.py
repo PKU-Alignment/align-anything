@@ -19,7 +19,7 @@ from datasets import load_dataset
 import argparse
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.evaluation.eval_logger import EvalLogger
-
+import json
 
 def load_pickle(file_path):
     with open(file_path, 'rb') as f:
@@ -30,25 +30,17 @@ def evaluator(test_dataset, output_data):
     num_match = 0
     num_sum = 0
     question_id = set()
-    for test_item in test_dataset['validation']:
+    for test_item in test_dataset:
         for output_item in output_data:
             if test_item['id'] == output_item['question_id'] and output_item['question_id'] not in question_id:
+                question_id.add(output_item['question_id'])
                 num_sum += 1
                 if judger(test_item['answer'], output_item['response'][0]):
                     num_match += 1
-                    if output_item['question_id'] not in question_id:
-                        question_id.add(output_item['question_id'])
-                else:
-                    if output_item['question_id'] not in question_id:
-                        question_id.add(output_item['question_id'])
 
     return num_match, num_sum
                 
 def judger(correct_answer, response):
-    # print('*' * 50)
-    # print(f'correct_answer: {correct_answer}')
-    # print(f'response: {response}')
-    # print('-' * 50)
     if correct_answer not in response:
         return False
     for first_response in response:
@@ -57,13 +49,19 @@ def judger(correct_answer, response):
 
 def main():
     cache_path = ".cache"
-    # cache_path = "/aifs4su/yaodong/panrui/PR444/align-anything/align_anything/evaluation/benchmarks/MMMU/.cache"
-    files = os.listdir(cache_path)
-    InferenceOutputs = []
-    
-    for file in files:
-        if file.endswith(".pkl"):
-            InferenceOutputs.extend(load_pickle(os.path.join(cache_path, file)))
+    raw_outputs = {}
+
+    task_dirs = [(task, os.path.join(cache_path, task)) for task in os.listdir(cache_path) if os.path.isdir(os.path.join(cache_path, task))]
+    for task, task_dir in task_dirs:
+        task_files = os.listdir(task_dir)
+        InferenceOutputs = []
+        for file in task_files:
+            if file.endswith(".pkl"):
+                file_path = os.path.join(task_dir, file)
+                with open(file_path, 'rb') as f:
+                    InferenceOutputs.extend(pickle.load(f))
+        raw_outputs[task] = InferenceOutputs
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[0::2]]
@@ -71,6 +69,13 @@ def main():
     unparsed_args = dict(zip(keys, values))
     
     dict_configs, _ = read_eval_cfgs('mmmu', 'deepspeed')
+
+    try:
+        assert dict_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        logger.log('error', "Config file is not exist or incomplete.")
+        exit()
+
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
@@ -78,21 +83,31 @@ def main():
     
     dict_configs = dict_to_namedtuple(dict_configs)
     data_cfgs = dict_configs.default.data_cfgs
-    test_data = load_dataset(data_cfgs.task_dir, 'Accounting')
 
-    # dir = '/aifs4su/yaodong/panrui/PR444/align-anything/align_anything/evaluation/benchmarks/MMMU/meta_test_output'
-    # logger = EvalLogger('Align-Anything-Evaluation', dir)
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
+    tot_num_match, tot_num_sum = 0, 0
+    for task, _ in raw_outputs.items():
+        test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
+        
+        num_match, num_sum = evaluator(test_data, raw_outputs[task])
+        tot_num_match += num_match
+        tot_num_sum += num_sum
 
-    num_match, num_sum = evaluator(test_data, InferenceOutputs)
-    
+        output_dict = {
+            'model_id': [dict_configs.default.model_cfgs.model_id],
+            'num_match': [num_match],
+            'num_sum': [num_sum],
+            'accuracy': [num_match / num_sum]
+        }
+        logger.print_table(title=f'MMMU/{task} Benchmark', data=output_dict)
+
     output_dict = {
         'model_id': [dict_configs.default.model_cfgs.model_id],
-        'num_match_question': [num_match],
-        'num_sum_question': [num_sum],
-        'accuracy': [num_match / num_sum]
+        'tot_num_match': [tot_num_match],
+        'tot_num_sum': [tot_num_sum],
+        'tot_accuracy': [tot_num_match / tot_num_sum]
     }
-    logger.print_table(title='MMMU Benchmark', data=output_dict)
+    logger.print_table(title=f'MMMU Benchmark ', data=output_dict)
 
 if __name__=="__main__":
     main()

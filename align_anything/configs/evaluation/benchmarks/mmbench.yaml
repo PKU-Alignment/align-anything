@@ -30,7 +30,7 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: en
+    task: [cn, en]
     # Task directory
     task_dir: lmms-lab/MMBench
     # Evaluation split
@@ -39,9 +39,9 @@ default:
     candidate_labels: ["A", "B", "C", "D"]
   # Model configurations
   model_cfgs:
-    model_id: llava-1.5-7b-hf
+    model_id: llava-1.5-13b-hf
     # Pretrained model name or path
-    model_name_or_path: llava-hf/llava-1.5-7b-hf
+    model_name_or_path: llava-hf/llava-1.5-13b-hf
     # Chat template
     chat_template: LLAVA
     # Whether to trust remote code

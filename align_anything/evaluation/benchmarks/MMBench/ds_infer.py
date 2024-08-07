@@ -27,7 +27,6 @@ import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
 from datasets import load_dataset, DatasetDict
 import pickle
-import time
 import torch
 import re
 from tqdm import tqdm
@@ -53,7 +52,7 @@ class MMBenchDataLoader(BaseDataLoader):
                 data = json.load(f)
             return data
         else:
-            return dataset['dev']
+            return None
 
     def build_example_prompt(self, data, with_answer=True):
         choices = '(A): ' + data["A"] + '\n(B): ' + data["B"] + '\n(C): ' + data["C"] + '\n(D): ' + data["D"]
@@ -117,14 +116,16 @@ class MMBenchDataLoader(BaseDataLoader):
 
 class MMBenchGeneratorDS(BaseInferencer_deepspeed):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
-        task2details = {}
+        os.makedirs(".cache", exist_ok=True)
+        
         for task, input in data.items():
+            task_dir = f".cache/{task}"
+            os.makedirs(task_dir, exist_ok=True)
             raw_output = self.generation(input)
             for item in raw_output:
                 for i in range(len(item.response)):
                     item.response[i] = item.response[i][len(re.sub('<image>', ' ', item.prompt, count=1)):]
-            task2details[task] = raw_output
-            self.save_pickle(raw_output, task)
+            self.save_pickle(raw_output, task_dir)
 
     def load_data_distributed(self, inputs: List[InferenceInput]) -> List[InferenceInput]:
         dataset = ListDataset(inputs)
@@ -191,8 +192,7 @@ class MMBenchGeneratorDS(BaseInferencer_deepspeed):
                 InferenceOutputs.append(inference_output)
         return InferenceOutputs
 
-    def save_pickle(self, output_data: List[InferenceOutput], task: str=None):
-        os.makedirs(".cache", exist_ok=True)
+    def save_pickle(self, output_data: List[InferenceOutput], task_dir: str=None):
         cache_data = []
         for item in output_data:
             cache_data.append(
@@ -202,14 +202,13 @@ class MMBenchGeneratorDS(BaseInferencer_deepspeed):
                     'response': item.response
                 }
             )
-
-        if dist.is_initialized():
-            with open(f".cache/outputs_{task}_{get_rank()}.pkl", 'wb') as f:
+            if dist.is_initialized():
+                file_path = f"{task_dir}/outputs_{get_rank()}.pkl"
+            else:
+                file_path = f"{task_dir}/outputs.pkl"
+            
+            with open(file_path, 'wb') as f:
                 pickle.dump(cache_data, f, protocol=4)
-        else:
-            with open(f".cache/outputs_{task}.pkl", 'wb') as f:
-                pickle.dump(cache_data, f, protocol=4)
-
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

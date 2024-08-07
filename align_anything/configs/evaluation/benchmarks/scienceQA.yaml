@@ -25,19 +25,21 @@ default:
     output_dir: null
     # Num shot
     n_shot: 0
+    # Use Chain of Thought
+    cot: false
   # Configuration for data
   data_cfgs:
     # Task name
     task: default
     # Task directory
-    task_dir: lmms-lab/MMVet
+    task_dir: derek-thomas/ScienceQA
     # Evaluation split
     split: test
   # Model configurations
   model_cfgs:
-    model_id: llava-1.5-13b-hf
+    model_id: llava-1.5-7b-hf
     # Pretrained model name or path
-    model_name_or_path: llava-hf/llava-1.5-13b-hf
+    model_name_or_path: llava-hf/llava-1.5-7b-hf
     # Chat template
     chat_template: LLAVA
     # Whether to trust remote code

@@ -19,7 +19,7 @@ from datasets import load_dataset
 import argparse
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.evaluation.eval_logger import EvalLogger
-
+import re
 
 def load_pickle(file_path):
     with open(file_path, 'rb') as f:
@@ -30,48 +30,41 @@ def evaluator(test_dataset, output_data):
     num_match = 0
     num_sum = 0
     question_id = set()
-    for test_item in test_dataset['testmini']:
+    for test_item in test_dataset:
         for output_item in output_data:
             if test_item['pid'] == output_item['question_id'] and output_item['question_id'] not in question_id:
+                question_id.add(output_item['question_id'])
                 num_sum += 1
-                if judger(test_item['answer'].lower(), output_item['response'][0].lower()):
+                if judger(test_item['query'], test_item['answer'], output_item['response'][0]):
                     num_match += 1
-                    if output_item['question_id'] not in question_id:
-                        question_id.add(output_item['question_id'])
-                else:
-                    if output_item['question_id'] not in question_id:
-                        question_id.add(output_item['question_id'])
 
     return num_match, num_sum
                 
-# def judger(correct_answer, response):
-#     # print('*' * 50)
-#     # print(f'correct_answer: {correct_answer}')
-#     # print(f'response: {response}')
-#     # print('-' * 50)
-#     if correct_answer not in response:
-#         return False
-#     for first_response in response:
-#         if first_response in "ABCD":
-#             return first_response == correct_answer
+def extract_number(response):
+    match = re.search(r'(?<![a-zA-Z])[A-Z](?![a-zA-Z])', response)
+    if match:
+        return ord(match.group().lower()) - ord('a')
+    return None
 
-def judger(correct_answer, response):
-    if correct_answer not in response:
-        return False
-    if "yes" in response and "no" not in response:
-        return correct_answer == "yes"
-    if "no" in response and "yes" not in response:
-        return correct_answer == "no"
-    last_yes = response.rfind('yes')
-    last_no = response.rfind('no')
-    if last_yes > last_no:
-        return correct_answer == "yes"
-    elif last_no > last_yes:
-        return correct_answer == "no"
+def check_answer(question, response, answer):
+    choice = extract_number(response)
+    if "Choices:" in question and choice is not None:
+        choices = re.findall(r'\(([A-Z])\)\s([^()]+)', question)
+        choices_list = [choice[1].strip() for choice in choices]
+        len_list = len(choices_list)
+        if choice < len_list and answer == choices_list[choice]:
+            return True
+    return False
+
+def judger(question, correct_answer, response):
+    if correct_answer in response:
+        return True
+    if check_answer(question, response, correct_answer):
+        return True
+    return False
     
 def main():
     cache_path = ".cache"
-    # cache_path = "/aifs4su/yaodong/panrui/PR444/align-anything/align_anything/evaluation/benchmarks/MMMU/.cache"
     files = os.listdir(cache_path)
     InferenceOutputs = []
     
@@ -84,7 +77,7 @@ def main():
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
     
-    dict_configs, _ = read_eval_cfgs('mmmu', 'deepspeed')
+    dict_configs, _ = read_eval_cfgs('mathvista', 'deepspeed')
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
@@ -92,21 +85,19 @@ def main():
     
     dict_configs = dict_to_namedtuple(dict_configs)
     data_cfgs = dict_configs.default.data_cfgs
-    test_data = load_dataset(data_cfgs.task_dir, 'Accounting')
+    test_data = load_dataset(data_cfgs.task_dir, 'default')[data_cfgs.split]
 
-    # dir = '/aifs4su/yaodong/panrui/PR444/align-anything/align_anything/evaluation/benchmarks/MMMU/meta_test_output'
-    # logger = EvalLogger('Align-Anything-Evaluation', dir)
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
 
     num_match, num_sum = evaluator(test_data, InferenceOutputs)
-    
+
     output_dict = {
         'model_id': [dict_configs.default.model_cfgs.model_id],
         'num_match_question': [num_match],
         'num_sum_question': [num_sum],
         'accuracy': [num_match / num_sum]
     }
-    logger.print_table(title='MMMU Benchmark', data=output_dict)
+    logger.print_table(title='MathVista Benchmark', data=output_dict)
 
 if __name__=="__main__":
     main()

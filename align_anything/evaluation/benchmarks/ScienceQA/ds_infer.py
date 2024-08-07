@@ -21,17 +21,20 @@ from typing import List, Dict, Any
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.evaluation.inference.base_inference import get_rank
+from align_anything.evaluation.inference.base_inference import update_results, get_rank
 from torch.nn.utils.rnn import pad_sequence
 import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
 from datasets import load_dataset, DatasetDict
 import pickle
+import time
 import torch
 import re
 from tqdm import tqdm
+import json
 
-class MMVetDataLoader(BaseDataLoader):
+class MMBenchDataLoader(BaseDataLoader):
+
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -45,23 +48,56 @@ class MMVetDataLoader(BaseDataLoader):
         return data['answer']
 
     def set_fewshot_dataset(self, dataset, task: str=None):
-        return None
+        if self.cot:
+            with open('../cot_fewshot/ScienceQA' + task + '.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return data
+        else:
+            return None
 
     def build_example_prompt(self, data, with_answer=True):
-        return f"{data['question']}"
+        choices = '\n'.join([f'({label}) {data["options"][ord(label) - 65]}' for label in self.candidate_labels])
+        answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
+        return f"{data['hint']}\n{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
 
     def build_prompt(self, data: Dict[str, Any]) -> str:
-        assert self.num_shot == 0, "MMVet does not support few-shot learning."
-        prompt = ""
+        assert self.num_shot == 0, "MMBench does not support few-shot learning."
+        prompt = f"The following are hints and multiple choice questions (with answers).\n\n"
+        cot_prompt = f" Let's think step by step. "
+        few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
-        question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
-
+        if len(few_shot_examples) == 0:
+            question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
+        else:
+            if not self.cot:
+                few_shots = [
+                    self.build_example_prompt(
+                        {key: value[i] for key, value in few_shot_examples.items()}, True
+                    )
+                    for i in range(len(few_shot_examples['question']))
+                ]
+            else:
+                few_shots = [
+                    f"{example['question']}\n'Answer: '{example['answer']}" for example in few_shot_examples
+                ]
+            question = []
+            for item in data:
+                request = {}
+                for key, value in item.items():
+                    request[key] = value
+                examples = few_shots + [self.build_example_prompt(request, False)]
+                if self.cot:
+                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt))
+                else:
+                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
+        
         return question
 
     def preprocess(self, data):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         raw_images = [item['image'] for item in data[self.split]]
         prompts = self.build_prompt(data[self.split])
+
         inputs = self.processor(prompts, raw_images, return_tensors='pt', padding=True)
 
         return prompts, inputs
@@ -73,22 +109,24 @@ class MMVetDataLoader(BaseDataLoader):
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['question_id']):
+            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['index']):
                 processed_input = InferenceInput(text=prompt, token_ids=input_ids, pixel_values=pixel_values)
                 processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
         return processed_inputs
 
-class MMVetGeneratorDS(BaseInferencer_deepspeed):
+class MMBenchGeneratorDS(BaseInferencer_deepspeed):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
-        task2details = {}
+        os.makedirs(".cache", exist_ok=True)
+        
         for task, input in data.items():
+            task_dir = f".cache/{task}"
+            os.makedirs(task_dir, exist_ok=True)
             raw_output = self.generation(input)
             for item in raw_output:
                 for i in range(len(item.response)):
                     item.response[i] = item.response[i][len(re.sub('<image>', ' ', item.prompt, count=1)):]
-            task2details[task] = raw_output
-            self.save_pickle(raw_output, task)
+            self.save_pickle(raw_output, task_dir)
 
     def load_data_distributed(self, inputs: List[InferenceInput]) -> List[InferenceInput]:
         dataset = ListDataset(inputs)
@@ -155,8 +193,7 @@ class MMVetGeneratorDS(BaseInferencer_deepspeed):
                 InferenceOutputs.append(inference_output)
         return InferenceOutputs
 
-    def save_pickle(self, output_data: List[InferenceOutput], task: str=None):
-        os.makedirs(".cache", exist_ok=True)
+    def save_pickle(self, output_data: List[InferenceOutput], task_dir: str=None):
         cache_data = []
         for item in output_data:
             cache_data.append(
@@ -166,11 +203,12 @@ class MMVetGeneratorDS(BaseInferencer_deepspeed):
                     'response': item.response
                 }
             )
-        if dist.is_initialized():
-            with open(f".cache/outputs_{task}_{get_rank()}.pkl", 'wb') as f:
-                pickle.dump(cache_data, f, protocol=4)
-        else:
-            with open(f".cache/outputs_{task}.pkl", 'wb') as f:
+            if dist.is_initialized():
+                file_path = f"{task_dir}/outputs_{get_rank()}.pkl"
+            else:
+                file_path = f"{task_dir}/outputs.pkl"
+            
+            with open(file_path, 'wb') as f:
                 pickle.dump(cache_data, f, protocol=4)
 
 def main():
@@ -179,7 +217,7 @@ def main():
     keys = [k[2:] for k in unparsed_args[1::2]]
     values = list(unparsed_args[2::2])
     unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('mmvet', 'deepspeed')
+    dict_configs, infer_configs = read_eval_cfgs('mmbench', 'deepspeed')
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
@@ -189,9 +227,9 @@ def main():
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    dataloader = MMVetDataLoader(dict_configs)
+    dataloader = MMBenchDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
-    eval_module = MMVetGeneratorDS(model_config, infer_configs)
+    eval_module = MMBenchGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)
 
 if __name__ == '__main__':

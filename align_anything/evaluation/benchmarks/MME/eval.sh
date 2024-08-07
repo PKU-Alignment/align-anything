@@ -38,7 +38,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-
 if [ "$backend" = "vllm" ]; then
   python vllm_eval.py \
     --output_dir "$output"
@@ -46,7 +45,6 @@ else
   deepspeed \
     --module ds_infer \
     --output_dir $output
-  
   python ds_evaluate.py \
     --output_dir $output
 fi

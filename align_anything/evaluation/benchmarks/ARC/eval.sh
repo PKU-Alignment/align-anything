@@ -14,9 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Dataset classes for text to audio training."""
 
-<<<<<<<< HEAD:align_anything/evaluation/benchmarks/ARC/eval.sh
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR"
 
@@ -47,14 +45,9 @@ else
   deepspeed \
     --module ds_infer \
     --output_dir $output
-  python ds_eval.py \
+  python ds_evaluate.py \
     --output_dir "$output"
 fi
 
 rm -rf .cache
 rm -rf __pycache__
-========
-
-from align_anything.datasets.text_to_audio.preference import *
-from align_anything.datasets.text_to_audio.supervised import *
->>>>>>>> upstream/dev-eval-2:align_anything/datasets/text_to_audio/__init__.py
