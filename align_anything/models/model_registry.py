@@ -46,6 +46,10 @@ from transformers.utils.generic import ModelOutput
 
 from align_anything.models.llava_model import AccustomedLlavaModel
 from align_anything.models.llava_next_model import AccustomedLlavaNextModel
+from align_anything.models.llama_vision_audio_model import (
+    LlamaVisionAudioConfig,
+    AccustomedLlamaVisionAudioModel
+)
 
 
 @dataclass
@@ -162,6 +166,7 @@ class AnyBaseModelCLS(AutoModel):
 def register_model(auto_model: AutoModelForCausalLM) -> AutoModelForCausalLM:
     auto_model.register(LlavaConfig, LlavaForConditionalGeneration)
     auto_model.register(LlavaNextConfig, AccustomedLlavaNextModel)
+    auto_model.register(LlamaVisionAudioConfig, AccustomedLlamaVisionAudioModel)
     if CHAMELEON_AVALIABLE:
         auto_model.register(ChameleonConfig, AccustomedChameleonModel)
     return auto_model
@@ -170,6 +175,7 @@ def register_model(auto_model: AutoModelForCausalLM) -> AutoModelForCausalLM:
 def register_base_model(auto_model: AnyBaseModelCLS) -> AnyBaseModelCLS:
     auto_model.register(LlavaConfig, AccustomedLlavaModel)
     auto_model.register(LlavaNextConfig, AccustomedLlavaNextModel)
+    auto_model.register(LlamaVisionAudioConfig, AccustomedLlamaVisionAudioModel)
     return auto_model
 
 

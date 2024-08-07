@@ -49,10 +49,14 @@ train_cfgs:
   eval_strategy: epoch
   # The evaluation interval in step-wise evaluation case
   eval_interval: 10
-  # Freeze the multi modal projection layer
-  freeze_mm_proj: True
+  # Freeze the vision projection layer
+  freeze_vision_proj: True
   # Freeze the vison tower model
   freeze_vision_tower: True
+  # Freeze the audio projection layer
+  freeze_audio_proj: True
+  # Freeze the audio tower model
+  freeze_audio_tower: True
   # Freeze the language model
   freeze_language_model: False
   # The max norm of gradient
