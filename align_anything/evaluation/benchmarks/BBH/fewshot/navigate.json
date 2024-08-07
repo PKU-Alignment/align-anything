@@ -1,0 +1,14 @@
+[
+    {
+        "input": "If you follow these instructions, do you return to the starting point? Turn left. Turn around. Turn left. Take 7 steps. Take 2 steps. Take 4 steps. Take 8 steps.\nOptions:\n- Yes\n- No",
+        "target": "No"
+    },
+    {
+        "input": "If you follow these instructions, do you return to the starting point? Turn around. Take 1 step. Take 6 steps. Turn around. Take 6 steps. Take 9 steps. Take 1 step.\nOptions:\n- Yes\n- No",
+        "target": "No"
+    },
+    {
+        "input": "If you follow these instructions, do you return to the starting point? Always face forward. Take 2 steps right. Take 9 steps left. Take 7 steps right.\nOptions:\n- Yes\n- No",
+        "target": "Yes"
+    }
+]

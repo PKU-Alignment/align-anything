@@ -88,7 +88,6 @@ class SupervisedTrainerBase:
             batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
         )
         if self.cfgs.data_cfgs.eval_datasets:
-            self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
             eval_dataset = eval_data_dtype(
                 path=self.cfgs.data_cfgs.eval_datasets,
                 template=self.cfgs.data_cfgs.eval_template,
@@ -198,6 +197,7 @@ class SupervisedTrainerBase:
             lr=self.cfgs.train_cfgs.learning_rate,
             betas=self.cfgs.train_cfgs.adam_betas,
         )
+
         num_warmup_steps = int(self.cfgs.train_cfgs.lr_warmup_ratio * total_training_steps)
         lr_scheduler = get_scheduler(
             name=self.cfgs.train_cfgs.lr_scheduler_type,
