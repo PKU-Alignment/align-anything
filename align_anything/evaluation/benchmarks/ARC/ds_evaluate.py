@@ -213,6 +213,7 @@ def main():
         if v == '' or v is None:
             continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
+
     dict_configs = dict_to_namedtuple(dict_configs)
     eval_configs = dict_configs.default.eval_cfgs
     logger.log_dir = eval_configs.output_dir
