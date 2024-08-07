@@ -45,7 +45,7 @@ class SuperviseTrainer(SupervisedtextTrainer):
                 SupervisedDataset, SupervisedDataset
             )
         else:
-            self.train_dataloader, self.eval_dataloader = self.get_multi_dataloaders(
+            self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
                 SupervisedDataset, SupervisedDataset
             )
 
