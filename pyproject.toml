@@ -63,6 +63,8 @@ dependencies = [
     "torchvision",
     "bitsandbytes",
     "vllm",
+    "diffusers",
+    "peft",
 ]
 
 dynamic = ["version"]

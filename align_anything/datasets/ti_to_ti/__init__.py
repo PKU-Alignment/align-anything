@@ -14,5 +14,16 @@
 # ==============================================================================
 """Dataset classes for text to text training."""
 
+if [ "$backend" = "vllm" ]; then
+  python vllm_eval.py \
+    --output_dir "$output"
+else
+  deepspeed \
+    --module ds_infer \
+    --output_dir $output
+  python ds_evaluate.py \
+    --output_dir $output
+fi
 
-from align_anything.datasets.ti_to_ti.supervised import *
+rm -rf .cache
+rm -rf __pycache__

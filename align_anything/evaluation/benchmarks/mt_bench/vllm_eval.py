@@ -136,7 +136,6 @@ def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOut
             prompt = json.loads(line.strip())
             prompts.append(prompt)
     
-    
     questions=[]
     raw_responses = []
     responses = []
@@ -212,7 +211,7 @@ def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOut
             while score is None:
                 multi_results=[]
                 multi_results = judger.evaluate(system_prompts=[system_prompt],user_prompts=[user_prompt])
-                output =multi_results[0].raw_output.choices[0].message.content
+                output = multi_results[0].raw_output.choices[0].message.content
                 score = get_score(output)
                 time+=1
                 if time >=10:
