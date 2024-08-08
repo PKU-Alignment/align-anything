@@ -15,14 +15,14 @@
 
 import argparse
 import json
-from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
+from align_anything.evaluation.inference.vllm_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from datasets import load_dataset
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.evaluation.inference.base_inference import update_results
+from align_anything.evaluation.inference.vllm_inference import update_results
 from align_anything.evaluation.eval_logger import EvalLogger
 
 class PAWSXDataLoader(BaseDataLoader):
