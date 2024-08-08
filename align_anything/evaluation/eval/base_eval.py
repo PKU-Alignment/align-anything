@@ -15,10 +15,7 @@
 
 from typing import List
 from abc import abstractmethod
-
-from align_anything.evaluation.outputs import ArenaInput, EvalOutput, InferenceOutput, InferenceInput, SingleInput
-from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
-from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
+from align_anything.evaluation.outputs import ArenaInput, EvalOutput, SingleInput
 from align_anything.evaluation.eval.utils import batch_request_openai,filter_out_exception
 from openai.types.chat.chat_completion import ChatCompletion
 
