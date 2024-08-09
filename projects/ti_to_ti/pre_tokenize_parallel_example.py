@@ -306,7 +306,7 @@ def main():
     all_data = []
     for path in output_paths:
         data = torch.load(path)
-        all_data.append(data)  # 假设每个文件中的数据本身就是一个列表
+        all_data.append(data) 
         
     torch.set_printoptions(threshold=torch.inf)
     print(f"Effective Length: {len(all_data)}")
