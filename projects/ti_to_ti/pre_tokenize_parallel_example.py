@@ -106,11 +106,9 @@ def format_sample_cham(raw_sample: dict[str, Any]) -> dict[str, Any]:
     output_img = raw_sample['output_image_url']
     
     if isinstance(input_img, str):
-    # 单个图像
         input_images = [load_image(input_img)]
         num_imput_img = 1
     elif isinstance(input_img, list):
-        # 图像列表
         input_images = [load_image(img) for img in input_img]
         num_input_img = len(input_img)
     elif input_img is None:
