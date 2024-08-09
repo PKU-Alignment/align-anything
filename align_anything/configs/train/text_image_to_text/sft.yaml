@@ -59,6 +59,8 @@ train_cfgs:
   max_grad_norm: 1.0
 # Configuration for datasets
 data_cfgs:
+  # Whether to use multi datasets
+  load_multi_datasets: False
   # Datasets to use for training
   train_datasets: null
   # The format template for training

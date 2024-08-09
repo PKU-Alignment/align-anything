@@ -59,6 +59,7 @@ class PreferenceDataset(Dataset):
         template: str,
         tokenizer: transformers.PreTrainedTokenizer,
         processor: transforms.Compose | None = None,
+        name: str | None = None,
         size: int | None = None,
         split: str | None = None,
         subset: str | None = None,
