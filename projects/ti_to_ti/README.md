@@ -123,9 +123,9 @@ We trained the lm_head of Chameleon-7B model using the full data from [laisonart
 
 We compared the performance of AA-Chameleon-7B+ with Anole-7b model on a text-image interleaved i/o dataset (with a length of 500). Here's the results:
 
-| win | lose | equal |
-|-------|-------|-------|
-| 240 | 175 | 85 |
+| win | lose | equal | win rate (not counting equal) |
+|-------|-------|-------|-------| 
+| 240 | 175 | 85 | 57.8% |
 
 ### Generation Examples
 
