@@ -70,6 +70,19 @@ class MMVetDataLoader(BaseDataLoader):
         processed_inputs = {}
         for task in self.task_names:
             dataset = load_dataset(self.task_dir, task)
+            sample = dataset['test'][0]
+
+            # 查看'image'字段的内容
+            image_content = sample['image']
+
+            # 打印数据类型和内容
+            print(f"数据类型: {type(image_content)}")
+            print(f"内容: {image_content}")
+            return None
+            print(type(dataset))
+            print(type(dataset))
+            print(len(dataset))
+            print(dataset)
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []

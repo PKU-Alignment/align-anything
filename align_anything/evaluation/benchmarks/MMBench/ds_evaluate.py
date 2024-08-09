@@ -84,6 +84,7 @@ def main():
     data_cfgs = dict_configs.default.data_cfgs
 
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
+    
     tot_num_match, tot_num_sum = 0, 0
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
