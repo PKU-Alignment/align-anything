@@ -6,3 +6,7 @@ sft_cham*
 sft_dev*
 sft_hyper*
 sft_rolling*
+host*
+sft_interp*
+gradio*
+sft_meta*

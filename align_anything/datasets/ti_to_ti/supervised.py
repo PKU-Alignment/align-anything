@@ -206,30 +206,7 @@ class SupervisedCollator:
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
         )
 
-        if 'pixel_values' in samples[0].keys():
         
-            a = return_dict['attention_mask'].shape[0]
-            
-            if samples[0]['pixel_values'].dim() == 4:
-                
-                _pixel_values_list = []
-                for sample in samples:
-                    pixel_values = sample['pixel_values']  # size = (P, C, H, W)
-                    _pixel_values_list.append(pixel_values)
-                
-                return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device, dtype = torch.bfloat16) 
-                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
-                
-                # image_sizes
-                b = samples[0]['pixel_values'].shape[2]
-                c = samples[0]['pixel_values'].shape[3]
-                image_size = torch.tensor([b, c], device=current_device, dtype = torch.bfloat16)
-                
-
-            else:
-                # original code for non-patches 
-                return_dict['pixel_values'] = torch.stack(
-                    [sample['pixel_values'] for sample in samples]
-                ).to(current_device, dtype = torch.bfloat16)
+        return_dict['pixel_values'] = None
 
         return return_dict
