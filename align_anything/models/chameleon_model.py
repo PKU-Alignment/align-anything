@@ -37,14 +37,20 @@ class AccustomedChameleonModel(ChameleonForConditionalGeneration):
         input_ids: torch.LongTensor = None,
         pixel_values: torch.FloatTensor = None,
     ):
+        if pixel_values is None:
+            
+            return_dict = {
+                "input_ids": input_ids,
+            }
+            return return_dict
         image_tokens = self.model.get_image_tokens(pixel_values)
         special_image_mask = input_ids == self.model.vocabulary_mapping.image_token_id
         image_tokens = image_tokens.to(input_ids.device, input_ids.dtype)
         input_ids = input_ids.masked_scatter(special_image_mask, image_tokens)
         
         return_dict =  {
-            "input_ids": input_ids,
-            "pixel_values": pixel_values,
+            "input_ids": input_ids.to("cpu"),
+            "pixel_values": pixel_values.to("cpu"),
         }
         
         return return_dict
