@@ -52,8 +52,4 @@ default:
     # Chat template
     chat_template: Qwen
     # The max token length
-<<<<<<< HEAD
     model_max_length: 2048
-=======
-    model_max_length: 2048
->>>>>>> upstream/main

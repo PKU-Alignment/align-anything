@@ -19,11 +19,7 @@ from datasets import load_dataset
 import argparse
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.evaluation.eval_logger import EvalLogger
-<<<<<<< HEAD
 from tqdm import tqdm
-=======
-
->>>>>>> upstream/main
 
 def load_pickle(file_path):
     with open(file_path, 'rb') as f:
@@ -31,7 +27,6 @@ def load_pickle(file_path):
     return data
 
 def evaluator(test_dataset, output_data):
-<<<<<<< HEAD
     num_match = 0
     num_sum = 0
     question_id = set()
@@ -44,31 +39,6 @@ def evaluator(test_dataset, output_data):
                     num_match += 1
 
     return num_match, num_sum
-=======
-    num_q_match = 0
-    num_q_sum = 0
-    num_p_match = 0
-    question_id = set()
-    the_other_result = {}
-    for test_item in test_dataset:
-        for output_item in output_data:
-            if test_item['question_id'] == output_item['question_id'] and test_item['question'] in output_item['prompt_text']:
-                
-                num_q_sum += 1
-                if judger(test_item['answer'].lower(), output_item['response'][0].lower()):
-                    num_q_match += 1
-                    if output_item['question_id'] not in question_id:
-                        question_id.add(output_item['question_id'])
-                        the_other_result[output_item['question_id']] = True
-                    else:
-                        num_p_match += 1
-                else:
-                    if output_item['question_id'] not in question_id:
-                        question_id.add(output_item['question_id'])
-                        the_other_result[output_item['question_id']] = False
-
-    return num_q_match, num_q_sum, num_p_match, len(question_id)
->>>>>>> upstream/main
                 
 def judger(target, output):
     if target not in output:

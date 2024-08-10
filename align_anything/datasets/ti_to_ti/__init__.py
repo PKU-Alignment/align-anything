@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-#
 # Copyright 2024 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,59 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-<<<<<<<< HEAD:align_anything/evaluation/benchmarks/Belebele/eval.sh
-
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-cd "$SCRIPT_DIR"
-
-# 手动解析长选项
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --output_dir)
-      output="$2"
-      shift 2
-      ;;
-    --generation_backend)
-      backend="$2"
-      shift 2
-      ;;
-    -g)
-      backend="$2"
-      shift 2
-      ;;
-    *)
-      shift
-      ;;
-  esac
-done
-
-if [ "$backend" = "vllm" ]; then
-  python vllm_eval.py \
-    --output_dir "$output"
-else
-  bash deepspeed_eval.sh \
-    --output_dir "$output"
-fi
-========
 """Dataset classes for text to text training."""
 
-if [ "$backend" = "vllm" ]; then
-  python vllm_eval.py \
-    --output_dir "$output"
-else
-  deepspeed \
-    --module ds_infer \
-    --output_dir $output
-  python ds_evaluate.py \
-    --output_dir $output
-fi
 
-<<<<<<< HEAD:align_anything/datasets/text_image_to_text/__init__.py
-from align_anything.datasets.text_image_to_text.preference import *
-from align_anything.datasets.text_image_to_text.prompt_only import *
-from align_anything.datasets.text_image_to_text.supervised import *
->>>>>>>> upstream/dev-eval-2:align_anything/datasets/text_image_to_text/__init__.py
-=======
-rm -rf .cache
-rm -rf __pycache__
->>>>>>> upstream/main:align_anything/datasets/ti_to_ti/__init__.py
+from align_anything.datasets.ti_to_ti.supervised import *

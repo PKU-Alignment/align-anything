@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 
-<<<<<<< HEAD
 import os
 import sys
 import argparse
@@ -31,33 +30,6 @@ def get_uuid():
 
     return f"{current_time}_{unique_id}"
     
-=======
-import importlib
-import os
-import yaml
-import sys
-import json
-
-import traceback
-import argparse
-import numpy as np
-import datetime
-
-import warnings
-import traceback
-
-from accelerate import Accelerator
-from accelerate.utils import InitProcessGroupKwargs
-from pathlib import Path
-from typing import Union
-import hashlib
-import subprocess
-from align_anything.evaluation.eval_logger import EvalLogger
-
-eval_logger = EvalLogger('Align-Anything-Evaluation')
-
-
->>>>>>> upstream/main
 def parse_eval_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--config", default=None, help="Path to a yaml file specifying all eval arguments, will ignore cli arguments if specified")
@@ -66,27 +38,14 @@ def parse_eval_args() -> argparse.Namespace:
         "--benchmark",
         "-b",
         default=None,
-<<<<<<< HEAD
         help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, SEED-Bench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA",
-=======
-        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench",
->>>>>>> upstream/main
         choices=[
             "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
             "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
             "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
-<<<<<<< HEAD
             "MM-SafetyBench", "SEED-Bench", "TextVQA", "VizWizVQA",
             "SPA-VL", "A-OKVQA"
-=======
-            "MM-SafetyBench"
->>>>>>> upstream/main
-        ]
-    )
-    parser.add_argument(
-        "--task",
-        default=None,
-        help="Task list of the benchmark you want to test on",
+        ],
     )
     parser.add_argument(
         "--model_name_or_path",
@@ -161,10 +120,7 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     run_benchmark(selected_subfolder_path, args)
 
 def run_benchmark(file_path, args):
-<<<<<<< HEAD
     uuid = get_uuid()
-=======
->>>>>>> upstream/main
     try:
         file_names = [f for f in os.listdir(file_path) if os.path.isfile(os.path.join(file_path, f))]
         if args.generation_backend == 'vllm':
@@ -186,11 +142,8 @@ def run_benchmark(file_path, args):
         
         sh_file_path = os.path.join(file_path, "eval.sh")
         args_list = []
-<<<<<<< HEAD
         args_list.append(f"--uuid")
         args_list.append(str(uuid))
-=======
->>>>>>> upstream/main
         for key, value in vars(args).items():
             if isinstance(value, bool):
                 if value:
