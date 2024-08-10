@@ -132,28 +132,28 @@ We compared the performance of AA-Chameleon-7B+ with Anole-7b model on a text-im
 Example #1
 
 Input text: Add a vintage filter to this bathroom image to give it a retro look and describe the steps involved in applying the filter. <image>
-Input image: ![image](assets/000000101816.jpg)
+Input image: ![image](../../assets/ti_to_ti/000000101816.jpg)
 
 > Output text: <image>I have applied a vintage filter to the bathroom image to give it a retro look. The process involved adjusting the color temperature to add a slight cool tone, reducing the saturation to give it a more muted appearance, and increasing the contrast to enhance the vintage feel.
 
-> Output image: ![image](assets/3e93f869-0a61-4be3-adda-8f7fb9d1e99f.png)
+> Output image: ![image](../../assets/ti_to_ti/3e93f869-0a61-4be3-adda-8f7fb9d1e99f.png)
 
 Example #2
 
 Input text: Create a detailed recipe for making the pastry shown in the image, including ingredients, preparation steps, and baking instructions. <image>
 
-Input image: ![image](assets/000000191297.jpg)
+Input image: ![image](../../assets/ti_to_ti/000000191297.jpg)
 
 > Output text: <image>\n\nCooking Instructions:\n1. Preheat Oven: Preheat your oven to 350\u00b0F (175\u00b0C).\n2. Prepare Filling: In a small bowl, mix well the flour, sugar, eggs, and any other desired ingredients. To make it easier to handle, you can place the bowl of the mixture on a baking tray lined with parchment paper.\n3. Bake Donut: Place the prepared donut on the preheated baking tray. Bake for 8-10 minutes until the donut is golden brown and crispy on top.\n4. Cool and Serve: Allow the donut to cool slightly before serving. You can garnish it with a drizzle of chocolate sauce or caramel sauce if desired.\n\nEnjoy your homemade chocolate-filled donut!
 
-> Output image: ![image](assets/a19ed7ad-f365-4fcd-9991-de832888dd34.png)
+> Output image: ![image](../../assets/ti_to_ti/a19ed7ad-f365-4fcd-9991-de832888dd34.png)
 
 Example #3
 
 Input text: Enhance the presentation of these pizzas with gourmet toppings and plating, and describe the steps involved. <image>
 
-Input image: ![image](assets/000000015036.jpg)
+Input image: ![image](../../assets/ti_to_ti/000000015036.jpg)
 
 > Output text: <image>I have enhanced the presentation of the pizzas by adding gourmet toppings. The pizzas now feature fresh basil leaves, prosciutto, cherry tomatoes, shaved Parmesan cheese, and a drizzle of balsamic glaze. The toppings are arranged artistically on each pizza to create a visually appealing and gourmet presentation.
 
-> Output image: ![image](assets/0ebfd323-1af4-46f2-a1f1-11144571bfec.png)
+> Output image: ![image](../../assets/ti_to_ti/0ebfd323-1af4-46f2-a1f1-11144571bfec.png)
