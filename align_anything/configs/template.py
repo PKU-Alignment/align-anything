@@ -456,12 +456,11 @@ class LLAVA:
             f"{self.assistant_prompt.format(output='')}"
         )
 
-        base_coco_url = 'http://images.cocodataset.org/train2017/'
-        image_file = base_coco_url + raw_sample['image']
+        image_file = raw_sample['image']
         return {
             'text': text,
             'prompt': prompt,
-            'image': Image.open(requests.get(image_file, stream=True).raw),
+            'image': load_image(image_file),
         }
 
 @register_template('LLAVA-CC3M')
