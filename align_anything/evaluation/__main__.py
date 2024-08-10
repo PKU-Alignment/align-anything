@@ -44,7 +44,7 @@ def parse_eval_args() -> argparse.Namespace:
             "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
             "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
             "MM-SafetyBench", "SEED-Bench", "TextVQA", "VizWizVQA",
-            "SPA-VL", "A-OKVQA"
+            "SPA-VL", "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
         ],
     )
     parser.add_argument(
@@ -152,7 +152,7 @@ def run_benchmark(file_path, args):
                 args_list.append(f"--{key}")
                 args_list.append(str(value))
 
-        command = f"sh {sh_file_path} {' '.join(args_list)}"
+        command = f"bash {sh_file_path} {' '.join(args_list)}"
         os.system(command)
         print(f"{file_path} executed successfully with arguments {args}.")
     except subprocess.CalledProcessError as e:

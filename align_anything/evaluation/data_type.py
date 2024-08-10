@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from vllm.outputs import CompletionOutput, RequestOutput
 from vllm.sequence import PromptLogprobs
 from openai.types.chat.chat_completion import ChatCompletion
+import PIL
 
 @dataclass
 class RewardModelOutput:
@@ -39,17 +40,19 @@ class InferenceInput:
     
     image_url: Optional[str] = None
     pixel_values: torch.FloatTensor = None
-    
+    image_file: PIL.Image = None
 
     def __init__(self, 
                  text: str, 
                  token_ids: torch.LongTensor, 
                  image_url: Optional[str] = None, 
-                 pixel_values: torch.FloatTensor = None):
+                 pixel_values: torch.FloatTensor = None,
+                 image_file: PIL.Image = None):
         self.text = text
         self.token_ids = token_ids
         self.image_url = image_url
         self.pixel_values = pixel_values
+        self.image_file = image_file
 
     def __repr__(self):
         return (f"InferenceInput("
