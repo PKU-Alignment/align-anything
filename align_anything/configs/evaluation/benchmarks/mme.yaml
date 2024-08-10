@@ -23,8 +23,11 @@ default:
   eval_cfgs:
     # Output directory name
     output_dir: null
+<<<<<<< HEAD
     # Unique identifier for cache folder
     uuid: null
+=======
+>>>>>>> upstream/main
     # Num shot
     n_shot: 0
     # Evaluation method

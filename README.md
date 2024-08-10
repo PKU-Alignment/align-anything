@@ -52,25 +52,27 @@ Align-Anything is an open-source alignment framework for academic research based
 
 We have a roadmap for future development work `align-anything`:
 
-- [ ] Support alignment algorithms over the `diffusion model`, `text to any generation model` and other `vision-language model`.
+- [x] Support alignment algorithms over the `diffusion model`, `text to any generation model` and other `vision-language model`.
 - [x] Support diverse parameter sizes including `LoRA`, `QLoRA`.
 - [ ] Support `NeMo` backbone for training, and `vllm` backbone for evaluation.
 
-| Trainers | Text :arrow_right: Text | Image+Text :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | Text :arrow_right: Audio |
-|---|---|---|---|---|---|
-| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| RM Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
-| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| PPO Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
-| KTO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
-| ORPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
-| SimPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| Trainers | Text :arrow_right: Text | Text+Image :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | Text :arrow_right: Audio | Text+Image :arrow_right: Text+Image |
+|---|---|---|---|---|---|---|
+| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| RM Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: |
+| PPO Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| KTO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| ORPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| SimPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
 
 - :white_check_mark: : Features supported now.
 - :heavy_minus_sign: : Features on going in our TODO list.
 
 # News
 
+- 2024-08-06 🔥 We have restructured the evaluation framework to better support multimodal benchmarks. Based on this, we have implemented benchmarks for text-to-text and text+image-to-text models, with more benchmarks currently being adapted! The supported list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
+- 2024-08-06 🔥 We have supported text+image interleaved input & output modality for the SFT trainer and Chameleon models!
 - 2024-07-23 🔥 We have supported text-to-image, text-to-audio, and text-to-video modalities for the SFT trainer and DPO trainer!
 - 2024-07-22 🔥 We have supported the currently popular multimodal large model Chameleon for the SFT trainer and DPO trainer!
 - 2024-07-17 🎉 We are pleased to announce the open-source release of the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
@@ -293,6 +295,34 @@ class PKUSafeRLHF(Template):
 
 After designing the aforementioned template, you just need to specify this template by passing the `--train_template PKUSafeRLHF` argument when invoking the dataset to complete the corresponding training. Perhaps the above example still lacks specificity; therefore, we provide command references that encompass various models executing multiple algorithms on diverse datasets. You can expedite your training process by directly running or modifying these scripts [here](./examples/).
 
+# Evaluate
+
+## Quick Start
+
+To prepare for the evaluation, the script is located in the `./scripts directory`. Parameters requiring user input have been left empty and must be filled in before starting the evaluation process. For example, for `evaluate.sh`:
+
+~~~bash
+cd ../align_anything/evaluation
+
+BENCHMARK=""
+OUTPUT_DIR=""
+GENERATION_BACKEND=""
+
+python __main__.py \
+    --benchmark ${BENCHMARK} \
+    --output_dir ${OUTPUT_DIR} \
+    --generation_backend ${GENERATION_BACKEND}
+~~~
+
+- `BENCHMARK`: The evaluation benchmark or dataset for assessing the model's performance. For example, `ARC` for the ARC dataset or another relevant benchmark.
+- `OUTPUT_DIR`: The directory for saving the evaluation results and output files.
+- `GENERATION_BACKEND`: The backend used for generating predictions, `deepspeed` or `vLLM`.
+
+Additionally, you should modify the config file corresponding to the benchmark under `./align_anything/configs/evaluation/benchmarks` to adapt to specific evaluation tasks and specify test models.
+
+For more inference parameters, please see `./align_anything/configs/evaluation/vllm` and `./align_anything/configs/evaluation/deepspeed`, depending on your generation backend.
+
+For more details about the evaluation pipeline, refer to [here](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/evaluation/README.md).
 
 # Inference
 

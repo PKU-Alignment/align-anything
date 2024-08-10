@@ -100,7 +100,7 @@ TRAIN_DATASETS="openbmb/RLAIF-V-Dataset"
 # You can replace it with a local dataset path
 PTX_DATASETS="liuhaotian/LLaVA-Instruct-150K"
 # You can replace it with a new path with correct permission
-OUTPUT_DIR="../output/dpo"
+OUTPUT_DIR="../output/ppo"
 # For wandb online logging
 export WANDB_API_KEY=""
 

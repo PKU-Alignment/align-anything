@@ -122,11 +122,9 @@ def read_cfgs(mode: str, task: str) -> list[dict[str, Any], dict[str, Any]]:
     current_file_path = os.path.abspath(__file__)
     parent_path = os.path.dirname(os.path.dirname(current_file_path))
     yaml_path = os.path.join(parent_path, 'configs', mode, f'{task}.yaml')
-    with open(yaml_path, encoding='utf-8') as f:
-        try:
-            configs = yaml.safe_load(f)
-        except FileNotFoundError as exc:
-            raise FileNotFoundError(f'{yaml_path} error: {exc}') from exc
+    
+    configs = yaml_load(yaml_path)
+
     ds_cfgs_path = os.path.join(
         parent_path,
         'configs',

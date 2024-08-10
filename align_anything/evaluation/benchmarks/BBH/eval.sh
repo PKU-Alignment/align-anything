@@ -42,6 +42,7 @@ if [ "$backend" = "vllm" ]; then
   python vllm_eval.py \
     --output_dir "$output"
 else
+<<<<<<<< HEAD:align_anything/evaluation/benchmarks/BBH/eval.sh
   deepspeed \
     --module ds_infer \
     --output_dir $output
@@ -51,3 +52,8 @@ fi
 
 rm -rf .cache
 rm -rf __pycache__
+========
+  bash deepspeed_eval.sh \
+    --output_dir "$output"
+fi
+>>>>>>>> upstream/main:align_anything/evaluation/benchmarks/Belebele/eval.sh

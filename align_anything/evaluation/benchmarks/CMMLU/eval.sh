@@ -45,8 +45,13 @@ else
   deepspeed \
     --module ds_infer \
     --output_dir $output
+<<<<<<<< HEAD:align_anything/evaluation/benchmarks/CMMLU/eval.sh
   python ds_eval.py \
     --output_dir "$output"
+========
+  python ds_evaluate.py \
+    --output_dir $output
+>>>>>>>> upstream/main:align_anything/trainers/ti_to_ti/__init__.py
 fi
 
 rm -rf .cache

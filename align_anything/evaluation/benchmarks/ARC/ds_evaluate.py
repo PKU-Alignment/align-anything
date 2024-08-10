@@ -181,7 +181,10 @@ def judge_answer(correct_answer, chosen_answer, response):
 
 def main():
     cache_path = ".cache"
+<<<<<<< HEAD
     assert os.path.exists(cache_path), ".cache folder not found. ds_infer failed?"
+=======
+>>>>>>> upstream/main
     raw_outputs = {}
 
     task_dirs = [(task, os.path.join(cache_path, task)) for task in os.listdir(cache_path) if os.path.isdir(os.path.join(cache_path, task))]

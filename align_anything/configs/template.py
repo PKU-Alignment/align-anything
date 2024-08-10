@@ -19,10 +19,13 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any
 
+import random
+import requests
 import librosa
 import requests
 from PIL import Image
 from torchvision.io import read_video
+import torchaudio
 
 from align_anything.utils.template_registry import register_template
 
@@ -30,6 +33,52 @@ from align_anything.utils.template_registry import register_template
 ALLOWED_ATTRIBUTES = ['split_token']
 DEFAULT_SPLIT_TOKEN = 'ASSISTANT:'
 
+def load_image(image_path: str):
+    try:
+        if image_path.startswith("http"):
+            image = Image.open(requests.get(image_path, stream=True).raw)
+        else:
+            image = Image.open(image_path)
+        return image
+    except Exception as e:
+        print(f"Error occured when dealing with {image_path}")
+        raise Exception
+
+AUDIO_QUESTIONS = [
+        "Summarize the audio's contents.<audio>",
+        "Give an overview of what's in the audio.<audio>",
+        "<audio>Detail the audio's subject matter.",
+        "Explain the material covered in the audio.<audio>",
+        "Outline the information in the audio.<audio>",
+        "Break down the audio's key points.<audio>",
+        "Describe the topics discussed in the audio.<audio>",
+        "<audio>Highlight the main ideas in the audio.",
+        "<audio>Recap the content of the audio.",
+        "<audio>Provide a synopsis of the audio's content.",
+        "<audio>Please recount what you listened to.",
+        "Share the details of what reached your ears.<audio>",
+        "Let me know the sounds you picked up.<audio>",
+        "Could you describe the information you've heard?<audio>",
+        "What did you catch from the conversation?<audio>",
+        "<audio>Please inform me of the auditory information you've gathered.",
+        "<audio>Relay the things you've heard, if you would.",
+        "<audio>What have your ears caught wind of?",
+        "I'm curious to know the reports you've heard.<audio>",
+        "Let me in on the auditory details you're aware of.<audio>",
+    ]
+
+SPEECH_QUESTIONS = [
+    "<audio>Could you please let me know the content of this speech?",
+    "<audio>Can you tell me what this speech is about?",
+    "<audio>Would you mind explaining the content of this speech?",
+    "<audio>Please describe the content of this speech.",
+    "I'd like to know the content of this speech.<audio>",
+    "Can you inform me about the content of this speech?<audio>",
+    "Could you summarize the content of this speech for me?<audio>",
+    "What is the content of this speech, please?<audio>",
+    "<audio>Could you provide details about the content of this speech?",
+    "Please give me an overview of this speech's content.<audio>",
+]
 
 class Template(ABC):
     @abstractmethod
@@ -61,6 +110,33 @@ class Dialogue(Template):
             f'{self.system_prompt}'
             f"{self.user_prompt.format(input=' '.join((raw_sample['instruction'], raw_sample['input'])))}"
             f"{self.assistant_prompt.format(output='')}"
+        )
+
+        return_dict = {
+            'text': text,
+            'prompt': prompt,
+        }
+        return return_dict
+    
+@register_template('Aligner')
+class Aligner(Template):
+    system_prompt: str = ''
+    user_prompt: str = '##QUESTION: {question} ##ANSWER: {answer} '
+    assistant_prompt: str = '##CORRECTION: {correction}'
+    separator: str = ''
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        
+        text = (
+            f'{self.system_prompt}'
+            f"{self.user_prompt.format(question=raw_sample['question'], answer=raw_sample['answer'])}"
+            f"{self.assistant_prompt.format(correction=raw_sample['correction'])}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f"{self.user_prompt.format(question=raw_sample['question'], answer=raw_sample['answer'])}"
+            f"{self.assistant_prompt.format(correction='')}"
         )
 
         return_dict = {
@@ -114,7 +190,248 @@ class PKUSafeRLHF(Template):
 
         return {'text': formatted_prompt}
 
+@register_template('ShareGPT')
+class ShareGPT:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
+    end_token: str = '<|end_of_text|>'
 
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        raw_conversations = raw_sample['conversations'][:-2]
+        last_conversations = raw_sample['conversations'][-2:]
+        
+        conversations = []
+        for human, gpt in zip(raw_conversations[::2], raw_conversations[1::2]):
+            conversations.append(f'{self.user_prompt.format(input=human["value"])}{self.assistant_prompt.format(output=gpt["value"])}')
+        conversation = self.end_token.join(conversations)
+        text = (
+            f'{conversation}'
+            f'{self.user_prompt.format(input=last_conversations[0]["value"])}'
+            f"{self.assistant_prompt.format(output=last_conversations[1]['value'])}"
+        )
+        prompt = (
+            f'{conversation}'
+            f'{self.user_prompt.format(input=last_conversations[0]["value"])}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        
+        return {
+            'text': text,
+            'prompt': prompt,
+        }
+
+    
+@register_template('VQAv2')
+class VQAv2:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n<image>{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
+
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        question = raw_sample['question']
+        answer = raw_sample['multiple_choice_answer']
+
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=answer)}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': raw_sample['image'],
+        }
+
+@register_template('GQA')
+class GQA:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n<image>{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
+
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        question = raw_sample['question']
+        answer = raw_sample['answer']
+
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=answer)}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+
+        image_file = os.path.join(path, raw_sample['image_path'])
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': Image.open(image_file),
+        }
+    
+@register_template('OK-VQA')
+class OKVQA:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n<image>{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
+
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        question = raw_sample['question']
+        answer = max(set(raw_sample['answers']), key=raw_sample['answers'].count)
+
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=answer)}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': raw_sample['image'],
+        }
+    
+@register_template('A-OKVQA')
+class AOKVQA:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n<image>{input} give me your rationales.'
+    assistant_prompt: str = '\nASSISTANT: {output}, the rationales is that {rationales}'
+    split_token: str = 'ASSISTANT:'
+
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        question = raw_sample['question']
+        answer = raw_sample['choices'][raw_sample['correct_choice_idx']]
+        rationales = " ".join(raw_sample['rationales'])
+
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=answer, rationales=rationales)}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='', rationales='')}"
+        )
+
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': raw_sample['image'],
+        }
+
+@register_template('OCRVQA')
+class OCRVQA:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n<image> According to the content of the pictures, answer the following questions in order.\n{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
+
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        questions = raw_sample['questions']
+        answers = raw_sample['answers']
+        question = '\n'.join(questions)
+        answer = '\n'.join(answers)
+
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=answer)}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': raw_sample['image'],
+        }
+    
+@register_template('VisualGenome')
+class VisualGenome:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n<image> According to the content of the pictures, answer the following questions in order.\n{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
+
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        questions = raw_sample['questions']
+        answers = raw_sample['answers']
+        quetsion = '\n'.join(questions)
+        answer = '\n'.join(answers)
+
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=quetsion)}'
+            f"{self.assistant_prompt.format(output=answer)}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=quetsion)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': raw_sample['image'],
+        }
+
+@register_template('ShareGPT-4o')
+class ShareGPT4o:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
+
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        raw_conversations = raw_sample['conversations']
+        text = (
+            f'{self.system_prompt}'
+            f"{self.user_prompt.format(input=raw_conversations[0]['value'])}"
+            f"{self.assistant_prompt.format(output=raw_conversations[1]['value'])}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f"{self.user_prompt.format(input=raw_conversations[0]['value'])}"
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        
+        image_file = os.path.join(path, 'mnt/petrelfs/wangwenhai/workspace_cef/4o/image', raw_sample['image'])
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': Image.open(image_file),
+        }
+
+    
 @register_template('LLAVA')
 class LLAVA:
     system_prompt: str = ''
@@ -123,7 +440,7 @@ class LLAVA:
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations']
         raw_prompt = raw_conversations[0]['value'].replace('<image>\n', '').replace('\n<image>', '')
 
@@ -147,6 +464,115 @@ class LLAVA:
             'image': Image.open(requests.get(image_file, stream=True).raw),
         }
 
+@register_template('LLAVA-CC3M')
+class LLAVA_CC3M:
+    user_prompt: str = 'USER: \n{input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        raw_conversations = raw_sample['conversations']
+        question = raw_conversations[0]['value']
+        answer = raw_conversations[1]['value']
+        image = raw_sample['image']
+
+        text = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=answer)}"
+        )
+
+        prompt = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        image_file = os.path.join(path, 'images', image)
+
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': Image.open(image_file),
+        }
+
+@register_template('AudioCaps')
+class AudioCaps:
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        caption = raw_sample['caption']
+        audiocap_path = raw_sample['audiocap_path']
+        question = random.choice(AUDIO_QUESTIONS)
+        
+        text = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=caption)}"
+        )
+
+        prompt = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        audio, sample_rate = torchaudio.load(os.path.join(path, f"{audiocap_path}"))
+        if audio.shape[0] == 2:
+            audio = audio.mean(dim=0, keepdim=True)
+        return {
+            'text': text,
+            'prompt': prompt,
+            'audio': audio.squeeze().tolist(),
+            'sampling_rate': sample_rate
+        }
+
+@register_template('LibriSpeech')
+class LibriSpeech:
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        caption = raw_sample['text'].lower()
+        question = random.choice(SPEECH_QUESTIONS)
+        
+        text = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=caption)}"
+        )
+
+        prompt = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        audio = raw_sample['audio']['array']
+        sampling_rate = raw_sample['audio']['sampling_rate']
+        return {
+            'text': text,
+            'prompt': prompt,
+            'audio': audio,
+            'sampling_rate': sampling_rate
+        }
+
+
+@register_template('AudioSet')
+class AudioSet:
+    user_prompt: str = 'USER: {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        caption = f"The content of audio is {', '.join(raw_sample['captions'])}."
+        question = random.choice(AUDIO_QUESTIONS)
+        
+        text = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output=caption)}"
+        )
+
+        prompt = (
+            f'{self.user_prompt.format(input=question)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        audio, sample_rate = torchaudio.load(os.path.join(path, raw_sample["audio"]))
+        if audio.shape[0] == 2:
+            audio = audio.mean(dim=0, keepdim=True)
+        return {
+            'text': text,
+            'prompt': prompt,
+            'audio': audio.squeeze().tolist(),
+            'sampling_rate': sample_rate
+        }
 
 @register_template('DiffusionDB')
 class DiffusionDB:
@@ -163,7 +589,121 @@ class DiffusionDB:
             'prompt': text,
             'image': raw_sample['image'].convert('RGB'),
         }
+        
+@register_template('ti2ti')
+class TI2TI:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n{input}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
+    separator: str = '###'
 
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        input_text = raw_sample['input_text']
+        output_text = raw_sample['output_text']
+        input_img = raw_sample['input_image']
+        output_img = raw_sample['output_image']
+        
+        if isinstance(input_img, str):
+            input_images = [load_image(input_img)]
+            num_imput_img = 1
+        elif isinstance(input_img, list):
+            input_images = [load_image(img) for img in input_img]
+            num_input_img = len(input_img)
+        else:
+            raise ValueError("input_image must be either a string or a list of strings")
+        
+        
+        input_text = f"{'<image>' * num_imput_img}{input_text}"
+        
+        # do the same for output
+        if isinstance(output_img, str):
+            output_images = [load_image(output_img)]
+            num_output_img = 1
+            
+        elif isinstance(output_img, list):
+            output_images = [load_image(img) for img in output_img]
+            num_output_img = len(output_img)
+        else:
+            raise ValueError("output_image must be either a string or a list of strings")
+        
+        output_text = f"{output_text}{'<image>' * num_output_img}"
+        
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text)}'
+            f"{self.assistant_prompt.format(output=output_text)}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        
+        return {
+            'text': text,
+            'prompt': prompt,
+            'images': input_images + output_images,
+        }
+        
+@register_template('ANYTHING_TI2TI')
+class ANYTHING_TI2TI:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n{input}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
+    separator: str = '###'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        input_text = raw_sample['question']
+        output_text = raw_sample['response']
+        input_img = raw_sample['image_url']
+        output_img = raw_sample['output_image_url']
+        
+        if isinstance(input_img, str):
+            input_images = [load_image(input_img)]
+            num_imput_img = 1
+        elif isinstance(input_img, list):
+            input_images = [load_image(img) for img in input_img]
+            num_input_img = len(input_img)
+        else:
+            raise ValueError("input_image must be either a string or a list of strings")
+        
+        
+        input_text = f"{'<image>' * num_imput_img}{input_text}"
+        
+        # do the same for output
+        if isinstance(output_img, str):
+            output_images = [load_image(output_img)]
+            num_output_img = 1
+            
+        elif isinstance(output_img, list):
+            output_images = [load_image(img) for img in output_img]
+            num_output_img = len(output_img)
+        else:
+            raise ValueError("output_image must be either a string or a list of strings")
+        
+        output_text = f"{output_text}{'<image>' * num_output_img}"
+        
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text)}'
+            f"{self.assistant_prompt.format(output=output_text)}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        
+        return {
+            'text': text,
+            'prompt': prompt,
+            'input_image': input_images,
+            'image': input_images + output_images,
+        }
 
 @register_template('RLAIFV')
 class RLAIFV:

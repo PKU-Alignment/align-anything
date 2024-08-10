@@ -60,6 +60,7 @@ class SupervisedDataset(Dataset):
         template: str,
         tokenizer: transformers.PreTrainedTokenizer,
         processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        name: str | None = None,
         size: int | None = None,
         split: str | None = None,
         subset: str | None = None,
@@ -69,13 +70,14 @@ class SupervisedDataset(Dataset):
         super().__init__()
         assert path, f'You must set the valid datasets path! Here is {path}'
         assert template, f'You must set the valid template path! Here is {template}'
+        self.path = path
         self.tokenizer = tokenizer
         self.processor = processor
         self.raw_data = load_dataset(
             path,
-            split=split,
-            data_files=data_files,
-            subset=subset,
+            name=name if name and name!="None" else None,
+            split=split if split and split!="None" else None,
+            data_files=data_files if data_files and data_files!="None" else None,
             *optional_args,
             trust_remote_code=True,
         )
@@ -84,7 +86,7 @@ class SupervisedDataset(Dataset):
         self.template = get_template_class(template)
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_sample(raw_sample)
+        formatted_sample = self.template.format_sample(raw_sample, self.path)
         return_dict = {}
         raw_text = ''
         if isinstance(formatted_sample['text'], list):
@@ -101,10 +103,17 @@ class SupervisedDataset(Dataset):
         labels[: len(self.tokenize(formatted_prompt))] = IGNORE_INDEX
         return_dict['labels'] = labels
 
-        raw_image = formatted_sample['image']
-        return_dict['pixel_values'] = self.processor.image_processor(
-            raw_image, return_tensors='pt'
-        )['pixel_values'][0]
+        raw_image = formatted_sample.get('image', None)
+        if raw_image:
+            try:
+                return_dict['pixel_values'] = self.processor.image_processor(
+                    raw_image, return_tensors='pt'
+                )['pixel_values'][0]
+            except Exception as e:
+                print(f'Error when processing image: {e}')
+                return_dict['pixel_values'] = None
+        else:
+            return_dict['pixel_values'] = None
 
         return return_dict
 
@@ -170,32 +179,27 @@ class SupervisedCollator:
         if 'pixel_values' in samples[0].keys():
 
             a = return_dict['attention_mask'].shape[0]
-
-            if samples[0]['pixel_values'].dim() == 4:
-                # init list for pixel_values
-                return_dict['image_sizes'] = [
-                    sample['pixel_values'].to(current_device).size(0) for sample in samples
-                ]
-
-                _pixel_values_list = []
-                for sample in samples:
-                    pixel_values = sample['pixel_values']  # size = (P, C, H, W)
-                    _pixel_values_list.append(pixel_values)
-
-                return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(
-                    current_device
-                )
-                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W)
-
-                # image_sizes
-                b = samples[0]['pixel_values'].shape[2]
-                c = samples[0]['pixel_values'].shape[3]
-                image_size = torch.tensor([b, c], device=current_device)
-
+            
+            if samples[0]['pixel_values'] is not None:
+                if samples[0]['pixel_values'].dim() == 4:
+                    # init list for pixel_values
+                    return_dict['image_sizes'] = [ sample['pixel_values'].to(current_device).size(0) for sample in samples ]
+                    
+                    _pixel_values_list = []
+                    for sample in samples:
+                        pixel_values = sample['pixel_values']  # size = (P, C, H, W)
+                        _pixel_values_list.append(pixel_values)
+                    
+                    return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
+                    # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
+                    
+                else:
+                    # original code for non-patches 
+                    return_dict['pixel_values'] = torch.stack(
+                        [sample['pixel_values'] for sample in samples]
+                    ).to(current_device)
             else:
-                # original code for non-patches
-                return_dict['pixel_values'] = torch.stack(
-                    [sample['pixel_values'] for sample in samples]
-                ).to(current_device)
+                return_dict['pixel_values'] = None
+
 
         return return_dict

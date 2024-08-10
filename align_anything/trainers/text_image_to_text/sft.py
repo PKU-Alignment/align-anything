@@ -40,9 +40,14 @@ class SuperviseTrainer(SupervisedtextTrainer):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
-            SupervisedDataset, SupervisedDataset
-        )
+        if self.cfgs.data_cfgs.load_multi_datasets:
+            self.train_dataloader, self.eval_dataloader = self.get_multi_dataloaders(
+                SupervisedDataset, SupervisedDataset
+            )
+        else:
+            self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+                SupervisedDataset, SupervisedDataset
+            )
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""

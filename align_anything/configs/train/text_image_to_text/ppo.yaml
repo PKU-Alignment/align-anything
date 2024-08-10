@@ -82,7 +82,7 @@ train_cfgs:
   # Freeze the vison tower model
   freeze_vision_tower: False
   # Freeze the language model
-  freeze_language_model: True
+  freeze_language_model: False
 # Configuration for datasets
 data_cfgs:
   # Datasets to use for training

@@ -32,10 +32,13 @@ while [[ $# -gt 0 ]]; do
       backend="$2"
       shift 2
       ;;
+<<<<<<< HEAD
     --uuid)
       uuid="$2"
       shift 2
       ;;
+=======
+>>>>>>> upstream/main
     *)
       shift
       ;;
@@ -44,6 +47,7 @@ done
 
 if [ "$backend" = "vllm" ]; then
   python vllm_eval.py \
+<<<<<<< HEAD
     --output_dir "$output" \
     --uuid "$uuid"
 else
@@ -58,3 +62,16 @@ fi
 
 rm -rf .cache
 rm -rf __pycache__
+=======
+    --output_dir "$output"
+else
+  deepspeed \
+    --module ds_infer \
+    --output_dir $output
+  # python ds_evaluate.py \
+  #   --output_dir $output
+fi
+
+# rm -rf .cache
+# rm -rf __pycache__
+>>>>>>> upstream/main

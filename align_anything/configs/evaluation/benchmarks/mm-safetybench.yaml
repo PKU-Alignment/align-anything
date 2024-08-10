@@ -21,6 +21,7 @@ infer_cfgs:
 default:
   # Evaluation configurations
   eval_cfgs:
+<<<<<<< HEAD
     #openai api url
     openai_api_base_url: null
     #openai api key
@@ -29,6 +30,10 @@ default:
     output_dir: null
     # Unique identifier for cache folder
     uuid: null
+=======
+    # Output directory name
+    output_dir: null
+>>>>>>> upstream/main
     # Num shot
     n_shot: 0
   # Configuration for data
@@ -41,9 +46,15 @@ default:
     split: test
   # Model configurations
   model_cfgs:
+<<<<<<< HEAD
     model_id: llava-1.5-7b-hf
     # Pretrained model name or path
     model_name_or_path: llava-hf/llava-1.5-7b-hf
+=======
+    model_id: llava-1.5-13b-hf
+    # Pretrained model name or path
+    model_name_or_path: llava-hf/llava-1.5-13b-hf
+>>>>>>> upstream/main
     # Chat template
     chat_template: LLAVA
     # Whether to trust remote code

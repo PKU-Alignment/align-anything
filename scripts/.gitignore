@@ -1,0 +1,8 @@
+.deepspeed_env
+hostfile
+myhostfile
+sft_aligner*
+sft_cham*
+sft_dev*
+sft_hyper*
+sft_rolling*

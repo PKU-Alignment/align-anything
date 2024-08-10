@@ -90,8 +90,11 @@ def main():
     unparsed_args = dict(zip(keys, values))
     dict_configs, infer_configs = read_eval_cfgs('test_mbpp')
     for k, v in unparsed_args.items():
+<<<<<<< HEAD
         if v == '' or v is None:
             continue
+=======
+>>>>>>> upstream/main
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
     

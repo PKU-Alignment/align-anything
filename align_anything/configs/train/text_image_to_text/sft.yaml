@@ -59,10 +59,14 @@ train_cfgs:
   max_grad_norm: 1.0
 # Configuration for datasets
 data_cfgs:
+  # Whether to use multi datasets
+  load_multi_datasets: False
   # Datasets to use for training
   train_datasets: null
   # The format template for training
   train_template: null
+  # The name of training datasets
+  train_name: null
   # The total number for training
   train_size: null
   # The split of train datasets
@@ -77,6 +81,8 @@ data_cfgs:
   eval_datasets: null
   # The format template for evaluation
   eval_template: null
+  # The name of evaluation datasets
+  eval_name: null
   # The total number for evaluation
   eval_size: null
   # The split of evaluation datasets

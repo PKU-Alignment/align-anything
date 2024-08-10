@@ -15,17 +15,23 @@
 # limitations under the License.
 # ==============================================================================
 <<<<<<< HEAD
+<<<<<<< HEAD
 <<<<<<<< HEAD:align_anything/evaluation/benchmarks/Belebele/eval.sh
 =======
 >>>>>>> upstream/dev-eval-2
+=======
+>>>>>>> upstream/main
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # 手动解析长选项
 =======
 >>>>>>> upstream/dev-eval-2
+=======
+>>>>>>> upstream/main
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --output_dir)
@@ -50,6 +56,7 @@ if [ "$backend" = "vllm" ]; then
   python vllm_eval.py \
     --output_dir "$output"
 else
+<<<<<<< HEAD
   bash deepspeed_eval.sh \
     --output_dir "$output"
 <<<<<<< HEAD
@@ -65,3 +72,20 @@ from align_anything.datasets.text_image_to_text.supervised import *
 =======
 fi
 >>>>>>> upstream/dev-eval-2
+=======
+<<<<<<<< HEAD:align_anything/evaluation/benchmarks/BBH/eval.sh
+  deepspeed \
+    --module ds_infer \
+    --output_dir $output
+  python ds_eval.py \
+    --output_dir "$output"
+fi
+
+rm -rf .cache
+rm -rf __pycache__
+========
+  bash deepspeed_eval.sh \
+    --output_dir "$output"
+fi
+>>>>>>>> upstream/main:align_anything/evaluation/benchmarks/Belebele/eval.sh
+>>>>>>> upstream/main

@@ -46,7 +46,11 @@ class DROPDataLoader(BaseDataLoader):
         return question
 
     def preprocess(self, data):
+<<<<<<< HEAD
         prompts = self.build_prompt(data[self.split])
+=======
+        prompts = self.build_prompt(data[self.split].select(range(1000)))
+>>>>>>> upstream/main
         token_ids = self.tokenizer(prompts)
 
         return prompts, token_ids
@@ -74,8 +78,11 @@ def main():
     unparsed_args = dict(zip(keys, values))
     dict_configs, infer_configs = read_eval_cfgs('test_drop')
     for k, v in unparsed_args.items():
+<<<<<<< HEAD
         if v == '' or v is None:
             continue
+=======
+>>>>>>> upstream/main
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
     

@@ -44,11 +44,17 @@ if [ "$backend" = "vllm" ]; then
 else
   deepspeed \
     --module ds_infer \
+<<<<<<< HEAD
     --output_dir "$output" \
     --uuid "$uuid"
   python ds_evaluate.py \
     --output_dir "$output" \
     --uuid "$uuid"
+=======
+    --output_dir $output
+  python ds_evaluate.py \
+    --output_dir "$output"
+>>>>>>> upstream/main
 fi
 
 rm -rf .cache
