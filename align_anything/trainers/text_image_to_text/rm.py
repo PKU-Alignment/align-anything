@@ -80,7 +80,7 @@ def main():
 
     # setup training
     cfgs = dict_to_namedtuple(dict_cfgs)
-    seed_everything(cfgs.train_cfgs.seed)
+    seed_everything(int(cfgs.train_cfgs.seed))
 
     # finetune the model
     trainer = RMTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)
