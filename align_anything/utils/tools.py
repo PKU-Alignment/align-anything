@@ -118,15 +118,46 @@ def vllm_logprob_to_dict(data):
     # print([{v.decoded_token: v.logprob} for k, v in data.items()])
     return [{v.decoded_token: v.logprob} for k, v in data.items()]
 
+
+def override_with_env_variables(config, env_prefix):
+    for key, value in os.environ.items():
+        if key.startswith(env_prefix):
+            keys = key[len(env_prefix):].lower().split('__')
+            override_nested_value(config, keys, value)
+
+def override_nested_value(config, keys, value):
+    for key, subconfig in config.items():
+        if isinstance(subconfig, dict):
+            override_nested_value(subconfig, keys, value)
+    if keys[0] in config:
+        set_nested_value(config, keys, value)
+
+def set_nested_value(dictionary, keys, value):
+    for key in keys[:-1]:
+        dictionary = dictionary.setdefault(key, {})
+    dictionary[keys[-1]] = value
+    
+def yaml_load(yaml_path):
+    
+    # Use the PREFIX ENV PREFIX to identify the relevant environment variables
+    env_prefix = 'ENV_PREFIX__'
+    with open(yaml_path, encoding='utf-8') as f:
+        try:
+            configs = yaml.safe_load(f)
+            override_with_env_variables(configs, env_prefix)
+            print(configs)
+            return configs
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f'{yaml_path} error: {exc}') from exc
+    
+
 def read_cfgs(mode: str, task: str) -> list[dict[str, Any], dict[str, Any]]:
     current_file_path = os.path.abspath(__file__)
     parent_path = os.path.dirname(os.path.dirname(current_file_path))
     yaml_path = os.path.join(parent_path, 'configs', mode, f'{task}.yaml')
-    with open(yaml_path, encoding='utf-8') as f:
-        try:
-            configs = yaml.safe_load(f)
-        except FileNotFoundError as exc:
-            raise FileNotFoundError(f'{yaml_path} error: {exc}') from exc
+    
+    configs = yaml_load(yaml_path)
+
     ds_cfgs_path = os.path.join(
         parent_path,
         'configs',
@@ -142,11 +173,9 @@ def read_eval_cfgs(task: str, backend: str) -> dict[str, Any]:
     current_file_path = os.path.abspath(__file__)
     parent_path = os.path.dirname(os.path.dirname(current_file_path))
     yaml_path = os.path.join(parent_path, 'configs', 'evaluation', 'benchmarks', f'{task}.yaml')
-    with open(yaml_path, encoding='utf-8') as f:
-        try:
-            configs = yaml.safe_load(f)
-        except FileNotFoundError as exc:
-            raise FileNotFoundError(f'{yaml_path} error: {exc}') from exc
+
+    configs = yaml_load(yaml_path)
+    
     if backend.lower() == 'vllm':
         infer_cfgs_path = os.path.join(
             parent_path,

@@ -71,6 +71,7 @@ Align-Anything 是一个基于 DeepSpeed 或 NeMo （目前正在开发中）的
 - :heavy_minus_sign: : 正在内部测试的功能，将尽快被更新。
 
 # 新闻
+- 2024-08-06 🔥 我们重构了评估框架，以更好地支持多模态基准。在此基础上，我们已经实现了text-to-text和text+image-to-text模型的基准测试，目前正在适配更多的基准测试！
 - 2024-08-06 🔥 我们支持了text image混合输入输出模态的SFT trainer和Chemeleon系列模型！
 - 2024-07-23 🔥 我们支持了text-to-image，text-to-audio和text-to-video模态的SFT trainer和DPO trainer！
 - 2024-07-22 🔥 我们支持了目前热门的多模态大模型Chameleon的SFT trainer和DPO trainer！
@@ -287,6 +288,35 @@ class PKUSafeRLHF(Template):
 
         return {'text': formatted_prompt}
 ```
+# 评估
+
+## 快速开始
+
+评估启动脚本位于 `./scripts` 目录下。需要用户输入的参数已留空，必须在启动评估过程之前填写。例如，对于 `evaluate.sh`：
+
+~~~bash
+cd ../align_anything/evaluation
+
+BENCHMARK=""
+OUTPUT_DIR=""
+GENERATION_BACKEND=""
+
+python __main__.py \
+    --benchmark ${BENCHMARK} \
+    --output_dir ${OUTPUT_DIR} \
+    --generation_backend ${GENERATION_BACKEND}
+~~~
+
+- `BENCHMARK`: 评估模型性能的基准或数据集。例如，使用 `ARC` 表示 ARC 数据集或其他相关基准。
+- `OUTPUT_DIR`: 用于保存评估结果和输出文件的目录。
+- `GENERATION_BACKEND`: 进行大语言模型推理的框架，包括`deepspeed` 和 `vLLM` 。
+
+此外，你还应修改 `./align_anything/configs/evaluation/benchmarks` 下与基准测试对应的配置文件，以适应特定的评估任务，并指定测试模型。
+
+如果想修改更多推理参数，请查看 `./align_anything/configs/evaluation/vllm` 和 `./align_anything/configs/evaluation/deepspeed`，具体取决于你选择的推理框架。
+
+有关评估的更多细节，请参阅[这里](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/evaluation/README_zh-CN.md)。
+
 # 推理
 
 ## Gradio 界面

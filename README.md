@@ -71,6 +71,7 @@ We have a roadmap for future development work `align-anything`:
 
 # News
 
+- 2024-08-06 🔥 We have restructured the evaluation framework to better support multimodal benchmarks. Based on this, we have implemented benchmarks for text-to-text and text+image-to-text models, with more benchmarks currently being adapted! The supported list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
 - 2024-08-06 🔥 We have supported text+image interleaved input & output modality for the SFT trainer and Chameleon models!
 - 2024-07-23 🔥 We have supported text-to-image, text-to-audio, and text-to-video modalities for the SFT trainer and DPO trainer!
 - 2024-07-22 🔥 We have supported the currently popular multimodal large model Chameleon for the SFT trainer and DPO trainer!
@@ -294,6 +295,34 @@ class PKUSafeRLHF(Template):
 
 After designing the aforementioned template, you just need to specify this template by passing the `--train_template PKUSafeRLHF` argument when invoking the dataset to complete the corresponding training. Perhaps the above example still lacks specificity; therefore, we provide command references that encompass various models executing multiple algorithms on diverse datasets. You can expedite your training process by directly running or modifying these scripts [here](./examples/).
 
+# Evaluate
+
+## Quick Start
+
+To prepare for the evaluation, the script is located in the `./scripts directory`. Parameters requiring user input have been left empty and must be filled in before starting the evaluation process. For example, for `evaluate.sh`:
+
+~~~bash
+cd ../align_anything/evaluation
+
+BENCHMARK=""
+OUTPUT_DIR=""
+GENERATION_BACKEND=""
+
+python __main__.py \
+    --benchmark ${BENCHMARK} \
+    --output_dir ${OUTPUT_DIR} \
+    --generation_backend ${GENERATION_BACKEND}
+~~~
+
+- `BENCHMARK`: The evaluation benchmark or dataset for assessing the model's performance. For example, `ARC` for the ARC dataset or another relevant benchmark.
+- `OUTPUT_DIR`: The directory for saving the evaluation results and output files.
+- `GENERATION_BACKEND`: The backend used for generating predictions, `deepspeed` or `vLLM`.
+
+Additionally, you should modify the config file corresponding to the benchmark under `./align_anything/configs/evaluation/benchmarks` to adapt to specific evaluation tasks and specify test models.
+
+For more inference parameters, please see `./align_anything/configs/evaluation/vllm` and `./align_anything/configs/evaluation/deepspeed`, depending on your generation backend.
+
+For more details about the evaluation pipeline, refer to [here](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/evaluation/README.md).
 
 # Inference
 
