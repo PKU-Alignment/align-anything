@@ -32,9 +32,9 @@ If you are dealing with a large dataset, you can use `pre_tokenize_parallel_exam
 python pre_tokenize_parallel_example.py
 ```
 
-### Chameleon Finetuning
+### Model Finetuning
 
-Add a script named `sft_cham.sh` under the `scripts` file like this:
+Add a script named `sft_ti_to_ti.sh` under the `scripts` file like this:
 
 ```bash
 # You can replace it with a local model path
@@ -44,7 +44,7 @@ TRAIN_DATASETS="path/to/dataset"
 # the file name should look like "dataset_file_name.pt"
 FILE_NAME="dataset_file_name" 
 # You can replace it with a new path
-OUTPUT_DIR="../outputs/sft_chameleon"
+OUTPUT_DIR="../outputs/sft_ti_to_ti"
 # For wandb online logging
 export WANDB_API_KEY=""
 # Source the setup script
@@ -73,7 +73,7 @@ deepspeed \
 and set up the correct model path and dataset path, then run:
     
 ```bash
-bash scripts/sft_cham.sh
+bash scripts/sft_ti_to_ti.sh
 ```
 
 ## Model Evaluation

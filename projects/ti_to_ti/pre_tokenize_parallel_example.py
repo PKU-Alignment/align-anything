@@ -194,7 +194,6 @@ def preprocess(tokenizer, processor, formatted_sample: dict[str, Any]):
         prompt_dict = processor(formatted_prompt, return_tensors='pt').to(dtype = torch.bfloat16)
         labels = return_dict['input_ids'].clone()
         
-        # print(len(prompt_dict['input_ids'][0]))
         labels[: len(prompt_dict['input_ids'][0] - 1)] = IGNORE_INDEX
         return_dict['labels'] = labels
         return_dict['pixel_values'] = None
@@ -217,9 +216,6 @@ def preprocess(tokenizer, processor, formatted_sample: dict[str, Any]):
 
         return_dict['pixel_values'] = text_dict['pixel_values']
         
-        # print(f"Input id shape: {return_dict['input_ids'].shape}")
-        # print(f"Pixel value shape: {return_dict['pixel_values'].shape}")
-        
         return return_dict, len(prompt_dict['input_ids'][0]) - 1, True
 
 
@@ -239,7 +235,6 @@ def process_data(gpu, input_data, model_path, output_path, cache_dir):
             num_img += 1
         else:
             num_text += 1
-        # torch.set_printoptions(threshold=torch.inf)
         
         if preprocessed_sample['pixel_values'] is not None:
             updated_piece = model.pre_tokenization(
