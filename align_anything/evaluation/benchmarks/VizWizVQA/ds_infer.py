@@ -15,12 +15,13 @@
 
 import os
 import argparse
-from align_anything.evaluation.inference.ds_inference import BaseInferencer_deepspeed, ListDataset, get_rank
+from align_anything.evaluation.inference.ds_inference import BaseInferencer_deepspeed, ListDataset
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
+from align_anything.evaluation.inference.ds_inference import get_rank
 from torch.nn.utils.rnn import pad_sequence
 import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
@@ -30,8 +31,7 @@ import torch
 import re
 from tqdm import tqdm
 
-class MMEDataLoader(BaseDataLoader):
-
+class VizWizVQADataLoader(BaseDataLoader):
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -48,11 +48,11 @@ class MMEDataLoader(BaseDataLoader):
         return None
 
     def build_example_prompt(self, data, with_answer=True):
-        return data['question']
+        return f"{data['question']}"
 
     def build_prompt(self, data: Dict[str, Any]) -> str:
-        assert self.num_shot == 0, "MME does not support few-shot learning."
-        prompt = ""
+        assert self.num_shot == 0, "VizWizVQA does not support few-shot learning."
+        prompt = "The following tasks are divided into two categories: predicting the answer to a visual question and predicting whether a visual question is unanswerable. If the question cannot be answered, just answer a word: 'unanswerable'.\n\n"
         template = get_template_class(self.chat_template)
         question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
 
@@ -73,13 +73,13 @@ class MMEDataLoader(BaseDataLoader):
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, input_ids, pixel_values, question_id, question in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['question_id'], dataset[self.split]['question']):
+            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['question_id']):
                 processed_input = InferenceInput(text=prompt, token_ids=input_ids, pixel_values=pixel_values)
-                processed_input.question_id = question_id + question
+                processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
         return processed_inputs
 
-class MMEGeneratorDS(BaseInferencer_deepspeed):
+class VizWizVQAGeneratorDS(BaseInferencer_deepspeed):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         os.makedirs(".cache", exist_ok=True)
         uuid_path = f".cache/{eval_configs.uuid}"
@@ -183,18 +183,19 @@ def main():
     keys = [k[2:] for k in unparsed_args[1::2]]
     values = list(unparsed_args[2::2])
     unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('mme', 'deepspeed')
+    dict_configs, infer_configs = read_eval_cfgs('vizwizVQA', 'deepspeed')
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
+    
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    dataloader = MMEDataLoader(dict_configs)
+    dataloader = VizWizVQADataLoader(dict_configs)
     test_data = dataloader.load_dataset()
-    eval_module = MMEGeneratorDS(model_config, infer_configs)
+    eval_module = VizWizVQAGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)
 
 if __name__ == '__main__':

@@ -32,27 +32,20 @@ def evaluator(test_dataset, output_data):
     question_id = set()
     for test_item in tqdm(test_dataset, desc="Evaluating"):
         for output_item in output_data:
-            if test_item['question_id'] + test_item['question'] == output_item['question_id'] and output_item['question_id'] not in question_id:
+            if test_item['id'] == output_item['question_id'] and output_item['question_id'] not in question_id:
                 question_id.add(output_item['question_id'])
                 num_sum += 1
-                if judger(test_item['answer'].lower(), output_item['response'][0].lower()):
+                if judger(test_item['answer'], output_item['response'][0]):
                     num_match += 1
 
     return num_match, num_sum
                 
-def judger(target, output):
-    if target not in output:
+def judger(correct_answer, response):
+    if correct_answer not in response:
         return False
-    if "yes" in output and "no" not in output:
-        return target == "yes"
-    if "no" in output and "yes" not in output:
-        return target == "no"
-    last_yes = output.rfind('yes')
-    last_no = output.rfind('no')
-    if last_yes > last_no:
-        return target == "yes"
-    elif last_no > last_yes:
-        return target == "no"
+    for first_response in response:
+        if first_response in "ABCD":
+            return first_response == correct_answer
 
 def main():
     cache_path = ".cache"
@@ -64,7 +57,14 @@ def main():
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
     
-    dict_configs, _ = read_eval_cfgs('mme', 'deepspeed')
+    dict_configs, _ = read_eval_cfgs('mmmu', 'deepspeed')
+
+    try:
+        assert dict_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        logger.log('error', "Config file is not exist or incomplete.")
+        exit()
+
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
@@ -89,19 +89,22 @@ def main():
     data_cfgs = dict_configs.default.data_cfgs
 
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
-
+    
+    tot_num_match, tot_num_sum = 0, 0
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
-        num_match, num_sum = evaluator(test_data, raw_outputs[task])
         
+        num_match, num_sum = evaluator(test_data, raw_outputs[task])
+        tot_num_match += num_match
+        tot_num_sum += num_sum
+
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
             'num_match': [num_match],
             'num_sum': [num_sum],
             'accuracy': [num_match / num_sum]
         }
-        logger.print_table(title='MME Benchmark', data=output_dict)
-        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.print_table(title=f'MMMU/{task} Benchmark', data=output_dict)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {output_dict['model_id'][0]},")
@@ -109,6 +112,20 @@ def main():
         logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
         logger.log('info', f"accuracy: {output_dict['accuracy'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    output_dict = {
+        'model_id': [dict_configs.default.model_cfgs.model_id],
+        'tot_num_match': [tot_num_match],
+        'tot_num_sum': [tot_num_sum],
+        'tot_accuracy': [tot_num_match / tot_num_sum]
+    }
+    logger.print_table(title=f'MMMU Benchmark ', data=output_dict)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"model_id: {output_dict['model_id'][0]},")
+    logger.log('info', f"tot_num_match: {output_dict['tot_num_match'][0]},")
+    logger.log('info', f"tot_num_sum: {output_dict['tot_num_sum'][0]},")
+    logger.log('info', f"tot_accuracy: {output_dict['tot_accuracy'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__=="__main__":
     main()

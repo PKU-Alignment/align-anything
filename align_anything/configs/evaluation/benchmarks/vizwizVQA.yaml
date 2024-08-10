@@ -26,24 +26,25 @@ default:
     # Unique identifier for cache folder
     uuid: null
     # Num shot
-    n_shot: 5
-    # Chain of Thought
-    cot: false
+    n_shot: 0
   # Configuration for data
   data_cfgs:
     # Task name
-    task: [ARC-Challenge, ARC-Easy]
+    task: default
     # Task directory
-    task_dir: allenai/ai2_arc
+    task_dir: lmms-lab/VizWiz-VQA
     # Evaluation split
-    split: test
-
+    split: val
   # Model configurations
   model_cfgs:
-    model_id: Meta-Llama-3-8B-Instruct
+    model_id: llava-1.5-13b-hf
     # Pretrained model name or path
-    model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
+    model_name_or_path: llava-hf/llava-1.5-13b-hf
     # Chat template
-    chat_template: Llama3
+    chat_template: LLAVA
+    # Whether to trust remote code
+    trust_remote_code: True
     # The max token length
-    model_max_length: 2048
+    max_length: 1024
+    # The max new tokens for generation
+    max_new_tokens: 512

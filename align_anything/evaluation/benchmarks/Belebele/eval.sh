@@ -45,3 +45,6 @@ else
   bash deepspeed_eval.sh \
     --output_dir "$output"
 fi
+
+rm -rf .cache
+rm -rf __pycache__

@@ -15,12 +15,13 @@
 
 import os
 import argparse
-from align_anything.evaluation.inference.ds_inference import BaseInferencer_deepspeed, ListDataset, get_rank
+from align_anything.evaluation.inference.ds_inference import BaseInferencer_deepspeed, ListDataset
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
+from align_anything.evaluation.inference.ds_inference import get_rank
 from torch.nn.utils.rnn import pad_sequence
 import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
@@ -29,8 +30,11 @@ import pickle
 import torch
 import re
 from tqdm import tqdm
+import json
 
-class MMEDataLoader(BaseDataLoader):
+from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
+class SPAVLDataLoader(BaseDataLoader):
 
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
@@ -45,23 +49,56 @@ class MMEDataLoader(BaseDataLoader):
         return data['answer']
 
     def set_fewshot_dataset(self, dataset, task: str=None):
-        return None
+        if self.cot:
+            with open('../cot_fewshot/SPA-VL' + task + '.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return data
+        else:
+            return None
 
     def build_example_prompt(self, data, with_answer=True):
-        return data['question']
+        choices = '(A): ' + data["chosen"] + '\n(B): ' + data["rejected"]
+        answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
+        return f"{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
 
     def build_prompt(self, data: Dict[str, Any]) -> str:
-        assert self.num_shot == 0, "MME does not support few-shot learning."
-        prompt = ""
+        assert self.num_shot == 0, "SPAVL does not support few-shot learning."
+        prompt = f""
+        cot_prompt = f" Let's think step by step. "
+        few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
-        question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
-
+        if len(few_shot_examples) == 0:
+            question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
+        else:
+            if not self.cot:
+                few_shots = [
+                    self.build_example_prompt(
+                        {key: value[i] for key, value in few_shot_examples.items()}, True
+                    )
+                    for i in range(len(few_shot_examples['question']))
+                ]
+            else:
+                few_shots = [
+                    f"{example['question']}\n'Answer: '{example['answer']}" for example in few_shot_examples
+                ]
+            question = []
+            for item in data:
+                request = {}
+                for key, value in item.items():
+                    request[key] = value
+                examples = few_shots + [self.build_example_prompt(request, False)]
+                if self.cot:
+                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt))
+                else:
+                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
+        
         return question
 
     def preprocess(self, data):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         raw_images = [item['image'] for item in data[self.split]]
         prompts = self.build_prompt(data[self.split])
+
         inputs = self.processor(prompts, raw_images, return_tensors='pt', padding=True)
 
         return prompts, inputs
@@ -73,13 +110,13 @@ class MMEDataLoader(BaseDataLoader):
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, input_ids, pixel_values, question_id, question in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['question_id'], dataset[self.split]['question']):
+            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['question']):
                 processed_input = InferenceInput(text=prompt, token_ids=input_ids, pixel_values=pixel_values)
-                processed_input.question_id = question_id + question
+                processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
         return processed_inputs
 
-class MMEGeneratorDS(BaseInferencer_deepspeed):
+class SPAVLGeneratorDS(BaseInferencer_deepspeed):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         os.makedirs(".cache", exist_ok=True)
         uuid_path = f".cache/{eval_configs.uuid}"
@@ -183,18 +220,19 @@ def main():
     keys = [k[2:] for k in unparsed_args[1::2]]
     values = list(unparsed_args[2::2])
     unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('mme', 'deepspeed')
+    dict_configs, infer_configs = read_eval_cfgs('spa-vl', 'deepspeed')
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
+    
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    dataloader = MMEDataLoader(dict_configs)
+    dataloader = SPAVLDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
-    eval_module = MMEGeneratorDS(model_config, infer_configs)
+    eval_module = SPAVLGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)
 
 if __name__ == '__main__':
