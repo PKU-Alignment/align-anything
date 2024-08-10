@@ -20,6 +20,7 @@ import argparse
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.evaluation.eval_logger import EvalLogger
 import re
+from tqdm import tqdm
 
 def load_pickle(file_path):
     with open(file_path, 'rb') as f:
@@ -30,7 +31,7 @@ def evaluator(test_dataset, output_data):
     num_match = 0
     num_sum = 0
     question_id = set()
-    for test_item in test_dataset:
+    for test_item in tqdm(test_dataset, desc="Evaluating"):
         for output_item in output_data:
             if test_item['pid'] == output_item['question_id'] and output_item['question_id'] not in question_id:
                 question_id.add(output_item['question_id'])
@@ -65,12 +66,8 @@ def judger(question, correct_answer, response):
     
 def main():
     cache_path = ".cache"
-    files = os.listdir(cache_path)
-    InferenceOutputs = []
-    
-    for file in files:
-        if file.endswith(".pkl"):
-            InferenceOutputs.extend(load_pickle(os.path.join(cache_path, file)))
+    assert os.path.exists(cache_path), ".cache folder not found. ds_infer failed?"
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[0::2]]
@@ -84,20 +81,44 @@ def main():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
     
     dict_configs = dict_to_namedtuple(dict_configs)
+
+    raw_outputs = {}
+    uuid_path = os.path.join(cache_path, dict_configs.default.eval_cfgs.uuid)
+    assert os.path.exists(uuid_path), "uuid_path not found. ds_infer failed?"
+    task_dirs = [(task, os.path.join(uuid_path, task)) for task in os.listdir(uuid_path) if os.path.isdir(os.path.join(uuid_path, task))]
+    for task, task_dir in task_dirs:
+        task_files = os.listdir(task_dir)
+        InferenceOutputs = []
+        for file in task_files:
+            if file.endswith(".pkl"):
+                file_path = os.path.join(task_dir, file)
+                with open(file_path, 'rb') as f:
+                    InferenceOutputs.extend(pickle.load(f))
+        raw_outputs[task] = InferenceOutputs
+
     data_cfgs = dict_configs.default.data_cfgs
-    test_data = load_dataset(data_cfgs.task_dir, 'default')[data_cfgs.split]
 
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
 
-    num_match, num_sum = evaluator(test_data, InferenceOutputs)
+    for task, _ in raw_outputs.items():
+        test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
 
-    output_dict = {
-        'model_id': [dict_configs.default.model_cfgs.model_id],
-        'num_match_question': [num_match],
-        'num_sum_question': [num_sum],
-        'accuracy': [num_match / num_sum]
-    }
-    logger.print_table(title='MathVista Benchmark', data=output_dict)
+        num_match, num_sum = evaluator(test_data, raw_outputs[task])
 
+        output_dict = {
+            'model_id': [dict_configs.default.model_cfgs.model_id],
+            'num_match': [num_match],
+            'num_sum': [num_sum],
+            'accuracy': [num_match / num_sum]
+        }
+        logger.print_table(title='MathVista Benchmark', data=output_dict)
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.log('info', f"task: {data_cfgs.task}")
+        logger.log('info', f"model_id: {output_dict['model_id'][0]},")
+        logger.log('info', f"num_match: {output_dict['num_match'][0]},")
+        logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
+        logger.log('info', f"accuracy: {output_dict['accuracy'][0]},")
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    
 if __name__=="__main__":
     main()

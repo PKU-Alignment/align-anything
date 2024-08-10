@@ -31,8 +31,7 @@ import torch
 import re
 from tqdm import tqdm
 
-class POPEDataLoader(BaseDataLoader):
-
+class TextVQADataLoader(BaseDataLoader):
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -49,40 +48,13 @@ class POPEDataLoader(BaseDataLoader):
         return None
 
     def build_example_prompt(self, data, with_answer=True):
-        return f"{data['question']} Please answer yes or no."
+        return f"{data['question']}"
 
     def build_prompt(self, data: Dict[str, Any]) -> str:
-        assert self.num_shot == 0, "POPE does not support few-shot learning."
-        prompt = f"The following are multiple choice questions (with answers).\n\n"
-        cot_prompt = f" Let's think step by step. "
-        few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
+        assert self.num_shot == 0, "TextVQA does not support few-shot learning."
+        prompt = ""
         template = get_template_class(self.chat_template)
-        if len(few_shot_examples) == 0:
-            question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
-        else:
-            if not self.cot:
-                few_shots = [
-                    self.build_example_prompt(
-                        {key: value[i] for key, value in few_shot_examples.items()}, True
-                    )
-                    for i in range(len(few_shot_examples['question']))
-                ]
-            else:
-                few_shots = [
-                    f"{example['question']}\n'Answer: '{example['answer']}" for example in few_shot_examples
-                ]
-            question = []
-            for item in data:
-                num_images = len(get_image_keys(item))
-                request = {}
-                for key, value in item.items():
-                    request[key] = value
-                examples = few_shots + [self.build_example_prompt(request, False)]
-                if self.cot:
-                    base_prompt = template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt)
-                else:
-                    base_prompt = template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output="")
-                question.append([base_prompt] * num_images)
+        question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
 
         return question
 
@@ -101,13 +73,13 @@ class POPEDataLoader(BaseDataLoader):
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['id']):
+            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['question_id']):
                 processed_input = InferenceInput(text=prompt, token_ids=input_ids, pixel_values=pixel_values)
                 processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
         return processed_inputs
 
-class POPEGeneratorDS(BaseInferencer_deepspeed):
+class TextVQAGeneratorDS(BaseInferencer_deepspeed):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         os.makedirs(".cache", exist_ok=True)
         uuid_path = f".cache/{eval_configs.uuid}"
@@ -205,21 +177,13 @@ class POPEGeneratorDS(BaseInferencer_deepspeed):
             with open(file_path, 'wb') as f:
                 pickle.dump(cache_data, f, protocol=4)
 
-def get_image_keys(data):
-    image_labels = []
-    for i in range(1, 8):
-        key = f"image_{i}"
-        if data[key]:
-            image_labels.append(key)
-    return image_labels
-
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[1::2]]
     values = list(unparsed_args[2::2])
     unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('pope', 'deepspeed')
+    dict_configs, infer_configs = read_eval_cfgs('textVQA', 'deepspeed')
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
@@ -229,9 +193,9 @@ def main():
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    dataloader = POPEDataLoader(dict_configs)
+    dataloader = TextVQADataLoader(dict_configs)
     test_data = dataloader.load_dataset()
-    eval_module = POPEGeneratorDS(model_config, infer_configs)
+    eval_module = TextVQAGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)
 
 if __name__ == '__main__':

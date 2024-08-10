@@ -27,18 +27,14 @@ default:
     uuid: null
     # Num shot
     n_shot: 0
-    # Use Chain of Thought
-    cot: false
   # Configuration for data
   data_cfgs:
     # Task name
-    task: [cn, en]
+    task: default
     # Task directory
-    task_dir: lmms-lab/MMBench
+    task_dir: lmms-lab/VizWiz-VQA
     # Evaluation split
-    split: dev
-    # Candidate labels
-    candidate_labels: ["A", "B", "C", "D"]
+    split: val
   # Model configurations
   model_cfgs:
     model_id: llava-1.5-13b-hf

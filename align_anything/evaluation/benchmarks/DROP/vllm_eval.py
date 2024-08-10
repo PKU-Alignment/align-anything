@@ -46,7 +46,7 @@ class DROPDataLoader(BaseDataLoader):
         return question
 
     def preprocess(self, data):
-        prompts = self.build_prompt(data[self.split].select(range(1000)))
+        prompts = self.build_prompt(data[self.split])
         token_ids = self.tokenizer(prompts)
 
         return prompts, token_ids

@@ -72,6 +72,7 @@ class BaseInferencer_vllm:
         self.llm_max_num_seqs = self.vllm_cfgs_llm.max_num_seqs
         tensor_ps = self.vllm_cfgs_llm.tensor_parallel_size
         self.llm_tensor_parallel_size = tensor_ps if tensor_ps else cuda_device_count_stateless()
+        # self.llm_tensor_parallel_size = 4
 
         self.model_id = self.model_cfgs.model_id
         self.model_name_or_path = self.model_cfgs.model_name_or_path

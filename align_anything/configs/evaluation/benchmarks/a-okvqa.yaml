@@ -32,11 +32,11 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: [cn, en]
+    task: default
     # Task directory
-    task_dir: lmms-lab/MMBench
+    task_dir: HuggingFaceM4/A-OKVQA
     # Evaluation split
-    split: dev
+    split: validation
     # Candidate labels
     candidate_labels: ["A", "B", "C", "D"]
   # Model configurations

@@ -23,6 +23,8 @@ default:
   eval_cfgs:
     # Output directory name
     output_dir: null
+    # Unique identifier for cache folder
+    uuid: null
     # Num shot
     n_shot: 0
   # Configuration for data

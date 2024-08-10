@@ -70,19 +70,6 @@ class MMVetDataLoader(BaseDataLoader):
         processed_inputs = {}
         for task in self.task_names:
             dataset = load_dataset(self.task_dir, task)
-            sample = dataset['test'][0]
-
-            # 查看'image'字段的内容
-            image_content = sample['image']
-
-            # 打印数据类型和内容
-            print(f"数据类型: {type(image_content)}")
-            print(f"内容: {image_content}")
-            return None
-            print(type(dataset))
-            print(type(dataset))
-            print(len(dataset))
-            print(dataset)
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
@@ -94,14 +81,18 @@ class MMVetDataLoader(BaseDataLoader):
 
 class MMVetGeneratorDS(BaseInferencer_deepspeed):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
-        task2details = {}
+        os.makedirs(".cache", exist_ok=True)
+        uuid_path = f".cache/{eval_configs.uuid}"
+        os.makedirs(uuid_path, exist_ok=True)
+
         for task, input in data.items():
+            task_dir = f"{uuid_path}/{task}"
+            os.makedirs(task_dir, exist_ok=True)
             raw_output = self.generation(input)
             for item in raw_output:
                 for i in range(len(item.response)):
                     item.response[i] = item.response[i][len(re.sub('<image>', ' ', item.prompt, count=1)):]
-            task2details[task] = raw_output
-            self.save_pickle(raw_output, task)
+            self.save_pickle(raw_output, task_dir)
 
     def load_data_distributed(self, inputs: List[InferenceInput]) -> List[InferenceInput]:
         dataset = ListDataset(inputs)
@@ -168,8 +159,7 @@ class MMVetGeneratorDS(BaseInferencer_deepspeed):
                 InferenceOutputs.append(inference_output)
         return InferenceOutputs
 
-    def save_pickle(self, output_data: List[InferenceOutput], task: str=None):
-        os.makedirs(".cache", exist_ok=True)
+    def save_pickle(self, output_data: List[InferenceOutput], task_dir: str=None):
         cache_data = []
         for item in output_data:
             cache_data.append(
@@ -179,11 +169,12 @@ class MMVetGeneratorDS(BaseInferencer_deepspeed):
                     'response': item.response
                 }
             )
-        if dist.is_initialized():
-            with open(f".cache/outputs_{task}_{get_rank()}.pkl", 'wb') as f:
-                pickle.dump(cache_data, f, protocol=4)
-        else:
-            with open(f".cache/outputs_{task}.pkl", 'wb') as f:
+            if dist.is_initialized():
+                file_path = f"{task_dir}/outputs_{get_rank()}.pkl"
+            else:
+                file_path = f"{task_dir}/outputs.pkl"
+            
+            with open(file_path, 'wb') as f:
                 pickle.dump(cache_data, f, protocol=4)
 
 def main():

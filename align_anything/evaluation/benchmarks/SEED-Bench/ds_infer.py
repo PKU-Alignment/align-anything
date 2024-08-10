@@ -30,8 +30,11 @@ import pickle
 import torch
 import re
 from tqdm import tqdm
+import json
 
-class POPEDataLoader(BaseDataLoader):
+from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
+class SEEDBenchDataLoader(BaseDataLoader):
 
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
@@ -46,14 +49,21 @@ class POPEDataLoader(BaseDataLoader):
         return data['answer']
 
     def set_fewshot_dataset(self, dataset, task: str=None):
-        return None
+        if self.cot:
+            with open('../cot_fewshot/SEEDBench' + task + '.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return data
+        else:
+            return None
 
     def build_example_prompt(self, data, with_answer=True):
-        return f"{data['question']} Please answer yes or no."
+        choices = '(A): ' + data["choice_a"] + '\n(B): ' + data["choice_b"] + '\n(C): ' + data["choice_c"] + '\n(D): ' + data["choice_d"]
+        answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
+        return f"{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
 
     def build_prompt(self, data: Dict[str, Any]) -> str:
-        assert self.num_shot == 0, "POPE does not support few-shot learning."
-        prompt = f"The following are multiple choice questions (with answers).\n\n"
+        assert self.num_shot == 0, "SEEDBench does not support few-shot learning."
+        prompt = f""
         cot_prompt = f" Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
@@ -73,23 +83,22 @@ class POPEDataLoader(BaseDataLoader):
                 ]
             question = []
             for item in data:
-                num_images = len(get_image_keys(item))
                 request = {}
                 for key, value in item.items():
                     request[key] = value
                 examples = few_shots + [self.build_example_prompt(request, False)]
                 if self.cot:
-                    base_prompt = template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt)
+                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt))
                 else:
-                    base_prompt = template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output="")
-                question.append([base_prompt] * num_images)
-
+                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
+        
         return question
 
     def preprocess(self, data):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         raw_images = [item['image'] for item in data[self.split]]
         prompts = self.build_prompt(data[self.split])
+
         inputs = self.processor(prompts, raw_images, return_tensors='pt', padding=True)
 
         return prompts, inputs
@@ -101,13 +110,13 @@ class POPEDataLoader(BaseDataLoader):
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['id']):
+            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['question_id']):
                 processed_input = InferenceInput(text=prompt, token_ids=input_ids, pixel_values=pixel_values)
                 processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
         return processed_inputs
 
-class POPEGeneratorDS(BaseInferencer_deepspeed):
+class SEEDBenchGeneratorDS(BaseInferencer_deepspeed):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         os.makedirs(".cache", exist_ok=True)
         uuid_path = f".cache/{eval_configs.uuid}"
@@ -205,21 +214,13 @@ class POPEGeneratorDS(BaseInferencer_deepspeed):
             with open(file_path, 'wb') as f:
                 pickle.dump(cache_data, f, protocol=4)
 
-def get_image_keys(data):
-    image_labels = []
-    for i in range(1, 8):
-        key = f"image_{i}"
-        if data[key]:
-            image_labels.append(key)
-    return image_labels
-
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
     keys = [k[2:] for k in unparsed_args[1::2]]
     values = list(unparsed_args[2::2])
     unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('pope', 'deepspeed')
+    dict_configs, infer_configs = read_eval_cfgs('seed-bench', 'deepspeed')
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
@@ -229,9 +230,9 @@ def main():
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    dataloader = POPEDataLoader(dict_configs)
+    dataloader = SEEDBenchDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
-    eval_module = POPEGeneratorDS(model_config, infer_configs)
+    eval_module = SEEDBenchGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)
 
 if __name__ == '__main__':

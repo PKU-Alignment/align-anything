@@ -114,9 +114,11 @@ class MMSafetyBenchDataLoader(BaseDataLoader):
 class MMSafetyBenchGeneratorDS(BaseInferencer_deepspeed):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         os.makedirs(".cache", exist_ok=True)
-        
+        uuid_path = f".cache/{eval_configs.uuid}"
+        os.makedirs(uuid_path, exist_ok=True)
+
         for task, input in data.items():
-            task_dir = f".cache/{task}"
+            task_dir = f"{uuid_path}/{task}"
             os.makedirs(task_dir, exist_ok=True)
             raw_output = self.generation(input)
             for item in raw_output:

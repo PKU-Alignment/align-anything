@@ -19,6 +19,7 @@ from datasets import load_dataset
 import argparse
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.evaluation.eval_logger import EvalLogger
+from tqdm import tqdm
 
 def load_pickle(file_path):
     with open(file_path, 'rb') as f:
@@ -29,7 +30,7 @@ def evaluator(test_dataset, output_data):
     num_match = 0
     num_sum = 0
     question_id = set()
-    for test_item in test_dataset:
+    for test_item in tqdm(test_dataset, desc="Evaluating"):
         for output_item in output_data:
             if test_item['index'] == output_item['question_id'] and output_item['question_id'] not in question_id:
                 question_id.add(output_item['question_id'])
@@ -48,18 +49,7 @@ def judger(correct_answer, response):
 
 def main():
     cache_path = ".cache"
-    raw_outputs = {}
-
-    task_dirs = [(task, os.path.join(cache_path, task)) for task in os.listdir(cache_path) if os.path.isdir(os.path.join(cache_path, task))]
-    for task, task_dir in task_dirs:
-        task_files = os.listdir(task_dir)
-        InferenceOutputs = []
-        for file in task_files:
-            if file.endswith(".pkl"):
-                file_path = os.path.join(task_dir, file)
-                with open(file_path, 'rb') as f:
-                    InferenceOutputs.extend(pickle.load(f))
-        raw_outputs[task] = InferenceOutputs
+    assert os.path.exists(cache_path), ".cache folder not found. ds_infer failed?"
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
@@ -81,6 +71,21 @@ def main():
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
     
     dict_configs = dict_to_namedtuple(dict_configs)
+
+    raw_outputs = {}
+    uuid_path = os.path.join(cache_path, dict_configs.default.eval_cfgs.uuid)
+    assert os.path.exists(uuid_path), "uuid_path not found. ds_infer failed?"
+    task_dirs = [(task, os.path.join(uuid_path, task)) for task in os.listdir(uuid_path) if os.path.isdir(os.path.join(uuid_path, task))]
+    for task, task_dir in task_dirs:
+        task_files = os.listdir(task_dir)
+        InferenceOutputs = []
+        for file in task_files:
+            if file.endswith(".pkl"):
+                file_path = os.path.join(task_dir, file)
+                with open(file_path, 'rb') as f:
+                    InferenceOutputs.extend(pickle.load(f))
+        raw_outputs[task] = InferenceOutputs
+
     data_cfgs = dict_configs.default.data_cfgs
 
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
@@ -100,6 +105,13 @@ def main():
             'accuracy': [num_match / num_sum]
         }
         logger.print_table(title=f'MMBench/{task} Benchmark ', data=output_dict)
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.log('info', f"task: {task}")
+        logger.log('info', f"model_id: {output_dict['model_id'][0]},")
+        logger.log('info', f"num_match: {output_dict['num_match'][0]},")
+        logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
+        logger.log('info', f"accuracy: {output_dict['accuracy'][0]},")
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
     output_dict = {
         'model_id': [dict_configs.default.model_cfgs.model_id],
@@ -108,6 +120,12 @@ def main():
         'tot_accuracy': [tot_num_match / tot_num_sum]
     }
     logger.print_table(title=f'MMBench Benchmark ', data=output_dict)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"model_id: {output_dict['model_id'][0]},")
+    logger.log('info', f"tot_num_match: {output_dict['tot_num_match'][0]},")
+    logger.log('info', f"tot_num_sum: {output_dict['tot_num_sum'][0]},")
+    logger.log('info', f"tot_accuracy: {output_dict['tot_accuracy'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__=="__main__":
     main()
