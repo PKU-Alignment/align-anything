@@ -25,10 +25,10 @@ from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.vllm_inference import update_results
 from align_anything.evaluation.eval_logger import EvalLogger
 from tqdm import tqdm
-import torch
+from PIL import Image
 import re
 
-class MMEDataLoader(BaseDataLoader):
+class MMMUDataLoader(BaseDataLoader):
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -43,17 +43,21 @@ class MMEDataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task): 
         if self.cot:
-            with open('../cot_fewshot/MME/' + task + '.json', 'r', encoding='utf-8') as f:
+            with open('../cot_fewshot/MMMU/' + task + '.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
             return None
         
     def build_example_prompt(self, data, with_answer=True):
-        return data['question']
+        choices = ''
+        if data['question_type'] == 'multiple-choice':
+            choices = 'Please choose the correct answer from the following options:\n' + '\n'.join([f'({label}) {data["options"][ord(label) - 65]}' for label in self.candidate_labels])
+        answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
+        return f"Question_type: {data['question_type']}\n{data['question']}{choices}\n{answer}"
 
     def build_prompt(self, data):
-        assert self.num_shot == 0, "MME does not support few-shot learning."
+        assert self.num_shot == 0, "MMMU does not support few-shot learning."
         prompt = ""
         template = get_template_class(self.chat_template)
         question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
@@ -61,22 +65,28 @@ class MMEDataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        return self.build_prompt(data[self.split])
+        prompts = self.build_prompt(data[self.split])
+        raw_images = []
+        for item in data[self.split]:
+            images = [item[key] for key in get_image_keys(item)]
+            raw_images.append(images)
+        return prompts, raw_images
     
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
         for task in self.task_names:
             dataset = load_dataset(self.task_dir, task)
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
-            prompts = self.preprocess(dataset)
+            prompts, raw_images = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, image, question_id, question in zip(prompts, dataset[self.split]['image'], dataset[self.split]['question_id'], dataset[self.split]['question']):
+            for prompt, images, question_id in zip(prompts, raw_images, dataset[self.split]['id']):
+                image = combine_images(images, direction='horizontal')
                 processed_input = InferenceInput(text=prompt, image_file=image)
-                processed_input.question_id = question_id + question
+                processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
         return processed_inputs
     
-class MMEGeneratorVLLM(BaseInferencer_vllm):
+class MMMUGeneratorVLLM(BaseInferencer_vllm):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
         for task, input in data.items():
@@ -102,33 +112,56 @@ class MMEGeneratorVLLM(BaseInferencer_vllm):
         InferenceOutputs = [InferenceOutput.from_vllm_output(question_id=input.question_id, vllm_output=output, store_raw=True) for output, input in zip(outputs, inputs)]
         return InferenceOutputs
 
+def get_image_keys(data):
+    image_labels = []
+    for i in range(1, 8):
+        key = f"image_{i}"
+        if data[key]:
+            image_labels.append(key)
+    return image_labels
+
+def combine_images(image_list, direction='horizontal'):
+    if direction == 'horizontal':
+        widths, heights = zip(*(i.size for i in image_list))
+        total_width = sum(widths)
+        max_height = max(heights)
+        new_image = Image.new('RGB', (total_width, max_height))
+        x_offset = 0
+        for img in image_list:
+            new_image.paste(img, (x_offset, 0))
+            x_offset += img.width
+    else:
+        widths, heights = zip(*(i.size for i in image_list))
+        max_width = max(widths)
+        total_height = sum(heights)
+        new_image = Image.new('RGB', (max_width, total_height))
+        y_offset = 0
+        for img in image_list:
+            new_image.paste(img, (0, y_offset))
+            y_offset += img.height
+
+    return new_image
+
 def evaluator(test_dataset, output_data):
     num_match = 0
     num_sum = 0
     question_id = set()
     for test_item in tqdm(test_dataset, desc="Evaluating"):
         for output_item in output_data:
-            if test_item['question_id'] + test_item['question'] == output_item.question_id and output_item.question_id not in question_id:
+            if test_item['id'] == output_item.question_id and output_item.question_id not in question_id:
                 question_id.add(output_item.question_id)
                 num_sum += 1
-                if judger(test_item['answer'].lower(), output_item.response[0].lower()):
+                if judger(test_item['answer'], output_item.response[0]):
                     num_match += 1
 
     return num_match, num_sum
 
-def judger(target, output):
-    if target not in output:
+def judger(correct_answer, response):
+    if correct_answer not in response:
         return False
-    if "yes" in output and "no" not in output:
-        return target == "yes"
-    if "no" in output and "yes" not in output:
-        return target == "no"
-    last_yes = output.rfind('yes')
-    last_no = output.rfind('no')
-    if last_yes > last_no:
-        return target == "yes"
-    elif last_no > last_yes:
-        return target == "no"
+    for first_response in response:
+        if first_response in "ABCD":
+            return first_response == correct_answer
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -138,7 +171,7 @@ def main():
     unparsed_args = dict(zip(keys, values))
     logger = EvalLogger('Evaluation')
 
-    dict_configs, infer_configs = read_eval_cfgs('mme', 'vLLM')
+    dict_configs, infer_configs = read_eval_cfgs('mmmu', 'vLLM')
 
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
@@ -157,10 +190,10 @@ def main():
     data_cfgs = dict_configs.default.data_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     logger.log_dir = eval_configs.output_dir
-    dataloader = MMEDataLoader(dict_configs)
+    dataloader = MMMUDataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()
-    eval_module = MMEGeneratorVLLM(model_config, infer_configs)
+    eval_module = MMMUGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
     
     for task, _ in raw_outputs.items():
@@ -173,7 +206,7 @@ def main():
             'num_sum': [num_sum],
             'accuracy': [num_match / num_sum]
         }
-        logger.print_table(title=f'MME/{task} Benchmark', data=output_dict)
+        logger.print_table(title=f'MMMU/{task} Benchmark', data=output_dict)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")

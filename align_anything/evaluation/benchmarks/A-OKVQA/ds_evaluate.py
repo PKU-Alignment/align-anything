@@ -101,7 +101,7 @@ def main():
             'num_sum': [num_sum],
             'accuracy': [num_match / num_sum]
         }
-        logger.print_table(title=f'A-OKVQA Benchmark ', data=output_dict)
+        logger.print_table(title=f'A-OKVQA/{task} Benchmark ', data=output_dict)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {output_dict['model_id'][0]},")

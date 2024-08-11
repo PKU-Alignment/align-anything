@@ -103,7 +103,7 @@ def main():
             'num_sum': [num_sum],
             'accuracy': [num_match / num_sum]
         }
-        logger.print_table(title='POPE Benchmark', data=output_dict)
+        logger.print_table(title=f'POPE/{task} Benchmark', data=output_dict)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {output_dict['model_id'][0]},")

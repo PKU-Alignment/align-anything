@@ -109,7 +109,7 @@ class InferenceOutput:
         self.raw_output = raw_output
 
     @classmethod
-    def from_vllm_output(cls, question_id: str, vllm_output: RequestOutput, store_raw: bool = False):
+    def from_vllm_output(cls, vllm_output: RequestOutput, question_id: str = None, store_raw: bool = False):
         return cls(
             engine="vllm",
             prompt=vllm_output.prompt,

@@ -28,7 +28,7 @@ from tqdm import tqdm
 import torch
 import re
 
-class MMEDataLoader(BaseDataLoader):
+class VizWizVQADataLoader(BaseDataLoader):
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -43,18 +43,18 @@ class MMEDataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task): 
         if self.cot:
-            with open('../cot_fewshot/MME/' + task + '.json', 'r', encoding='utf-8') as f:
+            with open('../cot_fewshot/VizWizVQA/' + task + '.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
             return None
         
     def build_example_prompt(self, data, with_answer=True):
-        return data['question']
+        return f"{data['question']}"
 
     def build_prompt(self, data):
-        assert self.num_shot == 0, "MME does not support few-shot learning."
-        prompt = ""
+        assert self.num_shot == 0, "VizWizVQA does not support few-shot learning."
+        prompt = "The following tasks are divided into two categories: predicting the answer to a visual question and predicting whether a visual question is unanswerable. If the question cannot be answered, just answer a word: 'unanswerable'.\n\n"
         template = get_template_class(self.chat_template)
         question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
 
@@ -70,13 +70,13 @@ class MMEDataLoader(BaseDataLoader):
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, image, question_id, question in zip(prompts, dataset[self.split]['image'], dataset[self.split]['question_id'], dataset[self.split]['question']):
+            for prompt, image, question_id in zip(prompts, dataset[self.split]['image'], dataset[self.split]['question_id']):
                 processed_input = InferenceInput(text=prompt, image_file=image)
-                processed_input.question_id = question_id + question
+                processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
         return processed_inputs
     
-class MMEGeneratorVLLM(BaseInferencer_vllm):
+class VizWizVQAGeneratorVLLM(BaseInferencer_vllm):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
         for task, input in data.items():
@@ -108,27 +108,19 @@ def evaluator(test_dataset, output_data):
     question_id = set()
     for test_item in tqdm(test_dataset, desc="Evaluating"):
         for output_item in output_data:
-            if test_item['question_id'] + test_item['question'] == output_item.question_id and output_item.question_id not in question_id:
+            if test_item['question_id'] == output_item.question_id and output_item.question_id not in question_id:
                 question_id.add(output_item.question_id)
                 num_sum += 1
-                if judger(test_item['answer'].lower(), output_item.response[0].lower()):
+                if judger(test_item['answers'], output_item.response[0]):
                     num_match += 1
 
     return num_match, num_sum
 
-def judger(target, output):
-    if target not in output:
-        return False
-    if "yes" in output and "no" not in output:
-        return target == "yes"
-    if "no" in output and "yes" not in output:
-        return target == "no"
-    last_yes = output.rfind('yes')
-    last_no = output.rfind('no')
-    if last_yes > last_no:
-        return target == "yes"
-    elif last_no > last_yes:
-        return target == "no"
+def judger(correct_answers, response):
+    for correct_answer in correct_answers:
+        if correct_answer and correct_answer.lower() in response.lower():
+            return True
+    return False
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -138,7 +130,7 @@ def main():
     unparsed_args = dict(zip(keys, values))
     logger = EvalLogger('Evaluation')
 
-    dict_configs, infer_configs = read_eval_cfgs('mme', 'vLLM')
+    dict_configs, infer_configs = read_eval_cfgs('vizwizVQA', 'vLLM')
 
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
@@ -157,10 +149,10 @@ def main():
     data_cfgs = dict_configs.default.data_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     logger.log_dir = eval_configs.output_dir
-    dataloader = MMEDataLoader(dict_configs)
+    dataloader = VizWizVQADataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()
-    eval_module = MMEGeneratorVLLM(model_config, infer_configs)
+    eval_module = VizWizVQAGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
     
     for task, _ in raw_outputs.items():
@@ -173,7 +165,7 @@ def main():
             'num_sum': [num_sum],
             'accuracy': [num_match / num_sum]
         }
-        logger.print_table(title=f'MME/{task} Benchmark', data=output_dict)
+        logger.print_table(title=f'VizWizVQA/{task} Benchmark', data=output_dict)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
