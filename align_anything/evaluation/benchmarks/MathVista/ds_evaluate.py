@@ -111,7 +111,7 @@ def main():
             'num_sum': [num_sum],
             'accuracy': [num_match / num_sum]
         }
-        logger.print_table(title='MathVista Benchmark', data=output_dict)
+        logger.print_table(title=f'MathVista/{task} Benchmark', data=output_dict)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {data_cfgs.task}")
         logger.log('info', f"model_id: {output_dict['model_id'][0]},")
