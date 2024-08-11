@@ -18,9 +18,10 @@
 
 cd ../align_anything/evaluation
 
-BENCHMARK=""
-OUTPUT_DIR=""
-GENERATION_BACKEND=""
+BENCHMARK="MME"
+OUTPUT_DIR="./output"
+GENERATION_BACKEND="vLLM"
+# GENERATION_BACKEND="deepspeed"
 
 python __main__.py \
     --benchmark ${BENCHMARK} \
