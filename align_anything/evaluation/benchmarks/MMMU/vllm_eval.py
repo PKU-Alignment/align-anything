@@ -15,14 +15,13 @@
 
 import argparse
 import json
-from align_anything.evaluation.inference.vllm_inference import BaseInferencer_vllm
+from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from datasets import load_dataset, DatasetDict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.evaluation.inference.vllm_inference import update_results
 from align_anything.evaluation.eval_logger import EvalLogger
 from tqdm import tqdm
 from PIL import Image
@@ -65,7 +64,7 @@ class MMMUDataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        prompts = self.build_prompt(data[self.split])
+        prompts = self.build_prompt(data[self.split].select(range(10)))
         raw_images = []
         for item in data[self.split]:
             images = [item[key] for key in get_image_keys(item)]
@@ -95,13 +94,6 @@ class MMMUGeneratorVLLM(BaseInferencer_vllm):
                 item.prompt = re.sub(r"<image>", "", item.prompt)
                 item.raw_output.prompt = re.sub(r"<image>", "", item.raw_output.prompt)
             task2details[task] = raw_output
-
-        output_dir = eval_configs.output_dir
-        brief_filename = eval_configs.brief_filename
-        model_id = self.model_cfgs.model_id
-        detailed_filename = f'{model_id}_detailed'
-        brief_filename = f'{model_id}_brief'
-        update_results(output_dir, brief_filename, detailed_filename, task2details)
         
         return task2details
     
@@ -142,7 +134,7 @@ def combine_images(image_list, direction='horizontal'):
 
     return new_image
 
-def evaluator(test_dataset, output_data):
+def evaluator(test_dataset, output_data, file_path):
     num_match = 0
     num_sum = 0
     question_id = set()
@@ -151,8 +143,10 @@ def evaluator(test_dataset, output_data):
             if test_item['id'] == output_item.question_id and output_item.question_id not in question_id:
                 question_id.add(output_item.question_id)
                 num_sum += 1
-                if judger(test_item['answer'], output_item.response[0]):
+                true_or_false = judger(test_item['answer'], output_item.response[0])
+                if true_or_false:
                     num_match += 1
+                save_detail(test_item['question'], output_item.prompt, test_item['answer'], output_item.response[0], true_or_false, file_path)
 
     return num_match, num_sum
 
@@ -195,10 +189,15 @@ def main():
     test_data = dataloader.load_dataset()
     eval_module = MMMUGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
-    
+
+    os.makedirs(logger.log_dir, exist_ok=True)
+    uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
+    os.makedirs(uuid_path, exist_ok=True)
+
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
-        num_match, num_sum = evaluator(test_data, raw_outputs[task])
+        file_path = f"{uuid_path}/{task}.json"
+        num_match, num_sum = evaluator(test_data, raw_outputs[task], file_path)
         
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
@@ -207,7 +206,6 @@ def main():
             'accuracy': [num_match / num_sum]
         }
         logger.print_table(title=f'MMMU/{task} Benchmark', data=output_dict)
-        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {output_dict['model_id'][0]},")

@@ -15,14 +15,13 @@
 
 import argparse
 import json
-from align_anything.evaluation.inference.vllm_inference import BaseInferencer_vllm
+from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from datasets import load_dataset, DatasetDict, Dataset
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.evaluation.inference.vllm_inference import update_results
 from align_anything.evaluation.eval_logger import EvalLogger
 from tqdm import tqdm
 from PIL import Image
@@ -106,7 +105,7 @@ class MMSafetyBenchDataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        return self.build_prompt(data[self.split])
+        return self.build_prompt(data[self.split].select(range(10)))
     
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
@@ -130,13 +129,6 @@ class MMSafetyBenchGeneratorVLLM(BaseInferencer_vllm):
                 item.prompt = re.sub(r"<image>", "", item.prompt)
                 item.raw_output.prompt = re.sub(r"<image>", "", item.raw_output.prompt)
             task2details[task] = raw_output
-
-        output_dir = eval_configs.output_dir
-        brief_filename = eval_configs.brief_filename
-        model_id = self.model_cfgs.model_id
-        detailed_filename = f'{model_id}_detailed'
-        brief_filename = f'{model_id}_brief'
-        update_results(output_dir, brief_filename, detailed_filename, task2details)
         
         return task2details
     
@@ -147,7 +139,7 @@ class MMSafetyBenchGeneratorVLLM(BaseInferencer_vllm):
         InferenceOutputs = [InferenceOutput.from_vllm_output(question_id=input.question_id, vllm_output=output, store_raw=True) for output, input in zip(outputs, inputs)]
         return InferenceOutputs
 
-def evaluator(test_dataset, output_data, api_key, base_url):
+def evaluator(test_dataset, output_data, api_key, base_url, file_path):
     num_match = 0
     num_sum = 0
     question_id = set()
@@ -157,10 +149,12 @@ def evaluator(test_dataset, output_data, api_key, base_url):
                 question_id.add(output_item.question_id)
                 time.sleep(0.01)
                 num_sum += 1
-                if judger(output_item.response[0], api_key, base_url):
+                true_or_false = judger(output_item.response[0], api_key, base_url)
+                if true_or_false:
                     num_match += 1
+                save_detail(test_item['question'], output_item.prompt, '', output_item.response[0], true_or_false, file_path)
 
-    return num_match, num_sum
+    return num_sum - num_match, num_sum
 
 def judger(answer, api_key, base_url):
     def get_response(prompt):
@@ -223,9 +217,6 @@ def main():
     eval_module = MMSafetyBenchGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
     
-    eval_configs = dict_configs.default.eval_cfgs
-    data_cfgs = dict_configs.default.data_cfgs
-    
     api_key = eval_configs.openai_api_key or os.getenv("OPENAI_API_KEY")
     base_url = eval_configs.openai_api_base_url or os.getenv("OPENAI_API_BASE_URL")
     
@@ -234,9 +225,14 @@ def main():
     if not base_url:
         raise ValueError("OpenAI API base URL is not provided in eval_configs or environment variables.")
 
+    os.makedirs(logger.log_dir, exist_ok=True)
+    uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
+    os.makedirs(uuid_path, exist_ok=True)
+
     for task, _ in raw_outputs.items():
-        test_data = load_local_dataset(task)[data_cfgs.split]
-        num_match, num_sum = evaluator(test_data, raw_outputs[task], api_key, base_url)
+        test_data = load_local_dataset(task)[data_cfgs.split].select(range(10))
+        file_path = f"{uuid_path}/{task}.json"
+        num_match, num_sum = evaluator(test_data, raw_outputs[task], api_key, base_url, file_path)
         
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
@@ -245,7 +241,6 @@ def main():
             'accuracy': [num_match / num_sum]
         }
         logger.print_table(title=f'MMSafetyBench/{task} Benchmark', data=output_dict)
-        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {output_dict['model_id'][0]},")

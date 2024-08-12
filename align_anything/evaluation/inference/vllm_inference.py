@@ -14,6 +14,7 @@
 # ==============================================================================
 
 import os
+import re
 import json
 from tqdm import tqdm
 from typing import List, Dict, Any
@@ -50,6 +51,45 @@ def update_results(output_dir:str,
                 json_record = json.dumps(item, ensure_ascii=False)
                 file.write(json_record + '\n')
 
+def extract_choices(prompt):
+    count_pattern = r'\n\([A-Z]\)\s'
+    num_choices = len(re.findall(count_pattern, prompt))
+    
+    choice_pattern = r'\(([A-Z])\)\s(.*?)(?=\n)'
+    matches = re.findall(choice_pattern, prompt, re.DOTALL)
+    
+    choices = {f"({match[0]})": match[1].strip() for match in matches[:num_choices]}
+    return choices
+
+def save_detail(question, prompt, correct_answer, response, true_or_false, file_path, gpt_response=None):
+    choices = extract_choices(prompt)
+    if choices:
+        record = {
+            "question": question,
+            "choices": choices,
+            "correct_answer": correct_answer,
+            "response": response,
+            "true_or_false": true_or_false
+        }
+    else:
+        record = {
+            "question": question,
+            "correct_answer": correct_answer,
+            "response": response,
+            "true_or_false": true_or_false
+        }
+    if gpt_response:
+        record['gpt_response'] = gpt_response
+    if not os.path.exists(file_path):
+        with open(file_path, 'w', encoding='utf-8') as file:
+            json.dump([record], file, ensure_ascii=False, indent=4)
+    else:
+        with open(file_path, 'r+', encoding='utf-8') as file:
+            data = json.load(file)
+            data.append(record)
+            file.seek(0)
+            json.dump(data, file, ensure_ascii=False, indent=4)
+            
 class BaseInferencer_vllm:
     def __init__(self, 
                  model_cfgs: Dict[str, Any],

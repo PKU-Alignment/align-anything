@@ -33,10 +33,12 @@ default:
     openai_api_base_url: null
     #openai api key
     openai_api_key: null
+    # Unique identifier for cache folder
+    uuid: null
   # Configuration for data
   data_cfgs:
     # Task name
-    task: ''
+    task: default
     # Task directory
     task_dir: lmms-lab/llava-bench-in-the-wild
     # Evaluation split

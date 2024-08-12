@@ -15,6 +15,7 @@
 
 import os
 import sys
+import json
 import argparse
 from typing import Union
 import subprocess
@@ -46,6 +47,11 @@ def parse_eval_args() -> argparse.Namespace:
             "MM-SafetyBench", "SEED-Bench", "TextVQA", "VizWizVQA",
             "SPA-VL", "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
         ],
+    )
+    parser.add_argument(
+        "--model_id",
+        default="",
+        help="Unique identifier for the model, used to track and distinguish model evaluations.",
     )
     parser.add_argument(
         "--model_name_or_path",
@@ -99,6 +105,24 @@ def parse_eval_args() -> argparse.Namespace:
     args = parser.parse_args()
     return args
 
+def save_result(model_id, result_dir):
+    results = []
+    for filename in os.listdir(result_dir):
+        if filename.endswith('.json'):
+            file_path = os.path.join(result_dir, filename)
+            with open(file_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+                for item in data:
+                    result = 1 if item.get('true_or_false', False) else 0
+                    results.append(result)
+    result_dict = {model_id: results}
+    output_file_path = os.path.join(os.getcwd(), f'{model_id}_result.json')
+    
+    with open(output_file_path, 'w', encoding='utf-8') as json_file:
+        json.dump(result_dict, json_file, indent=4, ensure_ascii=False)
+    
+    print(f'Results saved to {output_file_path}')
+
 def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     if not args:
         args = parse_eval_args()
@@ -121,6 +145,7 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
 
 def run_benchmark(file_path, args):
     uuid = get_uuid()
+    models_pk_data = []
     try:
         file_names = [f for f in os.listdir(file_path) if os.path.isfile(os.path.join(file_path, f))]
         if args.generation_backend == 'vllm':
@@ -140,10 +165,9 @@ def run_benchmark(file_path, args):
             else:
                 eval_logger.log('info', 'Generating responses using Deepspeed backend')
         
-        sh_file_path = os.path.join(file_path, "eval.sh")
         args_list = []
         args_list.append(f"--uuid")
-        args_list.append(str(uuid))
+        args_list.append(uuid)
         for key, value in vars(args).items():
             if isinstance(value, bool):
                 if value:
@@ -151,12 +175,19 @@ def run_benchmark(file_path, args):
             elif value is not None:
                 args_list.append(f"--{key}")
                 args_list.append(str(value))
-
-        command = f"bash {sh_file_path} {' '.join(args_list)}"
+        
+        command = f"bash eval.sh {' '.join(args_list)}"
         os.system(command)
+        os.chdir(file_path)
+
+        result_dir = os.path.join(vars(args)['output_dir'], uuid)
+        if os.path.exists(result_dir):
+            save_result(vars(args)['model_id'], result_dir)
+
         print(f"{file_path} executed successfully with arguments {args}.")
     except subprocess.CalledProcessError as e:
         print(f"Error executing {file_path}: {e}")
 
 if __name__ == "__main__":
+
     cli_evaluate()

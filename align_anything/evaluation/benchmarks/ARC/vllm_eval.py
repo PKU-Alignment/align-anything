@@ -108,7 +108,7 @@ class ARCGeneratorVLLM(BaseInferencer_vllm):
         return task2details
     
 def evaluator(raw_output: List[InferenceOutput], dataloader: ARCDataLoader, task: str):
-    dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
+    dataset = load_dataset(dataloader.task_dir, task)[dataloader.split].select(range(10))
     correct_answers = []
     responses = []
     true_cases = []
