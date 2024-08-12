@@ -46,6 +46,7 @@ def parse_eval_args() -> argparse.Namespace:
             "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
             "MM-SafetyBench", "SEED-Bench", "TextVQA", "VizWizVQA",
             "SPA-VL", "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
+            "ScienceQA", 
         ],
     )
     parser.add_argument(
