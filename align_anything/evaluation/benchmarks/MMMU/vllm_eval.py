@@ -64,7 +64,7 @@ class MMMUDataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        prompts = self.build_prompt(data[self.split].select(range(10)))
+        prompts = self.build_prompt(data[self.split])
         raw_images = []
         for item in data[self.split]:
             images = [item[key] for key in get_image_keys(item)]

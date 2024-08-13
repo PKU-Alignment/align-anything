@@ -22,7 +22,6 @@ from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, updat
 from datasets import load_dataset, DatasetDict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.evaluation.inference.vllm_inference import update_results
 from align_anything.evaluation.eval.base_eval import API_Single_Eval
 from align_anything.evaluation.eval_logger import EvalLogger
 import json

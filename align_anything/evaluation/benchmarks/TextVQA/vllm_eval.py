@@ -59,7 +59,7 @@ class TextVQADataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        return self.build_prompt(data[self.split].select(range(10)))
+        return self.build_prompt(data[self.split])
     
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}

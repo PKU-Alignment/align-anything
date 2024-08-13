@@ -18,12 +18,12 @@
 
 cd ../align_anything/evaluation
 
-BENCHMARKS=("ARC")
-OUTPUT_DIR="./output"
-GENERATION_BACKEND="vllm"
-MODEL_ID="llava-1.5-7b-hf"
-MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf"
-CHAT_TEMPLATE="LLAVA"
+BENCHMARKS=("")
+OUTPUT_DIR=""
+GENERATION_BACKEND=""
+MODEL_ID=""
+MODEL_NAME_OR_PATH=""
+CHAT_TEMPLATE=""
 
 for BENCHMARK in "${BENCHMARKS[@]}"; do
     python __main__.py \

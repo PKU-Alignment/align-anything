@@ -17,12 +17,12 @@
 
 cd ../align_anything/evaluation
 
-BENCHMARKS=("llava-bench-coco" "llava-bench-in-the-wild")
-OUTPUT_DIR="./output"
-GENERATION_BACKEND="vllm"
-MODEL_IDS=("llava-1.5-7b-hf" "llava-1.5-13b-hf")
-MODEL_NAME_OR_PATHS=("llava-hf/llava-1.5-7b-hf" "llava-hf/llava-1.5-13b-hf")
-CHAT_TEMPLATES=("LLAVA" "LLAVA")
+BENCHMARKS=("")
+OUTPUT_DIR=""
+GENERATION_BACKEND=""
+MODEL_IDS=("" "")
+MODEL_NAME_OR_PATHS=("" "")
+CHAT_TEMPLATES=("" "")
 
 for BENCHMARK in "${BENCHMARKS[@]}"; do
     echo "Processing benchmark: ${BENCHMARK}"

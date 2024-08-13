@@ -24,7 +24,6 @@ from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.eval_logger import EvalLogger
 from tqdm import tqdm
-import torch
 import re
 
 class VizWizVQADataLoader(BaseDataLoader):
@@ -60,7 +59,7 @@ class VizWizVQADataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        return self.build_prompt(data[self.split].select(range(10)))
+        return self.build_prompt(data[self.split])
     
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}

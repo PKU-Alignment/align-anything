@@ -22,7 +22,6 @@ from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, updat
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.eval.base_eval import API_Single_Eval
-from align_anything.evaluation.inference.vllm_inference import update_results
 from align_anything.evaluation.eval_logger import EvalLogger
 import json
 from datasets import load_dataset
@@ -199,8 +198,6 @@ def main():
         file_path = f"{uuid_path}/{task}.json"
         output = evaluator(gpt_data[task], task, api_key, base_url, file_path, eval_configs)
         merged_list = merged_list + output
-
-    os.makedirs(eval_configs.output_dir,exist_ok=True)
 
     total_score1 = 0
     total_score2 = 0

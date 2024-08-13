@@ -16,7 +16,7 @@
 import torch
 from typing import List, Optional, Union, Dict
 from dataclasses import dataclass
-from vllm.outputs import CompletionOutput, RequestOutput
+from vllm.outputs import RequestOutput
 from vllm.sequence import PromptLogprobs
 from openai.types.chat.chat_completion import ChatCompletion
 import PIL

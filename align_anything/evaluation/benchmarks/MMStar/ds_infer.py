@@ -32,8 +32,7 @@ import re
 from tqdm import tqdm
 import json
 
-class MMBenchDataLoader(BaseDataLoader):
-
+class MMStarDataLoader(BaseDataLoader):
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -48,20 +47,18 @@ class MMBenchDataLoader(BaseDataLoader):
 
     def set_fewshot_dataset(self, dataset, task: str=None):
         if self.cot:
-            with open('../cot_fewshot/MMBench' + task + '.json', 'r', encoding='utf-8') as f:
+            with open('../cot_fewshot/MMStar' + task + '.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
             return None
 
     def build_example_prompt(self, data, with_answer=True):
-        choices = '(A) ' + data["A"] + '\n(B) ' + data["B"] + '\n(C) ' + data["C"] + '\n(D) ' + data["D"]
-        answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
-        return f"{data['hint']}\n{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
+        return f"{data['question']}"
 
     def build_prompt(self, data: Dict[str, Any]) -> str:
-        assert self.num_shot == 0, "MMBench does not support few-shot learning."
-        prompt = f"The following are hints and multiple choice questions (with answers).\n\n"
+        assert self.num_shot == 0, "MMStar does not support few-shot learning."
+        prompt = f"The following are multiple choice questions.\n\n"
         cot_prompt = f" Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
@@ -114,7 +111,7 @@ class MMBenchDataLoader(BaseDataLoader):
                 processed_inputs[task].append(processed_input)
         return processed_inputs
 
-class MMBenchGeneratorDS(BaseInferencer_deepspeed):
+class MMStarGeneratorDS(BaseInferencer_deepspeed):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         os.makedirs(".cache", exist_ok=True)
         uuid_path = f".cache/{eval_configs.uuid}"
@@ -218,7 +215,7 @@ def main():
     keys = [k[2:] for k in unparsed_args[1::2]]
     values = list(unparsed_args[2::2])
     unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('mmbench', 'deepspeed')
+    dict_configs, infer_configs = read_eval_cfgs('mmstar', 'deepspeed')
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
@@ -228,9 +225,9 @@ def main():
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    dataloader = MMBenchDataLoader(dict_configs)
+    dataloader = MMStarDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
-    eval_module = MMBenchGeneratorDS(model_config, infer_configs)
+    eval_module = MMStarGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)
 
 if __name__ == '__main__':

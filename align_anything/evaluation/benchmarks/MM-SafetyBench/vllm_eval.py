@@ -105,7 +105,7 @@ class MMSafetyBenchDataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        return self.build_prompt(data[self.split].select(range(10)))
+        return self.build_prompt(data[self.split])
     
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
@@ -230,7 +230,7 @@ def main():
     os.makedirs(uuid_path, exist_ok=True)
 
     for task, _ in raw_outputs.items():
-        test_data = load_local_dataset(task)[data_cfgs.split].select(range(10))
+        test_data = load_local_dataset(task)[data_cfgs.split]
         file_path = f"{uuid_path}/{task}.json"
         num_match, num_sum = evaluator(test_data, raw_outputs[task], api_key, base_url, file_path)
         

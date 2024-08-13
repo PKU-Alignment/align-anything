@@ -39,14 +39,14 @@ def parse_eval_args() -> argparse.Namespace:
         "--benchmark",
         "-b",
         default=None,
-        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, SEED-Bench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco",
+        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar",
         choices=[
             "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
             "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
             "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
-            "MM-SafetyBench", "SEED-Bench", "TextVQA", "VizWizVQA",
-            "SPA-VL", "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
-            "ScienceQA", 
+            "MM-SafetyBench", "TextVQA", "VizWizVQA", "SPA-VL",
+            "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
+            "ScienceQA", "MMStar"
         ],
     )
     parser.add_argument(
@@ -146,19 +146,18 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
 
 def run_benchmark(file_path, args):
     uuid = get_uuid()
-    models_pk_data = []
     try:
         file_names = [f for f in os.listdir(file_path) if os.path.isfile(os.path.join(file_path, f))]
         if args.generation_backend == 'vllm':
             if 'vllm_eval.py' not in file_names:
                 eval_logger.log('warning', 'vLLM backend is not support for this benchmark.')
-                if 'ds_eval.py' in file_names:
+                if 'ds_evaluate.py' in file_names:
                     eval_logger.log('info', 'Generating responses using Deepspeed backend.')
                     args.generation_backend = 'deepspeed'
             else:
                 eval_logger.log('info', 'Generating responses using vLLM backend.')
         else:
-            if 'ds_infer.py' not in file_names:
+            if 'ds_evaluate.py' not in file_names:
                 eval_logger.log('warning', 'Deepspeed backend is not support for this benchmark.')
                 if 'vllm_eval.py' in file_names:
                     eval_logger.log('info', 'Generating responses using vLLM backend.')
