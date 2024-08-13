@@ -17,6 +17,7 @@ import pickle
 import os
 from datasets import load_dataset
 import argparse
+from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.evaluation.eval_logger import EvalLogger
 from tqdm import tqdm
@@ -26,7 +27,7 @@ def load_pickle(file_path):
         data = pickle.load(f)
     return data
 
-def evaluator(test_dataset, output_data):
+def evaluator(test_dataset, output_data, file_path):
     num_match = 0
     num_sum = 0
     question_id = set()
@@ -35,8 +36,10 @@ def evaluator(test_dataset, output_data):
             if test_item['question'] == output_item['question_id'] and output_item['question_id'] not in question_id:
                 question_id.add(output_item['question_id'])
                 num_sum += 1
-                if judger('A', output_item['response'][0]):
+                true_or_false = judger('A', output_item['response'][0])
+                if true_or_false:
                     num_match += 1
+                save_detail(test_item['question'], output_item["prompt_text"], 'A', output_item["response"][0], true_or_false, file_path)
 
     return num_match, num_sum
 
@@ -87,14 +90,20 @@ def main():
         raw_outputs[task] = InferenceOutputs
 
     data_cfgs = dict_configs.default.data_cfgs
+    eval_configs = dict_configs.default.eval_cfgs
 
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
-    
+
+    os.makedirs(logger.log_dir, exist_ok=True)
+    uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
+    os.makedirs(uuid_path, exist_ok=True)
+
     tot_num_match, tot_num_sum = 0, 0
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
 
-        num_match, num_sum = evaluator(test_data, raw_outputs[task])
+        file_path = f"{uuid_path}/{task}.json"
+        num_match, num_sum = evaluator(test_data, raw_outputs[task], file_path)
         tot_num_match += num_match
         tot_num_sum += num_sum
 

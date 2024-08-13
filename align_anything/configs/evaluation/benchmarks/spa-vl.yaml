@@ -41,11 +41,11 @@ default:
     candidate_labels: ["A", "B"]
   # Model configurations
   model_cfgs:
-    model_id: llava-1.5-13b-hf
+    model_id: null
     # Pretrained model name or path
-    model_name_or_path: llava-hf/llava-1.5-13b-hf
+    model_name_or_path: null
     # Chat template
-    chat_template: LLAVA
+    chat_template: null
     # Whether to trust remote code
     trust_remote_code: True
     # The max token length

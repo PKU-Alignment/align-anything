@@ -15,22 +15,34 @@
 # limitations under the License.
 # ==============================================================================
 
-
 cd ../align_anything/evaluation
 
 BENCHMARKS=("")
 OUTPUT_DIR=""
 GENERATION_BACKEND=""
-MODEL_ID=""
-MODEL_NAME_OR_PATH=""
-CHAT_TEMPLATE=""
+MODEL_IDS=("" "")
+MODEL_NAME_OR_PATHS=("" "")
+CHAT_TEMPLATES=("" "")
 
 for BENCHMARK in "${BENCHMARKS[@]}"; do
-    python __main__.py \
-        --benchmark ${BENCHMARK} \
-        --output_dir ${OUTPUT_DIR} \
-        --generation_backend ${GENERATION_BACKEND} \
-        --model_id ${MODEL_ID} \
-        --model_name_or_path ${MODEL_NAME_OR_PATH} \
-        --chat_template ${CHAT_TEMPLATE}
+    echo "Processing benchmark: ${BENCHMARK}"
+    
+    for i in "${!MODEL_IDS[@]}"; do
+        MODEL_ID=${MODEL_IDS[$i]}
+        MODEL_NAME_OR_PATH=${MODEL_NAME_OR_PATHS[$i]}
+        CHAT_TEMPLATE=${CHAT_TEMPLATES[$i]}
+        
+        echo "Running model ${MODEL_ID} for benchmark ${BENCHMARK}"
+        python __main__.py \
+            --benchmark ${BENCHMARK} \
+            --output_dir ${OUTPUT_DIR} \
+            --generation_backend ${GENERATION_BACKEND} \
+            --model_id ${MODEL_ID} \
+            --model_name_or_path ${MODEL_NAME_OR_PATH} \
+            --chat_template ${CHAT_TEMPLATE}
+    done
+
+    python models_pk.py --benchmark ${BENCHMARK} \
+                        --model_1 "${MODEL_IDS[0]}" \
+                        --model_2 "${MODEL_IDS[1]}"
 done

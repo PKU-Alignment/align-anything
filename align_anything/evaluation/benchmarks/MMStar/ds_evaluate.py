@@ -17,10 +17,9 @@ import pickle
 import os
 from datasets import load_dataset
 import argparse
-from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.evaluation.eval_logger import EvalLogger
-import re
+from align_anything.evaluation.inference.vllm_inference import *
 from tqdm import tqdm
 
 def load_pickle(file_path):
@@ -34,39 +33,23 @@ def evaluator(test_dataset, output_data, file_path):
     question_id = set()
     for test_item in tqdm(test_dataset, desc="Evaluating"):
         for output_item in output_data:
-            if test_item['pid'] == output_item['question_id'] and output_item['question_id'] not in question_id:
+            if test_item['index'] == output_item['question_id'] and output_item['question_id'] not in question_id:
                 question_id.add(output_item['question_id'])
                 num_sum += 1
-                true_or_false = judger(test_item['query'], test_item['answer'], output_item['response'][0])
+                true_or_false = judger(test_item['answer'], output_item['response'][0])
                 if true_or_false:
                     num_match += 1
-                save_detail(test_item['question'], output_item['prompt_text'], test_item['answer'], output_item["response"][0], true_or_false, file_path)
+                save_detail(test_item['question'], output_item['prompt_text'], test_item['answer'], output_item['response'][0], true_or_false, file_path)
 
     return num_match, num_sum
-                
-def extract_number(response):
-    match = re.search(r'(?<![a-zA-Z])[A-Z](?![a-zA-Z])', response)
-    if match:
-        return ord(match.group().lower()) - ord('a')
-    return None
 
-def check_answer(question, response, answer):
-    choice = extract_number(response)
-    if "Choices:" in question and choice is not None:
-        choices = re.findall(r'\(([A-Z])\)\s([^()]+)', question)
-        choices_list = [choice[1].strip() for choice in choices]
-        len_list = len(choices_list)
-        if choice < len_list and answer == choices_list[choice]:
-            return True
-    return False
+def judger(correct_answer, response):
+    if correct_answer not in response:
+        return False
+    for first_response in response:
+        if first_response in "ABCD":
+            return first_response == correct_answer
 
-def judger(question, correct_answer, response):
-    if correct_answer in response:
-        return True
-    if check_answer(question, response, correct_answer):
-        return True
-    return False
-    
 def main():
     cache_path = ".cache"
     assert os.path.exists(cache_path), ".cache folder not found. ds_infer failed?"
@@ -77,7 +60,14 @@ def main():
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
     
-    dict_configs, _ = read_eval_cfgs('mathvista', 'deepspeed')
+    dict_configs, _ = read_eval_cfgs('mmstar', 'deepspeed')
+    
+    try:
+        assert dict_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        logger.log('error', "Config file is not exist or incomplete.")
+        exit()
+
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
@@ -120,14 +110,14 @@ def main():
             'num_sum': [num_sum],
             'accuracy': [num_match / num_sum]
         }
-        logger.print_table(title=f'MathVista/{task} Benchmark', data=output_dict)
+        logger.print_table(title=f'MMStar/{task} Benchmark ', data=output_dict)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        logger.log('info', f"task: {data_cfgs.task}")
+        logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {output_dict['model_id'][0]},")
         logger.log('info', f"num_match: {output_dict['num_match'][0]},")
         logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
         logger.log('info', f"accuracy: {output_dict['accuracy'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    
+
 if __name__=="__main__":
     main()

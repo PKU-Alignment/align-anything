@@ -28,15 +28,17 @@ default:
     # Chain of Thought
     cot: false
     # judge model, options: [gpt models]
-    judge_model: gpt-4o
+    judge_model: gpt-4-turbo
     #openai api url
     openai_api_base_url: null
     #openai api key
     openai_api_key: null
+    # Unique identifier for cache folder
+    uuid: null
   # Configuration for data
   data_cfgs:
     # Task name
-    task: ''
+    task: default
     # Task directory
     task_dir: lmms-lab/llava-bench-coco
     # Evaluation split
@@ -44,10 +46,10 @@ default:
 
   # Model configurations
   model_cfgs:
-    model_id: llava-1.5-7b-hf
+    model_id: null
     # Pretrained model name or path
-    model_name_or_path: llava-hf/llava-1.5-7b-hf
+    model_name_or_path: null
     # Chat template
-    chat_template: LLAVA
+    chat_template: null
     # The max token length
     model_max_length: 2048

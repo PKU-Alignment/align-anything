@@ -17,6 +17,7 @@ import pickle
 import os
 from datasets import load_dataset
 import argparse
+from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.evaluation.eval_logger import EvalLogger
 import requests
@@ -57,7 +58,7 @@ def gpt4_judger(question, answer1, answer2, api_key, base_url):
         return True
     return False
 
-def evaluator(test_dataset, output_data, api_key, base_url):
+def evaluator(test_dataset, output_data, api_key, base_url, file_path):
     num_match = 0
     num_sum = 0
     question_id = set()
@@ -67,8 +68,10 @@ def evaluator(test_dataset, output_data, api_key, base_url):
                 question_id.add(output_item['question_id'])
                 time.sleep(0.01)
                 num_sum += 1
-                if judger(test_item['question'], test_item['answer'].lower(), output_item['response'][0].lower(), api_key, base_url):
+                true_or_false = judger(test_item['question'], test_item['answer'].lower(), output_item['response'][0].lower(), api_key, base_url)
+                if true_or_false:
                     num_match += 1
+                save_detail(test_item['question'], output_item["prompt_text"], test_item['answer'].lower(), output_item["response"][0].lower(), true_or_false, file_path)
 
     return num_match, num_sum
 
@@ -133,10 +136,15 @@ def main():
 
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
 
+    os.makedirs(logger.log_dir, exist_ok=True)
+    uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
+    os.makedirs(uuid_path, exist_ok=True)
+
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
 
-        num_match, num_sum = evaluator(test_data, raw_outputs[task], api_key, base_url)
+        file_path = f"{uuid_path}/{task}.json"
+        num_match, num_sum = evaluator(test_data, raw_outputs[task], api_key, base_url, file_path)
         
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
