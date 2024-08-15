@@ -25,7 +25,6 @@ import librosa
 import requests
 from PIL import Image
 from torchvision.io import read_video
-import torchaudio
 
 from align_anything.utils.template_registry import register_template
 
