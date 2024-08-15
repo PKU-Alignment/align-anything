@@ -32,11 +32,11 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: ''
+    task: eng_Latn
     # Task directory
     task_dir: facebook/belebele
     # Evaluation split
-    split: 'eng_Latn'
+    split: test
     # Candidate labels
     candidate_labels: ["A", "B", "C", "D"]
 

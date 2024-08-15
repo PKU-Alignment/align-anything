@@ -378,6 +378,7 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
+    logger.log_dir = eval_configs.output_dir
     dataloader = BBHDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
     eval_module = BBHGeneratorVLLM(model_config, infer_configs)

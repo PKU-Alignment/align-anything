@@ -32,11 +32,11 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: ''
+    task: openai_humaneval
     # Task directory
     task_dir: openai/openai_humaneval
     # Evaluation split
-    split: 'test'
+    split: test
 
   # Model configurations
   model_cfgs:

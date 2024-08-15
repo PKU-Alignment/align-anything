@@ -32,11 +32,11 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: 'en'
+    task: en
     # Task directory
     task_dir: google-research-datasets/paws-x
     # Evaluation split
-    split: 'test'
+    split: test
     # Candidate labels
     candidate_labels: ['1', '0']
 

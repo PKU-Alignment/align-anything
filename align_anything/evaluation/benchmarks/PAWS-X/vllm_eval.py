@@ -122,7 +122,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: PAWSXDataLoader, ta
                 chosen_answer = max(response['answer_logprobs'], key=response['answer_logprobs'].get)
                 if correct_answer['answer'] == int(chosen_answer):
                     cnt_match += 1
-                save_detail(correct_answer['prompt'], '', correct_answer['answer'], chosen_answer, correct_answer['answer'] == int(chosen_answer), file_path)
+                save_detail(correct_answer['sentence_1'] + '\n' + correct_answer['sentence_2'], '', correct_answer['answer'], chosen_answer, correct_answer['answer'] == int(chosen_answer), file_path)
                 break
         if flag_fail:
             cnt_fail += 1
@@ -169,6 +169,7 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
+    logger.log_dir = eval_configs.output_dir
     dataloader = PAWSXDataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()

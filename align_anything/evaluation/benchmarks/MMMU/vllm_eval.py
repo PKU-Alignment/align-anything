@@ -51,7 +51,7 @@ class MMMUDataLoader(BaseDataLoader):
     def build_example_prompt(self, data, with_answer=True):
         choices = ''
         if data['question_type'] == 'multiple-choice':
-            choices = 'Please choose the correct answer from the following options:\n' + '\n'.join([f'({label}) {data["options"][ord(label) - 65]}' for label in self.candidate_labels])
+            choices = 'Please choose the correct answer from the following options:\n' + data["options"]
         answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
         return f"Question_type: {data['question_type']}\n{data['question']}{choices}\n{answer}"
 
@@ -143,19 +143,22 @@ def evaluator(test_dataset, output_data, file_path):
             if test_item['id'] == output_item.question_id and output_item.question_id not in question_id:
                 question_id.add(output_item.question_id)
                 num_sum += 1
-                true_or_false = judger(test_item['answer'], output_item.response[0])
+                correct_answer = get_answer(test_item['answer'], test_item['options'])
+                true_or_false = judger(correct_answer, output_item.response[0])
                 if true_or_false:
                     num_match += 1
-                save_detail(test_item['question'], output_item.prompt, test_item['answer'], output_item.response[0], true_or_false, file_path)
+                save_detail(test_item['question'], output_item.prompt, correct_answer, output_item.response[0], true_or_false, file_path)
 
     return num_match, num_sum
 
+def get_answer(answer, options):
+    data_list = options.strip("[]").replace("'", "").split(", ")
+    return data_list[ord(answer) - 65]
+
 def judger(correct_answer, response):
-    if correct_answer not in response:
-        return False
-    for first_response in response:
-        if first_response in "ABCD":
-            return first_response == correct_answer
+    if correct_answer in response:
+        return True
+    return False
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

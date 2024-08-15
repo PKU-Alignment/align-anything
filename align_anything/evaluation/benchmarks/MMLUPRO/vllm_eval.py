@@ -53,10 +53,10 @@ class MMLUPRODataLoader(BaseDataLoader):
         self.candidate_labels = [chr(65 + i) for i in range(len(data['options']))]
         choices = '\n'.join([f'({label}) {data["options"][ord(label) - 65]}' for label in self.candidate_labels])
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
-        return f"{data['question']}\n{choices}\n{answer}"
+        return f"{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
 
     def build_prompt(self, data):
-        prompt = f"The following are multiple choice questions (with answers).\n\n"
+        prompt = ""
         cot_prompt = f" Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
@@ -128,7 +128,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUPRODataLoader, 
                 true_or_false = judge_answer(correct_answer['answer'], chosen_answer, response['answer'])
                 if true_or_false:
                     cnt_match += 1
-                choices = '\n'.join([f"({chr(label+65)}) {correct_answer['choices'][label]}" for label in range(len(correct_answer['choices']))])
+                choices = '\n' + '\n'.join([f"({chr(label+65)}) {correct_answer['choices'][label]}" for label in range(len(correct_answer['choices']))])
                 save_detail(correct_answer['prompt'], choices, correct_answer['answer'], response['answer'], true_or_false, file_path)
                 break
         if flag_fail:

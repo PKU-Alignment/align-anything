@@ -47,20 +47,12 @@ class ARCDataLoader(BaseDataLoader):
             return dataset['validation']
         
     def build_example_prompt(self, data, with_answer=True, cot=False):
-        choices_text = []
-        for label in data['choices']['label']:
-            if ord('A') <= ord(label) <= ord('Z'):
-                choice_id = label
-                choices_text.append(f'({choice_id}): {data["choices"]["text"][ord(choice_id) - 65]}' )
-            else:
-                choice_id = int(label)
-                choices_text.append(f'({choice_id}): {data["choices"]["text"][choice_id - 1]}' )
-        choices = '\n'.join(choices_text)
+        choices = get_choices(data)
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
-        return f"{data['question']}\n{choices}\n{answer}"
+        return f"{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
 
     def build_prompt(self, data):
-        prompt = f"The following are multiple choice questions (with answers). Just answer the last question.\n\n"
+        prompt = ""
         cot_prompt = f" Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
@@ -106,7 +98,14 @@ class ARCGeneratorDS(BaseInferencer_deepspeed):
                 
             with open(file_path, 'wb') as f:
                 pickle.dump(InferenceOutputs, f, protocol=4)
-       
+
+def get_choices(data):
+    if data['choices']['label'][0] == 'A':
+        choices = '\n' + '\n'.join([f"({chr(label+65)}) {data['choices']['text'][label]}" for label in range(len(data['choices']['text']))])
+    else:
+        choices = '\n' + '\n'.join([f"({label}) {data['choices']['text'][label]}" for label in range(len(data['choices']['text']))])
+    return choices
+
 def get_rank():
     if not is_dist_avail_and_initialized():
         return 0
@@ -122,8 +121,8 @@ def is_dist_avail_and_initialized():
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
-    keys = [k[2:] for k in unparsed_args[0::2]]
-    values = list(unparsed_args[1::2])
+    keys = [k[2:] for k in unparsed_args[1::2]]
+    values = list(unparsed_args[2::2])
     unparsed_args = dict(zip(keys, values))
     dict_configs, infer_configs = read_eval_cfgs('arc', 'deepspeed')
     for k, v in unparsed_args.items():
@@ -136,6 +135,7 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = ARCDataLoader(dict_configs)
+    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = ARCGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)

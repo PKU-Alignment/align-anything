@@ -115,7 +115,7 @@ class API_Eval(API_Single_Eval):
         return input
 
 
-def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOutput], dataloader: MTBenchDataLoader, task: str, file_path, eval_configs= None):
+def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOutput], dataloader: MTBenchDataLoader, task: str, result_file_path, eval_configs= None):
     current_file_path = os.path.abspath(__file__)
     current_dir = os.path.dirname(current_file_path)
     dataset = load_dataset(current_dir,task)[dataloader.split]
@@ -196,29 +196,29 @@ def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOut
     
     results = judger.evaluate(system_prompts, user_prompts)
     for response, system_prompt, user_prompt, result in zip(responses, system_prompts, user_prompts, results):
-            output = result.raw_output.choices[0].message.content
+        output = result.raw_output.choices[0].message.content
+        score = get_score(output)
+        time = 0
+        while score is None:
+            multi_results=[]
+            multi_results = judger.evaluate(system_prompts=[system_prompt],user_prompts=[user_prompt])
+            output = multi_results[0].raw_output.choices[0].message.content
             score = get_score(output)
-            time = 0
-            while score is None:
-                multi_results=[]
-                multi_results = judger.evaluate(system_prompts=[system_prompt],user_prompts=[user_prompt])
-                output = multi_results[0].raw_output.choices[0].message.content
-                score = get_score(output)
-                time+=1
-                if time >=10:
-                    score = 0
-                    break
-            
-            eval_case.append(
-                 {
-                    'question_id' : response['question_id'],
-                    'system_prompt': system_prompt,
-                    'user_prompt' : user_prompt,
-                    'response': output,
-                    'score': score
-                 }
-             )       
-        # save_detail(data['question'][id], '', data['answer'][id], data['responses'][id], score >= 5, file_path, output)
+            time+=1
+            if time >=10:
+                score = 0
+                break
+        
+        eval_case.append(
+                {
+                'question_id' : response['question_id'],
+                'system_prompt': system_prompt,
+                'user_prompt' : user_prompt,
+                'response': output,
+                'score': score
+                }
+            )       
+        save_detail(response['question_1'] + '\n' + response['question_2'], '', response['ref_answer_1'] + '\n' + response['ref_answer_2'], response['answer_1'] + '\n' + response['answer_2'], score, result_file_path, output)
     
     return responses, eval_case
 
@@ -253,6 +253,7 @@ def main():
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data_round1 = dataloader.load_dataset()
     eval_module = MTBenchGeneratorVLLM(model_config, infer_configs)
+    logger.log_dir = eval_configs.output_dir
     output_data_round1 = eval_module.eval(test_data_round1, eval_configs)
     
     test_data_round2 = dataloader.load_dataset_round2(output_data_round1)

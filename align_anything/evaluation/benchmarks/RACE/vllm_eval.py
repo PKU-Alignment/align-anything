@@ -123,7 +123,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: RACEDataLoader, tas
                 true_or_false = judge_answer(correct_answer['answer'], chosen_answer, response['answer'])
                 if true_or_false:
                     cnt_match += 1
-                choices = '\n'.join([f'({label}) {correct_answer["choices"][ord(label) - 65]}' for label in ["A", "B", "C", "D"]])
+                choices = '\n' + '\n'.join([f'({label}) {correct_answer["choices"][ord(label) - 65]}' for label in ["A", "B", "C", "D"]])
                 save_detail(correct_answer['prompt'], choices, correct_answer['answer'], response['answer'], true_or_false, file_path)
                 break
         if flag_fail:
@@ -178,6 +178,7 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
+    logger.log_dir = eval_configs.output_dir
     dataloader = RACEDataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()

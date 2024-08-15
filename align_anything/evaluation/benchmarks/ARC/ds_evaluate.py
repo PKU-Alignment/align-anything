@@ -144,15 +144,11 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: ARCDataLoader, task
     return cnt_match, cnt_sum
 
 def get_choices(data):
-    choices_text = []
-    for label in data['choices']['label']:
-        if ord('A') <= ord(label) <= ord('Z'):
-            choice_id = label
-            choices_text.append(f'({choice_id}): {data["choices"]["text"][ord(choice_id) - 65]}' )
-        else:
-            choice_id = int(label)
-            choices_text.append(f'({choice_id}): {data["choices"]["text"][choice_id - 1]}' )
-    return '\n'.join(choices_text)
+    if data['choices']['label'][0] == 'A':
+        choices = '\n' + '\n'.join([f"({chr(label+65)}) {data['choices']['text'][label]}" for label in range(len(data['choices']['text']))])
+    else:
+        choices = '\n' + '\n'.join([f"({label}) {data['choices']['text'][label]}" for label in range(len(data['choices']['text']))])
+    return choices
 
 def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[str]):
     answer_logprobs = {}

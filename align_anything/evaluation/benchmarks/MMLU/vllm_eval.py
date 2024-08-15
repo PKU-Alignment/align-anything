@@ -122,7 +122,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, tas
                 true_or_false = judge_answer(correct_answer['answer'], chosen_answer, response['answer'])
                 if true_or_false:
                     cnt_match += 1
-                choices = '\n'.join([f'({label}) {correct_answer["choices"][ord(label) - 65]}' for label in ["A", "B", "C", "D"]])
+                choices = '\n' + '\n'.join([f'({label}) {correct_answer["choices"][ord(label) - 65]}' for label in ["A", "B", "C", "D"]])
                 save_detail(correct_answer['prompt'], choices, correct_answer['answer'], response['answer'], true_or_false, file_path)
                 break
         if flag_fail:

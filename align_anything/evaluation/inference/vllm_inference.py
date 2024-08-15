@@ -52,10 +52,10 @@ def update_results(output_dir:str,
                 file.write(json_record + '\n')
 
 def extract_choices(prompt):
-    count_pattern = r'\n\([A-Z]\)\s'
+    count_pattern = r'\n\([A-Z]|[0-9]\)\s'
     num_choices = len(re.findall(count_pattern, prompt))
     
-    choice_pattern = r'\(([A-Z])\)\s(.*?)(?=\n)'
+    choice_pattern = r'\(([A-Z]|[0-9])\)\s(.*?)(?=\n|$)'
     matches = re.findall(choice_pattern, prompt, re.DOTALL)
     
     choices = {f"({match[0]})": match[1].strip() for match in matches[:num_choices]}

@@ -120,7 +120,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: GSM8KDataLoader, ta
                 generated_answer = get_generated_answer(response['generated_answer'])
                 if generated_answer == answer:
                     cnt_match += 1
-                save_detail(correct_answer['prompt'], '', correct_answer['answer'], response['generated_answer'], generated_answer == answer, file_path)
+                save_detail(correct_answer['question'], '', correct_answer['answer'], response['generated_answer'], generated_answer == answer, file_path)
                 break
         if flag_fail:
             cnt_fail += 1
@@ -171,6 +171,7 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
+    logger.log_dir = eval_configs.output_dir
     dataloader = GSM8KDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
     eval_module = GSM8KGeneratorVLLM(model_config, infer_configs)
