@@ -125,7 +125,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: ScienceQADataLoader
                 true_or_false = judge_answer(correct_answer['answer'], chosen_answer, response['answer'])
                 if true_or_false:
                     cnt_match += 1
-                choices = '\n'.join([f"({chr(label+65)}) {correct_answer['choices'][label]}" for label in range(len(correct_answer['choices']))])
+                choices = '\n' + '\n'.join([f"({chr(label+65)}) {correct_answer['choices'][label]}" for label in range(len(correct_answer['choices']))])
                 save_detail(correct_answer['prompt'], choices, correct_answer['answer'], response['answer'], true_or_false, file_path)
                 break
         if flag_fail:

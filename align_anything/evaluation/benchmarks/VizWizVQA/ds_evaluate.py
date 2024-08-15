@@ -85,6 +85,7 @@ def main():
     eval_configs = dict_configs.default.eval_cfgs
 
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
+    logger.log_dir = eval_configs.output_dir
 
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"

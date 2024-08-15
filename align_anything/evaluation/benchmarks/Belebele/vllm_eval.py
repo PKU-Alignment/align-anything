@@ -46,15 +46,16 @@ class BelebeleDataLoader(BaseDataLoader):
                 data = json.load(f)
             return data
         else:
-            return dataset['afr_Latn']
+            return None
         
     def build_example_prompt(self, data, with_answer=True, cot=False):
         choices = '(A) ' + data["mc_answer1"] + '\n(B) ' + data["mc_answer2"] + '\n(C) ' + data["mc_answer3"] + '\n(D) ' + data["mc_answer4"]
         answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
-        return f"{data['flores_passage']}\n\n{data['question']}\n{choices}\n{answer}"
+        return f"{data['flores_passage']}\n\n{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
 
     def build_prompt(self, data):
-        prompt = f"The following is passage (with multiple choice questions and answer).\n\n"
+        prompt = "The following is passage (with multiple choice questions and answer).\n\n"
+        prompt = ""
         cot_prompt = f"Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
@@ -125,7 +126,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader,
                 true_or_false = judge_answer(correct_answer['answer'], chosen_answer, response['answer'])
                 if true_or_false:
                     cnt_match += 1
-                choices = '(A) ' + correct_answer["mc_answer1"] + '\n(B) ' + correct_answer["mc_answer2"] + '\n(C) ' + correct_answer["mc_answer3"] + '\n(D) ' + correct_answer["mc_answer4"]
+                choices = '\n' + '\n'.join([f"({chr(label+65)}) {correct_answer['choices'][label]}" for label in range(len(correct_answer['choices']))])
                 save_detail(correct_answer['prompt'], choices, correct_answer['answer'], response['answer'], true_or_false, file_path)
                 break
         if flag_fail:
@@ -180,6 +181,7 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
+    logger.log_dir = eval_configs.output_dir
     dataloader = BelebeleDataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()

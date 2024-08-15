@@ -25,8 +25,10 @@ def parse_eval_args() -> argparse.Namespace:
         "--benchmark",
         "-b",
         default=None,
-        help="Benchmarks that support pk: MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar",
+        help="Benchmarks that support pk: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar",
         choices=[
+            "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
+            "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
             "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
             "MM-SafetyBench", "TextVQA", "VizWizVQA", "SPA-VL",
             "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",

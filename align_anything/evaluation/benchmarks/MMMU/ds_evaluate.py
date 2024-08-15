@@ -36,19 +36,22 @@ def evaluator(test_dataset, output_data, file_path):
             if test_item['id'] == output_item['question_id'] and output_item['question_id'] not in question_id:
                 question_id.add(output_item['question_id'])
                 num_sum += 1
-                true_or_false = judger(test_item['answer'], output_item['response'][0])
+                correct_answer = get_answer(test_item['answer'], test_item['options'])
+                true_or_false = judger(correct_answer, output_item["response"][0])
                 if true_or_false:
                     num_match += 1
-                save_detail(test_item['question'], output_item["prompt"], test_item['answer'], output_item["response"][0], true_or_false, file_path)
+                save_detail(test_item['question'], output_item["prompt_text"], correct_answer, output_item["response"][0], true_or_false, file_path)
 
     return num_match, num_sum
-                
+    
+def get_answer(answer, options):
+    data_list = options.strip("[]").replace("'", "").split(", ")
+    return data_list[ord(answer) - 65]
+           
 def judger(correct_answer, response):
-    if correct_answer not in response:
-        return False
-    for first_response in response:
-        if first_response in "ABCD":
-            return first_response == correct_answer
+    if correct_answer in response:
+        return True
+    return False
 
 def main():
     cache_path = ".cache"
@@ -93,6 +96,7 @@ def main():
     eval_configs = dict_configs.default.eval_cfgs
 
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
+    logger.log_dir = eval_configs.output_dir
     
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"

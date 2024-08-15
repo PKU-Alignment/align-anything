@@ -135,6 +135,7 @@ def main():
         raise ValueError("OpenAI API base URL is not provided in eval_configs or environment variables.")
 
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
+    logger.log_dir = eval_configs.output_dir
 
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"

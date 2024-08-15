@@ -71,7 +71,7 @@ Align-Anything 是一个基于 DeepSpeed 或 NeMo （目前正在开发中）的
 - :heavy_minus_sign: : 正在内部测试的功能，将尽快被更新。
 
 # 新闻
-- 2024-08-13 🔥 我们在评估模块中支持了一个新功能：模型 PK，它可以比较两个模型在不同基准测试中的性能。
+- 2024-08-15 🔥 我们在评估模块中支持了一个新功能：模型 PK，它可以比较两个模型在不同基准测试中的性能。
 - 2024-08-06 🔥 我们重构了评估框架，以更好地支持多模态基准。在此基础上，我们已经实现了text-to-text和text+image-to-text模型的基准测试，目前正在适配更多的基准测试！
 - 2024-08-06 🔥 我们支持了text image混合输入输出模态的SFT trainer和Chemeleon系列模型！
 - 2024-07-23 🔥 我们支持了text-to-image，text-to-audio和text-to-video模态的SFT trainer和DPO trainer！

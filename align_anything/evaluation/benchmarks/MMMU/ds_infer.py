@@ -51,7 +51,7 @@ class MMMUDataLoader(BaseDataLoader):
     def build_example_prompt(self, data, with_answer=True):
         choices = ''
         if data['question_type'] == 'multiple-choice':
-            choices = 'Please choose the correct answer from the following options:\n' + '\n'.join([f'({label}) {data["options"][ord(label) - 65]}' for label in self.candidate_labels])
+            choices = 'Please choose the correct answer from the following options:\n' + data["options"]
         answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
         return f"Question_type: {data['question_type']}\n{data['question']}{choices}\n{answer}"
 

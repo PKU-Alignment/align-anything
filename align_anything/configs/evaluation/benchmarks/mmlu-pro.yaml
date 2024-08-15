@@ -32,7 +32,7 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: ''
+    task: default
     # Task directory
     task_dir: TIGER-Lab/MMLU-Pro
     # Evaluation split

@@ -39,7 +39,8 @@ def evaluator(test_dataset, output_data, file_path):
                 true_or_false = judger('A', output_item['response'][0])
                 if true_or_false:
                     num_match += 1
-                save_detail(test_item['question'], output_item["prompt_text"], 'A', output_item["response"][0], true_or_false, file_path)
+                choices = '\n(A) ' + test_item['chosen'] + '\n(B) ' + test_item['rejected']
+                save_detail(test_item['question'], choices, 'A', output_item["response"][0], true_or_false, file_path)
 
     return num_match, num_sum
 
@@ -93,6 +94,7 @@ def main():
     eval_configs = dict_configs.default.eval_cfgs
 
     logger = EvalLogger('Align-Anything-Evaluation', dict_configs.default.eval_cfgs.output_dir)
+    logger.log_dir = eval_configs.output_dir
 
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
