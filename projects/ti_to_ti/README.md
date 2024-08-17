@@ -32,7 +32,19 @@ If you are dealing with a large dataset, you can use `pre_tokenize_parallel_exam
 python pre_tokenize_parallel_example.py
 ```
 
-### Model Finetuning
+If you are dealing with prefernce dataset (for DPO or RM), you can use `pre_tokenize_preference_example.py` to pre-tokenize the dataset:
+
+```bash
+python pre_tokenize_preference_example.py
+```
+
+If you are dealing with prompt only dataset (for PPO), you can use `prompt_only_tokenize_example.py` to pre-tokenize the dataset:
+
+```bash
+python prompt_only_tokenize_example.py
+```
+
+### Model SFT
 
 Add a script named `sft_ti_to_ti.sh` under the `scripts` file like this:
 
@@ -75,6 +87,133 @@ and set up the correct model path and dataset path, then run:
 ```bash
 bash scripts/sft_ti_to_ti.sh
 ```
+
+### Model DPO
+
+
+Add a script named `dpo_ti_to_ti.sh` under the `scripts` file like this:
+
+```bash
+# Initialize variables
+MODEL_NAME_OR_PATH=""
+TRAIN_DATASETS="path/to/dataset"
+OUTPUT_DIR="../outputs/dpo_ti_to_ti"
+# For wandb online logging
+export WANDB_API_KEY=""
+# Source the setup script
+source ./setup.sh
+
+# Execute deepspeed command
+deepspeed \
+	--hostfile host1 \
+	--master_port ${MASTER_PORT} \
+	--module align_anything.trainers.ti_to_ti.dpo \
+	--model_name_or_path ${MODEL_NAME_OR_PATH} \
+	--train_datasets ${TRAIN_DATASETS} \
+	--output_dir ${OUTPUT_DIR} \
+	--per_device_train_batch_size 2 \
+    --per_device_eval_batch_size 2 \
+    --gradient_accumulation_steps 2 \
+    --train_template ANYTHING_TI2TI \
+    --train_split train \
+	--train_data_files ${FILE_NAME} \
+	--learning_rate 5e-7 \
+	--epochs 3 \
+	--lr_scheduler_type cosine \
+	--save_interval 2500 
+
+```
+
+and set up the correct model path and dataset path, then run:
+
+```bash
+bash scripts/dpo_ti_to_ti.sh
+```
+
+### Reward Model Training
+
+Add a script named `rm_ti_to_ti.sh` under the `scripts` file like this:
+
+```bash
+# Initialize variables
+MODEL_NAME_OR_PATH=""
+TRAIN_DATASETS="path/to/dataset"
+EVAL_DATASETS="path/to/dataset"
+OUTPUT_DIR="../outputs/rm_ti_to_ti"
+# For wandb online logging
+export WANDB_API_KEY=""
+# Source the setup script
+source ./setup.sh
+
+# Execute deepspeed command
+deepspeed \
+	--master_port ${MASTER_PORT} \
+	--module align_anything.trainers.ti_to_ti.rm \
+	--model_name_or_path ${MODEL_NAME_OR_PATH} \
+	--train_datasets ${TRAIN_DATASETS} \
+	--output_dir ${OUTPUT_DIR} \
+	--per_device_train_batch_size 2 \
+    --per_device_eval_batch_size 2 \
+    --gradient_accumulation_steps 2 \
+    --train_template ANYTHING_TI2TI \
+    --train_split train \
+	--train_data_files ${TRAIN_FILE_NAME} \
+	--eval_datasets ${EVAL_DATASETS} \
+	--eval_data_files ${EVAL_FILE_NAME} \
+	--eval_template ANYTHING_TI2TI \
+	--learning_rate 5e-6 \
+	--epochs 3 \
+	--lr_scheduler_type cosine \
+	--save_interval 2500 
+
+```
+
+and set up the correct model path and dataset path, then run:
+
+```bash
+bash scripts/rm_ti_to_ti.sh
+```
+
+### Model PPO
+
+Add a script named `ppo_ti_to_ti.sh` under the `scripts` file like this:
+
+```bash
+# Initialize variables
+ACTOR_MODEL_NAME_OR_PATH=""
+CRITIC_MODEL_NAME_OR_PATH=""
+REWARD_MODEL_NAME_OR_PATH=""
+TRAIN_DATASETS=""
+PTX_DATASETS=""
+OUTPUT_DIR="../outputs/ppo_ti_to_ti"
+
+# Source the setup script
+source ./setup.sh
+
+# Execute deepspeed command
+deepspeed \
+  --master_port ${MASTER_PORT} \
+  --module align_anything.trainers.ti_to_ti.ppo \
+  --actor_model_name_or_path ${ACTOR_MODEL_NAME_OR_PATH} \
+  --reward_model_name_or_path ${REWARD_MODEL_NAME_OR_PATH} \
+  --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME_OR_PATH} \
+  --train_datasets ${TRAIN_DATASETS} \
+  --train_template ANYTHING_TI2TI \
+  --train_data_files ${TRAIN_FILE_NAME} \
+  --ptx_datasets ${PTX_DATASETS} \
+  --ptx_data_files ${PTX_FILE_NAME} \
+  --ptx_template LLAVA \
+  --output_dir ${OUTPUT_DIR}
+
+```
+
+and set up the correct model path and dataset path, then run:
+
+```bash
+bash scripts/ppo_ti_to_ti.sh
+```
+
+Note that current due to [a bug in transformers](https://github.com/huggingface/transformers/pull/32641), we can only support batch size of 1 for PPO.
 
 ## Model Evaluation
 
