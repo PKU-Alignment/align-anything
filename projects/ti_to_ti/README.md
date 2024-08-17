@@ -98,6 +98,8 @@ Add a script named `dpo_ti_to_ti.sh` under the `scripts` file like this:
 MODEL_NAME_OR_PATH=""
 TRAIN_DATASETS="path/to/dataset"
 OUTPUT_DIR="../outputs/dpo_ti_to_ti"
+# the file name should look like "dataset_file_name.pt"
+FILE_NAME="dataset_file_name" 
 # For wandb online logging
 export WANDB_API_KEY=""
 # Source the setup script
@@ -138,7 +140,11 @@ Add a script named `rm_ti_to_ti.sh` under the `scripts` file like this:
 # Initialize variables
 MODEL_NAME_OR_PATH=""
 TRAIN_DATASETS="path/to/dataset"
+# the file name should look like "dataset_file_name.pt"
+TRAIN_FILE_NAME="dataset_file_name" 
 EVAL_DATASETS="path/to/dataset"
+# the file name should look like "dataset_file_name.pt"
+EVAL_FILE_NAME="dataset_file_name" 
 OUTPUT_DIR="../outputs/rm_ti_to_ti"
 # For wandb online logging
 export WANDB_API_KEY=""
@@ -184,7 +190,11 @@ ACTOR_MODEL_NAME_OR_PATH=""
 CRITIC_MODEL_NAME_OR_PATH=""
 REWARD_MODEL_NAME_OR_PATH=""
 TRAIN_DATASETS=""
+# the file name should look like "dataset_file_name.pt"
+TRAIN_FILE_NAME="dataset_file_name" 
 PTX_DATASETS=""
+# the file name should look like "dataset_file_name.pt"
+PTX_FILE_NAME="dataset_file_name" 
 OUTPUT_DIR="../outputs/ppo_ti_to_ti"
 
 # Source the setup script
