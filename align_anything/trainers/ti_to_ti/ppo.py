@@ -129,10 +129,6 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> dict[str, Any]:
         actor_batch = copy.deepcopy(mini_prompt_only_batch)
-        # torch.set_printoptions(threshold=torch.inf)
-        # print('input_ids', mini_prompt_only_batch['input_ids'].shape)
-        # print('attention_mask', mini_prompt_only_batch['attention_mask'].shape)
-        # print(f"mini batch has keys: {mini_prompt_only_batch.keys()}")
         sequences = self.actor_model.module.generate(
             **mini_prompt_only_batch,
             generation_config=self.generation_config,
