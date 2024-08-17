@@ -23,6 +23,7 @@ import random
 import requests
 import librosa
 import requests
+import torch
 from PIL import Image
 from torchvision.io import read_video
 import torchaudio
@@ -918,6 +919,9 @@ class ANYTHING_TI2TI:
             'input_image': input_images,
             'image': input_images + output_images,
         }
+        
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return torch.equal(raw_sample['better_input_ids'], raw_sample['worse_input_ids'])
 
 @register_template('RLAIFV')
 class RLAIFV:
