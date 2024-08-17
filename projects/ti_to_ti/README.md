@@ -64,7 +64,6 @@ source ./setup.sh
 
 # Execute deepspeed command
 deepspeed \
-	--hostfile ${HOSTFILE} \ 
 	--master_port ${MASTER_PORT} \
 	--module align_anything.trainers.ti_to_ti.sft \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
@@ -107,7 +106,6 @@ source ./setup.sh
 
 # Execute deepspeed command
 deepspeed \
-	--hostfile host1 \
 	--master_port ${MASTER_PORT} \
 	--module align_anything.trainers.ti_to_ti.dpo \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
