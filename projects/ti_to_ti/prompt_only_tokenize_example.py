@@ -130,10 +130,6 @@ def format_sample_pickapic(raw_sample: dict[str, Any]) -> dict[str, Any]:
     raw_sample = {
         "input_text": prompt,
         "input_image": [],
-        "better_text": "",
-        "better_img": better_image,
-        "worse_text": "",
-        "worse_img": worse_image
     }
     return format_sample_cham(raw_sample)
 
@@ -142,10 +138,6 @@ def format_sample_spavl(raw_sample: dict[str, Any]) -> dict[str, Any]:
     raw_sample = {
         "input_text": raw_sample['question'],
         "input_image": load_image(raw_sample['image']),
-        "better_text": raw_sample['chosen'],
-        "better_img": None,
-        "worse_text": raw_sample['rejected'],
-        "worse_img": None
     }
     return format_sample_cham(raw_sample)
 
@@ -154,10 +146,6 @@ def format_sample_AA(raw_sample: dict[str, Any]) -> dict[str, Any]:
     raw_sample = {
         "input_text": raw_sample['prompt'],
         "input_image": None,
-        "better_text": "",
-        "better_img": None,
-        "worse_text": "",
-        "worse_img": None
     }
     return format_sample_cham(raw_sample)
 
