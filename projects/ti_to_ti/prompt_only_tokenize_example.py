@@ -93,6 +93,8 @@ def safe_add(list1, list2):
         return list1 + list2
     
 def format_sample_cham(raw_sample: dict[str, Any]) -> dict[str, Any]:
+    """ Formating input sample, and change the related keys according to the training dataset."""
+    """If you are using a different dataset, you need to customize this function or write a new function like the ones below."""
     system_prompt: str = ''
     user_prompt: str = 'USER: \n{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
@@ -116,6 +118,7 @@ def format_sample_cham(raw_sample: dict[str, Any]) -> dict[str, Any]:
     }
 
 def format_sample_pickapic(raw_sample: dict[str, Any]) -> dict[str, Any]:
+    """Specified for pickapic dataset. You can customize a similar function for you own dataset."""
     prompt = f"Generate an image according to the following prompt: {raw_sample['caption']}"
     better_id = int(raw_sample['label_1'])
     worse_id = int(raw_sample['label_0'])
@@ -135,6 +138,7 @@ def format_sample_pickapic(raw_sample: dict[str, Any]) -> dict[str, Any]:
     return format_sample_cham(raw_sample)
 
 def format_sample_spavl(raw_sample: dict[str, Any]) -> dict[str, Any]:
+    """Specified for spavl dataset. You can customize a similar function for you own dataset."""
     raw_sample = {
         "input_text": raw_sample['question'],
         "input_image": load_image(raw_sample['image']),
@@ -146,6 +150,7 @@ def format_sample_spavl(raw_sample: dict[str, Any]) -> dict[str, Any]:
     return format_sample_cham(raw_sample)
 
 def format_sample_AA(raw_sample: dict[str, Any]) -> dict[str, Any]:
+    """Specified for align anything internal dataset. You can customize a similar function for you own dataset."""
     raw_sample = {
         "input_text": raw_sample['prompt'],
         "input_image": None,
@@ -158,7 +163,6 @@ def format_sample_AA(raw_sample: dict[str, Any]) -> dict[str, Any]:
 
 def preprocess(tokenizer, processor, formatted_sample: dict[str, Any]):
     return_dict = {}
-
     
     raw_text = ''
     if isinstance(formatted_sample['text'], list):
