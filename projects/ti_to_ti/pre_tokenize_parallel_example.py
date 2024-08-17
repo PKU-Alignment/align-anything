@@ -233,7 +233,7 @@ def process_data(gpu, input_data, model_path, output_path, cache_dir):
     print(f"GPU {gpu} processed {len(local_output_paths)} messages")
 
 def main():
-    input_path = "input.json"
+    input_path = "input.json" # change this to your input path
     output_path = "output.pt"
     
     model_path = "path_to_model"
@@ -245,8 +245,10 @@ def main():
     
     num_processes = 16
     num_gpus = 8
+    mp.set_start_method('spawn', force=True)
     output_paths = mp.Manager().list()  # For collecting results from multiple processes
     
+    # change this logic into load_dataset if needed
     with open(input_path, 'r') as f:
         input_data = json.load(f)
     
@@ -275,7 +277,6 @@ def main():
     
     torch.save(all_data, output_path)
         
-
 # do main
 if __name__ == "__main__":
     main()

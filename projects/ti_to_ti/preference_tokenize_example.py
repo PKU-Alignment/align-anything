@@ -265,8 +265,11 @@ def process_data(gpu, input_data, model_path, output_path, cache_dir):
 
 def main():
 
-    input_path = 'input_path_to_dataset'
-    input_data = load_dataset(input_path)
+    input_path = 'input_path_to_dataset' # change this to your input path
+    
+    # change this logic into load_dataset if needed
+    with open(input_path, 'r') as f:
+        input_data = json.load(f)
         
     output_path = "output.pt"
     
@@ -279,6 +282,7 @@ def main():
     
     num_processes = 16
     num_gpus = 8
+    mp.set_start_method('spawn', force=True)
     output_paths = mp.Manager().list()  # For collecting results from multiple processes
     
     target = input_data['train'].to_list() 
