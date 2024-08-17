@@ -252,7 +252,7 @@ def main():
     with open(input_path, 'r') as f:
         input_data = json.load(f)
     
-    target = input_data
+    target = input_data # add to_list() if you acquire the dataset from load_dataset
     chunks = [target[i::num_processes] for i in range(num_processes)]
         
     processes = []

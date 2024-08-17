@@ -248,7 +248,7 @@ def main():
     mp.set_start_method('spawn', force=True)
     output_paths = mp.Manager().list()  # For collecting results from multiple processes
     
-    target = input_data
+    target = input_data # add to_list() if you acquire the dataset from load_dataset
     print(f"Full Length: {len(target)}")
     chunks = [target[i::num_processes] for i in range(num_processes)]
         
