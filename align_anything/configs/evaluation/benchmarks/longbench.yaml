@@ -26,19 +26,17 @@ default:
     # Unique identifier for cache folder
     uuid: null
     # Num shot
-    n_shot: 5
+    n_shot: 0
     # Use Chain of Thought
     cot: false
   # Configuration for data
   data_cfgs:
     # Task name
-    task: [high_school_chemistry, high_school_biology]
+    task: ['2wikimqa', '2wikimqa_e', 'dureader', 'gov_report', 'gov_report_e', 'hotpotqa', 'hotpotqa_e', 'lcc', 'lcc_e', 'lsht', 'multi_news', 'multi_news_e', 'multifieldqa_en', 'multifieldqa_en_e', 'multifieldqa_zh', 'musique', 'narrativeqa', 'passage_count', 'passage_count_e', 'passage_retrieval_en', 'passage_retrieval_en_e', 'passage_retrieval_zh', 'qasper', 'qasper_e', 'qmsum', 'repobench-p', 'repobench-p_e', 'samsum', 'samsum_e', 'trec', 'trec_e', 'triviaqa', 'triviaqa_e', 'vcsum']
     # Task directory
-    task_dir: cais/mmlu
+    task_dir: THUDM/LongBench
     # Evaluation split
     split: test
-    # Candidate labels
-    candidate_labels: ["A", "B", "C", "D"]
 
   # Model configurations
   model_cfgs:

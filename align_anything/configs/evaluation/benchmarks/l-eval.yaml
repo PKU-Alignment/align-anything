@@ -26,19 +26,17 @@ default:
     # Unique identifier for cache folder
     uuid: null
     # Num shot
-    n_shot: 5
+    n_shot: 0
     # Use Chain of Thought
     cot: false
   # Configuration for data
   data_cfgs:
     # Task name
-    task: [high_school_chemistry, high_school_biology]
+    task: ['codeU', 'coursera', 'financial_qa', 'gov_report_summ', 'gsm100', 'legal_contract_qa', 'meeting_summ', 'multidoc_qa', 'narrative_qa', 'natural_question', 'news_summ', 'paper_assistant', 'patent_summ', 'quality', 'review_summ', 'sci_fi', 'scientific_qa', 'topic_retrieval_longchat', 'tpo', 'tv_show_summ']
     # Task directory
-    task_dir: cais/mmlu
+    task_dir: L4NLP/LEval
     # Evaluation split
     split: test
-    # Candidate labels
-    candidate_labels: ["A", "B", "C", "D"]
 
   # Model configurations
   model_cfgs:

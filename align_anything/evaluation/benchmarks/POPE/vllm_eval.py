@@ -113,10 +113,6 @@ def evaluator(test_dataset, output_data, file_path):
 def judger(correct_answer, response):
     if correct_answer not in response:
         return False
-    if "yes" in response and "no" not in response:
-        return correct_answer == "yes"
-    if "no" in response and "yes" not in response:
-        return correct_answer == "no"
     last_yes = response.rfind('yes')
     last_no = response.rfind('no')
     if last_yes > last_no:

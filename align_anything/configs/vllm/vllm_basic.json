@@ -13,8 +13,8 @@
     "LLM":
     {
         "tokenizer_mode": "auto",
-        "trust_remote_code": false,
-        "gpu_memory_utilization": 0.8,
+        "trust_remote_code": true,
+        "gpu_memory_utilization": 0.9,
         "max_num_seqs": 16
     }
 }

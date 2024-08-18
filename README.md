@@ -323,7 +323,7 @@ for BENCHMARK in "${BENCHMARKS[@]}"; do
 done
 ~~~
 
-- `BENCHMARK`: One or more evaluation benchmarks or datasets for assessing the model's performance. For example, `("POPE" "MMBench")` can be used to evaluate the model on both the POPE and MMBench datasets. Each benchmark in the list will be processed sequentially.
+- `BENCHMARKS`: One or more evaluation benchmarks or datasets for assessing the model's performance. For example, `("POPE" "MMBench")` can be used to evaluate the model on both the POPE and MMBench datasets. Each benchmark in the list will be processed sequentially.
 - `OUTPUT_DIR`: The directory for saving the evaluation results and output files.
 - `GENERATION_BACKEND`: The backend used for generating predictions, `vLLM` or `deepspeed`.
 - `MODEL_ID`: Unique identifier for the model, used to track and distinguish model evaluations, like `llava-1.5-7b-hf`.

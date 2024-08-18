@@ -41,7 +41,7 @@ for BENCHMARK in "${BENCHMARKS[@]}"; do
 done
 ~~~
 
-- `BENCHMARK`: 用于评估模型性能的一个或多个评估基准或数据集。例如，`("POPE" "MMBench")` 可用于在 POPE 和 MMBench 数据集上评估模型。列表中的每个基准将按顺序处理。
+- `BENCHMARKS`: 用于评估模型性能的一个或多个评估基准或数据集。例如，`("POPE" "MMBench")` 可用于在 POPE 和 MMBench 数据集上评估模型。列表中的每个基准将按顺序处理。
 - `OUTPUT_DIR`: 用于保存评估结果和输出文件的目录。
 - `GENERATION_BACKEND`: 进行大语言模型推理的框架，包括 `vLLM` 和 `deepspeed`。
 - `MODEL_ID`: 模型的唯一标识符，用于跟踪和区分模型评估，如 `llava-1.5-7b-hf`。
@@ -128,9 +128,7 @@ default:
     # Whether to trust remote code
     trust_remote_code: True
     # The max token length
-    max_length: 1024
-    # The max new tokens for generation
-    max_new_tokens: 512
+    model_max_length: 2048
 ~~~
 
 如果想修改更多推理参数，请查看 `./align_anything/configs/evaluation/vllm` 和 `./align_anything/configs/evaluation/deepspeed`，具体取决于你选择的推理框架。
