@@ -41,7 +41,7 @@ for BENCHMARK in "${BENCHMARKS[@]}"; do
 done
 ~~~
 
-- `BENCHMARK`: One or more evaluation benchmarks or datasets for assessing the model's performance. For example, `("POPE" "MMBench")` can be used to evaluate the model on both the POPE and MMBench datasets. Each benchmark in the list will be processed sequentially.
+- `BENCHMARKS`: One or more evaluation benchmarks or datasets for assessing the model's performance. For example, `("POPE" "MMBench")` can be used to evaluate the model on both the POPE and MMBench datasets. Each benchmark in the list will be processed sequentially.
 - `OUTPUT_DIR`: The directory for saving the evaluation results and output files.
 - `GENERATION_BACKEND`: The backend used for generating predictions, `vLLM` or `deepspeed`.
 - `MODEL_ID`: Unique identifier for the model, used to track and distinguish model evaluations, like `llava-1.5-7b-hf`.
@@ -128,9 +128,7 @@ default:
     # Whether to trust remote code
     trust_remote_code: True
     # The max token length
-    max_length: 1024
-    # The max new tokens for generation
-    max_new_tokens: 512
+    model_max_length: 2048
 ~~~
 
 For more inference parameters, please see `./align_anything/configs/evaluation/vllm` and `./align_anything/configs/evaluation/deepspeed`, depends on our generation backend.
