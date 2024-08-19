@@ -1,0 +1,34 @@
+infer_cfgs:
+  # The deepspeed configuration
+  ds_cfgs: ds_z3_config.json
+  vllm_cfgs: vllm_basic.json
+  
+default:
+  # Evaluation configurations
+  eval_cfgs:
+    # Output directory name
+    output_dir: null
+    # Num shot
+    n_shot: 5
+    # Chain of Thought
+    cot: false
+
+  # Configuration for data
+  data_cfgs:
+    # Task name(s)
+    task: [logiqa, logiqa-en, aQuA, math, ethics, sat_en, sat_math, sat_chinese, gaokao-physics, gaokao-biology, gaokao-chemistry, gaokao-geography, gaokao-history, gaokao-chinese, gaokao-english, logiqa-zh, biology, chemistry, physics, morality, law, chinese, english]
+    # Task directory
+    task_dir: agieval
+
+    # Evaluation split
+    split: test
+
+  # Model configurations
+  model_cfgs:
+    model_id: Meta-Llama-3-8B-Instruct
+    # Pretrained model name or path
+    model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
+    # Chat template
+    chat_template: Llama3
+    # The max token length
+    model_max_length: 2048

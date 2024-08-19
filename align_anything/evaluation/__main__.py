@@ -49,7 +49,8 @@ def parse_eval_args() -> argparse.Namespace:
         help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME.",
         choices=[
             "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
-            "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA", "MME"
+            "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA", "MME",
+            "AGIEval", "C-Eval", "GPQA", "HybridA"
         ]
     )
     parser.add_argument(
