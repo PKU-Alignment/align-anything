@@ -108,8 +108,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: LongBenchDataLoader
         for response in responses:
             if correct_answer['input'] in response['prompt']:
                 score = judger(correct_answer['context'], correct_answer['input'], correct_answer['answers'], response['answer'], api_key, base_url)
-                if not isinstance(score, float):
-                    score = float(re.search(r'\d+(\.\d+)?', score).group())
                 total_score += score
                 save_detail(correct_answer['context'] + '\n' + correct_answer['input'], '', correct_answer['answers'], response['answer'], score, file_path)
                 break
@@ -152,6 +150,15 @@ def gpt4_judger(text, question, answers, response, api_key, base_url):
 
 def judger(text, question, answers, response, api_key, base_url):
     score = gpt4_judger(text, question, answers, response, api_key, base_url)
+    if not isinstance(score, float):
+        match = re.search(r'\d+(\.\d+)?', score)
+        if match:
+            score = float(match.group())
+            if score > 10:
+                score = 1
+        else:
+            score = 1
+
     return score
   
 def main():
@@ -197,10 +204,14 @@ def main():
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
+    num_task, tot_num_sum, tot_avg_score = 0, 0, 0.0
     for task, _ in raw_outputs.items():
 
         file_path = f"{uuid_path}/{task}.json"
         cnt_sum, avg_score = evaluator(raw_outputs[task], dataloader, task, file_path, api_key, base_url)
+        num_task += 1
+        tot_num_sum += cnt_sum
+        tot_avg_score += avg_score
 
         eval_results = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
@@ -218,6 +229,22 @@ def main():
         logger.log('info', f"num_sum: {eval_results['num_sum'][0]},")
         logger.log('info', f"average_score: {eval_results['average_score'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    eval_results = {
+        'model_id': [dict_configs.default.model_cfgs.model_id],
+        'num_fewshot': [eval_configs.n_shot],
+        'chain_of_thought': [eval_configs.cot],
+        'tot_num_sum': [tot_num_sum],
+        'average_score': [tot_avg_score / num_task]
+    }
+    logger.print_table(title=f'LEval Benchmark', data=eval_results)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"model_id: {eval_results['model_id'][0]},")
+    logger.log('info', f"num_fewshot: {eval_results['num_fewshot'][0]},")
+    logger.log('info', f"chain_of_thought: {eval_results['chain_of_thought'][0]},")
+    logger.log('info', f"tot_num_sum: {eval_results['tot_num_sum'][0]},")
+    logger.log('info', f"average_score: {eval_results['average_score'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()
