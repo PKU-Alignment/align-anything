@@ -35,10 +35,6 @@
 
 <div align="center">
 
-<<<<<<< HEAD
-
-=======
->>>>>>> upstream/main
 English | [简体中文](README_zh-CN.md) | [Our 100K Datasets](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)
 
 </div>
