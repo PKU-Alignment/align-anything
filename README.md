@@ -22,7 +22,10 @@
   <div>&nbsp;</div>
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> upstream/main
 [![PyPI](https://img.shields.io/pypi/v/align-anything?logo=pypi)](https://pypi.org/project/align-anything)
 [![License](https://img.shields.io/github/license/PKU-Alignment/align-anything?label=license)](#license)
 
@@ -36,7 +39,10 @@
 
 <div align="center">
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> upstream/main
 English | [简体中文](README_zh-CN.md) | [Our 100K Datasets](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)
 
 </div>
@@ -58,15 +64,15 @@ We have a roadmap for future development work `align-anything`:
 - [x] Support diverse parameter sizes including `LoRA`, `QLoRA`.
 - [ ] Support `NeMo` backbone for training, and `vllm` backbone for evaluation.
 
-| Trainers      | Text :arrow_right: Text | Text+Image :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | Text :arrow_right: Audio | Text+Image :arrow_right: Text+Image |
-| ------------- | ----------------------- | ----------------------------- | ------------------------ | ------------------------ | ------------------------ | ----------------------------------- |
-| SFT Trainer   | :white_check_mark:      | :white_check_mark:            | :white_check_mark:       | :white_check_mark:       | :white_check_mark:       | :white_check_mark:                  |
-| RM Trainer    | :white_check_mark:      | :white_check_mark:            | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:       | :white_check_mark:                  |
-| DPO Trainer   | :white_check_mark:      | :white_check_mark:            | :white_check_mark:       | :white_check_mark:       | :white_check_mark:       | :white_check_mark:                  |
-| PPO Trainer   | :white_check_mark:      | :white_check_mark:            | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:       | :white_check_mark:                  |
-| KTO Trainer   | :white_check_mark:      | :heavy_minus_sign:            | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:                  |
-| ORPO Trainer  | :white_check_mark:      | :heavy_minus_sign:            | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:                  |
-| SimPO Trainer | :white_check_mark:      | :heavy_minus_sign:            | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:                  |
+| Trainers | Text :arrow_right: Text | Text+Image :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | Text :arrow_right: Audio | Text+Image :arrow_right: Text+Image |
+|---|---|---|---|---|---|---|
+| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| RM Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :white_check_mark: |
+| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| PPO Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :white_check_mark: |
+| KTO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| ORPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| SimPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
 
 - :white_check_mark: : Features supported now.
 - :heavy_minus_sign: : Features on going in our TODO list.
@@ -95,7 +101,6 @@ pip install -e .
 ```
 
 ### Wandb Logger
-
 We supports `wandb` logging. By default, it is set to offline. If you need to view wandb logs online, you can specify the environment variables of `WANDB_API_KEY` before starting the training:
 
 ```bash
@@ -103,11 +108,9 @@ export WANDB_API_KEY="..."  # your W&B API key here
 ```
 
 ### Install from Dockerfile
-
 <details>
 <summary>How to build from Docker?</summary>
 1. build docker image
-
 
 ```bash
 FROM nvcr.io/nvidia/pytorch:24.02-py3
@@ -178,7 +181,6 @@ deepspeed \
 ```
 
 <!-- TODO -->
-
 - `ACTOR_MODEL_NAME`: The model to be fine-tuned, typically one that has already undergone initial supervised fine-tuning, like `PKU-Alignment/alpaca-7b-reproduced`.
 - `REWARD_MODEL_NAME`: A model with a score output layer. Run `rm.sh` to train the reward model and obtain its path.
 - `CRITIC_MODEL_NAME`: The model used for RLHF value function estimation, typically set to be the same as `REWARD_MODEL_NAME`.
@@ -189,7 +191,6 @@ deepspeed \
 - `OUTPUT_DIR`: The directory where you want to save the trained model, logging, and others.
 
 ### Some Training Bugs
-
 1. If you encounter errors during the training process:
 
 ```bash
@@ -201,9 +202,7 @@ To include the CUDA installation path and set the environment variables, modify 
 ```bash
 export CUDA_HOME="/usr/local/cuda"
 ```
-
 or
-
 ```bash
 export CUDA_HOME=$CONDA_PREFIX
 ```
@@ -396,17 +395,14 @@ For more details about the evaluation pipeline, refer to [here](https://github.c
 To launch a Gradio demo locally, follow these steps by running the commands one by one. If you intend to launch multiple model workers to compare different checkpoints, you only need to launch the controller and the web server *ONCE*.
 
 ### Launch a controller
-
 ```Shell
 python -m align_anything.serve.controller --host 0.0.0.0 --port 10000
 ```
 
 ### Launch a gradio web server.
-
 ```Shell
 python -m align_anything.serve.gradio_web_server --controller http://localhost:10000 --model-list-mode reload
 ```
-
 You have just launched the Gradio web interface. Now, you can open the web interface using the URL printed on the screen. You may notice that there are no models listed yet. Do not worry, as we have not launched any model workers yet. The model list will be automatically updated once you launch a model worker.
 
 ### Launch a model worker
@@ -416,7 +412,6 @@ This is the actual *worker* that performs the inference on the GPU.  Each worker
 ```Shell
 python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path <ckpt>  --is-multimodal True --template "LLAVA"
 ```
-
 Wait until the process completes loading the model and you see "Uvicorn running on ...". Then, refresh your Gradio web UI, and you will see the model you just started in the model list.
 
 You can start as many workers as you need and compare different model checkpoints within the same Gradio interface. Ensure that you keep the `--controller` the same, but change the `--port` and `--worker` to a unique port number for each worker.
@@ -448,14 +443,11 @@ python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_m
 Ensuring that the behavior of AI system aligns with human intentions and values is crucial, and alignment techniques provide an effective solution. For large language models (LLMs), methods such as reinforcement learning with human feedback (RLHF) and direct preference optimization (DPO) have significantly improved performance and safety. As models evolve to handle any-modality inputs and outputs, effectively aligning them remains a current research challenge. `Align-Anything` framework integrates alignment tuning across modalities using well-designed interfaces and advanced abstractions, offering a comprehensive testbed for research.
 
 ### Report Issues
-
 If you have any questions in the process of using Align-Anything, don't hesitate to ask your questions on [the GitHub issue page](https://github.com/PKU-Alignment/align-anything/issues/new/choose), we will reply to you in 2-3 working days.
 
 
 ## Citation
-
 Please cite the repo if you use the data or code in this repo.
-
 ```
 @misc{align_anything,
   author = {PKU-Alignment Team},
