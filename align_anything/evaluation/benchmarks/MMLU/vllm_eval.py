@@ -15,14 +15,13 @@
 
 import argparse
 import json
-from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
+from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from datasets import load_dataset
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.evaluation.inference.base_inference import update_results
 from align_anything.evaluation.eval_logger import EvalLogger
 import re
 class MMLUDataLoader(BaseDataLoader):
@@ -88,22 +87,12 @@ class MMLUGeneratorVLLM(BaseInferencer_vllm):
         task2details = {}
         for task, input in data.items():
             task2details[task] = self.generation(input)
-        
-        output_dir = eval_configs.output_dir
-        brief_filename = eval_configs.brief_filename
-        model_id = self.model_cfgs.model_id
-        detailed_filename = f'{model_id}_detailed'
-        brief_filename = f'{model_id}_brief'
-        update_results(output_dir, brief_filename, detailed_filename,task2details)
-        
         return task2details
     
-def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, task: str):
+def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, task: str, file_path):
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
     correct_answers = []
     responses = []
-    true_cases = []
-    false_cases = []
     cnt_sum = 0
     cnt_match = 0
     cnt_fail = 0
@@ -130,27 +119,18 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUDataLoader, tas
             if correct_answer['prompt'] in response['prompt']:
                 flag_fail = False
                 chosen_answer = max(response['answer_logprobs'], key=response['answer_logprobs'].get)
-                eval_case = {
-                    'question': correct_answer['prompt'],
-                    'choices': correct_answer['choices'],
-                    'correct_answer': correct_answer['answer'],
-                    'answer_logprobs': response['answer_logprobs'],
-                    'chosen_answer': chosen_answer
-                }
-                if judge_answer(correct_answer['answer'], chosen_answer, response['answer']):
+                true_or_false = judge_answer(correct_answer['answer'], chosen_answer, response['answer'])
+                if true_or_false:
                     cnt_match += 1
-                    eval_case['result'] = True
-                    true_cases.append(eval_case)
-                else:
-                    eval_case['result'] = False
-                    false_cases.append(eval_case)
+                choices = '\n' + '\n'.join([f'({label}) {correct_answer["choices"][ord(label) - 65]}' for label in ["A", "B", "C", "D"]])
+                save_detail(correct_answer['prompt'], choices, correct_answer['answer'], response['answer'], true_or_false, file_path)
                 break
         if flag_fail:
             cnt_fail += 1
         else:
             flag_fail = True
         
-    return cnt_match, cnt_sum, true_cases, false_cases
+    return cnt_match, cnt_sum
 
 def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[str]):
     answer_logprobs = {}
@@ -203,43 +183,33 @@ def main():
     eval_module = MMLUGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
 
-    tasks, num_matches, num_instances, acc = [], [], [], []
+    os.makedirs(logger.log_dir, exist_ok=True)
+    uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
+    os.makedirs(uuid_path, exist_ok=True)
+
     for task, _ in raw_outputs.items():
 
-        cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_outputs[task], dataloader, task)
+        file_path = f"{uuid_path}/{task}.json"
+        cnt_match, cnt_sum = evaluator(raw_outputs[task], dataloader, task, file_path)
 
-        tasks.append(task)
-        num_matches.append(cnt_match)
-        num_instances.append(cnt_sum)
-        acc.append(cnt_match / cnt_sum)
-
+        eval_results = {
+            'model_id': [dict_configs.default.model_cfgs.model_id],
+            'num_fewshot': [eval_configs.n_shot],
+            'chain_of_thought': [eval_configs.cot],
+            'num_match': [cnt_match],
+            'num_sum': [cnt_sum],
+            'accuracy': [cnt_match / cnt_sum]
+        }
+        logger.print_table(title=f'MMLU/{task} Benchmark', data=eval_results)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
-        logger.log('info', '==============================TRUE CASE==============================')
-        if true_cases:
-            logger.log('info', f'Question: {true_cases[0]["question"]}')
-            logger.log('info', f'Choices: {true_cases[0]["choices"]}')
-            logger.log('info', f'Correct Answer: {true_cases[0]["correct_answer"]}')
-            logger.log('info', f'Logprobs of First Token: {true_cases[0]["answer_logprobs"]}')
-            logger.log('info', f'Chosen Answer: {true_cases[0]["chosen_answer"]}')
-        logger.log('info', '==============================FALSE CASE==============================')
-        if false_cases:
-            logger.log('info', f'Question: {false_cases[0]["question"]}')
-            logger.log('info', f'Choices: {false_cases[0]["choices"]}')
-            logger.log('info', f'Correct Answer: {false_cases[0]["correct_answer"]}')
-            logger.log('info', f'Logprobs of First Token: {false_cases[0]["answer_logprobs"]}')
-            logger.log('info', f'Chosen Answer: {false_cases[0]["chosen_answer"]}')
+        logger.log('info', f"model_id: {eval_results['model_id'][0]},")
+        logger.log('info', f"num_fewshot: {eval_results['num_fewshot'][0]},")
+        logger.log('info', f"chain_of_thought: {eval_results['chain_of_thought'][0]},")
+        logger.log('info', f"num_match: {eval_results['num_match'][0]},")
+        logger.log('info', f"num_sum: {eval_results['num_sum'][0]},")
+        logger.log('info', f"accuracy: {eval_results['accuracy'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-
-    eval_results = {
-            'task': tasks,
-            'num_fewshot': [eval_configs.n_shot] * len(tasks),
-            'chain_of_thought': [eval_configs.cot] * len(tasks),
-            'num_match': num_matches,
-            'num_sum': num_instances,
-            'acc': acc
-            }
-    logger.print_table(title="Evaluation Results", data = eval_results)
 
 if __name__ == '__main__':
     main()

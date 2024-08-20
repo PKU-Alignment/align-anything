@@ -15,19 +15,17 @@
 
 import os
 import argparse
-from align_anything.evaluation.inference.base_inference import BaseInferencer_deepspeed, ListDataset
+from align_anything.evaluation.inference.ds_inference import BaseInferencer_deepspeed, ListDataset, get_rank
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.evaluation.inference.base_inference import update_results, get_rank
 from torch.nn.utils.rnn import pad_sequence
 import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
 from datasets import load_dataset, DatasetDict
 import pickle
-import time
 import torch
 import re
 from tqdm import tqdm
@@ -44,7 +42,7 @@ class MMEDataLoader(BaseDataLoader):
             return task_names
     
     def get_answer(self, data):
-        return data['answerKey']
+        return data['answer']
 
     def set_fewshot_dataset(self, dataset, task: str=None):
         return None
@@ -64,7 +62,6 @@ class MMEDataLoader(BaseDataLoader):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         raw_images = [item['image'] for item in data[self.split]]
         prompts = self.build_prompt(data[self.split])
-
         inputs = self.processor(prompts, raw_images, return_tensors='pt', padding=True)
 
         return prompts, inputs
@@ -76,23 +73,26 @@ class MMEDataLoader(BaseDataLoader):
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['question_id']):
+            for prompt, input_ids, pixel_values, question_id, question in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['question_id'], dataset[self.split]['question']):
                 processed_input = InferenceInput(text=prompt, token_ids=input_ids, pixel_values=pixel_values)
-                processed_input.question_id = question_id
+                processed_input.question_id = question_id + question
                 processed_inputs[task].append(processed_input)
         return processed_inputs
 
 class MMEGeneratorDS(BaseInferencer_deepspeed):
-
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
-        task2details = {}
+        os.makedirs(".cache", exist_ok=True)
+        uuid_path = f".cache/{eval_configs.uuid}"
+        os.makedirs(uuid_path, exist_ok=True)
+
         for task, input in data.items():
+            task_dir = f"{uuid_path}/{task}"
+            os.makedirs(task_dir, exist_ok=True)
             raw_output = self.generation(input)
             for item in raw_output:
                 for i in range(len(item.response)):
                     item.response[i] = item.response[i][len(re.sub('<image>', ' ', item.prompt, count=1)):]
-            task2details[task] = raw_output
-            self.save_pickle(raw_output, task)
+            self.save_pickle(raw_output, task_dir)
 
     def load_data_distributed(self, inputs: List[InferenceInput]) -> List[InferenceInput]:
         dataset = ListDataset(inputs)
@@ -159,8 +159,7 @@ class MMEGeneratorDS(BaseInferencer_deepspeed):
                 InferenceOutputs.append(inference_output)
         return InferenceOutputs
 
-    def save_pickle(self, output_data: List[InferenceOutput], task: str=None):
-        os.makedirs(".cache", exist_ok=True)
+    def save_pickle(self, output_data: List[InferenceOutput], task_dir: str=None):
         cache_data = []
         for item in output_data:
             cache_data.append(
@@ -170,14 +169,13 @@ class MMEGeneratorDS(BaseInferencer_deepspeed):
                     'response': item.response
                 }
             )
-
-        if dist.is_initialized():
-            with open(f".cache/outputs_{task}_{get_rank()}.pkl", 'wb') as f:
+            if dist.is_initialized():
+                file_path = f"{task_dir}/outputs_{get_rank()}.pkl"
+            else:
+                file_path = f"{task_dir}/outputs.pkl"
+            
+            with open(file_path, 'wb') as f:
                 pickle.dump(cache_data, f, protocol=4)
-        else:
-            with open(f".cache/outputs_{task}.pkl", 'wb') as f:
-                pickle.dump(cache_data, f, protocol=4)
-
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -191,7 +189,6 @@ def main():
             continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
-    
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs

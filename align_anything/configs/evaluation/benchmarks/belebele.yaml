@@ -23,6 +23,8 @@ default:
   eval_cfgs:
     # Output directory name
     output_dir: null
+    # Unique identifier for cache folder
+    uuid: null
     # Num shot
     n_shot: 0
     # Use Chain of Thought
@@ -30,20 +32,22 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: ''
+    task: eng_Latn
     # Task directory
     task_dir: facebook/belebele
     # Evaluation split
-    split: 'eng_Latn'
+    split: test
     # Candidate labels
     candidate_labels: ["A", "B", "C", "D"]
 
   # Model configurations
   model_cfgs:
-    model_id: Meta-Llama-3-8B-Instruct
+    model_id: null
     # Pretrained model name or path
-    model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
+    model_name_or_path: null
     # Chat template
-    chat_template: Llama3
+    chat_template: null
+    # Whether to trust remote code
+    trust_remote_code: True
     # The max token length
     model_max_length: 2048

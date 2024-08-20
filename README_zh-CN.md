@@ -71,7 +71,9 @@ Align-Anything 是一个基于 DeepSpeed 或 NeMo （目前正在开发中）的
 - :heavy_minus_sign: : 正在内部测试的功能，将尽快被更新。
 
 # 新闻
+
 - 2024-08-17 🔥 我们支持了text image混合输入输出模态的DPO和PPO trainer！
+- 2024-08-15 🔥 我们在评估模块中支持了一个新功能：模型 PK，它可以比较两个模型在不同基准测试中的性能。
 - 2024-08-06 🔥 我们重构了评估框架，以更好地支持多模态基准。在此基础上，我们已经实现了text-to-text和text+image-to-text模型的基准测试，目前正在适配更多的基准测试！
 - 2024-08-06 🔥 我们支持了text image混合输入输出模态的SFT trainer和Chemeleon系列模型！
 - 2024-07-23 🔥 我们支持了text-to-image，text-to-audio和text-to-video模态的SFT trainer和DPO trainer！
@@ -298,19 +300,73 @@ class PKUSafeRLHF(Template):
 ~~~bash
 cd ../align_anything/evaluation
 
-BENCHMARK=""
+BENCHMARKS=("")
 OUTPUT_DIR=""
 GENERATION_BACKEND=""
+MODEL_ID=""
+MODEL_NAME_OR_PATH=""
+CHAT_TEMPLATE=""
 
-python __main__.py \
-    --benchmark ${BENCHMARK} \
-    --output_dir ${OUTPUT_DIR} \
-    --generation_backend ${GENERATION_BACKEND}
+for BENCHMARK in "${BENCHMARKS[@]}"; do
+    python __main__.py \
+        --benchmark ${BENCHMARK} \
+        --output_dir ${OUTPUT_DIR} \
+        --generation_backend ${GENERATION_BACKEND} \
+        --model_id ${MODEL_ID} \
+        --model_name_or_path ${MODEL_NAME_OR_PATH} \
+        --chat_template ${CHAT_TEMPLATE}
+done
 ~~~
 
-- `BENCHMARK`: 评估模型性能的基准或数据集。例如，使用 `ARC` 表示 ARC 数据集或其他相关基准。
+- `BENCHMARKS`: 用于评估模型性能的一个或多个评估基准或数据集。例如，`("POPE" "MMBench")` 可用于在 POPE 和 MMBench 数据集上评估模型。列表中的每个基准将按顺序处理。
 - `OUTPUT_DIR`: 用于保存评估结果和输出文件的目录。
-- `GENERATION_BACKEND`: 进行大语言模型推理的框架，包括`deepspeed` 和 `vLLM` 。
+- `GENERATION_BACKEND`: 进行大语言模型推理的框架，包括 `vLLM` 和 `deepspeed`。
+- `MODEL_ID`: 模型的唯一标识符，用于跟踪和区分模型评估，如 `llava-1.5-7b-hf`。
+- `MODEL_NAME_OR_PATH`: 模型的本地路径或 Hugging Face 链接，如 `llava-hf/llava-1.5-7b-hf` 。
+- `CHAT_TEMPLATE`: 模型的聊天模板 id，如 `LLAVA`。更多细节可以参考 `./align_anything/configs/template.py`。
+
+为了在一个或多个基准测试中比较多个模型的性能，目录 `./scripts` 中的 `models_pk.sh` 脚本允许您评估不同的模型，然后比较它们的结果。在运行脚本之前，请确保正确填写了所有参数。
+
+~~~bash
+cd ../align_anything/evaluation
+
+BENCHMARKS=("")
+OUTPUT_DIR=""
+GENERATION_BACKEND=""
+MODEL_IDS=("" "")
+MODEL_NAME_OR_PATHS=("" "")
+CHAT_TEMPLATES=("" "")
+
+for BENCHMARK in "${BENCHMARKS[@]}"; do
+    echo "Processing benchmark: ${BENCHMARK}"
+    
+    for i in "${!MODEL_IDS[@]}"; do
+        MODEL_ID=${MODEL_IDS[$i]}
+        MODEL_NAME_OR_PATH=${MODEL_NAME_OR_PATHS[$i]}
+        CHAT_TEMPLATE=${CHAT_TEMPLATES[$i]}
+        
+        echo "Running model ${MODEL_ID} for benchmark ${BENCHMARK}"
+        python __main__.py \
+            --benchmark ${BENCHMARK} \
+            --output_dir ${OUTPUT_DIR} \
+            --generation_backend ${GENERATION_BACKEND} \
+            --model_id ${MODEL_ID} \
+            --model_name_or_path ${MODEL_NAME_OR_PATH} \
+            --chat_template ${CHAT_TEMPLATE}
+    done
+
+    python models_pk.py --benchmark ${BENCHMARK} \
+                        --model_1 "${MODEL_IDS[0]}" \
+                        --model_2 "${MODEL_IDS[1]}"
+done
+~~~
+
+- `BENCHMARKS`: 用于评估模型性能的一个或多个评估基准或数据集。例如，`("POPE" "MMBench")` 可用于在 POPE 和 MMBench 数据集上评估模型。列表中的每个基准将按顺序处理。
+- `OUTPUT_DIR`: 用于保存评估结果和输出文件的目录。
+- `GENERATION_BACKEND`: 进行大语言模型推理的框架，包括 `vLLM` 和 `deepspeed`。
+- `MODEL_IDS`: 正在评估的模型的两个唯一标识符的数组，例如 `("llava-1.5-7b-hf" "llava-1.5-13b-hf")`。这些 id 有助于跟踪和区分不同的模型评估。
+- `MODEL_NAME_OR_PATHS`: 一个由两条路径组成的数组，这些路径指向模型的权重或它们发布在 Hugging Face 上的名称，例如 `("llava-hf/llava-1.5-7b-hf" "llava-hf/llava-1.5-13b-hf")`。
+- `CHAT_TEMPLATES`: 由两个聊天模板 id 组成的数组，对应于每个模型，例如 `("LLAVA" "LLAVA")`。这定义了每个模型生成的响应的格式或样式。
 
 此外，你还应修改 `./align_anything/configs/evaluation/benchmarks` 下与基准测试对应的配置文件，以适应特定的评估任务，并指定测试模型。
 

@@ -1,0 +1,20 @@
+{
+    "SamplingParams":
+    {
+        "n": 1,
+        "top_k": 10,
+        "top_p": 0.95,
+        "temperature": 0.05,
+        "max_tokens": 512,
+        "frequency_penalty": 1.2,
+        "prompt_logprobs": 0,
+        "logprobs": 20
+    },
+    "LLM":
+    {
+        "tokenizer_mode": "auto",
+        "trust_remote_code": true,
+        "gpu_memory_utilization": 0.9,
+        "max_num_seqs": 16
+    }
+}

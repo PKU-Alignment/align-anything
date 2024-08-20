@@ -15,14 +15,21 @@
 # limitations under the License.
 # ==============================================================================
 
-
 cd ../align_anything/evaluation
 
-BENCHMARK=""
+BENCHMARKS=("")
 OUTPUT_DIR=""
 GENERATION_BACKEND=""
+MODEL_ID=""
+MODEL_NAME_OR_PATH=""
+CHAT_TEMPLATE=""
 
-python __main__.py \
-    --benchmark ${BENCHMARK} \
-    --output_dir ${OUTPUT_DIR} \
-    --generation_backend ${GENERATION_BACKEND}
+for BENCHMARK in "${BENCHMARKS[@]}"; do
+    python __main__.py \
+        --benchmark ${BENCHMARK} \
+        --output_dir ${OUTPUT_DIR} \
+        --generation_backend ${GENERATION_BACKEND} \
+        --model_id ${MODEL_ID} \
+        --model_name_or_path ${MODEL_NAME_OR_PATH} \
+        --chat_template ${CHAT_TEMPLATE}
+done

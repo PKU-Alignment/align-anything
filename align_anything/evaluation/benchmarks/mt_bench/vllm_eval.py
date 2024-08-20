@@ -15,14 +15,13 @@
 
 import os
 import argparse
-from align_anything.evaluation.inference.base_inference import BaseInferencer_vllm
+from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from datasets import load_dataset, DatasetDict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.evaluation.inference.base_inference import update_results
 from align_anything.evaluation.eval.base_eval import API_Single_Eval
 from align_anything.evaluation.eval_logger import EvalLogger
 import re
@@ -95,14 +94,6 @@ class MTBenchGeneratorVLLM(BaseInferencer_vllm):
         task2details = {}
         for task, input in data.items():
             task2details[task] = self.generation(input)
-        
-        output_dir = eval_configs.output_dir
-        brief_filename = eval_configs.brief_filename
-        model_id = self.model_cfgs.model_id
-        detailed_filename = f'{model_id}_detailed'
-        brief_filename = f'{model_id}_brief'
-        update_results(output_dir, brief_filename, detailed_filename,task2details)
-        
         return task2details
 
 def fill_prompt_template(prompt_template, **kwargs):
@@ -124,7 +115,7 @@ class API_Eval(API_Single_Eval):
         return input
 
 
-def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOutput], dataloader: MTBenchDataLoader, task: str, eval_configs= None):
+def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOutput], dataloader: MTBenchDataLoader, task: str, result_file_path, eval_configs= None):
     current_file_path = os.path.abspath(__file__)
     current_dir = os.path.dirname(current_file_path)
     dataset = load_dataset(current_dir,task)[dataloader.split]
@@ -135,7 +126,6 @@ def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOut
         for line in file:
             prompt = json.loads(line.strip())
             prompts.append(prompt)
-    
     
     questions=[]
     raw_responses = []
@@ -206,28 +196,29 @@ def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOut
     
     results = judger.evaluate(system_prompts, user_prompts)
     for response, system_prompt, user_prompt, result in zip(responses, system_prompts, user_prompts, results):
-            output = result.raw_output.choices[0].message.content
+        output = result.raw_output.choices[0].message.content
+        score = get_score(output)
+        time = 0
+        while score is None:
+            multi_results=[]
+            multi_results = judger.evaluate(system_prompts=[system_prompt],user_prompts=[user_prompt])
+            output = multi_results[0].raw_output.choices[0].message.content
             score = get_score(output)
-            time = 0
-            while score is None:
-                multi_results=[]
-                multi_results = judger.evaluate(system_prompts=[system_prompt],user_prompts=[user_prompt])
-                output =multi_results[0].raw_output.choices[0].message.content
-                score = get_score(output)
-                time+=1
-                if time >=10:
-                    score = 0
-                    break
-            
-            eval_case.append(
-                 {
-                    'question_id' : response['question_id'],
-                    'system_prompt': system_prompt,
-                    'user_prompt' : user_prompt,
-                    'response': output,
-                    'score': score
-                 }
-             )       
+            time+=1
+            if time >=10:
+                score = 0
+                break
+        
+        eval_case.append(
+                {
+                'question_id' : response['question_id'],
+                'system_prompt': system_prompt,
+                'user_prompt' : user_prompt,
+                'response': output,
+                'score': score
+                }
+            )       
+        save_detail(response['question_1'] + '\n' + response['question_2'], '', response['ref_answer_1'] + '\n' + response['ref_answer_2'], response['answer_1'] + '\n' + response['answer_2'], score, result_file_path, output)
     
     return responses, eval_case
 
@@ -262,6 +253,7 @@ def main():
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data_round1 = dataloader.load_dataset()
     eval_module = MTBenchGeneratorVLLM(model_config, infer_configs)
+    logger.log_dir = eval_configs.output_dir
     output_data_round1 = eval_module.eval(test_data_round1, eval_configs)
     
     test_data_round2 = dataloader.load_dataset_round2(output_data_round1)
@@ -269,20 +261,19 @@ def main():
     file_name = f'{eval_module.model_id}'+f'_cot_{dict_configs.default.eval_cfgs.cot}'
     responses=[]
     evals=[]
+    
+    os.makedirs(logger.log_dir, exist_ok=True)
+    uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
+    os.makedirs(uuid_path, exist_ok=True)
+
     for task, _ in output_data_round2.items():
-        responses,evals = evaluator(output_data_round1[task],output_data_round2[task], dataloader, task, eval_configs)
+        file_path = f"{uuid_path}/{task}.json"
+        responses,evals = evaluator(output_data_round1[task],output_data_round2[task], dataloader, task, file_path, eval_configs)
     
     merged_list=[]
     for resp, eval_ in zip(responses, evals):
         merged_dict = {**resp, **eval_}
         merged_list.append(merged_dict)
-
-    os.makedirs(eval_configs.output_dir,exist_ok=True)
-    raw_result_file = os.path.join(eval_configs.output_dir,file_name + "_raw_result.jsonl")
-    with open(raw_result_file, 'w') as file:
-        for item in merged_list:
-            json.dump(item, file)
-            file.write('\n')
 
     category_list=[]
 
@@ -311,36 +302,18 @@ def main():
             )
         total_score+=score
         total_count+=1
-        
-    for cate in category_list:
-        cate['average_score'] = float(cate['total_score'])/(cate['count'])
-    for cate in category_list:
-        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        logger.log('info', f'Category: {cate["category"]}')
-        logger.log('info', f'Average Score: {cate["average_score"]}')
-        logger.log('info', f'Num of Question: {cate["count"]}')
-        logger.log('info', '===============================EXAMPLE===============================')
-        logger.log('info', f'Question_1: {cate["example"]["question_1"]}')
-        logger.log('info', f'Answer_1: {cate["example"]["answer_1"]}')
-        if not cate["example"]["ref_answer_1"]:
-            logger.log('info', f'Reference_1: {cate["example"]["ref_answer_1"]}')
-        logger.log('info', f'Question_2: {cate["example"]["question_2"]}')
-        logger.log('info', f'Answer_2: {cate["example"]["answer_2"]}')
-        if not cate["example"]["ref_answer_2"]:
-            logger.log('info', f'Reference_2: {cate["example"]["ref_answer_2"]}')
-        logger.log('info', f'Score: {cate["example"]["score"]}')
-        logger.log('info', f'Reasoning: {cate["example"]["response"]}')
     
     total_average = float(total_score)/float(total_count)
-    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    logger.log('info', f'Average Score: {total_average}Total question: {total_count}')
      
     eval_results = {
-            'total average': [float(total_average)],
-            'total question': [total_count]
+            'total_average': [float(total_average)],
+            'total_question': [total_count]
             }
-    logger.print_table(title="Evaluation Results", data=eval_results)
+    logger.print_table(title=f'MT-Bench/{task} Benchmark', data=eval_results)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"total_average: {eval_results['total_average'][0]},")
+    logger.log('info', f"total_question: {eval_results['total_question'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()
