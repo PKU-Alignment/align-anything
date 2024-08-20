@@ -49,9 +49,13 @@ def parse_eval_args() -> argparse.Namespace:
         help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME.",
         choices=[
             "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
-            "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA", "MME",
+            "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
+            "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
+            "MM-SafetyBench", "TextVQA", "VizWizVQA", "SPA-VL",
+            "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
+            "ScienceQA", "MMStar", "LongBench", "L-Eval",
             "AGIEval", "C-Eval", "GPQA", "HybridA"
-        ]
+        ],
     )
     parser.add_argument(
         "--task",
