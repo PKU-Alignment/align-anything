@@ -17,12 +17,13 @@
 import io
 import os
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 import random
 import requests
 import librosa
 import requests
+import torch
 from PIL import Image
 from torchvision.io import read_video
 import torchaudio
@@ -43,6 +44,34 @@ def load_image(image_path: str):
     except Exception as e:
         print(f"Error occured when dealing with {image_path}")
         raise Exception
+
+def insert_img_token(text, image):
+    # do the same for worse
+    if isinstance(image, str):
+        decoded_images = [load_image(image)]
+        num_images = 1
+    elif isinstance(image, list):
+        decoded_images = [load_image(img) for img in image]
+        num_images = len(image)
+    elif isinstance(image, Image.Image):
+        decoded_images = [image]
+        num_images = 1
+    else:
+        num_images = 0
+        decoded_images = None
+    
+    processed_text = f"{'<image>' * num_images}{text}"
+    return processed_text, decoded_images
+
+def safe_add(list1, list2):
+    if list1 is None and list2 is None:
+        return []
+    elif list1 is None:
+        return list2.copy()
+    elif list2 is None:
+        return list1.copy()
+    else:
+        return list1 + list2
 
 AUDIO_QUESTIONS = [
         "Summarize the audio's contents.<audio>",
@@ -251,6 +280,193 @@ class VQAv2:
             'prompt': prompt,
             'image': raw_sample['image'],
         }
+
+@register_template('ti2ti_preference')
+class TI2TI_PREFERENCE:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n{input}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
+    separator: str = '###'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        input_text = raw_sample['input_text']
+        input_img = raw_sample['input_image']
+        
+        better_text = raw_sample['better_text']
+        better_img = raw_sample['better_img']
+        
+        worse_text = raw_sample['worse_text']
+        worse_img = raw_sample['worse_img']
+        
+        input_text_processed, input_images = insert_img_token(input_text, input_img)
+        
+        better_text_processed, better_images = insert_img_token(better_text, better_img)
+        
+        worse_text_processed, worse_images = insert_img_token(worse_text, worse_img)
+        
+        better_text_full = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text_processed)}'
+            f"{self.assistant_prompt.format(output=better_text_processed)}"
+        )
+        
+        better_images_full = safe_add(input_images, better_images)
+
+        worse_text_full = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text_processed)}'
+            f"{self.assistant_prompt.format(output=worse_text_processed)}"
+        )
+        
+        worse_images_full = safe_add(input_images, worse_images)
+        
+        return {
+            'better_text': better_text_full,
+            'worse_text': worse_text_full,
+            'better_images': better_images_full,
+            'worse_images': worse_images_full,
+        }
+        
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        input_text = raw_sample['input_text']
+        input_img = raw_sample['input_image']
+        
+        input_text_processed, input_images = insert_img_token(input_text, input_img)
+        
+        return {
+            'text': input_text_processed,
+            'image': input_images,
+        }
+        
+        
+@register_template('AA_textfeedback')
+class AA_TF:
+    system_prompt: str = 'BEGINNING OF CONVERSATION: '
+    user_prompt: str = 'USER: Judge the following two response of the same question and give a preference: \n ##Question: {input} \n ##Response 1: {response_1} \n ##Response 2: {response_2}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
+    separator: str = '###'
+    
+    def format_sample(self, raw_sample: dict[str, Any], path: Optional) -> dict[str, Any]:
+        input_text = raw_sample['question']
+        input_img = raw_sample['image_url']
+        
+        
+        output_text_1 = raw_sample['response_1']
+        output_img_1 = raw_sample['output_image_url_1']
+        output_text_2 = raw_sample['response_2']
+        output_img_2 = raw_sample['output_image_url_2']
+        
+        feedback = raw_sample['feedback']
+        
+        input_text_processed, input_images = insert_img_token(input_text, input_img)
+        
+        output_text_1_processed, output_images_1 = insert_img_token(output_text_1, output_img_1)
+        output_text_2_processed, output_images_2 = insert_img_token(output_text_2, output_img_2)
+        
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text_processed, response_1=output_text_1_processed, response_2=output_text_2_processed)}'
+            f"{self.assistant_prompt.format(output=feedback)}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text_processed, response_1=output_text_1_processed, response_2=output_text_2_processed)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        
+        input_images = safe_add(safe_add(input_images, output_images_1), output_images_2)
+        
+        return {
+            'text': text,
+            'prompt': prompt,
+            'input_image': input_images,
+            'image': input_images
+        }
+        
+@register_template('spavl_ti2ti')
+class TI2TI_SPAVL:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n{input}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
+    separator: str = '###'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        input_text = raw_sample['question']
+        input_img = raw_sample['image']
+        
+        better_text = raw_sample['chosen']
+        better_img = None
+        
+        worse_text = raw_sample['rejected']
+        worse_img = None
+        
+        input_text_processed, input_images = insert_img_token(input_text, input_img)
+        
+        better_text_processed, better_images = insert_img_token(better_text, better_img)
+        
+        worse_text_processed, worse_images = insert_img_token(worse_text, worse_img)
+        
+        better_text_full = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text_processed)}'
+            f"{self.assistant_prompt.format(output=better_text_processed)}"
+        )
+        
+        better_images_full = safe_add(input_images, better_images)
+
+        worse_text_full = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text_processed)}'
+            f"{self.assistant_prompt.format(output=worse_text_processed)}"
+        )
+        
+        worse_images_full = safe_add(input_images, worse_images)
+        
+        return {
+            'better_text': better_text_full,
+            'worse_text': worse_text_full,
+            'better_images': better_images_full,
+            'worse_images': worse_images_full,
+        }
+    
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return torch.equal(raw_sample['better_input_ids'], raw_sample['worse_input_ids'])
+        
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        input_text = raw_sample['input_text']
+        input_img = raw_sample['input_image']
+        
+        input_text_processed, input_images = insert_img_token(input_text, input_img)
+        
+        return {
+            'text': input_text_processed,
+            'image': input_images,
+        }
+        
+@register_template('PICKAPIC_TI2TI')
+class Pickapic_TI2TI(TI2TI_PREFERENCE):
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['caption']
+        better_id = int(raw_sample['label_1'])
+        worse_id = int(raw_sample['label_0'])
+
+        raw_better_image = raw_sample[f'jpg_{better_id}']
+        raw_worse_image = raw_sample[f'jpg_{worse_id}']
+        better_image = Image.open(io.BytesIO(raw_better_image)).convert('RGB')
+        worse_image = Image.open(io.BytesIO(raw_worse_image)).convert('RGB')
+        raw_sample_upd = {
+            "input_text": prompt,
+            "input_image": [],
+            "better_text": "",
+            "better_img": better_image,
+            "worse_text": "",
+            "worse_img": worse_image
+        }
+        return super().format_example(raw_sample_upd)
 
 @register_template('GQA')
 class GQA:
@@ -703,6 +919,9 @@ class ANYTHING_TI2TI:
             'input_image': input_images,
             'image': input_images + output_images,
         }
+        
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return torch.equal(raw_sample['better_input_ids'], raw_sample['worse_input_ids'])
 
 @register_template('RLAIFV')
 class RLAIFV:

@@ -192,6 +192,26 @@ class SupervisedCollator:
                     
                     return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
                     # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
+                elif samples[0]['pixel_values'].dim() == 5:
+                    return_dict['image_sizes'] = [tensor.size(0) for sample in samples for tensor in sample['pixel_values'].to(current_device)]
+                    
+                    new_samples = []
+                    
+                    for sample in samples:
+                        
+                        sample['pixel_values'] = torch.cat(
+                            [tensor.to(current_device) for tensor in sample['pixel_values']], dim=0
+                        )
+                    
+                        new_samples.append(sample)
+                    
+                    _pixel_values_list = []
+                    for sample in new_samples:
+                        pixel_values = sample['pixel_values']  # size = (P, C, H, W)
+                        _pixel_values_list.append(pixel_values)
+                    
+                    return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
+                    # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
                     
                 else:
                     # original code for non-patches 
