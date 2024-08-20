@@ -13,6 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
+import copy
 from typing import Any, Callable
 from regex import D
 from typing_extensions import TypedDict  # Python 3.10+
@@ -155,6 +156,7 @@ class SupervisedTokenizedDataset(Dataset):
         tokenizer: transformers.PreTrainedTokenizer | None = None,
         processor: transformers.ProcessorMixin | transforms.Compose | None = None,
         size: int | None = None,
+        name: str | None = None,
         split: str | None = None,
         subset: str | None = None,
         data_files: str | None = None,

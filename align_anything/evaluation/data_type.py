@@ -16,9 +16,10 @@
 import torch
 from typing import List, Optional, Union, Dict
 from dataclasses import dataclass
-from vllm.outputs import CompletionOutput, RequestOutput
+from vllm.outputs import RequestOutput
 from vllm.sequence import PromptLogprobs
 from openai.types.chat.chat_completion import ChatCompletion
+import PIL
 
 @dataclass
 class RewardModelOutput:
@@ -39,17 +40,19 @@ class InferenceInput:
     
     image_url: Optional[str] = None
     pixel_values: torch.FloatTensor = None
-    
+    image_file: PIL.Image = None
 
     def __init__(self, 
                  text: str, 
-                 token_ids: torch.LongTensor, 
+                 token_ids: torch.LongTensor = None, 
                  image_url: Optional[str] = None, 
-                 pixel_values: torch.FloatTensor = None):
+                 pixel_values: torch.FloatTensor = None,
+                 image_file: PIL.Image = None):
         self.text = text
         self.token_ids = token_ids
         self.image_url = image_url
         self.pixel_values = pixel_values
+        self.image_file = image_file
 
     def __repr__(self):
         return (f"InferenceInput("
@@ -74,6 +77,7 @@ class InferenceOutput:
     engine: str
     prompt: str
     response: str
+    question_id: str
     prompt_token_ids: Optional[List[int]]
     prompt_logprobs: Optional[PromptLogprobs]
     response_token_ids: Optional[List[int]]
@@ -87,6 +91,7 @@ class InferenceOutput:
                  prompt: str, 
                  response: str,
                  engine: str = "hand",
+                 question_id: str = None,
                  prompt_token_ids: Optional[List[int]] = None,
                  prompt_logprobs: Optional[PromptLogprobs] = None,
                  response_token_ids: Optional[List[int]] = None,
@@ -95,6 +100,7 @@ class InferenceOutput:
                 ):
         self.engine = engine
         self.prompt = prompt
+        self.question_id = question_id
         self.prompt_token_ids = prompt_token_ids
         self.prompt_logprobs = prompt_logprobs
         self.response = response
@@ -103,10 +109,11 @@ class InferenceOutput:
         self.raw_output = raw_output
 
     @classmethod
-    def from_vllm_output(cls, vllm_output: RequestOutput, store_raw: bool = False):
+    def from_vllm_output(cls, vllm_output: RequestOutput, question_id: str = None, store_raw: bool = False):
         return cls(
             engine="vllm",
             prompt=vllm_output.prompt,
+            question_id=question_id,
             prompt_token_ids=vllm_output.prompt_token_ids,
             prompt_logprobs=vllm_output.prompt_logprobs,
             response=[output.text for output in vllm_output.outputs],
@@ -121,6 +128,7 @@ class InferenceOutput:
             engine="dict",
             prompt=data.get("prompt"),
             response=data.get("response"),
+            question_id=data.get("question_id"),
             prompt_token_ids=data.get("prompt_token_ids"),
             prompt_logprobs=data.get("prompt_logprobs"),
             response_token_ids=data.get("response_token_ids"),
@@ -133,6 +141,7 @@ class InferenceOutput:
         return cls(
             engine="deepspeed",
             prompt=deepspeed_output.get("prompt"),
+            question_id=deepspeed_output.get("question_id"),
             prompt_token_ids=deepspeed_output.get("prompt_token_ids"),
             prompt_logprobs=deepspeed_output.get("prompt_logprobs"),
             response=deepspeed_output.get("response"),
@@ -146,6 +155,7 @@ class InferenceOutput:
             f"InferenceOutput("
             f"engine={self.engine!r}, "
             f"prompt={self.prompt!r}, "
+            f"question_id={self.question_id!r}, "
             f"prompt_token_ids={self.prompt_token_ids!r}, "
             f"prompt_logprobs={self.prompt_logprobs!r}, "
             f"response={self.response!r}, "

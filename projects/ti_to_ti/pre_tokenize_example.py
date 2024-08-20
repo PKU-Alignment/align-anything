@@ -145,9 +145,6 @@ def preprocess(tokenizer, processor, formatted_sample: dict[str, Any]):
 
     return_dict['pixel_values'] = text_dict['pixel_values']
     
-    # print(f"Input id shape: {return_dict['input_ids'].shape}")
-    # print(f"Pixel value shape: {return_dict['pixel_values'].shape}")
-    
     return return_dict, len(prompt_dict['input_ids'])
 
 
@@ -171,7 +168,6 @@ def main():
     for piece in tqdm(input_data, desc="Processing data"):
         formatted_sample = format_sample(piece)
         preprocessed_sample, label_len = preprocess(tokenizer, processor, formatted_sample)
-        # torch.set_printoptions(threshold=torch.inf)
         
         updated_piece = model.pre_tokenization(
             input_ids=preprocessed_sample['input_ids'], 

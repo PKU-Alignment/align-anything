@@ -63,37 +63,9 @@ def load_image(image_path: str):
         print(f"Error occured when dealing with {image_path}")
         raise Exception
 
-def format_sample_llava(raw_sample: dict[str, Any]) -> dict[str, Any]:
-    system_prompt: str = 'BEGINNING OF CONVERSATION: '
-    user_prompt: str = 'USER: \n<image>{input}'
-    assistant_prompt: str = '\nASSISTANT:{output}'
-    split_token: str = 'ASSISTANT:'
-    separator: str = '###'
-    raw_conversations = raw_sample['conversations']
-    raw_prompt = raw_conversations[0]['value'].replace('<image>\n', '').replace('\n<image>', '')
-
-    text = (
-        f'{system_prompt}'
-        f'{user_prompt.format(input=raw_prompt)}'
-        f"{assistant_prompt.format(output=raw_conversations[1]['value'])}"
-    )
-
-    prompt = (
-        f'{system_prompt}'
-        f'{user_prompt.format(input=raw_prompt)}'
-        f"{assistant_prompt.format(output='')}"
-    )
-
-    image_file = raw_sample['image_url']
-    return {
-        'text': text,
-        'prompt': prompt,
-        'input_image': [load_image(image_file)],
-        'image': [load_image(image_file)],
-    }
-
-
 def format_sample_cham(raw_sample: dict[str, Any]) -> dict[str, Any]:
+    """ Formating input sample, and change the related keys according to the training dataset."""
+    """If you are using a different dataset, you need to customize this function or write a new function."""
     system_prompt: str = 'BEGINNING OF CONVERSATION: '
     user_prompt: str = 'USER: \n{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
@@ -171,10 +143,7 @@ def format_sample_cham(raw_sample: dict[str, Any]) -> dict[str, Any]:
         }
     
 def format_sample(raw_sample: dict[str, Any]) -> dict[str, Any]:
-    if raw_sample['source'] == "LLaVA-150K":
-        return format_sample_llava(raw_sample)
-    else:
-        return format_sample_cham(raw_sample)
+    return format_sample_cham(raw_sample)
 
 
 def preprocess(tokenizer, processor, formatted_sample: dict[str, Any]):
@@ -264,7 +233,7 @@ def process_data(gpu, input_data, model_path, output_path, cache_dir):
     print(f"GPU {gpu} processed {len(local_output_paths)} messages")
 
 def main():
-    input_path = "input.json"
+    input_path = "input.json" # change this to your input path
     output_path = "output.pt"
     
     model_path = "path_to_model"
@@ -276,12 +245,14 @@ def main():
     
     num_processes = 16
     num_gpus = 8
+    mp.set_start_method('spawn', force=True)
     output_paths = mp.Manager().list()  # For collecting results from multiple processes
     
+    # change this logic into load_dataset if needed
     with open(input_path, 'r') as f:
         input_data = json.load(f)
     
-    target = input_data
+    target = input_data # add to_list() if you acquire the dataset from load_dataset
     chunks = [target[i::num_processes] for i in range(num_processes)]
         
     processes = []
@@ -306,7 +277,6 @@ def main():
     
     torch.save(all_data, output_path)
         
-
 # do main
 if __name__ == "__main__":
     main()

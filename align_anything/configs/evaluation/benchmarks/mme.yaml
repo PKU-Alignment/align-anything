@@ -23,6 +23,8 @@ default:
   eval_cfgs:
     # Output directory name
     output_dir: null
+    # Unique identifier for cache folder
+    uuid: null
     # Num shot
     n_shot: 0
     # Evaluation method
@@ -38,14 +40,12 @@ default:
 
   # Model configurations
   model_cfgs:
-    model_id: llava-1.5-7b-hf
+    model_id: null
     # Pretrained model name or path
-    model_name_or_path: llava-hf/llava-1.5-7b-hf
+    model_name_or_path: null
     # Chat template
-    chat_template: LLAVA
+    chat_template: null
     # Whether to trust remote code
     trust_remote_code: True
     # The max token length
-    max_length: 1024
-    # The max new tokens for generation
-    max_new_tokens: 512
+    model_max_length: 2048
