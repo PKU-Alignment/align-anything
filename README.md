@@ -22,10 +22,6 @@
   <div>&nbsp;</div>
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> upstream/main
 [![PyPI](https://img.shields.io/pypi/v/align-anything?logo=pypi)](https://pypi.org/project/align-anything)
 [![License](https://img.shields.io/github/license/PKU-Alignment/align-anything?label=license)](#license)
 
