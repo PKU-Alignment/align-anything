@@ -148,17 +148,17 @@ def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[st
     return answer_logprobs
 
 def get_candidate_labels(prompt):
-    number_matches = re.findall(r'\([1234]\)', prompt)
-    number_index = all(option in number_matches for option in ['(1)', '(2)', '(3)', '(4)'])
+    number_matches = re.findall(r'\([12345]\)', prompt)
+    number_index = all(option in number_matches for option in ['(1)', '(2)', '(3)', '(4)', '(5)'])
     
     if number_index:
-        return ['1', '2', '3', '4']
-    return ['A', 'B', 'C', 'D']
+        return ['1', '2', '3', '4', '5']
+    return ['A', 'B', 'C', 'D', 'E']
     
 def judge_answer(correct_answer, chosen_answer, response):
     if correct_answer == chosen_answer:
         return True
-    if correct_answer in ['A', 'B', 'C', 'D']:
+    if correct_answer in ['A', 'B', 'C', 'D', 'E']:
         match = re.search(r'(?<![a-zA-Z])[A-Z](?![a-zA-Z])', response)
         if match:
             return correct_answer == match.group()
