@@ -123,6 +123,16 @@ class InferenceOutput:
         )
 
     @classmethod
+    def from_data(cls, data: Dict, store_raw: bool = False):
+        return cls(
+            engine="dict",
+            question_id=data.get("question_id"),
+            prompt=data.get("prompt"),
+            response=data.get("response"),
+            raw_output=data if store_raw else None
+        )
+    
+    @classmethod
     def from_dict(cls, data: Dict, store_raw: bool = False):
         return cls(
             engine="dict",
