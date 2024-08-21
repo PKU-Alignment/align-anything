@@ -183,12 +183,12 @@ def main():
         raw_output[task] = InferenceOutputs
     
     parser = argparse.ArgumentParser(description='Evaluation Configuration')
-    parser.add_argument('--cfg', type=str, required=True, help='Path to the config file.')
+    parser.add_argument('--cfg', type=str, required=False, help='Path to the config file.', default='agieval')
     parser.add_argument('--custom_cfgs', type=str, help='Any additional config settings.')
 
     args = parser.parse_args()
 
-    cfgs_dict = read_eval_cfgs(args.cfg)
+    cfgs_dict, _ = read_eval_cfgs("agieval","deepspeed")
     if args.custom_cfgs:
         custom_cfgs = json.loads(args.custom_cfgs)
         cfgs_dict = update_dict(cfgs_dict, custom_cfgs_to_dict(custom_cfgs))
