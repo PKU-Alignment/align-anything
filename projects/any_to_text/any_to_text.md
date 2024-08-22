@@ -107,7 +107,7 @@ deepspeed \
 
 ### Model Weights
 
-After our model is uploaded to Hugging Face, we will update this section.
+- [Image-Text Multimodal Language Model](https://huggingface.co/PKU-Alignment/llama3.1-8b-instruct-vision)
 
 ### Model Evaluation
 
@@ -116,9 +116,9 @@ After our model is uploaded to Hugging Face, we will update this section.
 After training with `liuhaotian/LLaVA-Instruct-150K`,`OpenGVLab/ShareGPT-4o`,
 `HuggingFaceM4/A-OKVQA`,`Multimodal-Fatima/OK-VQA_train`,`howard-hou/OCR-VQA`, `HuggingFaceM4/VQAv2`, some of the evaluation results for our image-text multimodal language model are as follows:
 
-|mme cognition score|mme percetion score|
-|:---:|:---:|
-|259.64|1191.75|
+|mme cognition score|mme percetion score|ok vqa|mmbench en|
+|:---:|:---:|:---:|:---:|
+|259.64|1191.75|36.7|48.88|
 
 #### Image-Audio-Text Multimodal Language Model:
 
