@@ -143,8 +143,7 @@ def evaluator(test_dataset, output_data, file_path):
             if test_item['id'] == output_item.question_id and output_item.question_id not in question_id:
                 question_id.add(output_item.question_id)
                 num_sum += 1
-                correct_answer = get_answer(test_item['answer'], test_item['options'])
-                true_or_false = judger(correct_answer, output_item.response[0])
+                correct_answer, true_or_false = judger(test_item['question_type'], test_item['answer'], test_item['options'], output_item.response[0])
                 if true_or_false:
                     num_match += 1
                 save_detail(test_item['question'], output_item.prompt, correct_answer, output_item.response[0], true_or_false, file_path)
@@ -152,13 +151,20 @@ def evaluator(test_dataset, output_data, file_path):
     return num_match, num_sum
 
 def get_answer(answer, options):
-    data_list = options.strip("[]").replace("'", "").split(", ")
+    data_list = eval(options)
+    if(len(data_list)==0):
+        return answer
     return data_list[ord(answer) - 65]
 
-def judger(correct_answer, response):
+def judger(question_type, answer, options, response):
+    if question_type == 'multiple-choice':
+        correct_answer = get_answer(answer, options)
+    else:
+        correct_answer = answer
+        
     if correct_answer in response:
-        return True
-    return False
+        return correct_answer, True
+    return correct_answer, False
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

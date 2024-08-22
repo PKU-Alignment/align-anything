@@ -63,9 +63,11 @@ ARGS="--output_dir $output --uuid $uuid --model_id $model_id --model_name_or_pat
 
 if [ "$backend" = "vllm" ]; then
   python vllm_eval.py $ARGS
-else
+elif [ "$backend" = "deepspeed" ]; then
   deepspeed --module ds_infer $ARGS
   python ds_evaluate.py $ARGS
+else
+  python eval.py $ARGS
 fi
 
 rm -rf .cache

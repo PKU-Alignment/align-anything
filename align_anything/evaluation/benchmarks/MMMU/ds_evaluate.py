@@ -45,7 +45,9 @@ def evaluator(test_dataset, output_data, file_path):
     return num_match, num_sum
     
 def get_answer(answer, options):
-    data_list = options.strip("[]").replace("'", "").split(", ")
+    data_list = eval(options)
+    if(len(data_list)==0):
+        return answer
     return data_list[ord(answer) - 65]
            
 def judger(correct_answer, response):
