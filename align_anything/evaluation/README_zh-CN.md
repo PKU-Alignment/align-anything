@@ -91,6 +91,34 @@ done
 - `MODEL_NAME_OR_PATHS`: 一个由两条路径组成的数组，这些路径指向模型的权重或它们发布在 Hugging Face 上的名称，例如 `("llava-hf/llava-1.5-7b-hf" "llava-hf/llava-1.5-13b-hf")`。
 - `CHAT_TEMPLATES`: 由两个聊天模板 id 组成的数组，对应于每个模型，例如 `("LLAVA" "LLAVA")`。这定义了每个模型生成的响应的格式或样式。
 
+模态无感的评估脚本位于 `./scripts` 目录下。需要用户输入的参数已留空，必须在启动评估过程之前填写。例如，对于 `evaluate_anything.sh`:
+
+~~~bash
+cd ../align_anything/evaluation
+
+MODALITY=""
+OUTPUT_DIR=""
+GENERATION_BACKEND=""
+MODEL_ID=""
+MODEL_NAME_OR_PATH=""
+CHAT_TEMPLATE=""
+
+python eval_anything.py \
+    --modality ${MODALITY} \
+    --output_dir ${OUTPUT_DIR} \
+    --generation_backend ${GENERATION_BACKEND} \
+    --model_id ${MODEL_ID} \
+    --model_name_or_path ${MODEL_NAME_OR_PATH} \
+    --chat_template ${CHAT_TEMPLATE}
+~~~
+
+- `MODALITY`: 输入——输出模态的指定，例如 `ti2t`。
+- `OUTPUT_DIR`: 用于保存评估结果和输出文件的目录。
+- `GENERATION_BACKEND`: 进行大语言模型推理的框架，包括 `vLLM` 和 `deepspeed`。
+- `MODEL_ID`: 模型的唯一标识符，用于跟踪和区分模型评估，如 `llava-1.5-7b-hf`。
+- `MODEL_NAME_OR_PATH`: 模型的本地路径或 Hugging Face 链接，如 `llava-hf/llava-1.5-7b-hf` 。
+- `CHAT_TEMPLATE`: 模型的聊天模板 id，如 `LLAVA`。更多细节可以参考 `./align_anything/configs/template.py`。
+
 此外，你还应修改 `./align_anything/configs/evaluation/benchmarks` 下与基准测试对应的配置文件，以适应特定的评估任务，并指定测试模型。
 
 例如，对于 `pope.yaml`：
