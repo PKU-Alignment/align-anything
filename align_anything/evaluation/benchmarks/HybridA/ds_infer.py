@@ -86,22 +86,24 @@ def is_dist_avail_and_initialized():
 
 def main():
     parser = argparse.ArgumentParser(description='Evaluation Configuration')
-    parser.add_argument('--cfg', type=str, required=True, help='Path to the config file.')
-    parser.add_argument('--custom_cfgs', type=str, help='Any additional config settings.')
-
-    args = parser.parse_args()
-
-    cfgs_dict = read_eval_cfgs(args.cfg)
-    if args.custom_cfgs:
-        custom_cfgs = json.loads(args.custom_cfgs)
-        cfgs_dict = update_dict(cfgs_dict, custom_cfgs_to_dict(custom_cfgs))
-
-    cfgs = dict_to_namedtuple(cfgs_dict)
-    dataloader = HybridQADataLoader(cfgs)
-    inferencer = HybridQAGeneratorDS(cfgs)
-
+    _, unparsed_args = parser.parse_known_args()
+    keys = [k[2:] for k in unparsed_args[1::2]]
+    values = list(unparsed_args[2::2])
+    unparsed_args = dict(zip(keys, values))
+    dict_configs, infer_configs = read_eval_cfgs('hybrida', 'deepspeed')
+    for k, v in unparsed_args.items():
+        if v == '' or v is None:
+            continue
+        dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
+        infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
+    
+    dict_configs = dict_to_namedtuple(dict_configs)
+    model_config = dict_configs.default.model_cfgs
+    eval_configs = dict_configs.default.eval_cfgs
+    dataloader = HybridQADataLoader(dict_configs)
+    inferencer = HybridQAGeneratorDS(model_config, infer_configs)
     data = dataloader.load_data()
-    inferencer.eval(data, cfgs.eval_cfgs)
+    inferencer.eval(data, eval_configs)
 
 if __name__ == '__main__':
     main()

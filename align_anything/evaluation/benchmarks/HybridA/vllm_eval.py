@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 from align_anything.evaluation.inference.vllm_inference import BaseInferencer_vllm
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
@@ -125,25 +126,62 @@ def judge_answer(correct_answer: str, response: str):
 
 def main():
     parser = argparse.ArgumentParser(description='Evaluation Configuration')
-    parser.add_argument('--cfg', type=str, required=True, help='Path to the config file.')
-    parser.add_argument('--custom_cfgs', type=str, help='Any additional config settings.')
+    _, unparsed_args = parser.parse_known_args()
+    keys = [k[2:] for k in unparsed_args[0::2]]
+    values = list(unparsed_args[1::2])
+    unparsed_args = dict(zip(keys, values))
+    dict_configs, infer_configs = read_eval_cfgs('hybrida', 'vLLM')
+    logger = EvalLogger('Evaluation')
 
-    args = parser.parse_args()
+    try:
+        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        logger.log('error', "Config file is not exist or incomplete.")
+        exit()
 
-    cfgs_dict = read_eval_cfgs(args.cfg)
-    if args.custom_cfgs:
-        custom_cfgs = json.loads(args.custom_cfgs)
-        cfgs_dict = update_dict(cfgs_dict, custom_cfgs_to_dict(custom_cfgs))
+    for k, v in unparsed_args.items():
+        if v == '' or v is None:
+            continue
+        dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
+        infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
+    
+    dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
+    model_config = dict_configs.default.model_cfgs
+    eval_configs = dict_configs.default.eval_cfgs
+    logger.log_dir = eval_configs.output_dir
+    dataloader = HybridQADataLoader(dict_configs)
+    test_data = dataloader.load_dataset()
+    eval_module = HybridQAGeneratorVLLM(model_config, infer_configs)
+    raw_outputs = eval_module.eval(test_data, eval_configs)
 
-    cfgs = dict_to_namedtuple(cfgs_dict)
-    dataloader = HybridQADataLoader(cfgs)
-    inferencer = HybridQAGeneratorVLLM(cfgs)
+    os.makedirs(logger.log_dir, exist_ok=True)
+    uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
+    os.makedirs(uuid_path, exist_ok=True)
 
-    data = dataloader.load_data()
-    raw_output = inferencer.eval(data, cfgs.eval_cfgs)
-    cnt_match, cnt_sum, true_cases, false_cases = evaluator(raw_output, dataloader, cfgs.data_cfgs.task)
-    log = EvalLogger(cfgs.eval_cfgs.output_dir, cfgs.model_cfgs.model_id)
-    log.log_summary(cnt_match, cnt_sum, true_cases, false_cases)
+    for task, _ in raw_outputs.items():
+
+        file_path = f"{uuid_path}/{task}.json"
+        cnt_match, cnt_sum = evaluator(raw_outputs[task], dataloader, task, file_path)
+
+        eval_results = {
+            'model_id': [dict_configs.default.model_cfgs.model_id],
+            'num_fewshot': [eval_configs.n_shot],
+            'chain_of_thought': [eval_configs.cot],
+            'num_match': [cnt_match],
+            'num_sum': [cnt_sum],
+            'accuracy': [cnt_match / cnt_sum]
+        }
+        logger.print_table(title="Evaluation Results", data = eval_results)
+        logger.print_table(title=f'HybridA/{task} Benchmark', data=eval_results)
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.log('info', f"task: {task}")
+        logger.log('info', f"model_id: {eval_results['model_id'][0]},")
+        logger.log('info', f"num_fewshot: {eval_results['num_fewshot'][0]},")
+        logger.log('info', f"chain_of_thought: {eval_results['chain_of_thought'][0]},")
+        logger.log('info', f"num_match: {eval_results['num_match'][0]},")
+        logger.log('info', f"num_sum: {eval_results['num_sum'][0]},")
+        logger.log('info', f"accuracy: {eval_results['accuracy'][0]},")
+        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()

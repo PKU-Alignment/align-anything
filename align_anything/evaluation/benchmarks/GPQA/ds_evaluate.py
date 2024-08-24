@@ -163,7 +163,7 @@ def main():
     dict_configs = dict_to_namedtuple(dict_configs)
     eval_configs = dict_configs.default.eval_cfgs
     data_configs = dict_configs.default.data_cfgs
-    data_loader = GPQADataLoader(eval_configs, data_configs)
+    data_loader = GPQADataLoader(dict_configs)
     correct, total, true_cases, false_cases = evaluator(raw_outputs[data_configs.task], data_loader, data_configs.task)
 
     logger.log("eval", {

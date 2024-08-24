@@ -124,8 +124,8 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     data_configs = dict_configs.default.data_cfgs
-    data_loader = GPQADataLoader(eval_configs, data_configs)
-    model = GPQAGeneratorDS(model_config)
+    data_loader = GPQADataLoader(dict_configs)
+    model = GPQAGeneratorDS(model_config,infer_configs)
     model.eval(data_loader.build_prompt(data_loader.data), eval_configs)
 
 
