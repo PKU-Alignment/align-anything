@@ -115,8 +115,38 @@ def requestoutput_to_dict(data, mode='brief'):
         return info
 
 def vllm_logprob_to_dict(data):
-    # print([{v.decoded_token: v.logprob} for k, v in data.items()])
     return [{v.decoded_token: v.logprob} for k, v in data.items()]
+
+def set_nested_value(dictionary, keys, value):
+    for key in keys[:-1]:
+        dictionary = dictionary.setdefault(key, {})
+    dictionary[keys[-1]] = value
+
+def override_nested_value(config, keys, value):
+    for key, subconfig in config.items():
+        if isinstance(subconfig, dict):
+            override_nested_value(subconfig, keys, value)
+    if keys[0] in config:
+        set_nested_value(config, keys, value)
+
+def override_with_env_variables(config, env_prefix):
+    for key, value in os.environ.items():
+        if key.startswith(env_prefix):
+            keys = key[len(env_prefix):].lower().split('__')
+            override_nested_value(config, keys, value)
+
+def yaml_load(yaml_path):
+    
+    # Use the PREFIX ENV PREFIX to identify the relevant environment variables
+    env_prefix = 'ENV_PREFIX__'
+    with open(yaml_path, encoding='utf-8') as f:
+        try:
+            configs = yaml.safe_load(f)
+            override_with_env_variables(configs, env_prefix)
+            print(configs)
+            return configs
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f'{yaml_path} error: {exc}') from exc
 
 def read_cfgs(mode: str, task: str) -> list[dict[str, Any], dict[str, Any]]:
     current_file_path = os.path.abspath(__file__)
@@ -307,6 +337,7 @@ def custom_cfgs_to_dict(key_list: str, value: Any) -> dict[str, Any]:
 
 def seed_everything(seed: int) -> None:
     """Set global random seed for reproducibility."""
+    seed = int(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
     np.random.seed(seed)

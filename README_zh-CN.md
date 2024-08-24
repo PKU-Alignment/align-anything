@@ -21,6 +21,7 @@
   </div>
   <div>&nbsp;</div>
 
+
 [![PyPI](https://img.shields.io/pypi/v/align-anything?logo=pypi)](https://pypi.org/project/align-anything)
 [![License](https://img.shields.io/github/license/PKU-Alignment/align-anything?label=license)](#license)
 <!-- TODO -->
@@ -35,6 +36,7 @@
 </div>
 
 <div align="center">
+
 
 [English](README.md) | 简体中文 ｜ [Our 100K Datasets](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)
 
@@ -57,21 +59,22 @@ Align-Anything 是一个基于 DeepSpeed 或 NeMo （目前正在开发中）的
 - [x] 支持包括 `LoRA`、`QLoRA` 在内的多种训练参数。
 - [ ] 支持用于训练的 `NeMo` 框架，以及用于评估的 `vllm` 框架。
 
-| 训练算法 | 文本 :arrow_right: 文本 | 文本+图像 :arrow_right: 文本 | 文本 :arrow_right: 图像 | 文本 :arrow_right: 视频 | 文本 :arrow_right: 语音 | 文本+图像 :arrow_right: 文本+图像 |
-|---|---|---|---|---|---|---|
-| SFT Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| RM Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :white_check_mark: |
-| DPO Trainer | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| PPO Trainer | :white_check_mark: | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :white_check_mark: |
-| KTO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
-| ORPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
-| SimPO Trainer | :white_check_mark: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: | :heavy_minus_sign: |
+| 训练算法      | 文本 :arrow_right: 文本 | 文本+图像 :arrow_right: 文本 | 文本 :arrow_right: 图像 | 文本 :arrow_right: 视频 | 文本 :arrow_right: 语音 | 文本+图像 :arrow_right: 文本+图像 |
+| ------------- | ----------------------- | ---------------------------- | ----------------------- | ----------------------- | ----------------------- | --------------------------------- |
+| SFT Trainer   | :white_check_mark:      | :white_check_mark:           | :white_check_mark:      | :white_check_mark:      | :white_check_mark:      | :white_check_mark:                |
+| RM Trainer    | :white_check_mark:      | :white_check_mark:           | :heavy_minus_sign:      | :heavy_minus_sign:      | :heavy_minus_sign:      | :white_check_mark:                |
+| DPO Trainer   | :white_check_mark:      | :white_check_mark:           | :white_check_mark:      | :white_check_mark:      | :white_check_mark:      | :white_check_mark:                |
+| PPO Trainer   | :white_check_mark:      | :white_check_mark:           | :heavy_minus_sign:      | :heavy_minus_sign:      | :heavy_minus_sign:      | :white_check_mark:                |
+| KTO Trainer   | :white_check_mark:      | :heavy_minus_sign:           | :heavy_minus_sign:      | :heavy_minus_sign:      | :heavy_minus_sign:      | :heavy_minus_sign:                |
+| ORPO Trainer  | :white_check_mark:      | :heavy_minus_sign:           | :heavy_minus_sign:      | :heavy_minus_sign:      | :heavy_minus_sign:      | :heavy_minus_sign:                |
+| SimPO Trainer | :white_check_mark:      | :heavy_minus_sign:           | :heavy_minus_sign:      | :heavy_minus_sign:      | :heavy_minus_sign:      | :heavy_minus_sign:                |
 
 - :white_check_mark: : 目前支持的功能。
 - :heavy_minus_sign: : 正在内部测试的功能，将尽快被更新。
 
 # 新闻
 
+- 2024-08-24 🔥 我们已经在自己的 `eval-anything500` 基准上实现了模态无感的评估，该基准目前支持 `t2t` 和 `ti2t`。
 - 2024-08-17 🔥 我们支持了text image混合输入输出模态的DPO和PPO trainer！
 - 2024-08-15 🔥 我们在评估模块中支持了一个新功能：模型 PK，它可以比较两个模型在不同基准测试中的性能。
 - 2024-08-06 🔥 我们重构了评估框架，以更好地支持多模态基准。在此基础上，我们已经实现了text-to-text和text+image-to-text模型的基准测试，目前正在适配更多的基准测试！
@@ -94,6 +97,7 @@ pip install -e .
 ```
 
 ### Wandb 日志
+
 我们支持 `wandb` 日志记录。默认情况下，设置为离线。如果您需要在线查看 wandb 日志，可以在开始训练前指定 `WANDB_API_KEY` 的环境变量：
 
 ```bash
@@ -105,6 +109,7 @@ export WANDB_API_KEY="..."  # your W&B API key here
 <details>
 <summary>如何从 Docker 构建？</summary>
 1. 构建 docker 镜像
+
 
 ```bash
 FROM nvcr.io/nvidia/pytorch:24.02-py3
@@ -172,6 +177,7 @@ deepspeed \
 ```
 
 <!-- TODO -->
+
 - `ACTOR_MODEL_NAME`: 要进行微调的模型，通常是已经经过初始监督微调的模型，如 `PKU-Alignment/alpaca-7b-reproduced`。
 - `REWARD_MODEL_NAME`: 带有得分输出层的模型。运行 `rm.sh` 来训练奖励模型并获取其路径。
 - `CRITIC_MODEL_NAME`: 用于 RLHF 值函数估计的模型，通常设置为与 `REWARD_MODEL_NAME` 相同。
@@ -182,6 +188,7 @@ deepspeed \
 - `OUTPUT_DIR`: 您希望保存训练模型、日志等的目录。
 
 ### 一些训练问题
+
 1. 如果在训练过程中遇到错误：
 
 为了包含 CUDA 安装路径并设置环境变量，请修改脚本如下：
@@ -189,7 +196,9 @@ deepspeed \
 ```bash
 export CUDA_HOME="/usr/local/cuda"
 ```
+
 或者
+
 ```bash
 export CUDA_HOME=$CONDA_PREFIX
 ```
@@ -291,6 +300,7 @@ class PKUSafeRLHF(Template):
 
         return {'text': formatted_prompt}
 ```
+
 # 评估
 
 ## 快速开始
@@ -368,6 +378,34 @@ done
 - `MODEL_NAME_OR_PATHS`: 一个由两条路径组成的数组，这些路径指向模型的权重或它们发布在 Hugging Face 上的名称，例如 `("llava-hf/llava-1.5-7b-hf" "llava-hf/llava-1.5-13b-hf")`。
 - `CHAT_TEMPLATES`: 由两个聊天模板 id 组成的数组，对应于每个模型，例如 `("LLAVA" "LLAVA")`。这定义了每个模型生成的响应的格式或样式。
 
+模态无感的评估脚本位于 `./scripts` 目录下。需要用户输入的参数已留空，必须在启动评估过程之前填写。例如，对于 `evaluate_anything.sh`:
+
+~~~bash
+cd ../align_anything/evaluation
+
+MODALITY=""
+OUTPUT_DIR=""
+GENERATION_BACKEND=""
+MODEL_ID=""
+MODEL_NAME_OR_PATH=""
+CHAT_TEMPLATE=""
+
+python eval_anything.py \
+    --modality ${MODALITY} \
+    --output_dir ${OUTPUT_DIR} \
+    --generation_backend ${GENERATION_BACKEND} \
+    --model_id ${MODEL_ID} \
+    --model_name_or_path ${MODEL_NAME_OR_PATH} \
+    --chat_template ${CHAT_TEMPLATE}
+~~~
+
+- `MODALITY`: 输入——输出模态的指定，例如 `ti2t`。
+- `OUTPUT_DIR`: 用于保存评估结果和输出文件的目录。
+- `GENERATION_BACKEND`: 进行大语言模型推理的框架，包括 `vLLM` 和 `deepspeed`。
+- `MODEL_ID`: 模型的唯一标识符，用于跟踪和区分模型评估，如 `llava-1.5-7b-hf`。
+- `MODEL_NAME_OR_PATH`: 模型的本地路径或 Hugging Face 链接，如 `llava-hf/llava-1.5-7b-hf` 。
+- `CHAT_TEMPLATE`: 模型的聊天模板 id，如 `LLAVA`。更多细节可以参考 `./align_anything/configs/template.py`。
+
 此外，你还应修改 `./align_anything/configs/evaluation/benchmarks` 下与基准测试对应的配置文件，以适应特定的评估任务，并指定测试模型。
 
 如果想修改更多推理参数，请查看 `./align_anything/configs/evaluation/vllm` 和 `./align_anything/configs/evaluation/deepspeed`，具体取决于你选择的推理框架。
@@ -377,17 +415,21 @@ done
 # 推理
 
 ## Gradio 界面
+
 要在本地启动一个 Gradio 演示，请按照以下步骤依次运行命令。如果你打算启动多个模型wo以比较不同的检查点，你只需要启动控制器和 Web 服务器一次。
 
 ### 启动控制器
+
 ```Shell
 python -m align_anything.serve.controller --host 0.0.0.0 --port 10000
 ```
 
 ### 启动 Gradio Web 服务器
+
 ```Shell
 python -m align_anything.serve.gradio_web_server --controller http://localhost:10000 --model-list-mode reload
 ```
+
 你现在已经启动了 Gradio Web 界面。接下来，你可以使用屏幕上打印出的 URL 打开 Web 界面。你可能会注意到目前还没有列出任何模型，不用担心，因为我们还没有启动任何模型worker。一旦启动了模型worker，模型列表将会自动更新。
 
 ### 启动模型worker
@@ -397,6 +439,7 @@ python -m align_anything.serve.gradio_web_server --controller http://localhost:1
 ```Shell
 python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path align_anything/models/llava/llava-1.5-7b-hf --template "LLAVA"
 ```
+
 等待进程完成模型加载，直到你看到 "Uvicorn running on ..." 的消息。然后刷新你的 Gradio Web 界面，你会在模型列表中看到刚刚启动的模型。
 
 你可以根据需要启动尽可能多的worker，并在同一 Gradio 界面内比较不同的模型检查点。确保 `--controller` 保持相同，但是更改 `--port` 和 `--worker` 为一个唯一的端口号，针对每一个worker。
@@ -429,10 +472,13 @@ python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_m
 确保 AI 系统的行为与人类意图和价值观一致至关重要，对齐技术提供了一个有效的解决方案。对于大语言模型（LLM），如RLHF和DPO等方法，已显著提高了性能和安全性。随着AI系统能力增强，模型将可以处理任何模态的输入和输出，如何有效地对齐多模态模型仍是当前的研究挑战。`Align-Anything` 框架通过精心设计的接口和高级抽象，整合了跨模态的对齐调整，为研究提供了一个全面的测试平台。
 
 ### 报告问题
+
 如果在使用 Align-Anything 的过程中有任何问题，可以在 [GitHub 问题页面](https://github.com/PKU-Alignment/align-anything/issues/new/choose)上提出您的问题，我们将在 2-3 个工作日内回复您。
 
 ## 引用
+
 如果您在研究中使用了 Align-Anything，请引用我们的工作：
+
 ```
 @misc{align_anything,
   author = {PKU-Alignment Team},
