@@ -146,6 +146,41 @@ class Dialogue(Template):
         }
         return return_dict
     
+@register_template('LanguageFeedback')
+class LanguageFeedback(Template):
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n<image>{input}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    feed_back_prompt: str = '\nCRITIQUE:{output}'
+    split_token: str = 'CRITIQUE:'
+    separator: str = '###'
+
+    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+        prompt = raw_sample['question']
+        response = raw_sample['']
+        raw_conversations = raw_sample['conversations']
+        raw_prompt = raw_conversations[0]['value'].replace('<image>\n', '').replace('\n<image>', '')
+
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=raw_prompt)}'
+            f"{self.assistant_prompt.format(output=raw_conversations[1]['value'])}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=raw_prompt)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+
+        base_coco_url = 'http://images.cocodataset.org/train2017/'
+        image_file = base_coco_url + raw_sample['image']
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': Image.open(requests.get(image_file, stream=True).raw),
+        }
+    
 @register_template('Aligner')
 class Aligner(Template):
     system_prompt: str = ''
@@ -973,9 +1008,9 @@ class RLAIFV:
 
 @register_template('SPA_VL')
 class SPA_VL:
-    system_prompt: str = ''
-    user_prompt: str = 'USER: \n<image>{input}'
-    assistant_prompt: str = '\nASSISTANT:{output}'
+    system_prompt: str = "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. "
+    user_prompt: str = 'USER: \n<image> {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
     split_token: str = 'ASSISTANT:'
 
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
@@ -984,26 +1019,28 @@ class SPA_VL:
         prompt = raw_sample['question']
         image = raw_sample['image']
 
-        formatted_better_output = (
+        
+        formatted_prompt = (
             f'{self.system_prompt}'
             f'{self.user_prompt.format(input=prompt)}'
+        )
+        formatted_better_output = (
             f'{self.assistant_prompt.format(output=better_response)}'
         )
         formatted_worse_output = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
             f'{self.assistant_prompt.format(output=worse_response)}'
         )
         image = image.convert('RGBA')
 
         return {
+            'prompt': formatted_prompt,
             'better_text': formatted_better_output,
             'worse_text': formatted_worse_output,
             'image': image,
         }
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
-        return False
+        return raw_sample['chosen'] == raw_sample['rejected']
 
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['question']
@@ -1021,6 +1058,83 @@ class SPA_VL:
             'image': image,
         }
 
+
+@register_template('SPA_VL_AAA')
+class SPA_VL_AAA:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n<image>{input}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        safer_id = raw_sample['s_response']
+        unsafe_id = '2' if safer_id == '1' else '1'
+        better_response = raw_sample[f'response_{safer_id}'].replace('<image>', '')
+        worse_response = raw_sample[f'response_{unsafe_id}'].replace('<image>', '')
+        prompt = raw_sample['question'].replace('<image>', '')
+        image = Image.open(raw_sample['image']).convert('RGB')
+
+        formatted_better_output = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f'{self.assistant_prompt.format(output=better_response)}'
+        )
+        formatted_worse_output = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f'{self.assistant_prompt.format(output=worse_response)}'
+        )
+
+        return {
+            'better_text': formatted_better_output,
+            'worse_text': formatted_worse_output,
+            'image': image,
+        }
+
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        safer_id = raw_sample['s_response']
+        unsafe_id = '2' if safer_id == '1' else '1'
+        better_response = raw_sample[f'response_{safer_id}']
+        worse_response = raw_sample[f'response_{unsafe_id}']
+        return better_response == worse_response
+
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['question']
+        image = Image.open(io.BytesIO(raw_sample['image'])).convert('RGB')
+        formatted_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f'{self.assistant_prompt.format(output="")}'
+        )
+
+        return {
+            'text': formatted_prompt,
+            'image': image,
+        }
+
+
+@register_template('PickapicAAA')
+class PickapicAAA:
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['prompt']
+        better_id = int(raw_sample['overall_image'])
+        worse_id = 2 if better_id == 1 else 2
+
+        raw_better_image = raw_sample[f'image_{better_id}']
+        raw_worse_image = raw_sample[f'image_{worse_id}']
+
+        better_image = Image.open(raw_better_image).convert('RGB')
+        worse_image = Image.open(raw_worse_image).convert('RGB')
+
+        return {
+            'prompt': prompt,
+            'better_image': better_image,
+            'worse_image': worse_image,
+        }
+
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return False
 
 @register_template('Pickapic')
 class Pickapic:
