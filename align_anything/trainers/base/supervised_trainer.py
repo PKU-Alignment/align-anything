@@ -218,7 +218,7 @@ class SupervisedTrainerBase:
         num_update_steps_per_epoch = (
             len(self.train_dataloader) + self.cfgs.train_cfgs.gradient_accumulation_steps - 1
         ) // self.cfgs.train_cfgs.gradient_accumulation_steps
-        total_training_steps = self.cfgs.train_cfgs.epochs * num_update_steps_per_epoch
+        total_training_steps = self.cfgs.train_cfgs.epochs * num_update_steps_per_epoch * self.cfgs.train_cfgs.gradient_accumulation_steps
         self.params_to_optimize = list(filter(lambda p: p.requires_grad, self.model.parameters()))
         self.optimizer = torch.optim.AdamW(
             self.params_to_optimize,
@@ -236,11 +236,19 @@ class SupervisedTrainerBase:
         )
         if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_enabled:
             self.model.enable_gradient_checkpointing()
-        self.model, self.optimizer, self.train_dataloader, self.lr_scheduler = (
-            self.accelerator.prepare(
-                self.model, self.optimizer, self.train_dataloader, self.lr_scheduler
+        if hasattr(self, 'ref_model') and self.ref_model is not None:
+            self.model, self.ref_model, self.optimizer, self.train_dataloader, self.lr_scheduler = (
+                self.accelerator.prepare(
+                    self.model, self.ref_model, self.optimizer, self.train_dataloader, self.lr_scheduler
+                )
             )
-        )
+            self.ref_model.eval()
+        else:
+            self.model, self.optimizer, self.train_dataloader, self.lr_scheduler = (
+                self.accelerator.prepare(
+                    self.model, self.optimizer, self.train_dataloader, self.lr_scheduler
+                )
+            )
 
     def train(self) -> None:
         """Train the model."""
