@@ -78,22 +78,14 @@ class PreferenceDataset(Dataset):
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        if 'ti2t' in path:
-            json_list = []
-            with open('/home/yangyaodong/projects/jiayi/table3/data/0812_ti2t_preference_dataset/spa-vl_filted_total.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                json_list.extend(data)
-    
-            self.raw_data = json_list
-        else:
-            self.raw_data = load_dataset(
-                path,
-                split=split,
-                data_files=data_files,
-                subset=subset,
-                *optional_args,
-                trust_remote_code=True,
-            )
+        self.raw_data = load_dataset(
+            path,
+            split=split,
+            data_files=data_files,
+            subset=subset,
+            *optional_args,
+            trust_remote_code=True,
+        )
         self.data = self.pre_tokenize()
         if size:
             size = min(size, len(self.data))
