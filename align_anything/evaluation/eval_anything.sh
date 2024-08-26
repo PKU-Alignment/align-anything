@@ -17,8 +17,8 @@
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --benchmark)
-      benchmark="$2"
+    --modality)
+      modality="$2"
       shift 2
       ;;
     --output_dir)
@@ -56,10 +56,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-TARGET_DIR="${SCRIPT_DIR}/benchmarks/${benchmark}"
+TARGET_DIR="${SCRIPT_DIR}/benchmarks/Eval-Anything/${modality}"
 cd "$TARGET_DIR" || { echo "Failed to change directory to $TARGET_DIR"; exit 1; }
 
-ARGS="--output_dir $output --uuid $uuid --model_id $model_id --model_name_or_path $model_name_or_path --chat_template $chat_template"
+ARGS="--modality $modality --output_dir $output --uuid $uuid --model_id $model_id --model_name_or_path $model_name_or_path --chat_template $chat_template"
 
 if [ "$backend" = "vllm" ]; then
   python vllm_eval.py $ARGS

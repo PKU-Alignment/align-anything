@@ -36,18 +36,11 @@ def parse_eval_args() -> argparse.Namespace:
     parser.add_argument("--config", default=None, help="Path to a yaml file specifying all eval arguments, will ignore cli arguments if specified")
     parser.add_argument("--chat_template", default="", help="Chat template id of your model, details can be refered in `align-anything/align_anything/configs/template.py`.")
     parser.add_argument(
-        "--benchmark",
-        "-b",
+        "--modality",
         default=None,
-        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, LongBench, L-Eval, AGIEval, C-Eval, GPQA, HybridA, Eval-Anything",
+        help="The modality you want to test on. Choices: t2t, ti2t",
         choices=[
-            "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
-            "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
-            "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
-            "MM-SafetyBench", "TextVQA", "VizWizVQA", "SPA-VL",
-            "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
-            "ScienceQA", "MMStar", "LongBench", "L-Eval",
-            "AGIEval", "C-Eval", "GPQA", "HybridA", "Eval-Anything"
+            "t2t", "ti2t"
         ],
     )
     parser.add_argument(
@@ -107,30 +100,6 @@ def parse_eval_args() -> argparse.Namespace:
     args = parser.parse_args()
     return args
 
-def save_result(model_id, result_dir):
-    results = []
-    for filename in os.listdir(result_dir):
-        if filename.endswith('.json'):
-            file_path = os.path.join(result_dir, filename)
-            with open(file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
-                for item in data:
-                    score = item.get('score')
-                    if isinstance(score, bool):
-                        result = 1 if score else 0
-                    elif isinstance(score, int):
-                        result = score
-                    else:
-                        result = 0
-                    results.append(result)
-    result_dict = {model_id: results}
-    output_file_path = os.path.join(os.getcwd(), f'{model_id}_result.json')
-    
-    with open(output_file_path, 'w', encoding='utf-8') as json_file:
-        json.dump(result_dict, json_file, indent=4, ensure_ascii=False)
-    
-    print(f'Results saved to {output_file_path}')
-
 def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     if not args:
         args = parse_eval_args()
@@ -139,13 +108,13 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     if len(sys.argv) == 1:
         print("┌─────────────────────────────────────────────────────────────────────────────────┐")
         print("│ Please provide arguments to evaluate the model. e.g.                            │")
-        print("│ `align-anything-eval --model_path llava-hf/llava-1.5-7b-hf --benchmark MME`     │")
+        print("│ `align-anything-eval --model_path llava-hf/llava-1.5-7b-hf --modality ti2t`     │")
         print("│ More default configs can be refered in `align-anything/align_anything/configs`  │")
         print("└─────────────────────────────────────────────────────────────────────────────────┘")
         sys.exit(1)
 
-    folder_path = './benchmarks/'
-    subfolder = args.benchmark
+    folder_path = './benchmarks/Eval-Anything/'
+    subfolder = args.modality
     args.generation_backend = args.generation_backend.lower()
     selected_subfolder_path = os.path.join(folder_path, subfolder)
 
@@ -188,13 +157,9 @@ def run_benchmark(file_path, args):
                 args_list.append(f"--{key}")
                 args_list.append(str(value))
         
-        command = f"bash eval.sh {' '.join(args_list)}"
+        command = f"bash eval_anything.sh {' '.join(args_list)}"
         os.system(command)
         os.chdir(file_path)
-
-        result_dir = os.path.join(vars(args)['output_dir'], uuid)
-        if os.path.exists(result_dir):
-            save_result(vars(args)['model_id'], result_dir)
 
         print(f"{file_path} executed successfully with arguments {args}.")
     except subprocess.CalledProcessError as e:

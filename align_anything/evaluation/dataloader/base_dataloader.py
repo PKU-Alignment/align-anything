@@ -21,7 +21,7 @@ from typing import Union, List, Dict, Any, Tuple
 from datasets import load_dataset, DatasetDict
 from align_anything.evaluation.data_type import InferenceInput
 
-from transformers import AutoProcessor, AutoTokenizer
+from transformers import AutoProcessor, AutoTokenizer, AutoImageProcessor
 
 ACTION_GENERATION = 'generation'
 
@@ -44,13 +44,18 @@ class BaseDataLoader:
         self.init_tokenizer()
 
     def init_tokenizer(self):
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, trust_remote_code=True)
 
         try:
-            self.processor = AutoProcessor.from_pretrained(self.model_name_or_path)
+            self.processor = AutoProcessor.from_pretrained(self.model_name_or_path, trust_remote_code=True)
             setattr(self.processor, 'tokenizer', self.tokenizer)
         except:
             self.processor = None
+            
+        try:
+            self.image_processor = AutoImageProcessor.from_pretrained(self.model_name_or_path, trust_remote_code=True)
+        except:
+            self.image_processor = None
 
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}

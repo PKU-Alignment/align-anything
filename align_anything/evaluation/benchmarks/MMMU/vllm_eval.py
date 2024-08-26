@@ -143,8 +143,7 @@ def evaluator(test_dataset, output_data, file_path):
             if test_item['id'] == output_item.question_id and output_item.question_id not in question_id:
                 question_id.add(output_item.question_id)
                 num_sum += 1
-                correct_answer = get_answer(test_item['answer'], test_item['options'])
-                true_or_false = judger(correct_answer, output_item.response[0])
+                correct_answer, true_or_false = judger(test_item['question_type'], test_item['answer'], test_item['options'], output_item.response[0])
                 if true_or_false:
                     num_match += 1
                 save_detail(test_item['question'], output_item.prompt, correct_answer, output_item.response[0], true_or_false, file_path)
@@ -152,13 +151,20 @@ def evaluator(test_dataset, output_data, file_path):
     return num_match, num_sum
 
 def get_answer(answer, options):
-    data_list = options.strip("[]").replace("'", "").split(", ")
+    data_list = eval(options)
+    if(len(data_list)==0):
+        return answer
     return data_list[ord(answer) - 65]
 
-def judger(correct_answer, response):
+def judger(question_type, answer, options, response):
+    if question_type == 'multiple-choice':
+        correct_answer = get_answer(answer, options)
+    else:
+        correct_answer = answer
+        
     if correct_answer in response:
-        return True
-    return False
+        return correct_answer, True
+    return correct_answer, False
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -196,11 +202,14 @@ def main():
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
-
+    
+    tot_num_match, tot_num_sum = 0, 0
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
         file_path = f"{uuid_path}/{task}.json"
         num_match, num_sum = evaluator(test_data, raw_outputs[task], file_path)
+        tot_num_match += num_match
+        tot_num_sum += num_sum
         
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
@@ -216,6 +225,20 @@ def main():
         logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
         logger.log('info', f"accuracy: {output_dict['accuracy'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    output_dict = {
+        'model_id': [dict_configs.default.model_cfgs.model_id],
+        'tot_num_match': [tot_num_match],
+        'tot_num_sum': [tot_num_sum],
+        'tot_accuracy': [tot_num_match / tot_num_sum]
+    }
+    logger.print_table(title=f'MMBench Benchmark', data=output_dict)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"model_id: {output_dict['model_id'][0]},")
+    logger.log('info', f"tot_num_match: {output_dict['tot_num_match'][0]},")
+    logger.log('info', f"tot_num_sum: {output_dict['tot_num_sum'][0]},")
+    logger.log('info', f"tot_accuracy: {output_dict['tot_accuracy'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()
