@@ -143,7 +143,6 @@ def yaml_load(yaml_path):
         try:
             configs = yaml.safe_load(f)
             override_with_env_variables(configs, env_prefix)
-            print(configs)
             return configs
         except FileNotFoundError as exc:
             raise FileNotFoundError(f'{yaml_path} error: {exc}') from exc
@@ -457,3 +456,6 @@ def parse_unknown_args():
         args_dict[key] = True
 
     return args_dict
+
+def remove_pad_tokens(response: list[int], pad_token_id: int) -> list[int]:
+    return [token for token in response if token != pad_token_id]

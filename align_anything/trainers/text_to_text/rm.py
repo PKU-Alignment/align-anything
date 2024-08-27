@@ -77,6 +77,7 @@ class RMTrainer(SupervisedTrainerBase):
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            modality='text',
         )
 
     def init_datasets(self) -> None:
@@ -101,7 +102,11 @@ class RMTrainer(SupervisedTrainerBase):
             'input_ids'
         ].chunk(chunks=2, dim=0)
         assert better_input_ids.size(0) == worse_input_ids.size(0), 'batch size mismatch!'
-        output = self.model(**batch)
+        output = self.model(
+                input_ids=batch['input_ids'],
+                attention_maks=batch['attention_maks'],
+                pixel_values=batch['pixel_values'],
+            )
         scores = output.scores
         end_scores = output.end_scores
         higher_rewards, lower_rewards = scores.squeeze(dim=-1).chunk(chunks=2, dim=0)
@@ -171,7 +176,11 @@ class RMTrainer(SupervisedTrainerBase):
         rewards = []
         batch = None
         for batch in eval_dataloader:
-            output = self.model(**batch)
+            output = self.model(
+                input_ids=batch['input_ids'],
+                attention_mask=batch['attention_mask'],
+                pixel_values=batch['pixel_values'],
+            )
             end_scores = output.end_scores
             higher_end_rewards, lower_end_rewards = end_scores.squeeze(dim=-1).chunk(
                 chunks=2, dim=0

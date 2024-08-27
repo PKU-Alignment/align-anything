@@ -40,6 +40,7 @@ def load_pretrained_model_with_value_head(
     auto_model_kwargs: dict[str, Any] | None = None,
     auto_tokenizer_args: tuple[Any, ...] = (),
     auto_tokenizer_kwargs: dict[str, Any] | None = None,
+    modality: str = 'text'
 ) -> nn.Module:
     model_name_or_path = os.path.expanduser(model_name_or_path)
     cache_dir = os.path.expanduser(cache_dir) if cache_dir is not None else None
@@ -57,7 +58,7 @@ def load_pretrained_model_with_value_head(
     except AttributeError:
         base_pretrained_class = base_class.__base__
 
-    AnyRewardModel = get_score_model(base_pretrained_class, base_class)
+    AnyRewardModel = get_score_model(base_pretrained_class, base_class, modality)
     model = AnyRewardModel.from_pretrained(
         model_name_or_path,
         *auto_model_args,
