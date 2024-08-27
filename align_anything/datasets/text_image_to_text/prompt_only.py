@@ -97,7 +97,7 @@ class PromptOnlyDataset(Dataset):
         self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
 
         if size:
-            self.raw_data = self.raw_data[:size]
+            self.raw_data = self.raw_data[:int(size)]
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
         formatted_sample = self.template.format_prompt_only_sample(raw_sample)
