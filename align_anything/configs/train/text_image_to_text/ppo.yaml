@@ -34,15 +34,15 @@ train_cfgs:
   # Whether to use gradient checkpointing for the critic model
   critic_gradient_checkpointing: True
   # Initial learning rate for the actor model
-  actor_lr: 1.e-5
+  actor_lr: 5.e-7
   # Type of learning rate scheduler for the actor model
   actor_lr_scheduler_type: cosine
   # Ratio of warmup steps for learning rate for the actor model
   actor_lr_warmup_ratio: 0.03
   # Weight decay coefficient for the actor model
-  actor_weight_decay: 0.01
+  actor_weight_decay: 0.00
   # Initial learning rate for the critic model
-  critic_lr: 5.e-6
+  critic_lr: 5.e-7
   # Type of learning rate scheduler for the critic model
   critic_lr_scheduler_type: constant
   # Ratio of warmup steps for learning rate for the critic model
@@ -78,9 +78,9 @@ train_cfgs:
   # The number of repeated updates on a generated batch.
   update_iters: 1
   # Freeze the multi modal projection layer
-  freeze_mm_proj: True
+  freeze_mm_proj: False
   # Freeze the vison tower model
-  freeze_vision_tower: False
+  freeze_vision_tower: True
   # Freeze the language model
   freeze_language_model: False
 # Configuration for datasets
@@ -90,7 +90,7 @@ data_cfgs:
   # The format template for training
   train_template: null
   # The total number for training
-  train_size: null
+  train_size: 5000
   # The split of train datasets
   train_split: null
   # The subset of training datasets

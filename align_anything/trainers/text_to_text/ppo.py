@@ -197,8 +197,6 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
 
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> dict[str, Any]:
         actor_batch = copy.deepcopy(mini_prompt_only_batch)
-        print('input_ids', mini_prompt_only_batch['input_ids'].shape)
-        print('attention_mask', mini_prompt_only_batch['attention_mask'].shape)
         sequences = self.actor_model.module.generate(
             **mini_prompt_only_batch,
             generation_config=self.generation_config,
@@ -228,9 +226,10 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             reward_batch['attention_mask'] = reward_tokenize_output['attention_mask']
 
         reward_batch['reward'] = self.reward_model(**reward_batch).end_scores.squeeze(dim=-1)
-        reward_batch['reward_values'] = self.reward_critic_model(
+        scores = self.reward_critic_model(
             **actor_batch
-        ).clipped_scores.squeeze(dim=-1)[:, :-1]
+        ).scores
+        reward_batch['reward_values'] = scores.squeeze(dim=-1)[:, :-1]
 
         return reward_batch
 
@@ -247,21 +246,10 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         mini_batch = {}
         for i in range(0, total_batch_size, micro_batch_size):
 
-            if 'image_sizes' in prompt_only_batch:
-                for key in prompt_only_batch:
-                    if key == 'pixel_values':
-                        mini_batch[key] = prompt_only_batch[key][
-                            i : i + sum(prompt_only_batch['image_sizes'][i : i + micro_batch_size])
-                        ]
-                    elif key == 'image_sizes':
-                        mini_batch[key] = prompt_only_batch[key][i : i + micro_batch_size]
-                    else:
-                        mini_batch[key] = prompt_only_batch[key][i : i + micro_batch_size]
-            else:
-                mini_batch = {
-                    key: prompt_only_batch[key][i : i + micro_batch_size]
-                    for key in prompt_only_batch
-                }
+            mini_batch = {
+                key: prompt_only_batch[key][i : i + micro_batch_size]
+                for key in prompt_only_batch
+            }
 
             # actor generation
             actor_batch = self.actor_step(mini_batch)

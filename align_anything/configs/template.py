@@ -690,7 +690,7 @@ class LLAVA:
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
-    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations']
         raw_prompt = raw_conversations[0]['value'].replace('<image>\n', '').replace('\n<image>', '')
 
@@ -1043,7 +1043,7 @@ class SPA_VL:
         return raw_sample['chosen'] == raw_sample['rejected']
 
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['question']
+        prompt = raw_sample['question'].replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
         image = raw_sample['image']
 
         formatted_prompt = (

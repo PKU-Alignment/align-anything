@@ -114,7 +114,7 @@ class RLTrainerBase:
                 batch_size=self.cfgs.train_cfgs.per_device_prompt_batch_size,
             )
         else:
-            ptx_dataloader = DataLoader(DummyDataset(len(self.prompt_only_dataloader)))
+            ptx_dataloader = DataLoader(DummyDataset(len(train_dataloader)))
 
         if self.cfgs.data_cfgs.eval_datasets:
             self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
@@ -229,9 +229,9 @@ class RLTrainerBase:
         )
         self.reward_model.eval()
         # setup the gradient checkpointing
-        if self.cfgs.train_cfgs.actor_gradient_checkpointing and not self.lora_cfgs.use_lora:
+        if self.cfgs.train_cfgs.actor_gradient_checkpointing and not self.lora_enabled:
             self.actor_model.gradient_checkpointing_enable()
-        if self.cfgs.train_cfgs.critic_gradient_checkpointing and not self.lora_cfgs.use_lora:
+        if self.cfgs.train_cfgs.critic_gradient_checkpointing and not self.lora_enabled:
             self.reward_critic_model.gradient_checkpointing_enable()
 
     def set_train(self, mode: bool = True) -> None:
@@ -239,12 +239,12 @@ class RLTrainerBase:
         if mode:
             self.actor_model.train()
             self.reward_critic_model.train()
-            if self.cfgs.train_cfgs.actor_gradient_checkpointing and not self.lora_cfgs.use_lora:
+            if self.cfgs.train_cfgs.actor_gradient_checkpointing and not self.lora_enabled:
                 self.actor_model.gradient_checkpointing_enable()
         else:
             self.actor_model.eval()
             self.reward_critic_model.eval()
-            if self.cfgs.train_cfgs.actor_gradient_checkpointing and not self.lora_cfgs.use_lora:
+            if self.cfgs.train_cfgs.actor_gradient_checkpointing and not self.lora_enabled:
                 self.actor_model.gradient_checkpointing_disable()
         return
 
