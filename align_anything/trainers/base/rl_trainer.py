@@ -310,6 +310,14 @@ class RLTrainerBase:
         if is_main_process():
             model_to_save.config.to_json_file(output_config_file)
             self.tokenizer.save_pretrained(self.cfgs.logger_cfgs.output_dir)
+            if self.processor is not None:
+                self.processor.save_pretrained(self.cfgs.logger_cfgs.output_dir)
+                
+        self.logger.print('Saving 16-bit model...')
+        save_file_name = f'pytorch_model_{tag}.bin' if tag else 'pytorch_model.bin'
+        model.save_16bit_model(self.cfgs.logger_cfgs.output_dir, save_filename=save_file_name)
+
+        self.logger.print('Model saved!')
 
         if not self.lora_enabled:
             self.logger.print('Saving 16-bit model...')

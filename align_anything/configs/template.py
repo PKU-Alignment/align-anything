@@ -146,41 +146,6 @@ class Dialogue(Template):
         }
         return return_dict
     
-@register_template('LanguageFeedback')
-class LanguageFeedback(Template):
-    system_prompt: str = ''
-    user_prompt: str = 'USER: \n<image>{input}'
-    assistant_prompt: str = '\nASSISTANT:{output}'
-    feed_back_prompt: str = '\nCRITIQUE:{output}'
-    split_token: str = 'CRITIQUE:'
-    separator: str = '###'
-
-    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
-        prompt = raw_sample['question']
-        response = raw_sample['']
-        raw_conversations = raw_sample['conversations']
-        raw_prompt = raw_conversations[0]['value'].replace('<image>\n', '').replace('\n<image>', '')
-
-        text = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=raw_prompt)}'
-            f"{self.assistant_prompt.format(output=raw_conversations[1]['value'])}"
-        )
-
-        prompt = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=raw_prompt)}'
-            f"{self.assistant_prompt.format(output='')}"
-        )
-
-        base_coco_url = 'http://images.cocodataset.org/train2017/'
-        image_file = base_coco_url + raw_sample['image']
-        return {
-            'text': text,
-            'prompt': prompt,
-            'image': Image.open(requests.get(image_file, stream=True).raw),
-        }
-    
 @register_template('Aligner')
 class Aligner(Template):
     system_prompt: str = ''
