@@ -25,6 +25,7 @@ from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.vllm_inference import update_results
 from align_anything.evaluation.eval_logger import EvalLogger
+import re
 
 class CEvalDataLoader(BaseDataLoader):
     def get_task_names(self):
@@ -42,14 +43,19 @@ class CEvalDataLoader(BaseDataLoader):
                 data = json.load(f)
             return data
         else:
-            return dataset['validation']
+            return dataset['val']
 
     def build_example_prompt(self, data, with_answer=True, cot=False):
+        choices_text = []
+        for idx, option in enumerate(data['choices']):
+            choices_text.append(f'({chr(65 + idx)}): {option}')
+        choices = '\n'.join(choices_text)
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
-        return f"Question: {data['question']}\n{answer}"
+        return f"{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
+
 
     def build_prompt(self, data):
-        prompt = "Please answer the following question.\n\n"
+        prompt = f"The following are multiple choice questions (with answers).\n\n"
         cot_prompt = " Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
@@ -106,28 +112,40 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: CEvalDataLoader, ta
     for instance in dataset:
         correct_answers.append(
             {
-                'question': instance['question'],
+                'prompt': instance['question'],
+                'choices': instance['choices'],
                 'answer': dataloader.get_answer(instance)
             }
         )
     for item in raw_output:
-        response_text = item.response[0].strip().lower()
+        dataloader.candidate_labels = get_candidate_labels(item.prompt)
         responses.append(
             {
-                'question': item.prompt,
-                'response': response_text
+                'prompt': (item.prompt),
+                'answer_logprobs': get_chosen_answer(item.response_logprobs[-1], dataloader.candidate_labels),
+                'answer': item.response[0]
             }
         )
     for correct_answer in correct_answers:
         cnt_sum += 1
         for response in responses:
-            if correct_answer['question'] in response['question']:
+            if correct_answer['prompt'] in response['prompt']:
                 flag_fail = False
-                if judge_answer(correct_answer['answer'], response['response']):
+                chosen_answer = max(response['answer_logprobs'], key=response['answer_logprobs'].get)
+                eval_case = {
+                    'question': correct_answer['prompt'],
+                    'choices': correct_answer['choices'],
+                    'correct_answer': correct_answer['answer'],
+                    'answer_logprobs': response['answer_logprobs'],
+                    'chosen_answer': chosen_answer
+                }
+                if judge_answer(correct_answer['answer'], chosen_answer, response['answer']):
                     cnt_match += 1
-                    true_cases.append({'question': correct_answer['question'], 'answer': correct_answer['answer'], 'response': response['response'], 'result': True})
+                    eval_case['result'] = True
+                    true_cases.append(eval_case)
                 else:
-                    false_cases.append({'question': correct_answer['question'], 'answer': correct_answer['answer'], 'response': response['response'], 'result': False})
+                    eval_case['result'] = False
+                    false_cases.append(eval_case)
                 break
         if flag_fail:
             cnt_fail += 1
@@ -136,8 +154,31 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: CEvalDataLoader, ta
         
     return cnt_match, cnt_sum, true_cases, false_cases
 
-def judge_answer(correct_answer, response):
-    return correct_answer.strip().lower() == response
+def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[str]):
+    answer_logprobs = {}
+    for logprob in logprobs:
+        key = next(iter(logprob.values())).decoded_token
+        value = next(iter(logprob.values())).logprob
+        if key in candidate_answers:
+            answer_logprobs[key] = value
+    for label in candidate_answers:
+        if label not in answer_logprobs.keys():
+            answer_logprobs[label] = -100.0
+            
+    return answer_logprobs
+
+def judge_answer(correct_answer: str, chosen_answer: str, answer: str):
+    if correct_answer.lower() == answer.lower() or correct_answer.lower() == chosen_answer.lower():
+        return True
+    else:
+        return False
+
+def get_candidate_labels(prompt):
+    # choices = re.findall(r'\(\w\)\: (\w+)', prompt)
+    choices = re.findall(r'\((\w)\)\:', prompt)
+    # unique choices
+    choices = list(set(choices))
+    return choices
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -177,7 +218,7 @@ def main():
     for task, _ in raw_outputs.items():
 
         file_path = f"{uuid_path}/{task}.json"
-        cnt_match, cnt_sum = evaluator(raw_outputs[task], data_loader, task, file_path)
+        cnt_match, cnt_sum, _, _ = evaluator(raw_outputs[task], data_loader, task)
 
         eval_results = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
@@ -202,4 +243,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

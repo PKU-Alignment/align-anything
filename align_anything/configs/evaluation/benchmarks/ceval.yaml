@@ -16,19 +16,24 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name(s)
-    task: [math, physics, history, chemistry, biology, geography, politics, english, chinese, computer_science]
+    ##### NEED CAREFULLY REVIEW THE TASKS #####
+    task: ['accountant']
     # Task directory
-    task_dir: ceval
+    task_dir: zacharyxxxxcr/ceval-exam
     
     # Evaluation split
-    split: test
+    ##### Original test without answer, could ask for help #####
+    split: dev
 
   # Model configurations
   model_cfgs:
-    model_id: Meta-Llama-3-8B-Instruct
+    model_id: null
     # Pretrained model name or path
-    model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
+    model_name_or_path: null
     # Chat template
-    chat_template: Llama3
+    chat_template: null
+    # Whether to trust remote code
+    trust_remote_code: True
     # The max token length
     model_max_length: 2048
+
