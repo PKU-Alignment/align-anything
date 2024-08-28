@@ -28,9 +28,6 @@ from datasets import load_dataset, concatenate_datasets
 from PIL import Image
 import requests
 
-import os
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7" 
 
 def parse_arguments() -> argparse.Namespace:
     """Parse the command-line arguments."""
