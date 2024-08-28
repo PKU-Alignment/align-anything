@@ -16,7 +16,6 @@ import requests
 
 import os
 
-# 设置CUDA可见设备
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7" 
 
 def parse_arguments() -> argparse.Namespace:
@@ -61,7 +60,7 @@ def generate_answer_by_vllim(problems: list[str], model_name_or_path:str) ->list
               gpu_memory_utilization=0.95, 
               swap_space=32, 
               trust_remote_code=True, 
-              tensor_parallel_size=8)  # 使用8个GPU并行
+              tensor_parallel_size=8)
     model_name = model_name_or_path.split('/')[-1]
     outputs = llm.generate(problems, samplingparams)
     answers = []
