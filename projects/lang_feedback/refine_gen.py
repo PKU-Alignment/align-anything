@@ -16,7 +16,6 @@ import requests
 
 import os
 
-# 设置CUDA可见设备
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7" 
 
 def parse_arguments() -> argparse.Namespace:
@@ -49,7 +48,7 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def generate_answer_by_vllim(problems: list[str], model_name_or_path:str) ->list[str]:
+def generate_answer_by_vllm(problems: list[str], model_name_or_path:str) ->list[str]:
     samplingparams = SamplingParams(
         temperature = 1.0,
         repetition_penalty = 1.1,
@@ -96,7 +95,7 @@ def main() -> None:
         }
         problems.append(problem)
         
-    answers = generate_answer_by_vllim(problems, args.model_name_or_path)
+    answers = generate_answer_by_vllm(problems, args.model_name_or_path)
     final_answer = []
     for idx in range(len(answers)):
         item = answers[idx]
