@@ -102,7 +102,7 @@ def main():
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = HybridQADataLoader(dict_configs)
     inferencer = HybridQAGeneratorDS(model_config, infer_configs)
-    data = dataloader.load_data()
+    data = dataloader.load_dataset()
     inferencer.eval(data, eval_configs)
 
 if __name__ == '__main__':

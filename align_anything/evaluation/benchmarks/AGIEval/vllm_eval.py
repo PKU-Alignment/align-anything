@@ -178,7 +178,8 @@ def judge_answer(correct_answer: str, chosen_answer: str, answer: str):
         return False
 
 def get_candidate_labels(prompt):
-    choices = re.findall(r'\(\w\)\: (\w+)', prompt)
+    choices = re.findall(r'\((\w)\)\:', prompt)
+    choices = list(set(choices))
     return choices
 
 def main():
@@ -211,17 +212,14 @@ def main():
     dataloader = AGIEvalDataLoader(dict_configs)
     inferencer = AGIEvalGeneratorVLLM(model_config,infer_configs)
 
-    data = dataloader.load_data()
+    data = dataloader.load_dataset()
     raw_outputs = inferencer.eval(data, eval_configs)
 
     os.makedirs(logger.log_dir, exist_ok=True)
-    uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
-    os.makedirs(uuid_path, exist_ok=True)
 
     for task, _ in raw_outputs.items():
 
-        file_path = f"{uuid_path}/{task}.json"
-        cnt_match, cnt_sum = evaluator(raw_outputs[task], dataloader, task, file_path)
+        cnt_match, cnt_sum,_,_ = evaluator(raw_outputs[task], dataloader, task)
 
         eval_results = {
             'model_id': [dict_configs.default.model_cfgs.model_id],

@@ -16,19 +16,22 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name(s)
-    task: [logiqa, logiqa-en, aQuA, math, ethics, sat_en, sat_math, sat_chinese, gaokao-physics, gaokao-biology, gaokao-chemistry, gaokao-geography, gaokao-history, gaokao-chinese, gaokao-english, logiqa-zh, biology, chemistry, physics, morality, law, chinese, english]
+    ##### NEED CAREFULLY REVIEW THE TASKS #####
+    task: ['aqua-rat', 'gaokao-biology', 'gaokao-chemistry', 'gaokao-chinese', 'gaokao-english', 'gaokao-geography', 'gaokao-history', 'gaokao-mathqa', 'gaokao-physics', 'jec-qa-ca', 'logiqa-en', 'logiqa-zh', 'lsat-ar', 'lsat-lr', 'lsat-rc', 'sat-en', 'sat-en-without-passage', 'sat-math']
     # Task directory
-    task_dir: agieval
+    task_dir: zacharyxxxxcr/AGIEval
 
     # Evaluation split
     split: test
 
   # Model configurations
   model_cfgs:
-    model_id: Meta-Llama-3-8B-Instruct
+    model_id: null
     # Pretrained model name or path
-    model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
+    model_name_or_path: null
     # Chat template
-    chat_template: Llama3
+    chat_template: null
+    # Whether to trust remote code
+    trust_remote_code: True
     # The max token length
     model_max_length: 2048

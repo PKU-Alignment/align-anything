@@ -48,6 +48,15 @@ def update_results(output_dir:str,
 
         with open(detailed_file_path + '_' + task + ".jsonl", 'w', encoding='utf-8') as file:
             for item in output_detailed:
+                for key in item:
+                    if key=="prompt_logprobs":
+                        flattened_logprobs = []
+                        logprobs = item[key]
+                        for sublist in logprobs:
+                            for item in sublist:
+                                if isinstance(item, dict):
+                                    flattened_logprobs.append(list(item.items()))  # Convert dict to list of tuples
+                        item[key] = flattened_logprobs
                 json_record = json.dumps(item, ensure_ascii=False)
                 file.write(json_record + '\n')
 
