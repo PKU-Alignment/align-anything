@@ -185,7 +185,7 @@ def get_candidate_labels(prompt):
     return choices
 
 def main():
-    login(token='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')
+    login(token='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')
     parser = argparse.ArgumentParser(description='Evaluation Configuration')
 
     _, unparsed_args = parser.parse_known_args()
