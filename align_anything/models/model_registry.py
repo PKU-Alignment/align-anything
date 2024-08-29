@@ -64,8 +64,8 @@ class ScoreModelOutput(ModelOutput):
     end_index: torch.LongTensor | None = None  # size = (B,)
 
 
-def get_score_model(base_pretrained_model, base_llm_model):
-    class RewardModel(base_pretrained_model):
+def get_score_model(base_pretrained_model, base_llm_model, modality):
+    class T2TRewardModel(base_pretrained_model):
         supports_gradient_checkpointing = True
 
         def __init__(self, config: AutoConfig):
@@ -88,34 +88,7 @@ def get_score_model(base_pretrained_model, base_llm_model):
 
             last_hidden_state = outputs.hidden_states[-1]
             scores = self.score_head(last_hidden_state).float()
-            if kwargs.get('pixel_values') is not None:
-                image_mask = outputs.image_to_overwrite
-                last_hidden_state = outputs.hidden_states[-1]
-                scores = self.score_head(last_hidden_state).float()
-                B, L, E = scores.size()
-                num_ones_per_sample = image_mask.sum(dim=1)
-                len_image = num_ones_per_sample[0]
-
-                L_new = L - len_image + 1
-                clipped_scores = torch.zeros(B, L_new, E, device=scores.device)
-
-                assert torch.all(
-                    num_ones_per_sample == len_image
-                ), 'All samples must have the same number of 1s in image_mask'
-
-                image_mask_int = image_mask.int()
-                image_mask_reversed = image_mask_int.flip(dims=[1])
-                last_img_reversed = torch.argmax(image_mask_reversed, dim=1)
-                last_ones = image_mask.size(1) - last_img_reversed - 1  # size = (B)
-
-                for i in range(B):
-                    start_index = last_ones[i]
-                    length_to_copy = L - start_index
-                    where_to_start = L_new - length_to_copy
-                    clipped_scores[i, where_to_start:] = scores[i, start_index:]
-            else:
-                B, L, E = last_hidden_state.size()
-                clipped_scores = scores
+            B, L, E = last_hidden_state.size()
 
             if attention_mask is None:
                 if B > 1:
@@ -150,11 +123,54 @@ def get_score_model(base_pretrained_model, base_llm_model):
                 scores=scores,  # size = (B, L, D)
                 end_scores=end_scores,  # size = (B, D)
                 last_hidden_state=last_hidden_state,  # size = (B, L, E)
-                clipped_scores=clipped_scores,  # size = (B, L-I, D)
                 end_last_hidden_state=end_last_hidden_state,  # size = (B, E)
                 end_index=end_index,  # size = (B,)
             )
 
+    class TI2TRewardModel(base_pretrained_model):
+        supports_gradient_checkpointing = True
+
+        def __init__(self, config: AutoConfig):
+            super().__init__(config)
+            setattr(self, self.base_model_prefix, base_llm_model(config))
+            self.score_head = nn.Linear(4096, 1, bias=False)
+
+        def forward(
+            self,
+            input_ids: torch.LongTensor | None = None,
+            attention_mask: torch.Tensor | None = None,
+            **kwargs,
+        ) -> torch.Tensor:
+            outputs = self.model(
+                input_ids,
+                attention_mask=attention_mask,
+                output_hidden_states=True,
+                **kwargs,
+            )
+
+            last_hidden_state = outputs.hidden_states[-1]
+            scores = self.score_head(last_hidden_state).float()
+            B, _, _ = scores.size()
+
+            end_index = -torch.ones((B,))  # size = (B,)
+            end_last_hidden_state = last_hidden_state[:, -1, :].unsqueeze(1)
+            end_scores = self.score_head(end_last_hidden_state).float()
+            end_last_hidden_state = end_last_hidden_state.squeeze(dim=1)  # size = (B, E)
+            end_scores = end_scores.squeeze(dim=1)  # size = (B, D)
+
+            return ScoreModelOutput(
+                scores=scores,  # size = (B, L, D)
+                end_scores=end_scores,  # size = (B, D)
+                last_hidden_state=last_hidden_state,  # size = (B, L, E)
+                end_last_hidden_state=end_last_hidden_state,  # size = (B, E)
+                end_index=end_index,  # size = (B,)
+            )
+
+    if modality == 'text':
+        RewardModel = T2TRewardModel
+    elif modality == 'text_image':
+        RewardModel = TI2TRewardModel
+    
     return RewardModel
 
 

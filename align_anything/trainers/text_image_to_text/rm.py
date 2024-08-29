@@ -22,7 +22,9 @@ import sys
 import deepspeed
 import torch
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
+import torch.nn.functional as F
 
+from align_anything.datasets.text_to_text.preference import PreferenceBatch
 from align_anything.datasets.text_image_to_text.preference import PreferenceDataset
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.trainers.text_to_text.rm import RMTrainer as RMtextTrainer
@@ -56,7 +58,53 @@ class RMTrainer(RMtextTrainer):
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
+            modality='text_image',
         )
+
+    def loss(
+        self,
+        batch: PreferenceBatch,
+    ) -> dict[str, torch.Tensor]:
+        """Loss function for the reward model."""
+        (
+            better_input_ids,  # size = (B, L)
+            worse_input_ids,  # size = (B, L)
+        ) = batch[
+            'input_ids'
+        ].chunk(chunks=2, dim=0)
+        keys_to_remove = ['better_response_lens', 'worse_response_lens', 'response_lens']
+
+        infer_batch = {key: value for key, value in batch.items() if key not in keys_to_remove}
+        assert better_input_ids.size(0) == worse_input_ids.size(0), 'batch size mismatch!'
+        output = self.model(
+            input_ids=batch['input_ids'],
+            attention_mask=batch['attention_mask'],
+            pixel_values=batch['pixel_values'],
+        )
+        scores = output.scores
+        end_scores = output.end_scores
+        higher_rewards, lower_rewards = scores.squeeze(dim=-1).chunk(chunks=2, dim=0)
+        higher_end_reward, lower_end_reward = end_scores.squeeze(dim=-1).chunk(chunks=2, dim=0)
+
+        loss = -F.logsigmoid(higher_end_reward - lower_end_reward).mean()
+
+        if self.cfgs.train_cfgs.regularization > 0.0:
+            loss = (
+                loss
+                + self.cfgs.train_cfgs.regularization
+                * torch.stack([lower_end_reward, higher_end_reward]).square().mean()
+            )
+
+        accuracy = (higher_end_reward > lower_end_reward).float().mean()  # size = ()
+        return {
+            'loss': loss,  # size = ()
+            'higher_end_reward': higher_end_reward,  # size = (B,)
+            'lower_end_reward': lower_end_reward,  # size = (B,)
+            'higher_rewards': higher_rewards,  # size = (B, L)
+            'lower_rewards': lower_rewards,  # size = (B, L)
+            'accuracy': accuracy,  # size = ()
+        }
+
 
 
 def main():

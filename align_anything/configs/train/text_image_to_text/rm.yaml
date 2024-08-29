@@ -26,13 +26,13 @@ train_cfgs:
   # Batch size per device for evaluation
   per_device_eval_batch_size: 4
   # The number of gradient accumulation steps
-  gradient_accumulation_steps: 8
+  gradient_accumulation_steps: 1
   # Whether to use gradient checkpointing
   gradient_checkpointing: True
   # Initial learning rate
-  learning_rate: 2.e-5
+  learning_rate: 3.e-5
   # Type of learning rate scheduler
-  lr_scheduler_type: cosine
+  lr_scheduler_type: constant_with_warmup
   # Ratio of warmup steps for learning rate
   lr_warmup_ratio: 0.03
   # Weight decay coefficient
@@ -50,11 +50,11 @@ train_cfgs:
   # The reward modeling regularization
   regularization: 0.001
   # Freeze the multi modal projection layer
-  freeze_mm_proj: True
+  freeze_mm_proj: False
   # Freeze the vison tower model
   freeze_vision_tower: True
   # Freeze the language model
-  freeze_language_model: True
+  freeze_language_model: False
 # Configuration for datasets
 data_cfgs:
   # Datasets to use for training

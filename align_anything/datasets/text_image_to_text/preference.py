@@ -14,8 +14,12 @@
 # ==============================================================================
 
 
+import json
+
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
+
+from tqdm import tqdm
 
 import torch
 import transformers
@@ -82,43 +86,47 @@ class PreferenceDataset(Dataset):
             *optional_args,
             trust_remote_code=True,
         )
-        self.valid_indices = self.fillter_indices()
-
+        self.data = self.pre_tokenize()
         if size:
-            size = min(size, len(self.raw_data))
-            self.raw_data = self.raw_data.select(range(int(size)))
+            size = min(size, len(self.data))
+            self.data = self.data.select(range(int(size)))
+        
 
-    def fillter_indices(self):
-        valid_indices = []
-        for i, item in enumerate(self.raw_data):
-            if not self.template.check_equal(item):
-                valid_indices.append(i)
-        return valid_indices
+    def pre_tokenize(self) -> list[dict[str, torch.tensor]]:
+        data = []
+        for item in tqdm(self.raw_data, total=len(self.raw_data), desc="Pre-tokenizing and filltering..."):
+            return_dict = {}
+            formatted_sample = self.template.format_sample(item)
+            raw_better_text = ''
+            raw_worse_text = ''
+            if isinstance(formatted_sample['better_text'], list):
+                raw_better_text = self.tokenizer.eos_token.join(formatted_sample['better_text'])
+                raw_worse_text = self.tokenizer.eos_token.join(formatted_sample['worse_text'])
+            elif isinstance(formatted_sample['better_text'], str):
+                raw_better_text = formatted_sample['prompt'] + formatted_sample['better_text'] + self.tokenizer.eos_token
+                raw_worse_text = formatted_sample['prompt'] + formatted_sample['worse_text'] + self.tokenizer.eos_token
+                raw_better_response = formatted_sample['better_text'] + self.tokenizer.eos_token
+                raw_worse_response = formatted_sample['worse_text'] + self.tokenizer.eos_token
+            else:
+                raise NotImplementedError
+            
+            return_dict['better_input_ids'] = self.tokenize(raw_better_text)
+            return_dict['worse_input_ids'] = self.tokenize(raw_worse_text)
+            return_dict['better_response_lens'] = len(self.tokenize(raw_better_response))
+            return_dict['worse_response_lens'] = len(self.tokenize(raw_worse_response))
+            raw_image = formatted_sample['image']
+            return_dict['pixel_values'] = self.processor.image_processor(
+                raw_image, return_tensors='pt'
+            )['pixel_values'][0]
+            
+            if self.tokenize(raw_better_text).size(0) < self.tokenizer.model_max_length - 576 and self.tokenize(raw_worse_text).size(0) < self.tokenizer.model_max_length - 576 and not self.template.check_equal(item):
+                data.append(return_dict)
+
+        return data
+
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_sample(raw_sample)
-        return_dict = {}
-
-        raw_better_text = ''
-        raw_worse_text = ''
-
-        if isinstance(formatted_sample['better_text'], list):
-            raw_better_text = self.tokenizer.eos_token.join(formatted_sample['better_text'])
-            raw_worse_text = self.tokenizer.eos_token.join(formatted_sample['worse_text'])
-        elif isinstance(formatted_sample['better_text'], str):
-            raw_better_text = formatted_sample['better_text'] + self.tokenizer.eos_token
-            raw_worse_text = formatted_sample['worse_text'] + self.tokenizer.eos_token
-        else:
-            raise NotImplementedError
-        return_dict['better_input_ids'] = self.tokenize(raw_better_text)
-        return_dict['worse_input_ids'] = self.tokenize(raw_worse_text)
-
-        raw_image = formatted_sample['image']
-        return_dict['pixel_values'] = self.processor.image_processor(
-            raw_image, return_tensors='pt'
-        )['pixel_values'][0]
-
-        return return_dict
+        return raw_sample
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
         return PreferenceCollator(self.tokenizer.pad_token_id)
@@ -146,13 +154,11 @@ class PreferenceDataset(Dataset):
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
-        raw_sample = self.raw_data[index]
-        data = self.preprocess(raw_sample)
-        return data
+        return self.preprocess(self.data[index])
 
     def __len__(self) -> int:
         """Get the number of samples in the dataset."""
-        return len(self.valid_indices)
+        return len(self.data)
 
 
 class PreferenceCollator:
@@ -178,7 +184,9 @@ class PreferenceCollator:
         return_dict['attention_mask'] = right_padding(attention_mask, padding_value=0).to(
             current_device
         )  # size = (2 * B, L)
-
+        return_dict['better_response_lens'] = [sample['better_response_lens'] for sample in samples]
+        return_dict['worse_response_lens'] = [sample['worse_response_lens'] for sample in samples]
+        return_dict['response_lens'] = return_dict['better_response_lens'] + return_dict['worse_response_lens']
         if 'pixel_values' in samples[0].keys():
 
             a = return_dict['attention_mask'].shape[0]

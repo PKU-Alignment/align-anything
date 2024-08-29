@@ -18,7 +18,7 @@ train_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
   # Number of training epochs
-  epochs: 3
+  epochs: 2
   # Seed for random number generator
   seed: 42
   # Batch size per device for training
@@ -30,13 +30,13 @@ train_cfgs:
   # Whether to use gradient checkpointing
   gradient_checkpointing: True
   # Initial learning rate
-  learning_rate: 5.e-6
+  learning_rate: 1.e-6
   # Type of learning rate scheduler
   lr_scheduler_type: cosine
   # Ratio of warmup steps for learning rate
-  lr_warmup_ratio: 0.03
+  lr_warmup_ratio: 0.01
   # Weight decay coefficient
-  weight_decay: 0.01
+  weight_decay: 0.00
   # Hyper-parameters for adam optimizer
   adam_betas: [0.9, 0.95]
   # Enable bfloat 16 precision
@@ -52,11 +52,11 @@ train_cfgs:
   # The scale coefficient
   scale_coeff: 0.1
   # Freeze the multi modal projection layer
-  freeze_mm_proj: True
+  freeze_mm_proj: False
   # Freeze the vison tower model
-  freeze_vision_tower: False
+  freeze_vision_tower: True
   # Freeze the language model
-  freeze_language_model: True
+  freeze_language_model: False
 # Configuration for datasets
 data_cfgs:
   # Datasets to use for training

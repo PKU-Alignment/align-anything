@@ -655,7 +655,7 @@ class LLAVA:
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
-    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations']
         raw_prompt = raw_conversations[0]['value'].replace('<image>\n', '').replace('\n<image>', '')
 
@@ -973,9 +973,9 @@ class RLAIFV:
 
 @register_template('SPA_VL')
 class SPA_VL:
-    system_prompt: str = ''
-    user_prompt: str = 'USER: \n<image>{input}'
-    assistant_prompt: str = '\nASSISTANT:{output}'
+    system_prompt: str = "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. "
+    user_prompt: str = 'USER: \n<image> {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
     split_token: str = 'ASSISTANT:'
 
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
@@ -984,29 +984,31 @@ class SPA_VL:
         prompt = raw_sample['question']
         image = raw_sample['image']
 
-        formatted_better_output = (
+        
+        formatted_prompt = (
             f'{self.system_prompt}'
             f'{self.user_prompt.format(input=prompt)}'
+        )
+        formatted_better_output = (
             f'{self.assistant_prompt.format(output=better_response)}'
         )
         formatted_worse_output = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
             f'{self.assistant_prompt.format(output=worse_response)}'
         )
         image = image.convert('RGBA')
 
         return {
+            'prompt': formatted_prompt,
             'better_text': formatted_better_output,
             'worse_text': formatted_worse_output,
             'image': image,
         }
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
-        return False
+        return raw_sample['chosen'] == raw_sample['rejected']
 
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['question']
+        prompt = raw_sample['question'].replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
         image = raw_sample['image']
 
         formatted_prompt = (
