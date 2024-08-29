@@ -161,7 +161,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: CQAEvalDataLoader, 
     return cnt_match, cnt_sum, true_cases, false_cases
 
 def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[str]):
-    # print(candidate_answers)
     answer_logprobs = {}
     for logprob in logprobs:
         key = next(iter(logprob.values())).decoded_token
@@ -171,7 +170,6 @@ def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[st
     for label in candidate_answers:
         if label not in answer_logprobs.keys():
             answer_logprobs[label] = -100.0
-    print(answer_logprobs)
     return answer_logprobs
 
 def judge_answer(correct_answer: str, chosen_answer: str, answer: str):
