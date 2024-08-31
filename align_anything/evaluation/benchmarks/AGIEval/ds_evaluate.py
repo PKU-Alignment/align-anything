@@ -179,21 +179,21 @@ def judge_answer(correct_answer, response):
         return correct_answer == match.group()
     return False
 
+def get_data(task_dir):
+    if not os.path.isdir(task_dir):
+        return None
+    task_files = os.listdir(task_dir)
+    InferenceOutputs = []
+    for file in tqdm(task_files, desc='Loading data'):
+        if file.endswith(".pkl"):
+            file_path = os.path.join(task_dir, file)
+            with open(file_path, 'rb') as f:
+                InferenceOutputs.extend(pickle.load(f))
+    return InferenceOutputs
+
 def main():
     cache_path = ".cache"
     assert os.path.exists(cache_path), ".cache folder not found. ds_infer failed?"
-    raw_outputs = {}
-
-    task_dirs = [(task, os.path.join(cache_path, task)) for task in os.listdir(cache_path) if os.path.isdir(os.path.join(cache_path, task))]
-    for task, task_dir in task_dirs:
-        task_files = os.listdir(task_dir)
-        InferenceOutputs = []
-        for file in task_files:
-            if file.endswith(".pkl"):
-                file_path = os.path.join(task_dir, file)
-                with open(file_path, 'rb') as f:
-                    InferenceOutputs.extend(pickle.load(f))
-        raw_outputs[task] = InferenceOutputs
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
@@ -233,10 +233,14 @@ def main():
     os.makedirs(uuid_path, exist_ok=True)
 
     tot_num_match, tot_num_sum = 0, 0
-    for task, _ in raw_outputs.items():
+    for task in dataloader.task_names:
+        task_dir = os.path.join(cache_path, task)
+        raw_outputs = get_data(task_dir)
+        if not raw_outputs:
+            continue
 
         file_path = f"{uuid_path}/{task}.json"
-        cnt_match, cnt_sum = evaluator(raw_outputs[task], dataloader, task, api_key, base_url, file_path)
+        cnt_match, cnt_sum = evaluator(raw_outputs, dataloader, task, api_key, base_url, file_path)
         tot_num_match += cnt_match
         tot_num_sum += cnt_sum
 
