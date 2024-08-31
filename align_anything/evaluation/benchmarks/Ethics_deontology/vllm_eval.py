@@ -16,7 +16,6 @@
 
 # Commonsense Morality is measured with classification accuracy.
 import os 
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 from huggingface_hub import login
 login(token="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")
 import argparse
