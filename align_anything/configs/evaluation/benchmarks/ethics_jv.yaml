@@ -7,7 +7,7 @@ default:
   # Evaluation configurations
   eval_cfgs:
     # Output directory name
-    output_dir: /home/hansirui/zhuhan/ethics_output/justice_virtue/
+    output_dir: null
     # Num shot
     n_shot: 2
     # Chain of Thought
@@ -26,12 +26,12 @@ default:
 
    # Model configurations
   model_cfgs:
-    model_id: Meta-Llama-3-8B
+    model_id: null
     # Pretrained model name or path
-    model_name_or_path: meta-llama/Meta-Llama-3-8B
+    model_name_or_path: null
     # Chat template
-    chat_template: Llama3
+    chat_template: null
     # Whether to trust remote code
     trust_remote_code: True
     # The max token length
-    model_max_length: 4096
+    model_max_length: 2048
