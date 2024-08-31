@@ -1,0 +1,36 @@
+infer_cfgs:
+  # The deepspeed configuration
+  ds_cfgs: ds_z3_config.json
+  vllm_cfgs: vllm_basic.json
+  
+default:
+  # Evaluation configurations
+  eval_cfgs:
+    # Output directory name
+    output_dir: null
+    # Num shot
+    n_shot: 4
+    # Chain of Thought
+    cot: false
+
+  # Configuration for data
+  data_cfgs:
+    # Task name(s)
+    task: ['Sexual_orientation', 'Disability_status', 'Race_ethnicity', 'Gender_identity', 'Age', 'SES', 'Religion', 'Race_x_SES', 'Physical_appearance', 'Nationality', 'Race_x_gender']
+    # Task directory
+    task_dir: caochuxue/BBQ
+
+    # Evaluation split
+    split: test
+
+  # Model configurations
+  model_cfgs:
+    model_id: null
+    # Pretrained model name or path
+    model_name_or_path: null
+    # Chat template
+    chat_template: null
+    # Whether to trust remote code
+    trust_remote_code: True
+    # The max token length
+    model_max_length: 2048
