@@ -1,0 +1,37 @@
+infer_cfgs:
+  # The deepspeed configuration
+  ds_cfgs: ds_z3_config.json
+  vllm_cfgs: vllm_basic.json
+  
+default:
+  # Evaluation configurations
+  eval_cfgs:
+    # Output directory name
+    output_dir: /home/hansirui/zhuhan/ethics_output/deontology/
+    # Num shot
+    n_shot: 2
+    # Chain of Thought
+    cot: false
+
+  # Configuration for data
+  data_cfgs:
+    # Task name(s)
+    ##### NEED CAREFULLY REVIEW THE TASKS #####
+    task: ['deontology']
+    # Task directory
+    task_dir: hendrycks/ethics
+    # test
+    # Evaluation split
+    split: test
+
+   # Model configurations
+  model_cfgs:
+    model_id: Meta-Llama-3-8B
+    # Pretrained model name or path
+    model_name_or_path: meta-llama/Meta-Llama-3-8B
+    # Chat template
+    chat_template: Llama3
+    # Whether to trust remote code
+    trust_remote_code: True
+    # The max token length
+    model_max_length: 4096
