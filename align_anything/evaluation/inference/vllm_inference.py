@@ -61,7 +61,7 @@ def extract_choices(prompt):
     choices = {f"({match[0]})": match[1].strip() for match in matches[:num_choices]}
     return choices
 
-def save_detail(question, prompt, correct_answer, response, true_or_false, file_path, gpt_response=None):
+def save_detail(question, prompt, correct_answer, response, score, file_path, gpt_response=None):
     choices = extract_choices(prompt)
     if choices:
         record = {
@@ -69,14 +69,14 @@ def save_detail(question, prompt, correct_answer, response, true_or_false, file_
             "choices": choices,
             "correct_answer": correct_answer,
             "response": response,
-            "true_or_false": true_or_false
+            "score": score
         }
     else:
         record = {
             "question": question,
             "correct_answer": correct_answer,
             "response": response,
-            "true_or_false": true_or_false
+            "score": score
         }
     if gpt_response:
         record['gpt_response'] = gpt_response
@@ -102,7 +102,6 @@ class BaseInferencer_vllm:
         self.sp_top_p = self.vllm_cfgs_sp.top_p
         self.sp_temperature = self.vllm_cfgs_sp.temperature
         self.sp_max_tokens = self.model_cfgs.model_max_length
-        self.sp_frequency_penalty = self.vllm_cfgs_sp.frequency_penalty
         self.sp_prompt_logprobs = self.vllm_cfgs_sp.prompt_logprobs
         self.sp_logprobs = self.vllm_cfgs_sp.logprobs
 
@@ -130,7 +129,6 @@ class BaseInferencer_vllm:
             top_p=self.sp_top_p,
             temperature=self.sp_temperature,
             max_tokens=self.sp_max_tokens,
-            frequency_penalty=self.sp_frequency_penalty,
             prompt_logprobs=self.sp_prompt_logprobs,
             logprobs=self.sp_logprobs
         )

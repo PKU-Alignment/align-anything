@@ -31,6 +31,14 @@ import torch
 import re
 from tqdm import tqdm
 
+categories_info = {
+    "rec": "REC (Recognition: Focus on detecting and analyzing patterns, objects, or faces in the input data. Ensure accurate identification and classification by leveraging visual features and contextual information.)",
+    "ocr": "OCR (Optical Character Recognition: Precisely detect and convert text from images into readable characters. Ensure high accuracy in character recognition and that the entire text is extracted without errors.)",
+    "know": "KNOW (Knowledge: Provide accurate and relevant answers based on established knowledge. Ensure that responses are factually correct, directly address the question, and are well-supported by relevant information.)",
+    "gen": "GEN (Language Generation: Create text that is coherent and contextually relevant to the given prompt. Ensure that generated content is creative, fits the context, and aligns with the prompt's requirements.)",
+    "spat": "SPAT (Spatial Awareness: Interpret and reason about spatial relationships and geometric properties. Ensure accurate understanding of spatial information and that answers involving geometry are correctly reasoned and solved.)",
+    "math": "MATH (Math: Solve mathematical problems by applying clear, logical steps. Decompose complex problems into simpler components and ensure all calculations are precise and thoroughly explained.)"
+}
 class MMVetDataLoader(BaseDataLoader):
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
@@ -48,11 +56,17 @@ class MMVetDataLoader(BaseDataLoader):
         return None
 
     def build_example_prompt(self, data, with_answer=True):
-        return f"{data['question']}"
+        cate_info = ''
+        categories = data['capability'].split(',')
+        for i in range(len(categories)):
+            categorie = categories[i]
+            info = categories_info[categorie.lower()]
+            cate_info += f'Related_fields_{i + 1}: {info}\n'
+        return f"{cate_info}\nQuestion: {data['question']}"
 
     def build_prompt(self, data: Dict[str, Any]) -> str:
         assert self.num_shot == 0, "MMVet does not support few-shot learning."
-        prompt = ""
+        prompt = "The following are problems that may involve one or more of the following fields: recognition, OCR, knowledge, language generation, spatial perception, and mathematical computation.\n\n"
         template = get_template_class(self.chat_template)
         question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
 
@@ -60,8 +74,8 @@ class MMVetDataLoader(BaseDataLoader):
 
     def preprocess(self, data):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        raw_images = [item['image'] for item in data[self.split]]
-        prompts = self.build_prompt(data[self.split])
+        raw_images = [item['image'] for item in data]
+        prompts = self.build_prompt(data)
         inputs = self.processor(prompts, raw_images, return_tensors='pt', padding=True)
 
         return prompts, inputs
@@ -69,11 +83,11 @@ class MMVetDataLoader(BaseDataLoader):
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
         for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)
+            dataset = load_dataset(self.task_dir, task)[self.split]
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['question_id']):
+            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset['question_id']):
                 processed_input = InferenceInput(text=prompt, token_ids=input_ids, pixel_values=pixel_values)
                 processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)

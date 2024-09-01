@@ -229,11 +229,14 @@ def main():
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
+    tot_num_match, tot_num_sum = 0, 0
     for task, _ in raw_outputs.items():
         test_data = load_local_dataset(task)[data_cfgs.split]
         file_path = f"{uuid_path}/{task}.json"
         num_match, num_sum = evaluator(test_data, raw_outputs[task], api_key, base_url, file_path)
-        
+        tot_num_match += num_match
+        tot_num_sum += num_sum
+
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
             'num_match': [num_match],
@@ -248,6 +251,20 @@ def main():
         logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
         logger.log('info', f"accuracy: {output_dict['accuracy'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    output_dict = {
+        'model_id': [dict_configs.default.model_cfgs.model_id],
+        'tot_num_match': [tot_num_match],
+        'tot_num_sum': [tot_num_sum],
+        'tot_accuracy': [tot_num_match / tot_num_sum]
+    }
+    logger.print_table(title=f'MMSafetyBench Benchmark', data=output_dict)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"model_id: {output_dict['model_id'][0]},")
+    logger.log('info', f"tot_num_match: {output_dict['tot_num_match'][0]},")
+    logger.log('info', f"tot_num_sum: {output_dict['tot_num_sum'][0]},")
+    logger.log('info', f"tot_accuracy: {output_dict['tot_accuracy'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()

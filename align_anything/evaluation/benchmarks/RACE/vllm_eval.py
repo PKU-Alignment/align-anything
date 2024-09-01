@@ -114,7 +114,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: RACEDataLoader, tas
                 'answer': item.response[0]
             }
         )
-    for correct_answer in correct_answers:
+    for correct_answer in tqdm(correct_answers, desc="Evaluating"):
         cnt_sum += 1
         for response in responses:
             if correct_answer['prompt'] in response['prompt']:

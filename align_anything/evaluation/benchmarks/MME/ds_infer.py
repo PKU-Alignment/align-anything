@@ -25,6 +25,7 @@ from torch.nn.utils.rnn import pad_sequence
 import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
 from datasets import load_dataset, DatasetDict
+from collections import defaultdict
 import pickle
 import torch
 import re
@@ -48,7 +49,8 @@ class MMEDataLoader(BaseDataLoader):
         return None
 
     def build_example_prompt(self, data, with_answer=True):
-        return data['question']
+        prompt = f"This is a {data['category']} problem.\n\n"
+        return f"{prompt}{data['question']}"
 
     def build_prompt(self, data: Dict[str, Any]) -> str:
         assert self.num_shot == 0, "MME does not support few-shot learning."
@@ -60,24 +62,35 @@ class MMEDataLoader(BaseDataLoader):
 
     def preprocess(self, data):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        raw_images = [item['image'] for item in data[self.split]]
-        prompts = self.build_prompt(data[self.split])
+        raw_images = [item['image'] for item in data]
+        prompts = self.build_prompt(data)
         inputs = self.processor(prompts, raw_images, return_tensors='pt', padding=True)
 
         return prompts, inputs
 
-    def load_dataset(self) -> DatasetDict:
+    def load_dataset(self, category_datasets) -> DatasetDict:
         processed_inputs = {}
-        for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)
+        for task, dataset in category_datasets.items():
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, input_ids, pixel_values, question_id, question in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['question_id'], dataset[self.split]['question']):
+            for prompt, input_ids, pixel_values, i in zip(prompts, inputs['input_ids'], inputs['pixel_values'], range(len(dataset))):
+                question_id, question = dataset[i]['question_id'], dataset[i]['question']
                 processed_input = InferenceInput(text=prompt, token_ids=input_ids, pixel_values=pixel_values)
                 processed_input.question_id = question_id + question
                 processed_inputs[task].append(processed_input)
         return processed_inputs
+    
+    def get_category_datasets(self):
+        dataset = load_dataset(self.task_dir, 'default')[self.split]
+
+        category_datasets = defaultdict(list)
+        for i in tqdm(range(len(dataset)), desc='Dataset classification'):
+            category = dataset[i]['category']
+            if category in self.task_names:
+                category_datasets[category].append(dataset[i])
+                
+        return category_datasets
 
 class MMEGeneratorDS(BaseInferencer_deepspeed):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
@@ -193,7 +206,8 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = MMEDataLoader(dict_configs)
-    test_data = dataloader.load_dataset()
+    dataset = dataloader.get_category_datasets()
+    test_data = dataloader.load_dataset(dataset)
     eval_module = MMEGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)
 

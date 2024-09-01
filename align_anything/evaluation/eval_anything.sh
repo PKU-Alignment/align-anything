@@ -69,6 +69,3 @@ elif [ "$backend" = "deepspeed" ]; then
 else
   python eval.py $ARGS
 fi
-
-rm -rf .cache
-rm -rf __pycache__
