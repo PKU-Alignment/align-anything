@@ -40,7 +40,7 @@ if not new_openai_flag:
     import openai
 
 @ray.remote(num_cpus=1)
-def bean_gpt_api(
+def gpt_judger(
     api_key: str,
     base_url: str,
     system_content: str,
@@ -130,7 +130,7 @@ def generate_hash_uid(to_hash: dict | tuple | list | str):
 
     return hash_uid
 
-def api(
+def get_result(
     api_key: str,
     base_url: str,
     system_contents: list[str],
@@ -143,7 +143,7 @@ def api(
 ):
     if len(system_contents) != len(user_contents_1):
         raise ValueError('Length of system_contents and user_contents should be equal.')
-    server = bean_gpt_api
+    server = gpt_judger
 
     api_interaction_count = 0
     ray.init()
@@ -261,7 +261,7 @@ def judger(api_key, base_url, dataset, file_path):
 
     system_prompts = [system_prompt] * len(processed_paths_1)
         
-    results = api(api_key, base_url, system_prompts, user_prompts_q, user_prompts_a1, processed_paths_1, processed_paths_2, post_process=post_process)
+    results = get_result(api_key, base_url, system_prompts, user_prompts_q, user_prompts_a1, processed_paths_1, processed_paths_2, post_process=post_process)
     
     num_sum = 0
     datas = []

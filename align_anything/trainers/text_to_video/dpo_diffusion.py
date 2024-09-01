@@ -98,6 +98,14 @@ class DPOTrainer(SupervisedTrainerBase):
                 dtype=self.dtype,
             )
         )
+        self.ref_model, _, _, _, _ = (
+            load_pretrained_video_diffusion_models(
+                self.cfgs.model_cfgs.model_name_or_path,
+                trust_remote_code=True,
+                freeze_unet=True,
+                dtype=self.dtype,
+            )
+        )
         self.processor = get_video_processor(
             resolution=int(self.cfgs.train_cfgs.resolution),
             sample_frames=int(self.cfgs.train_cfgs.sample_frames),
@@ -162,7 +170,7 @@ class DPOTrainer(SupervisedTrainerBase):
         if self.cfgs.train_cfgs.lora_unet:
             self.accelerator.unwrap_model(self.model).disable_adapters()
         with torch.no_grad():
-            ref_preds = self.model(
+            ref_preds = self.ref_model(
                 noisy_latents,
                 timesteps,
                 encoder_hidden_states,
@@ -190,12 +198,17 @@ class DPOTrainer(SupervisedTrainerBase):
         return {
             'loss': loss,
             'reward_accuracy': implicit_acc,
+            'model_diff': model_diff.mean().detach(),
+            'ref_diff': ref_diff.mean().detach(),
         }
 
     def train_step(self, batch: PreferenceBatch) -> dict[str, Any]:
         """Performs a single training step."""
-        loss = self.loss(batch)['loss']
-        reward_accuracy = self.loss(batch)['reward_accuracy']
+        loss_info = self.loss(batch)
+        loss = loss_info['loss']
+        reward_accuracy = loss_info['reward_accuracy']
+        model_diff = loss_info['model_diff']
+        ref_diff = loss_info['ref_diff']
 
         self.accelerator.backward(loss)
         if self.accelerator.sync_gradients:
@@ -209,11 +222,15 @@ class DPOTrainer(SupervisedTrainerBase):
         with torch.no_grad():
             loss = get_all_reduce_mean(loss)
             reward_accuracy = get_all_reduce_mean(reward_accuracy)
+            model_diff = get_all_reduce_mean(model_diff)
+            ref_diff = get_all_reduce_mean(ref_diff)
 
         return {
             'train/loss': loss.item(),
             'train/lr': self.optimizer.param_groups[0]['lr'],
             'train/reward_accuracy': reward_accuracy.item(),
+            'train/model_diff': model_diff.item(),
+            'train/ref_diff': ref_diff.item(),
         }
 
     def train(self) -> None:
@@ -242,7 +259,7 @@ class DPOTrainer(SupervisedTrainerBase):
                 self.global_step += 1
                 progress_bar.set_description(
                     f'Training {epoch + 1}/{self.cfgs.train_cfgs.epochs} epoch '
-                    f'(loss {info["train/loss"]:.4f})',
+                    f'(reward accuracy {info["train/reward_accuracy"]:.4f})',
                 )
                 progress_bar.update(1)
 
