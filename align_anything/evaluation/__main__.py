@@ -48,7 +48,7 @@ def parse_eval_args() -> argparse.Namespace:
             "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
             "ScienceQA", "MMStar", "LongBench", "L-Eval",
             "AGIEval", "C-Eval", "TMMLU", "SST-2", "CommonsenseQA", "LogiQA", "AGNews", "RealToxicityPrompts", "BBQ", "Ethics_commonsense", 
-            "Ethics_deontology", "Ethics_jv"
+            "Ethics_deontology", "Ethics_jv", "Ethics_ut"
         ],
     )
     parser.add_argument(
