@@ -14,7 +14,6 @@
 # ==============================================================================
 
 import os
-<<<<<<< HEAD
 import pickle
 import argparse
 import json
@@ -38,20 +37,6 @@ Correct Answer: {INSERT_CORRECT_ANSWER_HERE}
 Response: {INSERT_TEXT_OF_RESPONSE_HERE}
 Is the response correct? Please answer with "True" or "False".
 """
-=======
-import json
-import pickle
-import argparse
-import torch.distributed as dist
-from align_anything.evaluation.inference.ds_inference import BaseInferencer_deepspeed
-from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import List, Dict
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
-from align_anything.utils.template_registry import get_template_class
-from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from datasets import load_dataset, DatasetDict
-
->>>>>>> upstream/main
 class AGIEvalDataLoader(BaseDataLoader):
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
@@ -114,7 +99,6 @@ class AGIEvalDataLoader(BaseDataLoader):
 
         return question
     
-<<<<<<< HEAD
 def evaluator(raw_output: List[InferenceOutput], dataloader: AGIEvalDataLoader, task: str, api_key, base_url, file_path):
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
     correct_answers = []
@@ -226,55 +210,10 @@ def main():
         logger.log('error', "Config file is not exist or incomplete.")
         exit()
 
-=======
-    def load_dataset(self, eval_module) -> DatasetDict:
-        for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)
-            self.few_shot_data = self.set_fewshot_dataset(dataset, task)
-            prompts, token_ids = self.preprocess(dataset)
-            processed_inputs = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
-            eval_module.save_data(task, processed_inputs)
-                
-class AGIEvalGeneratorDS(BaseInferencer_deepspeed):
-    def save_data(self, task, data):
-        os.makedirs(".cache", exist_ok=True)
-        
-        task_dir = f".cache/{task}"
-        os.makedirs(task_dir, exist_ok=True)
-        InferenceOutputs = self.generation(data)
-        if dist.is_initialized():
-            file_path = f"{task_dir}/outputs_{get_rank()}.pkl"
-        else:
-            file_path = f"{task_dir}/outputs.pkl"
-            
-        with open(file_path, 'wb') as f:
-            pickle.dump(InferenceOutputs, f, protocol=4)
-
-def get_rank():
-    if not is_dist_avail_and_initialized():
-        return 0
-    return dist.get_rank()
-
-def is_dist_avail_and_initialized():
-    if not dist.is_available():
-        return False
-    if not dist.is_initialized():
-        return False
-    return True
-
-def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    _, unparsed_args = parser.parse_known_args()
-    keys = [k[2:] for k in unparsed_args[1::2]]
-    values = list(unparsed_args[2::2])
-    unparsed_args = dict(zip(keys, values))
-    dict_configs, infer_configs = read_eval_cfgs('agieval', 'deepspeed')
->>>>>>> upstream/main
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
-<<<<<<< HEAD
 
     dict_configs = dict_to_namedtuple(dict_configs)
     eval_configs = dict_configs.default.eval_cfgs
@@ -343,17 +282,4 @@ def main():
     logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__=="__main__":
-=======
-        infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
-    
-    dict_configs = dict_to_namedtuple(dict_configs)
-    model_config = dict_configs.default.model_cfgs
-    eval_configs = dict_configs.default.eval_cfgs
-    dataloader = AGIEvalDataLoader(dict_configs)
-    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
-    eval_module = AGIEvalGeneratorDS(model_config, infer_configs)
-    dataloader.load_dataset(eval_module)
-
-if __name__ == '__main__':
->>>>>>> upstream/main
     main()
