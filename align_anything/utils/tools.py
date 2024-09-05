@@ -457,6 +457,9 @@ def parse_unknown_args():
 
     return args_dict
 
+def remove_pad_tokens(response: list[int], pad_token_id: int) -> list[int]:
+    return [token for token in response if token != pad_token_id]
+
 def download_video(url, video_path):
     ydl_opts = {
         'format': 'best',
@@ -469,5 +472,3 @@ def download_video(url, video_path):
     except yt_dlp.utils.DownloadError as e:
         print(f"Error downloading {url}: {e}")
         return False
-def remove_pad_tokens(response: list[int], pad_token_id: int) -> list[int]:
-    return [token for token in response if token != pad_token_id]

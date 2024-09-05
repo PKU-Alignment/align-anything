@@ -23,6 +23,8 @@ default:
   eval_cfgs:
     # Output directory name
     output_dir: null
+    # Generation output directory
+    generation_output: null
     # Unique identifier for cache folder
     uuid: null
     # Num shot
@@ -32,9 +34,9 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: default
+    task: ['1k_group']
     # Task directory
-    task_dir: shunk031/DrawBench
+    task_dir: THUDM/ImageRewardDB
     # Evaluation split
     split: test
 

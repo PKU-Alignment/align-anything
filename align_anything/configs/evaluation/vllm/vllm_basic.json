@@ -12,7 +12,7 @@
     {
         "tokenizer_mode": "auto",
         "trust_remote_code": false,
-        "gpu_memory_utilization": 0.6,
+        "gpu_memory_utilization": 0.8,
         "max_num_seqs": 1
     }
 }

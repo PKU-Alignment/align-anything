@@ -23,20 +23,26 @@ default:
   eval_cfgs:
     # Output directory name
     output_dir: null
+    # Generation output directory
+    generation_output: null
+    #openai api url
+    openai_api_base_url: null
+    #openai api key
+    openai_api_key: null
     # Unique identifier for cache folder
     uuid: null
     # Num shot
-    n_shot: 5
-    # Chain of Thought
+    n_shot: 0
+    # Use Chain of Thought
     cot: false
   # Configuration for data
   data_cfgs:
     # Task name
-    task: [ARC-Challenge, ARC-Easy]
+    task: ['default']
     # Task directory
-    task_dir: allenai/ai2_arc
+    task_dir: null
     # Evaluation split
-    split: validation
+    split: null
 
   # Model configurations
   model_cfgs:
