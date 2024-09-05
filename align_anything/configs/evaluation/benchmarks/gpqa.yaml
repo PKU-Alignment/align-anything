@@ -33,6 +33,7 @@ default:
     task: main
     # Task directory
     task_dir: jeggers/gpqa_formatted
+    
     # Evaluation split
     split: train
 

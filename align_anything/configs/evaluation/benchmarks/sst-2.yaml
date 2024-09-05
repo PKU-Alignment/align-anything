@@ -18,6 +18,7 @@ default:
     task: ['SST-2-sentiment-analysis']
     # Task directory
     task_dir: zacharyxxxxcr/SST-2-sentiment-analysis
+    
     # Evaluation split
     split: test
 

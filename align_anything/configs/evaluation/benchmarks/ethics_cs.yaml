@@ -16,8 +16,6 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name(s)
-    ##### NEED CAREFULLY REVIEW THE TASKS #####
-    # task: ['commonsense', 'deontology', 'justice', 'virtue', "utilitarianism"]
     task: ['commonsense']
     # Task directory
     task_dir: hendrycks/ethics 

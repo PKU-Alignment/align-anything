@@ -16,12 +16,13 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name(s)
-    ##### NEED CAREFULLY REVIEW THE TASKS #####
     task: default
     # Task directory
     task_dir: jeggers/logiqa2_formatted
+    
     # Evaluation split
     split: test
+    # Candidate labels
     candidate_labels: ["A", "B", "C", "D"]
 
   # Model configurations

@@ -15,8 +15,6 @@
 """
 Evaluate following https://huggingface.co/blog/evaluating-llm-bias
 """
-from huggingface_hub import login
-login(token="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")
 import argparse
 import json
 import os

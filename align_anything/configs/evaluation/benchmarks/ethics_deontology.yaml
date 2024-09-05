@@ -16,11 +16,10 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name(s)
-    ##### NEED CAREFULLY REVIEW THE TASKS #####
     task: ['deontology']
     # Task directory
     task_dir: hendrycks/ethics
-    # test
+
     # Evaluation split
     split: test
 

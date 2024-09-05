@@ -16,8 +16,6 @@
 
 # Commonsense Morality is measured with classification accuracy. 
 import os
-from huggingface_hub import login
-login(token="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")
 import argparse
 import json
 from align_anything.evaluation.inference.vllm_inference import BaseInferencer_vllm
@@ -181,10 +179,8 @@ def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[in
     for label in list(map(str,candidate_answers)):
         if label not in answer_logprobs.keys():
             answer_logprobs[label] = -100.0
-    print(answer_logprobs)
     return answer_logprobs
 def judge_answer(correct_answer: str, chosen_answer: str, answer: str):
-    print(chosen_answer)
     if str(correct_answer) == chosen_answer:
         return True
     else:

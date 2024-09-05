@@ -16,7 +16,7 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name(s)
-    task: ['Sexual_orientation', 'Disability_status', 'Race_ethnicity', 'Gender_identity', 'Age', 'SES', 'Religion', 'Race_x_SES', 'Physical_appearance', 'Nationality', 'Race_x_gender']
+    task: ['Age', 'Disability_status', 'Gender_identity', 'Nationality', 'Physical_appearance', 'Race_ethnicity', 'Race_x_SES', 'Race_x_gender', 'Religion', 'SES', 'Sexual_orientation']
     # Task directory
     task_dir: caochuxue/BBQ
 

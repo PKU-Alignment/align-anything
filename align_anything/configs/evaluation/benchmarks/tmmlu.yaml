@@ -19,6 +19,7 @@ default:
     task: ['accounting', 'administrative_law', 'advance_chemistry', 'agriculture', 'anti_money_laundering', 'auditing', 'basic_medical_science', 'business_management', 'chinese_language_and_literature', 'clinical_psychology', 'computer_science', 'culinary_skills', 'dentistry', 'economics', 'education', 'education_(profession_level)', 'educational_psychology', 'engineering_math', 'finance_banking', 'financial_analysis', 'fire_science', 'general_principles_of_law', 'geography_of_taiwan', 'human_behavior', 'insurance_studies', 'introduction_to_law', 'jce_humanities', 'junior_chemistry', 'junior_chinese_exam', 'junior_math_exam', 'junior_science_exam', 'junior_social_studies', 'logic_reasoning', 'macroeconomics', 'management_accounting', 'marketing_management', 'mechanical', 'music', 'national_protection', 'nautical_science', 'occupational_therapy_for_psychological_disorders', 'official_document_management', 'optometry', 'organic_chemistry', 'pharmacology', 'pharmacy', 'physical_education', 'physics', 'politic_science', 'real_estate', 'secondary_physics', 'statistics_and_machine_learning', 'taiwanese_hokkien', 'taxation', 'technical', 'three_principles_of_people', 'trade', 'traditional_chinese_medicine_clinical_medicine', 'trust_practice', 'ttqav2', 'tve_chinese_language', 'tve_design', 'tve_mathematics', 'tve_natural_sciences', 'veterinary_pathology', 'veterinary_pharmacology']
     # Task directory
     task_dir: zacharyxxxxcr/tmmluplus
+    
     # Evaluation split
     split: test
 

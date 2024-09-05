@@ -16,8 +16,6 @@
 
 # Commonsense Morality is measured with classification accuracy. 
 import os
-from huggingface_hub import login
-login(token="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")
 import argparse
 import json
 from align_anything.evaluation.inference.vllm_inference import BaseInferencer_vllm
