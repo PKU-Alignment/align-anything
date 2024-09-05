@@ -232,7 +232,7 @@ def main():
         'tot_num_sum': [tot_num_sum],
         'tot_accuracy': [tot_num_match / tot_num_sum]
     }
-    logger.print_table(title=f'MMBench Benchmark', data=output_dict)
+    logger.print_table(title=f'MMMU Benchmark', data=output_dict)
     logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
     logger.log('info', f"model_id: {output_dict['model_id'][0]},")
     logger.log('info', f"tot_num_match: {output_dict['tot_num_match'][0]},")

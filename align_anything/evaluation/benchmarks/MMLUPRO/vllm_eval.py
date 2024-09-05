@@ -36,44 +36,40 @@ class MMLUPRODataLoader(BaseDataLoader):
             ]
             return task_names
 
-    def get_answer(self, data):
-        return data['answer']
+    def get_answer(self, data, cot_content=False):
+        if cot_content:
+            return data['cot_content']
+        else:
+            return data['answer']
 
     def set_fewshot_dataset(self, dataset, task): 
-        if self.cot:
-            with open('../cot_fewshot/MMLUPRO/' + task + '.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data
-        else:
-            valid_dataset = dataset['validation']
-            valid_task_dataset = valid_dataset.filter(lambda example: example['category'] == task)
-            return valid_task_dataset
-        
+        valid_dataset = dataset['validation']
+        valid_task_dataset = valid_dataset.filter(lambda example: example['category'] == task)
+        return valid_task_dataset
+    
     def build_example_prompt(self, data, with_answer=True, cot=False):
         self.candidate_labels = [chr(65 + i) for i in range(len(data['options']))]
+        prompt = f"The following is a multiple choice question (with answers) about {data['category']}. Think step by step and then finish your answer with \"the answer is (X)\" where X is the correct letter choice.\n"
         choices = '\n'.join([f'({label}) {data["options"][ord(label) - 65]}' for label in self.candidate_labels])
-        answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
-        return f"{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
+        answer = f'Answer: {self.get_answer(data, True)}' if with_answer else 'Answer: '
+        return f"{prompt}\n{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
+        # return f"{prompt}\n{data['question']}\n{choices}\n{answer}"
 
     def build_prompt(self, data):
         prompt = ""
         cot_prompt = f" Let's think step by step. "
+        # cot_prompt = f""
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
         if len(few_shot_examples) == 0:
             question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
         else:
-            if not self.cot:
-                few_shots = [
-                    self.build_example_prompt(
-                        {key: value[i] for key, value in few_shot_examples.items()}, True
-                    )
-                    for i in range(len(few_shot_examples['question']))
-                ]
-            else:
-                few_shots = [
-                    f"{example['question']}\n'Answer: '{example['answer']}" for example in few_shot_examples
-                ]
+            few_shots = [
+                self.build_example_prompt(
+                    {key: value[i] for key, value in few_shot_examples.items()}, True
+                )
+                for i in range(len(few_shot_examples['question']))
+            ]
             question = []
             for item in data:
                 request = {}
@@ -119,7 +115,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: MMLUPRODataLoader, 
                 'answer': item.response[0]
             }
         )
-    for correct_answer in correct_answers:
+    for correct_answer in tqdm(correct_answers, desc="Evaluating"):
         cnt_sum += 1
         for response in responses:
             if correct_answer['prompt'] in response['prompt']:
@@ -189,7 +185,6 @@ def main():
     eval_configs = dict_configs.default.eval_cfgs
     logger.log_dir = eval_configs.output_dir
     dataloader = MMLUPRODataLoader(dict_configs)
-    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = MMLUPROGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
@@ -221,6 +216,6 @@ def main():
         logger.log('info', f"num_sum: {eval_results['num_sum'][0]},")
         logger.log('info', f"accuracy: {eval_results['accuracy'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        
+
 if __name__ == '__main__':
     main()

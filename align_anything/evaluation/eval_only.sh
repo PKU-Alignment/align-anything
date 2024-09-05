@@ -17,20 +17,20 @@
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --modality)
-      modality="$2"
+    --benchmark)
+      benchmark="$2"
       shift 2
       ;;
     --output_dir)
       output="$2"
       shift 2
       ;;
-    --generation_backend)
-      backend="$2"
+    --generation_output)
+      generation_output="$2"
       shift 2
       ;;
     -g)
-      backend="$2"
+      generation_output="$2"
       shift 2
       ;;
     --uuid)
@@ -41,14 +41,6 @@ while [[ $# -gt 0 ]]; do
       model_id="$2"
       shift 2
       ;;
-    --model_name_or_path)
-      model_name_or_path="$2"
-      shift 2
-      ;;
-    --chat_template)
-      chat_template="$2"
-      shift 2
-      ;;
     *)
       shift
       ;;
@@ -56,16 +48,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-TARGET_DIR="${SCRIPT_DIR}/benchmarks/Eval-Anything/${modality}"
+TARGET_DIR="${SCRIPT_DIR}/benchmarks/${benchmark}"
 cd "$TARGET_DIR" || { echo "Failed to change directory to $TARGET_DIR"; exit 1; }
 
-ARGS="--modality $modality --output_dir $output --uuid $uuid --model_id $model_id --model_name_or_path $model_name_or_path --chat_template $chat_template"
+ARGS="--output_dir $output --generation_output $generation_output --uuid $uuid --model_id $model_id"
 
-if [ "$backend" = "vllm" ]; then
-  python vllm_eval.py $ARGS
-elif [ "$backend" = "deepspeed" ]; then
-  deepspeed --module ds_infer $ARGS
-  python ds_evaluate.py $ARGS
-else
-  python eval.py $ARGS
-fi
+python eval_only.py $ARGS

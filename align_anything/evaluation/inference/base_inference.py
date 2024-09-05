@@ -16,12 +16,13 @@
 import os
 import re
 import json
+import torch
 from tqdm import tqdm
-from typing import List, Dict, Any
-from vllm.utils import cuda_device_count_stateless
-from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from vllm import LLM, SamplingParams
+from typing import Dict, Any
+from align_anything.models.chameleon_model_t2i import ChameleonTextToImagePipeline
 from align_anything.utils.tools import requestoutput_to_dict
+from diffusers import StableDiffusionPipeline, DiffusionPipeline
+from transformers import ChameleonForConditionalGeneration, ChameleonProcessor, set_seed
 
 def update_results(output_dir:str,
                      brief_filename:str,
@@ -90,72 +91,43 @@ def save_detail(question, prompt, correct_answer, response, score, file_path, gp
             file.seek(0)
             json.dump(data, file, ensure_ascii=False, indent=4)
             
-class BaseInferencer_vllm:
+class BaseInferencer:
     def __init__(self, 
-                 model_cfgs: Dict[str, Any],
-                 vllm_cfgs,
+                 model_id: str,
+                 model_name_or_path: str,
+                 model_max_length: str,
+                 seed: str,
                  **kwargs):
-        self.vllm_cfgs_sp, self.vllm_cfgs_llm = vllm_cfgs.SamplingParams, vllm_cfgs.LLM
-        self.model_cfgs = model_cfgs
-        self.sp_n = self.vllm_cfgs_sp.n
-        self.sp_top_k = self.vllm_cfgs_sp.top_k
-        self.sp_top_p = self.vllm_cfgs_sp.top_p
-        self.sp_temperature = self.vllm_cfgs_sp.temperature
-        self.sp_max_tokens = self.model_cfgs.model_max_length
-        self.sp_prompt_logprobs = self.vllm_cfgs_sp.prompt_logprobs
-        self.sp_logprobs = self.vllm_cfgs_sp.logprobs
+        self.model_id = model_id
+        self.model_name_or_path = model_name_or_path
+        self.sp_max_tokens = model_max_length
+        self.seed = seed
 
-        self.llm_tokenizer_mode = self.vllm_cfgs_llm.tokenizer_mode
-        self.llm_trust_remote_code = self.vllm_cfgs_llm.trust_remote_code
-        self.llm_gpu_memory_utilization = self.vllm_cfgs_llm.gpu_memory_utilization
-        self.llm_max_num_seqs = self.vllm_cfgs_llm.max_num_seqs
-        tensor_ps = self.vllm_cfgs_llm.tensor_parallel_size
-        self.llm_tensor_parallel_size = tensor_ps if tensor_ps else cuda_device_count_stateless()
-
-        self.model_id = self.model_cfgs.model_id
-        self.model_name_or_path = self.model_cfgs.model_name_or_path
-        self.llm_trust_remote_code = self.model_cfgs.trust_remote_code
-        self.sp_max_tokens = self.model_cfgs.model_max_length
-
-        self.task2details = {}
-        self.detailed_filename = f'{self.model_id}_detailed'
-        self.brief_filename = f'{self.model_id}_brief'
-        self.init_model()
-
-    def init_model(self) -> None:
-        self.samplingparams = SamplingParams(
-            n=self.sp_n,
-            top_k=self.sp_top_k,
-            top_p=self.sp_top_p,
-            temperature=self.sp_temperature,
-            max_tokens=self.sp_max_tokens,
-            prompt_logprobs=self.sp_prompt_logprobs,
-            logprobs=self.sp_logprobs
-        )
-
-        self.model = LLM(
-            model=self.model_name_or_path,
-            tokenizer=self.model_name_or_path,
-            tokenizer_mode=self.llm_tokenizer_mode,
-            trust_remote_code=self.llm_trust_remote_code,
-            tensor_parallel_size=self.llm_tensor_parallel_size,
-            gpu_memory_utilization=self.llm_gpu_memory_utilization,
-            max_num_seqs = self.llm_max_num_seqs
-        )
-
-    def generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
-        return self._generation(inputs)
-
-    def _generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
-        assert isinstance(inputs, list)
-        if inputs[0].token_ids:
-            outputs = self.model.generate(prompt_token_ids=[input.token_ids for input in inputs], sampling_params=self.samplingparams)
-            for input, output in zip(inputs, outputs):
-                output.prompt = input.text
+    def init_model(self, device) -> None:
+        model_name_lower = self.model_id.lower()
+        if "cham" in model_name_lower:
+            self.model = ChameleonTextToImagePipeline(
+                model_name_or_path=self.model_name_or_path,
+                max_new_tokens=self.sp_max_tokens,
+                seed=self.seed,
+                device=device,
+            )
+        elif "stable-diffusion" in model_name_lower:
+            self.model = StableDiffusionPipeline.from_pretrained(self.model_name_or_path).to(device)
+        elif "flux" in model_name_lower or "sdxl" in model_name_lower:
+            self.model = DiffusionPipeline.from_pretrained(self.model_name_or_path).to(device)
         else:
-            outputs = self.model.generate(prompts=[input.text for input in inputs], sampling_params=self.samplingparams)
-        InferenceOutputs = [
-            InferenceOutput.from_vllm_output(vllm_output=output, store_raw=True)
-                for output in outputs
-        ]
-        return InferenceOutputs
+            raise ValueError(f"Model '{self.model_name_or_path}' is not supported or unknown.")
+        
+    def text_to_image_genenrate(self, prompt, image_path) -> None:
+        model_name_lower = self.model_name_or_path.lower()
+        if "cham" in model_name_lower:
+            self.model.generation(prompt, image_path)
+        elif "stable-diffusion" in model_name_lower:
+            image = self.model(prompt).images[0]
+            image.save(image_path)
+        elif "flux" in model_name_lower or "sdxl" in model_name_lower:
+            image = self.model(prompt).images[0]
+            image.save(image_path)
+        else:
+            raise ValueError(f"Model '{self.model_name_or_path}' is not supported or unknown. Supported models are: chameleon, stable-diffusion, flux, sdxl.")

@@ -21,7 +21,7 @@ import os
 import random
 from collections import namedtuple
 from typing import Any, NamedTuple
-
+import yt_dlp
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -459,3 +459,16 @@ def parse_unknown_args():
 
 def remove_pad_tokens(response: list[int], pad_token_id: int) -> list[int]:
     return [token for token in response if token != pad_token_id]
+
+def download_video(url, video_path):
+    ydl_opts = {
+        'format': 'best',
+        'outtmpl': video_path,
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        return True
+    except yt_dlp.utils.DownloadError as e:
+        print(f"Error downloading {url}: {e}")
+        return False

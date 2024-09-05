@@ -62,16 +62,16 @@ class MMBenchDataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        return self.build_prompt(data[self.split])
+        return self.build_prompt(data)
     
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
         for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)
+            dataset = load_dataset(self.task_dir, task)[self.split]
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, image, question_id in zip(prompts, dataset[self.split]['image'], dataset[self.split]['index']):
+            for prompt, image, question_id in zip(prompts, dataset['image'], dataset['index']):
                 processed_input = InferenceInput(text=prompt, image_file=image)
                 processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
@@ -115,9 +115,10 @@ def evaluator(test_dataset, output_data, file_path):
 def judger(correct_answer, response):
     if correct_answer not in response:
         return False
-    for first_response in response:
-        if first_response in "ABCD":
-            return first_response == correct_answer
+    match = re.search(r'(?<![a-zA-Z])[A-Z](?![a-zA-Z])', response)
+    if match:
+        return correct_answer == match.group()
+    return False
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

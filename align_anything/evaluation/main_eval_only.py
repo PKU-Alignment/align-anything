@@ -34,32 +34,24 @@ def get_uuid():
 def parse_eval_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--config", default=None, help="Path to a yaml file specifying all eval arguments, will ignore cli arguments if specified")
-    parser.add_argument("--chat_template", default="", help="Chat template id of your model, details can be refered in `align-anything/align_anything/configs/template.py`.")
     parser.add_argument(
         "--benchmark",
         "-b",
         default=None,
-        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, LongBench, L-Eval, AGIEval, C-Eval, TMMLU, SST-2, CommonsenseQA, Eval-Anything, HPSv2, ImageRewardDB, TIFAv1.0, VideoMME",
+        help="The benchmark you want to test on. Choices: HPSv2, ImageRewardDB, TIFAv1.0",
         choices=[
-            "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
-            "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
-            "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
-            "MM-SafetyBench", "TextVQA", "VizWizVQA", "SPA-VL",
-            "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
-            "ScienceQA", "MMStar", "LongBench", "L-Eval",
-            "AGIEval", "C-Eval", "TMMLU", "SST-2", "CommonsenseQA", "Eval-Anything",
-            "HPSv2", "ImageRewardDB", "TIFAv1.0", "VideoMME"
+            "HPSv2", "ImageRewardDB", "TIFAv1.0"
         ],
     )
     parser.add_argument(
-        "--model_id",
+        "--model_id1",
         default="",
-        help="Unique identifier for the model, used to track and distinguish model evaluations.",
+        help="Unique identifier for the model1, used to track and distinguish model evaluations.",
     )
     parser.add_argument(
-        "--model_name_or_path",
+        "--model_id2",
         default="",
-        help="The local path or hugggingface link of model",
+        help="Unique identifier for the model2, used to track and distinguish model evaluations.",
     )
     parser.add_argument(
         "--n_fewshot",
@@ -99,11 +91,10 @@ def parse_eval_args() -> argparse.Namespace:
         help="If True, write out all model outputs and documents for per-sample measurement and post-hoc analysis",
     )
     parser.add_argument(
-        "--generation_backend",
+        "--generation_output",
         "-g",
-        default="vLLM",
         required=True,
-        help="vLLM or Deepspeed.",
+        help="Generation output directory",
     )
     args = parser.parse_args()
     return args
@@ -119,7 +110,7 @@ def save_result(model_id, result_dir):
                     score = item.get('score')
                     if isinstance(score, bool):
                         result = 1 if score else 0
-                    elif isinstance(score, int):
+                    elif isinstance(score, int) or isinstance(score, float):
                         result = score
                     else:
                         result = 0
@@ -129,8 +120,6 @@ def save_result(model_id, result_dir):
     
     with open(output_file_path, 'w', encoding='utf-8') as json_file:
         json.dump(result_dict, json_file, indent=4, ensure_ascii=False)
-    
-    print(f'Results saved to {output_file_path}')
 
 def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     if not args:
@@ -147,69 +136,66 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
 
     folder_path = './benchmarks/'
     subfolder = args.benchmark
-    args.generation_backend = args.generation_backend.lower()
     selected_subfolder_path = os.path.join(folder_path, subfolder)
 
     run_benchmark(selected_subfolder_path, args)
 
+def seperate_file(args, uuid):
+    gen_dir = f"./generation_output/{uuid}"
+    os.makedirs(gen_dir, exist_ok=True)
+    base_dir = os.getcwd()
+    gen_dir1 = os.path.join(base_dir, gen_dir, 'gen1.json')
+    gen_dir2 = os.path.join(base_dir, gen_dir, 'gen2.json')
+
+    with open(args.generation_output, 'r', encoding='utf-8') as file:
+        data = json.load(file)
+
+    data1 = [{"prompt": item["prompt"], "image": item["image1"]} for item in data]
+    data2 = [{"prompt": item["prompt"], "image": item["image2"]} for item in data]
+    with open(gen_dir1, "w") as file1:
+        json.dump(data1, file1, indent=4)
+    with open(gen_dir2, "w") as file2:
+        json.dump(data2, file2, indent=4)
+        
+    return [gen_dir1, gen_dir2]
+        
 def run_benchmark(file_path, args):
     uuid = get_uuid()
+    gen_dir = seperate_file(args, uuid)
+    base_dir = os.getcwd()
+    
     try:
-        file_names = [f for f in os.listdir(file_path) if os.path.isfile(os.path.join(file_path, f))]
-        if args.generation_backend == 'vllm':
-            if 'vllm_eval.py' not in file_names:
-                eval_logger.log('warning', 'vLLM backend is not support for this benchmark.')
-                if 'ds_evaluate.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using Deepspeed backend.')
-                    args.generation_backend = 'deepspeed'
-                elif 'eval.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using Non-accelerating backend')
-                    args.generation_backend = 'none'
-            else:
-                eval_logger.log('info', 'Generating responses using vLLM backend.')
-        elif args.generation_backend == 'deepspeed':
-            if 'ds_evaluate.py' not in file_names:
-                eval_logger.log('warning', 'Deepspeed backend is not support for this benchmark.')
-                if 'vllm_eval.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using vLLM backend.')
-                    args.generation_backend = 'vllm'
-                elif 'eval.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using Non-accelerating backend')
-                    args.generation_backend = 'none'
-            else:
-                eval_logger.log('info', 'Generating responses using Deepspeed backend')
-        else:
-            if 'eval.py' not in file_names:
-                eval_logger.log('warning', 'Non-accelerating backend is not support for this benchmark.')
-                if 'vllm_eval.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using vLLM backend.')
-                    args.generation_backend = 'vllm'
-                elif 'ds_evaluate.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using Deepspeed backend.')
-                    args.generation_backend = 'deepspeed'
-            else:
-                eval_logger.log('info', 'Generating responses using Non-accelerating backend')
+        eval_logger.log('info', 'Generating responses using Non-accelerating backend')
+        for i in range(2):
+            os.chdir(base_dir)
+            args_list = []
+            args_list.append(f"--uuid")
+            args_list.append(uuid)
+            for key, value in vars(args).items():
+                if isinstance(value, bool):
+                    if value:
+                        args_list.append(f"--{key}")
+                elif value is not None:
+                    if 'model_id' in key:
+                        if key == f'model_id{i+1}':
+                            args_list.append(f"--model_id")
+                            args_list.append(str(value))
+                    elif 'generation_output' in key:
+                        args_list.append(f"--generation_output")
+                        args_list.append(str(gen_dir[i]))
+                    else:
+                        args_list.append(f"--{key}")
+                        args_list.append(str(value))
         
-        args_list = []
-        args_list.append(f"--uuid")
-        args_list.append(uuid)
-        for key, value in vars(args).items():
-            if isinstance(value, bool):
-                if value:
-                    args_list.append(f"--{key}")
-            elif value is not None:
-                args_list.append(f"--{key}")
-                args_list.append(str(value))
-        
-        command = f"bash eval.sh {' '.join(args_list)}"
-        os.system(command)
-        os.chdir(file_path)
+            command = f"bash eval_only.sh {' '.join(args_list)}"
+            os.system(command)
+            os.chdir(file_path)
 
-        result_dir = os.path.join(vars(args)['output_dir'], uuid)
-        if os.path.exists(result_dir):
-            save_result(vars(args)['model_id'], result_dir)
+            result_dir = os.path.join(vars(args)['output_dir'], uuid, vars(args)[f'model_id{i+1}'])
+            if os.path.exists(result_dir):
+                save_result(vars(args)[f'model_id{i+1}'], result_dir)
 
-        print(f"{file_path} executed successfully with arguments {args}.")
+            print(f"{file_path} executed successfully with arguments {args}.")
     except subprocess.CalledProcessError as e:
         print(f"Error executing {file_path}: {e}")
 

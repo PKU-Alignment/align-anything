@@ -36,7 +36,7 @@ default:
     # Task directory
     task_dir: allenai/ai2_arc
     # Evaluation split
-    split: test
+    split: validation
 
   # Model configurations
   model_cfgs:

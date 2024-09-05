@@ -26,18 +26,20 @@ default:
     # Unique identifier for cache folder
     uuid: null
     # Num shot
-    n_shot: 8
+    n_shot: 0
     # Use Chain of Thought
-    cot: true
+    cot: false
   # Configuration for data
   data_cfgs:
     # Task name
-    task: main
+    task: videomme
     # Task directory
-    task_dir: openai/gsm8k
+    task_dir: lmms-lab/Video-MME
     # Evaluation split
     split: test
-
+    # Candidate labels
+    candidate_labels: ["A", "B", "C", "D"]
+    
   # Model configurations
   model_cfgs:
     model_id: null

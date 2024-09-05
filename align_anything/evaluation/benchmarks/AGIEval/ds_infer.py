@@ -138,7 +138,6 @@ def main():
     
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
-    eval_configs = dict_configs.default.eval_cfgs
     dataloader = AGIEvalDataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     eval_module = AGIEvalGeneratorDS(model_config, infer_configs)
