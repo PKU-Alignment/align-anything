@@ -217,7 +217,6 @@ def main():
 
     for task, _ in raw_outputs.items():
 
-        file_path = f"{uuid_path}/{task}.json"
         cnt_match, cnt_sum, _, _ = evaluator(raw_outputs[task], data_loader, task)
 
         eval_results = {

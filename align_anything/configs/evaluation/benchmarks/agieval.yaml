@@ -16,11 +16,9 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name(s)
-    ##### NEED CAREFULLY REVIEW THE TASKS #####
-    task: ['aqua-rat', 'gaokao-biology', 'gaokao-chemistry', 'gaokao-chinese', 'gaokao-english', 'gaokao-geography', 'gaokao-history', 'gaokao-mathqa', 'gaokao-physics', 'jec-qa-ca', 'logiqa-en', 'logiqa-zh', 'lsat-ar', 'lsat-lr', 'lsat-rc', 'sat-en', 'sat-en-without-passage', 'sat-math']
+    task: ['aqua-rat', 'gaokao-biology', 'gaokao-chemistry', 'gaokao-chinese', 'gaokao-english', 'gaokao-geography', 'gaokao-history', 'gaokao-mathqa', 'gaokao-physics', 'jec-qa-ca', 'jec-qa-kd', 'logiqa-en', 'logiqa-zh', 'lsat-ar', 'lsat-lr', 'lsat-rc', 'sat-en', 'sat-en-without-passage', 'sat-math']
     # Task directory
     task_dir: zacharyxxxxcr/AGIEval
-
     # Evaluation split
     split: test
 

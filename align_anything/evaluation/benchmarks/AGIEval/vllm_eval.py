@@ -172,6 +172,8 @@ def get_chosen_answer(logprobs: List[Dict[str, Any]], candidate_answers: List[st
     return answer_logprobs
 
 def judge_answer(correct_answer: str, chosen_answer: str, answer: str):
+    if isinstance(correct_answer, list):
+        correct_answer = correct_answer[0]
     if correct_answer.lower() == answer.lower() or correct_answer.lower() == chosen_answer.lower():
         return True
     else:
