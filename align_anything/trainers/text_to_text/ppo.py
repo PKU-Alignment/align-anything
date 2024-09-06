@@ -339,7 +339,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         self.actor_model.backward(actor_loss)
         self.actor_model.step()
 
-        reward_values = self.reward_critic_model(**inference_batch).clipped_scores
+        reward_values = self.reward_critic_model(**inference_batch).scores
         reward_values = reward_values.squeeze(dim=-1)[:, :-1]
         reward_critic_loss = self.critic_loss_fn(
             reward_values[:, start:],
