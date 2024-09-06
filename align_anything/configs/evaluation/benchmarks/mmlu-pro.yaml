@@ -28,7 +28,7 @@ default:
     # Num shot
     n_shot: 5
     # Use Chain of Thought
-    cot: false
+    cot: true
   # Configuration for data
   data_cfgs:
     # Task name

@@ -5,7 +5,6 @@
         "top_k": 20,
         "top_p": 0.9,
         "temperature": 0.05,
-        "frequency_penalty": 1.2,
         "prompt_logprobs": 0,
         "logprobs": 5
     },
@@ -13,7 +12,7 @@
     {
         "tokenizer_mode": "auto",
         "trust_remote_code": false,
-        "gpu_memory_utilization": 0.6,
+        "gpu_memory_utilization": 0.8,
         "max_num_seqs": 1
     }
 }

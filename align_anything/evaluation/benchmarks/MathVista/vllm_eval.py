@@ -54,8 +54,9 @@ class MathVistaDataLoader(BaseDataLoader):
     def build_prompt(self, data):
         assert self.num_shot == 0, "MathVista does not support few-shot learning."
         prompt = ""
+        cot_prompt = f" Let's think step by step. "
         template = get_template_class(self.chat_template)
-        question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
+        question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output=cot_prompt) for item in data]
 
         return question
     

@@ -17,14 +17,14 @@ import argparse
 import json
 from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import List, Dict, Any
+from typing import List, Dict
 from datasets import load_dataset, DatasetDict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.eval_logger import EvalLogger
+from collections import defaultdict
 from tqdm import tqdm
-import torch
 import re
 
 class MMEDataLoader(BaseDataLoader):
@@ -49,7 +49,8 @@ class MMEDataLoader(BaseDataLoader):
             return None
         
     def build_example_prompt(self, data, with_answer=True):
-        return data['question']
+        prompt = f"This is a problem about {data['category']}.\n\n"
+        return f"{prompt}{data['question']}"
 
     def build_prompt(self, data):
         assert self.num_shot == 0, "MME does not support few-shot learning."
@@ -60,20 +61,32 @@ class MMEDataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        return self.build_prompt(data[self.split])
+        return self.build_prompt(data)
     
-    def load_dataset(self) -> DatasetDict:
+    def load_dataset(self, category_datasets) -> DatasetDict:
         processed_inputs = {}
-        for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)
+
+        for task, dataset in category_datasets.items():
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, image, question_id, question in zip(prompts, dataset[self.split]['image'], dataset[self.split]['question_id'], dataset[self.split]['question']):
+            for prompt, i in zip(prompts, range(len(dataset))):
+                image, question_id, question = dataset[i]['image'], dataset[i]['question_id'], dataset[i]['question']
                 processed_input = InferenceInput(text=prompt, image_file=image)
                 processed_input.question_id = question_id + question
                 processed_inputs[task].append(processed_input)
         return processed_inputs
+    
+    def get_category_datasets(self):
+        dataset = load_dataset(self.task_dir, 'default')[self.split]
+
+        category_datasets = defaultdict(list)
+        for i in tqdm(range(len(dataset)), desc='Dataset classification'):
+            category = dataset[i]['category']
+            if category in self.task_names:
+                category_datasets[category].append(dataset[i])
+                
+        return category_datasets
     
 class MMEGeneratorVLLM(BaseInferencer_vllm):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
@@ -96,19 +109,22 @@ class MMEGeneratorVLLM(BaseInferencer_vllm):
 
 def evaluator(test_dataset, output_data, file_path):
     num_match = 0
+    num_match_plus = 0
     num_sum = 0
     question_id = set()
     for test_item in tqdm(test_dataset, desc="Evaluating"):
         for output_item in output_data:
-            if test_item['question_id'] + test_item['question'] == output_item.question_id and output_item.question_id not in question_id:
-                question_id.add(output_item.question_id)
+            if test_item['question_id'] + test_item['question'] == output_item.question_id:
                 num_sum += 1
                 true_or_false = judger(test_item['answer'].lower(), output_item.response[0].lower())
                 if true_or_false:
+                    if test_item['question_id'] in question_id:
+                        num_match_plus += 1
+                    question_id.add(test_item['question_id'])
                     num_match += 1
                 save_detail(test_item['question'], output_item.prompt, test_item['answer'].lower(), output_item.response[0].lower(), true_or_false, file_path)
 
-    return num_match, num_sum
+    return (num_match / num_sum) * 100, (num_match_plus / (num_sum / 2)) * 100, num_sum
 
 def judger(target, output):
     if target not in output:
@@ -123,6 +139,7 @@ def judger(target, output):
         return target == "yes"
     elif last_no > last_yes:
         return target == "no"
+    return False
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -153,33 +170,51 @@ def main():
     logger.log_dir = eval_configs.output_dir
     dataloader = MMEDataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
-    test_data = dataloader.load_dataset()
+    dataset = dataloader.get_category_datasets()
+    test_data = dataloader.load_dataset(dataset)
     eval_module = MMEGeneratorVLLM(model_config, infer_configs)
     raw_outputs = eval_module.eval(test_data, eval_configs)
 
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
-
-    for task, _ in raw_outputs.items():
-        test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
+    
+    tot_score, tot_num_sum = 0.0, 0
+    for task, test_data in dataset.items():
         file_path = f"{uuid_path}/{task}.json"
-        num_match, num_sum = evaluator(test_data, raw_outputs[task], file_path)
-        
+        acc, acc_plus, num_sum = evaluator(test_data, raw_outputs[task], file_path)
+        score = acc + acc_plus
+        tot_score += score
+        tot_num_sum += num_sum
+
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
-            'num_match': [num_match],
             'num_sum': [num_sum],
-            'accuracy': [num_match / num_sum]
+            'acc': [acc],
+            'acc_plus': [acc_plus],
+            'score': [score]
         }
         logger.print_table(title=f'MME/{task} Benchmark', data=output_dict)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {output_dict['model_id'][0]},")
-        logger.log('info', f"num_match: {output_dict['num_match'][0]},")
         logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
-        logger.log('info', f"accuracy: {output_dict['accuracy'][0]},")
+        logger.log('info', f"acc: {output_dict['acc'][0]},")
+        logger.log('info', f"acc_plus: {output_dict['acc_plus'][0]},")
+        logger.log('info', f"score: {output_dict['score'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
+    output_dict = {
+        'model_id': [dict_configs.default.model_cfgs.model_id],
+        'tot_num_sum': [tot_num_sum],
+        'tot_score': [tot_score]
+    }
+    logger.print_table(title=f'MME Benchmark', data=output_dict)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"model_id: {output_dict['model_id'][0]},")
+    logger.log('info', f"tot_num_sum: {output_dict['tot_num_sum'][0]},")
+    logger.log('info', f"tot_score: {output_dict['tot_score'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    
 if __name__ == '__main__':
     main()

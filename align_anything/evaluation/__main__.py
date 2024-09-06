@@ -39,7 +39,7 @@ def parse_eval_args() -> argparse.Namespace:
         "--benchmark",
         "-b",
         default=None,
-        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, LongBench, L-Eval, AGIEval, C-Eval, TMMLU, SST-2, CommonsenseQA, Eval-Anything",
+        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, LongBench, L-Eval, AGIEval, Eval-Anything, HPSv2, ImageRewardDB",
         choices=[
             "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
             "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
@@ -47,7 +47,7 @@ def parse_eval_args() -> argparse.Namespace:
             "MM-SafetyBench", "TextVQA", "VizWizVQA", "SPA-VL",
             "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
             "ScienceQA", "MMStar", "LongBench", "L-Eval",
-            "AGIEval", "C-Eval", "TMMLU", "SST-2", "CommonsenseQA", "Eval-Anything"
+            "AGIEval", "Eval-Anything", "HPSv2", "ImageRewardDB"
         ],
     )
     parser.add_argument(
@@ -161,6 +161,9 @@ def run_benchmark(file_path, args):
                 if 'ds_evaluate.py' in file_names:
                     eval_logger.log('info', 'Generating responses using Deepspeed backend.')
                     args.generation_backend = 'deepspeed'
+                elif 'eval.py' in file_names:
+                    eval_logger.log('info', 'Generating responses using Non-accelerating backend')
+                    args.generation_backend = 'none'
             else:
                 eval_logger.log('info', 'Generating responses using vLLM backend.')
         elif args.generation_backend == 'deepspeed':
@@ -169,11 +172,20 @@ def run_benchmark(file_path, args):
                 if 'vllm_eval.py' in file_names:
                     eval_logger.log('info', 'Generating responses using vLLM backend.')
                     args.generation_backend = 'vllm'
+                elif 'eval.py' in file_names:
+                    eval_logger.log('info', 'Generating responses using Non-accelerating backend')
+                    args.generation_backend = 'none'
             else:
                 eval_logger.log('info', 'Generating responses using Deepspeed backend')
         else:
             if 'eval.py' not in file_names:
                 eval_logger.log('warning', 'Non-accelerating backend is not support for this benchmark.')
+                if 'vllm_eval.py' in file_names:
+                    eval_logger.log('info', 'Generating responses using vLLM backend.')
+                    args.generation_backend = 'vllm'
+                elif 'ds_evaluate.py' in file_names:
+                    eval_logger.log('info', 'Generating responses using Deepspeed backend.')
+                    args.generation_backend = 'deepspeed'
             else:
                 eval_logger.log('info', 'Generating responses using Non-accelerating backend')
         
