@@ -105,7 +105,6 @@ class RMTrainer(SupervisedTrainerBase):
         output = self.model(
                 input_ids=batch['input_ids'],
                 attention_maks=batch['attention_maks'],
-                pixel_values=batch['pixel_values'],
             )
         scores = output.scores
         end_scores = output.end_scores
@@ -179,7 +178,6 @@ class RMTrainer(SupervisedTrainerBase):
             output = self.model(
                 input_ids=batch['input_ids'],
                 attention_mask=batch['attention_mask'],
-                pixel_values=batch['pixel_values'],
             )
             end_scores = output.end_scores
             higher_end_rewards, lower_end_rewards = end_scores.squeeze(dim=-1).chunk(
