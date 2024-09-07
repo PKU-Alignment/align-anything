@@ -25,14 +25,14 @@ def parse_eval_args() -> argparse.Namespace:
         "--benchmark",
         "-b",
         default=None,
-        help="Benchmarks that support pk: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar",
+        help="Benchmarks that support pk: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, HPSv2, ImageRewardDB",
         choices=[
             "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
             "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
             "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
             "MM-SafetyBench", "TextVQA", "VizWizVQA", "SPA-VL",
             "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
-            "ScienceQA", "MMStar"
+            "ScienceQA", "MMStar", "HPSv2", "ImageRewardDB"
         ],
     )
     parser.add_argument(
@@ -73,16 +73,20 @@ def models_pk(model_1: str, model_2: str) -> None:
         else:
             model_1_lose += 1
             model_2_win += 1
-    
+            
+    total_matches_model_1 = model_1_win + model_1_tie + model_1_lose
+    model_1_win_rate = model_1_win / total_matches_model_1 if total_matches_model_1 > 0 else 0
+
     results = {
         model_1: [model_1_win, model_1_tie, model_1_lose],
-        model_2: [model_2_win, model_2_tie, model_2_lose]
+        model_2: [model_2_win, model_2_tie, model_2_lose],
+        model_1 + "_win_rate": [model_1_win_rate],
     }
     
     output_file = f'{model_1}_vs_{model_2}.csv'
     with open(output_file, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['', 'win', 'tie', 'lose'])
+        writer.writerow(['model', 'win', 'tie', 'lose'])
         for model, counts in results.items():
             writer.writerow([model] + counts)
 

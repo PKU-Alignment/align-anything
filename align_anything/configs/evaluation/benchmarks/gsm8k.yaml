@@ -26,7 +26,7 @@ default:
     # Unique identifier for cache folder
     uuid: null
     # Num shot
-    n_shot: 4
+    n_shot: 8
     # Use Chain of Thought
     cot: true
   # Configuration for data

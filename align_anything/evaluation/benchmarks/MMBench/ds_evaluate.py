@@ -46,9 +46,10 @@ def evaluator(test_dataset, output_data, file_path):
 def judger(correct_answer, response):
     if correct_answer not in response:
         return False
-    for first_response in response:
-        if first_response in "ABCD":
-            return first_response == correct_answer
+    match = re.search(r'(?<![a-zA-Z])[A-Z](?![a-zA-Z])', response)
+    if match:
+        return correct_answer == match.group()
+    return False
 
 def main():
     cache_path = ".cache"

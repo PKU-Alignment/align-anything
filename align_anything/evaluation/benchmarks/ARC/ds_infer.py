@@ -24,6 +24,7 @@ from typing import List, Dict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
+from datasets import load_dataset, DatasetDict
 
 class ARCDataLoader(BaseDataLoader):
     def get_task_names(self):
@@ -82,22 +83,29 @@ class ARCDataLoader(BaseDataLoader):
                     question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
         
         return question
+
+    def load_dataset(self, eval_module) -> DatasetDict:
+        for task in self.task_names:
+            dataset = load_dataset(self.task_dir, task)
+            self.few_shot_data = self.set_fewshot_dataset(dataset, task)
+            prompts, token_ids = self.preprocess(dataset)
+            processed_inputs = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
+            eval_module.save_data(task, processed_inputs)
     
 class ARCGeneratorDS(BaseInferencer_deepspeed):
-    def eval(self, data: Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
+    def save_data(self, task, data):
         os.makedirs(".cache", exist_ok=True)
         
-        for task, input in data.items():
-            task_dir = f".cache/{task}"
-            os.makedirs(task_dir, exist_ok=True)
-            InferenceOutputs = self.generation(input)
-            if dist.is_initialized():
-                file_path = f"{task_dir}/outputs_{get_rank()}.pkl"
-            else:
-                file_path = f"{task_dir}/outputs.pkl"
-                
-            with open(file_path, 'wb') as f:
-                pickle.dump(InferenceOutputs, f, protocol=4)
+        task_dir = f".cache/{task}"
+        os.makedirs(task_dir, exist_ok=True)
+        InferenceOutputs = self.generation(data)
+        if dist.is_initialized():
+            file_path = f"{task_dir}/outputs_{get_rank()}.pkl"
+        else:
+            file_path = f"{task_dir}/outputs.pkl"
+            
+        with open(file_path, 'wb') as f:
+            pickle.dump(InferenceOutputs, f, protocol=4)
 
 def get_choices(data):
     if data['choices']['label'][0] == 'A':
@@ -133,12 +141,10 @@ def main():
     
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
-    eval_configs = dict_configs.default.eval_cfgs
     dataloader = ARCDataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
-    test_data = dataloader.load_dataset()
     eval_module = ARCGeneratorDS(model_config, infer_configs)
-    eval_module.eval(test_data, eval_configs)
+    dataloader.load_dataset(eval_module)
 
 if __name__ == '__main__':
     main()

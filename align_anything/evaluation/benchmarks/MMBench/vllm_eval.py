@@ -62,16 +62,16 @@ class MMBenchDataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        return self.build_prompt(data[self.split])
+        return self.build_prompt(data)
     
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
         for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)
+            dataset = load_dataset(self.task_dir, task)[self.split]
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, image, question_id in zip(prompts, dataset[self.split]['image'], dataset[self.split]['index']):
+            for prompt, image, question_id in zip(prompts, dataset['image'], dataset['index']):
                 processed_input = InferenceInput(text=prompt, image_file=image)
                 processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
@@ -115,9 +115,10 @@ def evaluator(test_dataset, output_data, file_path):
 def judger(correct_answer, response):
     if correct_answer not in response:
         return False
-    for first_response in response:
-        if first_response in "ABCD":
-            return first_response == correct_answer
+    match = re.search(r'(?<![a-zA-Z])[A-Z](?![a-zA-Z])', response)
+    if match:
+        return correct_answer == match.group()
+    return False
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -155,12 +156,15 @@ def main():
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
-
+    
+    tot_num_match, tot_num_sum = 0, 0
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
         file_path = f"{uuid_path}/{task}.json"
         num_match, num_sum = evaluator(test_data, raw_outputs[task], file_path)
-       
+        tot_num_match += num_match
+        tot_num_sum += num_sum
+
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
             'num_match': [num_match],
@@ -175,6 +179,20 @@ def main():
         logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
         logger.log('info', f"accuracy: {output_dict['accuracy'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    output_dict = {
+        'model_id': [dict_configs.default.model_cfgs.model_id],
+        'tot_num_match': [tot_num_match],
+        'tot_num_sum': [tot_num_sum],
+        'tot_accuracy': [tot_num_match / tot_num_sum]
+    }
+    logger.print_table(title=f'MMBench Benchmark', data=output_dict)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"model_id: {output_dict['model_id'][0]},")
+    logger.log('info', f"tot_num_match: {output_dict['tot_num_match'][0]},")
+    logger.log('info', f"tot_num_sum: {output_dict['tot_num_sum'][0]},")
+    logger.log('info', f"tot_accuracy: {output_dict['tot_accuracy'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()

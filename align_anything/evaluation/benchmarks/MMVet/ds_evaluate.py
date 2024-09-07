@@ -24,72 +24,86 @@ import requests
 import time
 from tqdm import tqdm
 
+gpt_system_prompt = """
+Compare the ground truth and prediction from AI models, to give a correctness score for the prediction. <image> in the question indicates where an image is. <AND> in the ground truth means it is totally right only when all elements in the ground truth are present in the prediction, and <OR> means it is totally right when any one element in the ground truth is present in the prediction. The correctness score is 0.0 (totally wrong), 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, or 1.0 (totally right). Just complete the last space of the correctness score.
+
+Below are examples and a new case for which you need to provide the correctness score:
+
+**Examples:**
+
+| Question | Ground truth | Prediction | Correctness |
+| --- | --- | --- | --- |
+| What is x in the equation?<image> | -1 <AND> -5 | x = 3 | 0.0 |
+| What is x in the equation?<image> | -1 <AND> -5 | x = -1 | 0.5 |
+| What is x in the equation?<image> | -1 <AND> -5 | x = -5 | 0.5 |
+| What is x in the equation?<image> | -1 <AND> -5 | x = -5 or 5 | 0.5 |
+| What is x in the equation?<image> | -1 <AND> -5 | x = -1 or x = -5 | 1.0 |
+| Can you explain this meme?<image> | This meme is poking fun at the fact that the names of the countries Iceland and Greenland are misleading. Despite its name, Iceland is known for its beautiful green landscapes, while Greenland is mostly covered in ice and snow. The meme is saying that the person has trust issues because the names of these countries do not accurately represent their landscapes. | The meme talks about Iceland and Greenland. It's pointing out that despite their names, Iceland is not very icy and Greenland isn't very green. | 0.4 |
+| Can you explain this meme?<image> | This meme is poking fun at the fact that the names of the countries Iceland and Greenland are misleading. Despite its name, Iceland is known for its beautiful green landscapes, while Greenland is mostly covered in ice and snow. The meme is saying that the person has trust issues because the names of these countries do not accurately represent their landscapes. | The meme is using humor to point out the misleading nature of Iceland's and Greenland's names. Iceland, despite its name, has lush green landscapes while Greenland is mostly covered in ice and snow. The text 'This is why I have trust issues' is a playful way to suggest that these contradictions can lead to distrust or confusion. The humor in this meme is derived from the unexpected contrast between the names of the countries and their actual physical characteristics. | 1.0 |
+
+**New Case to Evaluate:**
+
+| Question | Ground truth | Prediction | Correctness |
+| --- | --- | --- | --- |
+| {INSERT_PROMPT_HERE} | {INSERT_GROUND_TRUTH_HERE} | {INSERT_PREDICTION_HERE} |   |
+"""
+
 def load_pickle(file_path):
     with open(file_path, 'rb') as f:
         data = pickle.load(f)
     return data
 
-def gpt4_judger(question, answer1, answer2, api_key, base_url):
-    def get_response(prompt):
-        data = {
-            "model": "gpt-4-turbo",
-            "messages": [
-                {"role": "user", "content": prompt}
-            ]
-        }
-        response = requests.post(
-            base_url,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json=data
-        )
-        if response.status_code == 200:
-            result = response.json()
-            return result['choices'][0]['message']['content']
-        else:
-            raise Exception(f"Request failed: {response.status_code}, {response.text}")
-
-    prompt = f"For the following question, please determine whether Answer_1 and Answer_2 have the same meaning\nQuestion: {question}\nnAnswer1: {answer1}\nAnswer_2: {answer2}\nPlease answer yes or no."
-    result = get_response(prompt)
-    
-    if 'yes' in result.lower():
-        return True
-    return False
-
 def evaluator(test_dataset, output_data, api_key, base_url, file_path):
-    num_match = 0
     num_sum = 0
     question_id = set()
+    tot_score = 0.0
     for test_item in tqdm(test_dataset, desc="Evaluating"):
         for output_item in output_data:
             if test_item['question_id'] == output_item['question_id'] and output_item['question_id'] not in question_id:
                 question_id.add(output_item['question_id'])
                 time.sleep(0.01)
                 num_sum += 1
-                true_or_false = judger(test_item['question'], test_item['answer'].lower(), output_item['response'][0].lower(), api_key, base_url)
-                if true_or_false:
-                    num_match += 1
-                save_detail(test_item['question'], output_item["prompt_text"], test_item['answer'].lower(), output_item["response"][0].lower(), true_or_false, file_path)
+                score = judger(test_item['question'], test_item['answer'].lower(), output_item['response'][0].lower(), api_key, base_url)
+                tot_score += score
+                save_detail(test_item['question'], output_item["prompt_text"], test_item['answer'].lower(), output_item["response"][0].lower(), score, file_path)
 
-    return num_match, num_sum
+    return tot_score / num_sum, num_sum
 
 def judger(question, correct_answer, response, api_key, base_url):
-    if '<and>' in correct_answer:
-        and_parts = correct_answer.split('<and>')
-        if all(part in response for part in and_parts):
-            return True
-    elif '<or>' in correct_answer:
-        or_parts = correct_answer.split('<or>')
-        if any(part in response for part in or_parts):
-            return True
-    else:
-        if correct_answer in response:
-            return True
-        return gpt4_judger(question, correct_answer, response, api_key, base_url)
+    for _ in range(5):
+        def get_response(prompt):
+            data = {
+                "model": "gpt-4-turbo",
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ]
+            }
+            response = requests.post(
+                base_url,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json=data
+            )
+            if response.status_code == 200:
+                result = response.json()
+                return result['choices'][0]['message']['content']
+            else:
+                raise Exception(f"Request failed: {response.status_code}, {response.text}")
 
-    return False
+        prompt = gpt_system_prompt.format(
+            INSERT_PROMPT_HERE=question,
+            INSERT_GROUND_TRUTH_HERE=correct_answer,
+            INSERT_PREDICTION_HERE=response
+        )
+        Correctness = get_response(prompt)
+        score = re.findall(r'\d\.\d', Correctness)
+        score = float(score[-1]) if score else 0.0
+        if score <= 1.0 and score >= 0.0:
+            return score
+
+    return 0.0
     
 def main():
     cache_path = ".cache"
@@ -145,21 +159,19 @@ def main():
         test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
 
         file_path = f"{uuid_path}/{task}.json"
-        num_match, num_sum = evaluator(test_data, raw_outputs[task], api_key, base_url, file_path)
+        score, num_sum = evaluator(test_data, raw_outputs[task], api_key, base_url, file_path)
         
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
-            'num_match': [num_match],
             'num_sum': [num_sum],
-            'accuracy': [num_match / num_sum]
+            'score': [score],
         }
         logger.print_table(title=f'MMVet/{task} Benchmark', data=output_dict)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {output_dict['model_id'][0]},")
-        logger.log('info', f"num_match: {output_dict['num_match'][0]},")
         logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
-        logger.log('info', f"accuracy: {output_dict['accuracy'][0]},")
+        logger.log('info', f"score: {output_dict['score'][0]}/1,")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__=="__main__":

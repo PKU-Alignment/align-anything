@@ -117,7 +117,7 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: BelebeleDataLoader,
                 'answer': item.response[0]
             }
         )
-    for correct_answer in correct_answers:
+    for correct_answer in tqdm(correct_answers, desc="Evaluating"):
         cnt_sum += 1
         for response in responses:
             if correct_answer['prompt'] in response['prompt']:
@@ -192,10 +192,13 @@ def main():
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
+    tot_num_match, tot_num_sum = 0, 0
     for task, _ in raw_outputs.items():
 
         file_path = f"{uuid_path}/{task}.json"
         cnt_match, cnt_sum = evaluator(raw_outputs[task], dataloader, task, file_path)
+        tot_num_match += cnt_match
+        tot_num_sum += cnt_sum
 
         eval_results = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
@@ -215,6 +218,24 @@ def main():
         logger.log('info', f"num_sum: {eval_results['num_sum'][0]},")
         logger.log('info', f"accuracy: {eval_results['accuracy'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    
+    eval_results = {
+        'model_id': [dict_configs.default.model_cfgs.model_id],
+        'num_fewshot': [eval_configs.n_shot],
+        'chain_of_thought': [eval_configs.cot],
+        'tot_num_match': [tot_num_match],
+        'tot_num_sum': [tot_num_sum],
+        'tot_accuracy': [tot_num_match / tot_num_sum]
+    }
+    logger.print_table(title=f'Belebele Benchmark', data=eval_results)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"model_id: {eval_results['model_id'][0]},")
+    logger.log('info', f"num_fewshot: {eval_results['num_fewshot'][0]},")
+    logger.log('info', f"chain_of_thought: {eval_results['chain_of_thought'][0]},")
+    logger.log('info', f"tot_num_match: {eval_results['tot_num_match'][0]},")
+    logger.log('info', f"tot_num_sum: {eval_results['tot_num_sum'][0]},")
+    logger.log('info', f"tot_accuracy: {eval_results['tot_accuracy'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 
 if __name__ == '__main__':

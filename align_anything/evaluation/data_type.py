@@ -41,18 +41,24 @@ class InferenceInput:
     image_url: Optional[str] = None
     pixel_values: torch.FloatTensor = None
     image_file: PIL.Image = None
+    video_name: str = None
+    video_url: str = None
 
     def __init__(self, 
                  text: str, 
                  token_ids: torch.LongTensor = None, 
                  image_url: Optional[str] = None, 
                  pixel_values: torch.FloatTensor = None,
-                 image_file: PIL.Image = None):
+                 image_file: PIL.Image = None,
+                 video_name: str = None,
+                 video_url: str = None):
         self.text = text
         self.token_ids = token_ids
         self.image_url = image_url
         self.pixel_values = pixel_values
         self.image_file = image_file
+        self.video_name = video_name
+        self.video_url = video_url
 
     def __repr__(self):
         return (f"InferenceInput("
@@ -122,6 +128,16 @@ class InferenceOutput:
             raw_output=vllm_output if store_raw else None
         )
 
+    @classmethod
+    def from_data(cls, data: Dict, store_raw: bool = False):
+        return cls(
+            engine="dict",
+            question_id=data.get("question_id"),
+            prompt=data.get("prompt"),
+            response=data.get("response"),
+            raw_output=data if store_raw else None
+        )
+    
     @classmethod
     def from_dict(cls, data: Dict, store_raw: bool = False):
         return cls(

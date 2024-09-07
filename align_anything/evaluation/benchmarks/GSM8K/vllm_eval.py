@@ -51,7 +51,7 @@ class GSM8KDataLoader(BaseDataLoader):
         return f"{data['question']}\n{answer}"
 
     def build_prompt(self, data):
-        prompt = "The following are diverse grade school math word problems (with answers). Please provide the final answer after '####'.\n\n"
+        prompt = "The following are math word problems (with answers). Please provide the final answer on a new line after '####'. For example: #### 42\n\n"
         cot_prompt = f"Let's think step by step. "
         few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
@@ -111,12 +111,12 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: GSM8KDataLoader, ta
                 'generated_answer': item.response[0] if item.response else ""
             }
         )
-    for correct_answer in correct_answers:
+    for correct_answer in tqdm(correct_answers, desc="Evaluating"):
         cnt_sum += 1
         for response in responses:
             if correct_answer['question'] in response['prompt']:
                 flag_fail = False
-                answer = get_correct_answer(correct_answer['answer'])
+                answer = correct_answer['answer'].split('####')[-1].strip()
                 generated_answer = get_generated_answer(response['generated_answer'])
                 if generated_answer == answer:
                     cnt_match += 1
@@ -130,19 +130,16 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: GSM8KDataLoader, ta
     return cnt_match, cnt_sum
 
 def get_last_number(data):
+    data = data.replace(',', '')
     numbers = re.findall(r'\d+', data)
     if numbers:
         return numbers[-1]
     else:
         return ''
-    
-def get_correct_answer(data):
-    index = data.rfind('####') + len('####')
-    return data[index:].strip()
 
 def get_generated_answer(data):
     if '####' in data:
-        return get_last_number(get_correct_answer(data))
+        return get_last_number(data.split('####')[-1].strip())
     else:
         return get_last_number(data)
     
