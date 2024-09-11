@@ -56,7 +56,8 @@ We have a roadmap for future development work `align-anything`:
 
 - [x] Support alignment algorithms over the `diffusion model`, `text to any generation model` and other `vision-language model`.
 - [x] Support diverse parameter sizes including `LoRA`, `QLoRA`.
-- [ ] Support `NeMo` backbone for training, and `vllm` backbone for evaluation.
+- [x] Support `vllm` backbone for evaluation.
+- [ ] Support `NeMo` backbone for training.
 
 | Trainers      | Text :arrow_right: Text | Text+Image :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | Text :arrow_right: Audio | Text+Image :arrow_right: Text+Image |
 | ------------- | ----------------------- | ----------------------------- | ------------------------ | ------------------------ | ------------------------ | ----------------------------------- |
