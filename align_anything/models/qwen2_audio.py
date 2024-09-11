@@ -12,9 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Dataset classes for text image to text training."""
 
 
-from align_anything.datasets.text_audio_to_text.supervised import *
-from align_anything.datasets.text_audio_to_text.preference import *
-from align_anything.datasets.text_audio_to_text.prompt_only import *
+from dataclasses import dataclass
+
+import torch
+import torch.nn as nn
+from transformers import (
+    Qwen2AudioForConditionalGeneration,
+    Qwen2AudioPreTrainedModel
+)
+
+class AccustomedQwen2AudioModel( Qwen2AudioForConditionalGeneration):
+
+    @classmethod
+    def pretrain_class(cls) -> Qwen2AudioPreTrainedModel:
+        return Qwen2AudioPreTrainedModel

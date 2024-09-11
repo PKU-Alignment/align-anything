@@ -47,6 +47,7 @@ from transformers.utils.generic import ModelOutput
 
 from align_anything.models.llava_model import AccustomedLlavaModel
 from align_anything.models.llava_next_model import AccustomedLlavaNextModel
+from align_anything.models.qwen2_audio import AccustomedQwen2AudioModel
 from align_anything.models.llama_vision_audio_model import (
     LlamaVisionAudioConfig,
     AccustomedLlamaVisionAudioModel
@@ -258,7 +259,7 @@ def register_base_model(auto_model: AnyBaseModelCLS) -> AnyBaseModelCLS:
     auto_model.register(LlavaConfig, AccustomedLlavaModel)
     auto_model.register(LlavaNextConfig, AccustomedLlavaNextModel)
     auto_model.register(LlamaVisionAudioConfig, AccustomedLlamaVisionAudioModel)
-    auto_model.register(Qwen2AudioConfig, Qwen2AudioForConditionalGeneration)
+    auto_model.register(Qwen2AudioConfig, AccustomedQwen2AudioModel)
     return auto_model
 
 

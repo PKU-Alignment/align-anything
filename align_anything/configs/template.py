@@ -1573,10 +1573,19 @@ class RLHFAQA:
     separator: str = '<|im_end|>\n<|im_start|>assistant\n'
 
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        better_response = raw_sample['output']
-        worse_response = raw_sample['reject_answer']
-        prompt = raw_sample['instruction']
-        audio_url = raw_sample['audio_id']
+        raw_input = raw_sample['raw_input']
+        better_id = raw_sample['overall_response']
+
+        if int(better_id) == 1:
+            better_response = raw_input['output']
+            worse_response = raw_input['reject_answer']
+        elif int(better_id) == 2:
+            better_response = raw_input['reject_answer']
+            worse_response = raw_input['output']
+        else:
+            raise RuntimeError(f'Expect better_id is type `int`, but got: {better_id}')
+        prompt = raw_input['prompt']
+        audio_url = raw_input['audio_url']
 
         better_conversation = [
             {'role': 'system', 'content': self.system_prompt},
@@ -1603,4 +1612,19 @@ class RLHFAQA:
         }
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
-        return raw_sample['output'] == raw_sample['reject_answer']
+        raw_input = raw_sample['raw_input']
+        return raw_input['output'] == raw_input['reject_answer']
+
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['raw_input']['prompt']
+        audio_url = raw_sample['raw_input']['audio_url']
+
+        conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+        ]
+
+        return {'conversation': conversation}
