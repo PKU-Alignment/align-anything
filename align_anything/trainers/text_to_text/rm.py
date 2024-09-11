@@ -104,7 +104,7 @@ class RMTrainer(SupervisedTrainerBase):
         assert better_input_ids.size(0) == worse_input_ids.size(0), 'batch size mismatch!'
         output = self.model(
                 input_ids=batch['input_ids'],
-                attention_maks=batch['attention_maks'],
+                attention_mask=batch['attention_mask'],
             )
         scores = output.scores
         end_scores = output.end_scores

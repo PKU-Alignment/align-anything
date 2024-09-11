@@ -1540,3 +1540,67 @@ class Zephyr(Dialogue):
     user_prompt: str = '<human>:{input}\n'
     assistant_prompt: str = '<bot>:{output}'
     separator: str = '\n'
+
+@register_template('OpenAQA')
+class OpenAQA:
+    system_prompt: str = 'You are a helpful assistant.'
+    split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
+    separator: str = '<|im_end|>\n<|im_start|>assistant\n'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['instruction']
+        audio_url = raw_sample['audio_id']
+        response = raw_sample['output']
+
+        conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": response},
+        ]
+
+        return {
+            'conversation': conversation,
+            'prompt': conversation[:-1],
+        }
+    
+@register_template('RLHFAQA')
+class RLHFAQA:
+    system_prompt: str = 'You are a helpful assistant.'
+    split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
+    separator: str = '<|im_end|>\n<|im_start|>assistant\n'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        better_response = raw_sample['output']
+        worse_response = raw_sample['reject_answer']
+        prompt = raw_sample['instruction']
+        audio_url = raw_sample['audio_id']
+
+        better_conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": better_response},
+        ]
+        
+        worse_conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": worse_response},
+        ]
+
+        return {
+            'prompt': better_conversation[:-1],
+            'better_conversation': better_conversation,
+            'worse_conversation': worse_conversation,
+        }
+
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return raw_sample['output'] == raw_sample['reject_answer']
