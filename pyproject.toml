@@ -65,6 +65,7 @@ dependencies = [
     "vllm",
     "diffusers",
     "peft",
+    "yt_dlp",
 ]
 
 dynamic = ["version"]

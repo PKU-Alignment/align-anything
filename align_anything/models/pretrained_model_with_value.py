@@ -66,6 +66,7 @@ def load_pretrained_model_with_value_head(
         torch_dtype=dtype,
         device_map=device_map,
         trust_remote_code=trust_remote_code,
+        ignore_mismatched_sizes=True,
         **auto_model_kwargs,
     )
 
