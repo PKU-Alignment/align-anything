@@ -466,8 +466,8 @@ class Pickapic_TI2TI(TI2TI_PREFERENCE):
         }
         return super().format_example(raw_sample_upd)
 
-@register_template('NExTQA')
-class NExTQA:
+@register_template('TIV2T')
+class TIV2T:
     system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
     user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
     assistant_prompt: str = '<|im_start|>assistant\n{output}'
@@ -503,8 +503,8 @@ class NExTQA:
         }
         return return_dict  
     
-@register_template('NExTQA_preference')
-class NExTQA_PREF:
+@register_template('TIV2T_preference')
+class TIV2T_PREF:
     system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
     user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
     assistant_prompt: str = '<|im_start|>assistant\n{output}'

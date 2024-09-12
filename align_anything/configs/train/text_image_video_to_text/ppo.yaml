@@ -118,7 +118,7 @@ data_cfgs:
   # The format template for ptx training
   ptx_template: null
   # The total number for ptx training
-  ptx_size: 25000
+  ptx_size: null
   # The subset of datasets
   ptx_subset: null
   # The split of ptx datasets
