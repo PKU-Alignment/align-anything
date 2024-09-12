@@ -56,7 +56,8 @@ We have a roadmap for future development work `align-anything`:
 
 - [x] Support alignment algorithms over the `diffusion model`, `text to any generation model` and other `vision-language model`.
 - [x] Support diverse parameter sizes including `LoRA`, `QLoRA`.
-- [ ] Support `NeMo` backbone for training, and `vllm` backbone for evaluation.
+- [x] Support `vllm` backbone for evaluation.
+- [ ] Support `NeMo` backbone for training.
 
 | Trainers      | Text :arrow_right: Text | Text+Image :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | Text :arrow_right: Audio | Text+Image :arrow_right: Text+Image |
 | ------------- | ----------------------- | ----------------------------- | ------------------------ | ------------------------ | ------------------------ | ----------------------------------- |
@@ -73,7 +74,6 @@ We have a roadmap for future development work `align-anything`:
 
 # News
 
-- 2024-08-24 🔥 We have realized modal insensitive evaluation on our own `eval-anything500` benchmark, which currently supports `t2t` and `ti2t`.
 - 2024-08-17 🔥 We have supported DPO and PPO for text-image interleaved input & output models!
 - 2024-08-15 🔥 We have supported a new function in the evaluation module: the `models_pk` script, which enables comparing the performance of two models across different benchmarks.
 - 2024-08-06 🔥 We have restructured the evaluation framework to better support multimodal benchmarks. Based on this, we have implemented benchmarks for text-to-text and text+image-to-text models, with more benchmarks currently being adapted! The supported list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
