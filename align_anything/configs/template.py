@@ -472,7 +472,7 @@ class NExTQA:
     user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
     assistant_prompt: str = '<|im_start|>assistant\n{output}'
     split_token: str = '\n'
-    separator: str = '\n'
+    separator: str = 'assistant\n'
 
     
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
@@ -509,7 +509,7 @@ class NExTQA_PREF:
     user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
     assistant_prompt: str = '<|im_start|>assistant\n{output}'
     split_token: str = '\n'
-    separator: str = '\n'
+    separator: str = 'assistant\n'
 
     
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
