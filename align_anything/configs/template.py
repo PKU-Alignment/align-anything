@@ -466,6 +466,99 @@ class Pickapic_TI2TI(TI2TI_PREFERENCE):
         }
         return super().format_example(raw_sample_upd)
 
+@register_template('NExTQA')
+class NExTQA:
+    system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
+    user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
+    assistant_prompt: str = '<|im_start|>assistant\n{output}'
+    split_token: str = '\n'
+    separator: str = '\n'
+
+    
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['prompt']
+        output = raw_sample['output']
+        
+        return_text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f"{self.assistant_prompt.format(output=output)}"
+        )
+        
+        return_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        
+        video_info = raw_sample['video_path']
+        if isinstance(video_info, str):
+            video_info = [video_info]
+            
+        return_dict = {
+            "text": return_text,
+            "prompt": return_prompt,
+            "image": [],
+            "video": video_info,
+        }
+        return return_dict  
+    
+@register_template('NExTQA_preference')
+class NExTQA_PREF:
+    system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
+    user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
+    assistant_prompt: str = '<|im_start|>assistant\n{output}'
+    split_token: str = '\n'
+    separator: str = '\n'
+
+    
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['prompt']
+        better_output = raw_sample['better_output']
+        worse_output = raw_sample['worse_output']
+        
+        return_better_text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f"{self.assistant_prompt.format(output=better_output)}"
+        )
+        
+        return_worse_text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f"{self.assistant_prompt.format(output=worse_output)}"
+        )
+        
+        video_info = raw_sample['video_path']
+        if isinstance(video_info, str):
+            video_info = [video_info]
+            
+        return_dict = {
+            "better_text": return_better_text,
+            "worse_text": return_worse_text,
+            "image": [],
+            "video": video_info,
+        }
+        return return_dict  
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['prompt']
+        
+        return_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f"{self.assistant_prompt.format(output='')}"    
+        )
+
+        video_info = raw_sample['video_path']
+        if isinstance(video_info, str):
+            video_info = [video_info]
+            
+        return {
+            'text': return_prompt,
+            'image': [],
+            'video': video_info,
+        }
+
 @register_template('GQA')
 class GQA:
     system_prompt: str = ''
