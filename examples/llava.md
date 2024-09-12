@@ -2,7 +2,7 @@
 
 We provide examples of various scripts for fine-tuning based on the [LLAVA](https://huggingface.co/llava-hf) series models as follows. You can execute these commands in the `./scripts` directory to start the corresponding training.
 
-**Note:** The [LLaVA-Instruct-150K](https://huggingface.co/datasets/liuhaotian/LLaVA-Instruct-150K) dataset uses remote links to access images. However, due to the server hosting these images occasionally stopping its response, this can lead to unstable training. We strongly recommend that you download the [coco2017 dataset](http://images.cocodataset.org/zips/train2017.zip) locally here, then update the image paths in llava_instruct_150k.json to your local paths, and then use the `LLAVA_Local` template.
+**Note:** The [LLaVA-Instruct-150K](https://huggingface.co/datasets/liuhaotian/LLaVA-Instruct-150K) dataset uses remote links to access images. However, due to the server hosting these images occasionally stopping its response, this can lead to unstable training. We strongly recommend that you download the [coco2017 dataset](http://images.cocodataset.org/zips/train2017.zip) locally here, then update the image paths in xxx.json to your local paths, and then use the `LLAVA_Local` template.
 
 ## Supervised Fine-Tuning
 
@@ -115,7 +115,7 @@ deepspeed \
   --module align_anything.trainers.text_image_to_text.ppo \
   --actor_model_name_or_path ${ACTOR_MODEL_NAME_OR_PATH} \
   --reward_model_name_or_path ${REWARD_MODEL_NAME_OR_PATH} \
-  --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME_OR_PATH} \
+  --reward_critic_model_name_or_path {CRITIC_MODEL_NAME_OR_PATH} \
   --train_datasets ${TRAIN_DATASETS} \
   --train_split train \
   --ptx_split train \
