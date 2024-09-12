@@ -149,6 +149,7 @@ docker run -it --rm \
 ## Quick Start
 
 Quick start examples can be found at [here](./examples/)
+More multi-modal examples can be found at [here](./projects/)
 
 To prepare for training, all scripts are located in the `./scripts`. Parameters that require user input have been left empty and must be filled in prior to initiating the training process. For example, for `ppo.sh`:
 
