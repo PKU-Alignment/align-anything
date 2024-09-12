@@ -74,6 +74,7 @@ We have a roadmap for future development work `align-anything`:
 
 # News
 
+- 2024-09-12 🔥 We have supported SFT, DPO and PPO for text-video-image to text models!
 - 2024-08-17 🔥 We have supported DPO and PPO for text-image interleaved input & output models!
 - 2024-08-15 🔥 We have supported a new function in the evaluation module: the `models_pk` script, which enables comparing the performance of two models across different benchmarks.
 - 2024-08-06 🔥 We have restructured the evaluation framework to better support multimodal benchmarks. Based on this, we have implemented benchmarks for text-to-text and text+image-to-text models, with more benchmarks currently being adapted! The supported list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
