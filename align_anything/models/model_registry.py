@@ -42,9 +42,9 @@ except ImportError:
     CHAMELEON_AVALIABLE = False
     print("Chameleon is currently not available.")
 
+QWEN2VL_AVALIABLE = True
 try:
     from transformers import Qwen2VLConfig, Qwen2VLPreTrainedModel, Qwen2VLForConditionalGeneration
-    QWEN2VL_AVALIABLE = True
 except ImportError:
     QWEN2VL_AVALIABLE = False
     print("Qwen2VL is currently not available.")
@@ -54,7 +54,11 @@ from transformers.utils.generic import ModelOutput
 from align_anything.models.llava_model import AccustomedLlavaModel
 from align_anything.models.llava_next_model import AccustomedLlavaNextModel
 from align_anything.models.qwen2_audio import AccustomedQwen2AudioModel
-from align_anything.models.qwen2_vl_model import AccustomedQwen2VLModel
+try:
+    from align_anything.models.qwen2_vl_model import AccustomedQwen2VLModel
+except ImportError:
+    QWEN2VL_AVALIABLE = False
+    print("Qwen2VL is currently not available.")
 from align_anything.models.llama_vision_audio_model import (
     LlamaVisionAudioConfig,
     AccustomedLlamaVisionAudioModel
@@ -319,9 +323,10 @@ def register_model(auto_model: AutoModelForCausalLM) -> AutoModelForCausalLM:
     auto_model.register(LlavaNextConfig, AccustomedLlavaNextModel)
     auto_model.register(LlamaVisionAudioConfig, AccustomedLlamaVisionAudioModel)
     auto_model.register(Qwen2AudioConfig, Qwen2AudioForConditionalGeneration)
-    auto_model.register(Qwen2VLConfig, AccustomedQwen2VLModel)
     if CHAMELEON_AVALIABLE:
         auto_model.register(ChameleonConfig, AccustomedChameleonModel)
+    if QWEN2VL_AVALIABLE:
+        auto_model.register(Qwen2VLConfig, AccustomedQwen2VLModel)
     return auto_model
 
 
