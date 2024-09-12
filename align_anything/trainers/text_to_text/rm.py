@@ -243,7 +243,7 @@ class RMTrainer(SupervisedTrainerBase):
                 lower_reward_texts,
                 split_token=self.eval_template.split_token,
             )
-            assert h_prompts == l_prompts, 'prompts are not the same'
+            assert h_prompts == l_prompts, f'prompts are not the same, {h_prompts}, {l_prompts}'
             h_rewards = [f'{reward:.6f}' for reward in higher_end_rewards.tolist()]
             l_rewards = [f'{reward:.6f}' for reward in lower_end_rewards.tolist()]
 

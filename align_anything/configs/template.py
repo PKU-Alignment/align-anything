@@ -1569,8 +1569,8 @@ class OpenAQA:
 @register_template('RLHFAQA')
 class RLHFAQA:
     system_prompt: str = 'You are a helpful assistant.'
-    split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
-    separator: str = '<|im_end|>\n<|im_start|>assistant\n'
+    split_token: str = 'assistant\n'
+    separator: str = 'assistant\n'
 
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         raw_input = raw_sample['raw_input']
@@ -1613,7 +1613,7 @@ class RLHFAQA:
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
         raw_input = raw_sample['raw_input']
-        return raw_input['output'] == raw_input['reject_answer']
+        return raw_input['output']==raw_input['reject_answer']
 
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['raw_input']['prompt']

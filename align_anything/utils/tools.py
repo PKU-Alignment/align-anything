@@ -352,9 +352,9 @@ def split_prompt_response(
 
     def split_fn(text: str) -> tuple[str, str]:
         """Split a prompt-response pair into prompt and response."""
-        prompt, partition, response = text.rpartition(split_token)
-        assert prompt and partition and response, f'invalid text: {text}'
-        return prompt + partition, response
+        prompt, response = text.split(split_token, maxsplit=1)
+        assert prompt and response, f'invalid text: {text}'
+        return prompt, response
 
     return tuple(map(list, zip(*map(split_fn, texts))))
 

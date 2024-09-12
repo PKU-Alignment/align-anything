@@ -151,13 +151,13 @@ class PreferenceDataset(Dataset):
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
-        raw_sample = self.raw_data[index]
+        raw_sample = self.raw_data[self.valid_indices[index]]
         data = self.preprocess(raw_sample)
         return data
 
     def __len__(self) -> int:
         """Get the number of samples in the dataset."""
-        return len(self.raw_data)
+        return len(self.valid_indices)
 
 
 class PreferenceCollator:
