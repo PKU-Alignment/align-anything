@@ -72,7 +72,6 @@ def format_sample_cham(raw_sample: dict[str, Any]) -> dict[str, Any]:
     assistant_prompt: str = '\nASSISTANT:{output}'
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
-    # print(raw_sample)
     input_text = raw_sample['question']
     output_text = raw_sample['response']
     input_img = raw_sample['image_url']

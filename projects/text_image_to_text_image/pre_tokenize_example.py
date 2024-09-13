@@ -166,7 +166,7 @@ def main():
         input_data = json.load(f)
         
     output_data = []
-    max_length = 0  # To track the maximum length
+    max_length = 0 
     for piece in tqdm(input_data, desc="Processing data"):
         formatted_sample = format_sample(piece)
         preprocessed_sample, label_len = preprocess(tokenizer, processor, formatted_sample)
