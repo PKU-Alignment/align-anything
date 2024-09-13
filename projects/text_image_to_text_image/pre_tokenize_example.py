@@ -45,6 +45,7 @@ from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
+import argparse
 
 ALLOWED_ATTRIBUTES = ['split_token']
 DEFAULT_SPLIT_TOKEN = 'ASSISTANT:'
@@ -69,23 +70,19 @@ def format_sample(raw_sample: dict[str, Any]) -> dict[str, Any]:
     assistant_prompt: str = '\nASSISTANT:{output}'
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
-    # print(raw_sample)
     input_text = raw_sample['question']
     output_text = raw_sample['response']
     input_img = raw_sample['image_url']
     output_img = raw_sample['output_image_url']
     
     if isinstance(input_img, str):
-    # 单个图像
         input_images = [load_image(input_img)]
         num_imput_img = 1
     elif isinstance(input_img, list):
-        # 图像列表
         input_images = [load_image(img) for img in input_img]
         num_input_img = len(input_img)
     else:
         raise ValueError("input_image must be either a string or a list of strings")
-    
     
     input_text = f"{'<image>' * num_imput_img}{input_text}"
     
@@ -149,13 +146,17 @@ def preprocess(tokenizer, processor, formatted_sample: dict[str, Any]):
     return return_dict, len(prompt_dict['input_ids'])
 
 
-
-
 def main():
-    input_path = "input.json"
-    output_path = "output.pt"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input_path", type=str, required=True)
+    parser.add_argument("--output_path", type=str, required=True)
+    parser.add_argument("--model_path", type=str, required=True)
     
-    model_path = ""
+    args = parser.parse_args()
+
+    input_path = args.input_path
+    output_path = args.output_path
+    model_path = args.model_path
     
     model = AccustomedChameleonModel.from_pretrained(model_path, torch_dtype=torch.bfloat16, device_map="cuda")
     processor = ChameleonProcessor.from_pretrained(model_path)
@@ -165,7 +166,7 @@ def main():
         input_data = json.load(f)
         
     output_data = []
-    max_length = 0  # To track the maximum length
+    max_length = 0 
     for piece in tqdm(input_data, desc="Processing data"):
         formatted_sample = format_sample(piece)
         preprocessed_sample, label_len = preprocess(tokenizer, processor, formatted_sample)
@@ -184,6 +185,6 @@ def main():
     torch.save(output_data, output_path)
         
 
-# do main
+
 if __name__ == "__main__":
     main()

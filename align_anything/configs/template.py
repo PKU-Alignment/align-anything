@@ -24,6 +24,7 @@ import requests
 import librosa
 import requests
 import torch
+import torchaudio
 from PIL import Image
 from torchvision.io import read_video
 
