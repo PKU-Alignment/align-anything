@@ -40,9 +40,8 @@ def load_image(image_path: str):
         else:
             image = Image.open(image_path)
         return image
-    except Exception as e:
-        print(f"Error occured when dealing with {image_path}")
-        raise Exception
+    except Exception:
+        raise Exception(f"Error occurred when dealing with {image_path}")
 
 def insert_img_token(text, image):
     # do the same for worse
@@ -671,7 +670,40 @@ class LLAVA:
             f"{self.assistant_prompt.format(output='')}"
         )
 
+        image_file = f"http://images.cocodataset.org/val2017/{raw_sample['image']}"
+
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': load_image(image_file),
+        }
+
+@register_template('LLAVA_Local')
+class LLAVA_Local:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n<image>{input}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
+    separator: str = '###'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        raw_conversations = raw_sample['conversations']
+        raw_prompt = raw_conversations[0]['value'].replace('<image>\n', '').replace('\n<image>', '')
+
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=raw_prompt)}'
+            f"{self.assistant_prompt.format(output=raw_conversations[1]['value'])}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=raw_prompt)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+
         image_file = raw_sample['image']
+
         return {
             'text': text,
             'prompt': prompt,
@@ -935,25 +967,26 @@ class RLAIFV:
         prompt = raw_sample['question']
         image = raw_sample['image']
 
-        formatted_better_output = (
+        formatted_prompt = (
             f'{self.system_prompt}'
             f'{self.user_prompt.format(input=prompt)}'
+        )
+        formatted_better_output = (
             f'{self.assistant_prompt.format(output=better_response)}'
         )
         formatted_worse_output = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
             f'{self.assistant_prompt.format(output=worse_response)}'
         )
 
         return {
+            'prompt': formatted_prompt,
             'better_text': formatted_better_output,
             'worse_text': formatted_worse_output,
             'image': image,
         }
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
-        return False
+        return raw_sample['chosen'] == raw_sample['rejected']
 
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['question']
