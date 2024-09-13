@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-#
 # Copyright 2024 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,20 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""Dataset classes for text to text training."""
 
-cd ../align_anything/evaluation
 
-MODALITY=""
-OUTPUT_DIR=""
-GENERATION_BACKEND=""
-MODEL_ID=""
-MODEL_NAME_OR_PATH=""
-CHAT_TEMPLATE=""
-
-python eval_anything.py \
-    --modality ${MODALITY} \
-    --output_dir ${OUTPUT_DIR} \
-    --generation_backend ${GENERATION_BACKEND} \
-    --model_id ${MODEL_ID} \
-    --model_name_or_path ${MODEL_NAME_OR_PATH} \
-    --chat_template ${CHAT_TEMPLATE}
+from align_anything.datasets.text_image_to_text_image.supervised import *
+from align_anything.datasets.text_image_to_text_image.preference import *
+from align_anything.datasets.text_image_to_text_image.prompt_only import *

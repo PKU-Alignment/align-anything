@@ -15,7 +15,8 @@
 # limitations under the License.
 # ==============================================================================
 
-cd ../align_anything/evaluation
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "${SCRIPT_DIR}/../align_anything/evaluation" || exit 1
 
 BENCHMARKS=("")
 OUTPUT_DIR=""

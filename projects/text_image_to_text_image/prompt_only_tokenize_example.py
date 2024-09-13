@@ -46,6 +46,7 @@ from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
+import argparse
 
 ALLOWED_ATTRIBUTES = ['split_token']
 DEFAULT_SPLIT_TOKEN = 'ASSISTANT:'
@@ -214,22 +215,26 @@ def process_data(gpu, input_data, model_path, output_path, cache_dir):
     print(f"GPU {gpu} processed {len(local_output_paths)} messages")
 
 def main():
-    input_path = "input_path_to_dataset" # change this to your input path
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input_path", type=str, required=True)
+    parser.add_argument("--output_path", type=str, required=True)
+    parser.add_argument("--model_path", type=str, required=True)
+    parser.add_argument("--cache_dir", type=str, required=True)
     
-    # change this logic into load_dataset if needed
-    with open(input_path, 'r') as f:
-        input_data = json.load(f)
-        
-        
-    output_path = "output.pt"
-    
-    model_path = "path_to_chameleon_model"
-    cache_path = ".cache"
+    args = parser.parse_args()
+
+    input_path = args.input_path
+    output_path = args.output_path
+    model_path = args.model_path
+    cache_path = args.cache_dir
     
     # if cache dir does not exist, make one
     if not os.path.exists(cache_path):
         os.makedirs(cache_path)
-    
+        
+    with open(input_path, 'r') as f:
+        input_data = json.load(f)
+        
     num_processes = 8
     num_gpus = 8
     mp.set_start_method('spawn', force=True)
@@ -261,6 +266,6 @@ def main():
     
     torch.save(all_data, output_path)
         
-# do main
+
 if __name__ == "__main__":
     main()

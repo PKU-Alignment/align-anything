@@ -34,7 +34,7 @@ classifiers = [
 ]
 dependencies = [
     "torch >= 1.13",
-    "transformers >= 4.37",
+    "transformers @ git+https://github.com/huggingface/transformers.git@main",
     "datasets",
     "tokenizers >= 0.13.3",
     "accelerate",

@@ -21,8 +21,6 @@
   </div>
   <div>&nbsp;</div>
 
-
-
 [![PyPI](https://img.shields.io/pypi/v/align-anything?logo=pypi)](https://pypi.org/project/align-anything)
 [![License](https://img.shields.io/github/license/PKU-Alignment/align-anything?label=license)](#license)
 
@@ -36,12 +34,11 @@
 
 <div align="center">
 
-
-English | [Our 100K Datasets](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)
+[Our 100K Instruction-Following Datasets](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)
 
 </div>
 
-Align-Anything is an open-source alignment framework for academic research based on DeepSpeed or NeMo (currently in development). It aims to align various modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for LLMs and other related information can be found in [AI Alignment](https://alignmentsurvey.com).
+Align-Anything is an open-source alignment framework for academic research based on DeepSpeed or NeMo (currently in development). It aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for LLMs and other related information can be found in [AI Alignment](https://alignmentsurvey.com).
 
 ### Features
 
@@ -59,29 +56,28 @@ We have a roadmap for future development work `align-anything`:
 - [x] Support `vllm` backbone for evaluation.
 - [ ] Support `NeMo` backbone for training.
 
-| Trainers      | Text :arrow_right: Text | Text+Image :arrow_right: Text | Text :arrow_right: Image | Text :arrow_right: Video | Text :arrow_right: Audio | Text+Image :arrow_right: Text+Image |
-| ------------- | ----------------------- | ----------------------------- | ------------------------ | ------------------------ | ------------------------ | ----------------------------------- |
-| SFT Trainer   | :white_check_mark:      | :white_check_mark:            | :white_check_mark:       | :white_check_mark:       | :white_check_mark:       | :white_check_mark:                  |
-| RM Trainer    | :white_check_mark:      | :white_check_mark:            | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:       | :white_check_mark:                  |
-| DPO Trainer   | :white_check_mark:      | :white_check_mark:            | :white_check_mark:       | :white_check_mark:       | :white_check_mark:       | :white_check_mark:                  |
-| PPO Trainer   | :white_check_mark:      | :white_check_mark:            | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:       | :white_check_mark:                  |
-| KTO Trainer   | :white_check_mark:      | :heavy_minus_sign:            | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:                  |
-| ORPO Trainer  | :white_check_mark:      | :heavy_minus_sign:            | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:                  |
-| SimPO Trainer | :white_check_mark:      | :heavy_minus_sign:            | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:       | :heavy_minus_sign:                  |
+| Modality                 | SFT | RM  | DPO | PPO |
+| ------------------------ | --- | --- | --- | --- |
+| Text -> Text             | ✔️   | ✔️   | ✔️   | ✔️   |
+| Text+Image -> Text       | ✔️   | ✔️   | ✔️   | ✔️   |
+| Text -> Image            | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| Text -> Video            | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| Text -> Audio            | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| Text+Image -> Text+Image | ✔️   | ✔️   | ✔️   | ✔️   |
 
-- :white_check_mark: : Features supported now.
-- :heavy_minus_sign: : Features on going in our TODO list.
+- ✔️ : Features supported now.
+- ⚒️ : In the planning.
 
 # News
 
-- 2024-08-17 🔥 We have supported DPO and PPO for text-image interleaved input & output models!
-- 2024-08-15 🔥 We have supported a new function in the evaluation module: the `models_pk` script, which enables comparing the performance of two models across different benchmarks.
-- 2024-08-06 🔥 We have restructured the evaluation framework to better support multimodal benchmarks. Based on this, we have implemented benchmarks for text-to-text and text+image-to-text models, with more benchmarks currently being adapted! The supported list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
-- 2024-08-06 🔥 We have supported text+image interleaved input & output modality for the SFT trainer and Chameleon models!
-- 2024-07-23 🔥 We have supported text-to-image, text-to-audio, and text-to-video modalities for the SFT trainer and DPO trainer!
-- 2024-07-22 🔥 We have supported the currently popular multimodal large model Chameleon for the SFT trainer and DPO trainer!
-- 2024-07-17 🎉 We are pleased to announce the open-source release of the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
-- 2024-07-14 🎉 We open-souce the `align-anything` framework.
+- 2024-08-17 🔥 We support DPO and PPO for `Text+Image -> Text+Image` modality models.
+- 2024-08-15 🔥 We support a new function in the evaluation module: the `models_pk` script, which enables comparing the performance of two models across different benchmarks.
+- 2024-08-06 🔥 We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
+- 2024-08-06 🔥 We support `Text+Image -> Text+Image` modality for the SFT trainer and Chameleon models.
+- 2024-07-23 🔥 We support `Text -> Image`, `Text -> Audio`, and `Text -> Video` modalities for the SFT trainer and DPO trainer.
+- 2024-07-22 🔥 We support the **Chameleon** model for the SFT trainer and DPO trainer!
+- 2024-07-17 🎉 We open-source the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
+- 2024-07-14 🎉 We open-source the `align-anything` framework.
 
 # Installation
 
@@ -97,7 +93,7 @@ pip install -e .
 
 ### Wandb Logger
 
-We supports `wandb` logging. By default, it is set to offline. If you need to view wandb logs online, you can specify the environment variables of `WANDB_API_KEY` before starting the training:
+We support `wandb` logging. By default, it is set to offline. If you need to view wandb logs online, you can specify the environment variables of `WANDB_API_KEY` before starting the training:
 
 ```bash
 export WANDB_API_KEY="..."  # your W&B API key here
@@ -149,45 +145,7 @@ docker run -it --rm \
 
 Quick start examples can be found at [here](./examples/)
 
-To prepare for training, all scripts are located in the `./scripts`. Parameters that require user input have been left empty and must be filled in prior to initiating the training process. For example, for `ppo.sh`:
-
-```bash
-ACTOR_MODEL_NAME=""
-REWARD_MODEL_NAME=""
-CRITIC_MODEL_NAME=""
-TRAIN_DATASETS=""
-TRAIN_TEMPLATE=""
-PTX_DATASET=""
-PTX_TEMPLATE=""
-OUTPUT_DIR=""
-
-source ./setup.sh
-
-deepspeed \
-  --master_port ${MASTER_PORT} \
-  --module align_anything.trainers.ppo \
-  --actor_model_name_or_path ${ACTOR_MODEL_NAME} \
-  --reward_model_name_or_path ${REWARD_MODEL_NAME} \
-  --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME} \
-  --train_datasets ${TRAIN_DATASETS} \
-  --train_split train \
-  --train_template ${TRAIN_TEMPLATE} \
-  --ptx_datasets ${PTX_DATASET} \
-  --ptx_split train \
-  --ptx_template ${PTX_TEMPLATE} \
-  --output_dir ${OUTPUT_DIR}
-```
-
-<!-- TODO -->
-
-- `ACTOR_MODEL_NAME`: The model to be fine-tuned, typically one that has already undergone initial supervised fine-tuning, like `PKU-Alignment/alpaca-7b-reproduced`.
-- `REWARD_MODEL_NAME`: A model with a score output layer. Run `rm.sh` to train the reward model and obtain its path.
-- `CRITIC_MODEL_NAME`: The model used for RLHF value function estimation, typically set to be the same as `REWARD_MODEL_NAME`.
-- `TRAIN_DATASET`: The training dataset for RLHF, such as `PKU-Alignment/PKU-SafeRLHF`.
-- `TRAIN_TEMPLATE`: The training template for RLHF, such as `PKU-Alignment/PKU-SafeRLHF`.
-- `PTX_DATASET`: The supervised learning dataset to aid RLHF fine-tuning, like `tatsu-lab/alpaca`.
-- `PTX_TEMPLATE`: The template for auxiliary supervised learning dataset in RLHF needs to be specified before training, and in this case, it is `Dialogue`.
-- `OUTPUT_DIR`: The directory where you want to save the trained model, logging, and others.
+To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty.
 
 ### Some Training Bugs
 
@@ -313,8 +271,9 @@ After designing the aforementioned template, you just need to specify this templ
 
 To prepare for the evaluation, the script is located in the `./scripts directory`. Parameters requiring user input have been left empty and must be filled in before starting the evaluation process. For example, for `evaluate.sh`:
 
-~~~bash
-cd ../align_anything/evaluation
+```bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "${SCRIPT_DIR}/../align_anything/evaluation" || exit 1
 
 BENCHMARKS=("")
 OUTPUT_DIR=""
@@ -332,7 +291,7 @@ for BENCHMARK in "${BENCHMARKS[@]}"; do
         --model_name_or_path ${MODEL_NAME_OR_PATH} \
         --chat_template ${CHAT_TEMPLATE}
 done
-~~~
+```
 
 - `BENCHMARKS`: One or more evaluation benchmarks or datasets for assessing the model's performance. For example, `("POPE" "MMBench")` can be used to evaluate the model on both the POPE and MMBench datasets. Each benchmark in the list will be processed sequentially.
 - `OUTPUT_DIR`: The directory for saving the evaluation results and output files.
@@ -343,8 +302,9 @@ done
 
 To compare multiple models' performance across one or more benchmarks, located in the `./scripts`, the `models_pk.sh` script allows you to evaluate across different models and then compare their results. Ensure all parameters are correctly filled in before running the script.
 
-~~~bash
-cd ../align_anything/evaluation
+```bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "${SCRIPT_DIR}/../align_anything/evaluation" || exit 1
 
 BENCHMARKS=("")
 OUTPUT_DIR=""
@@ -375,7 +335,7 @@ for BENCHMARK in "${BENCHMARKS[@]}"; do
                         --model_1 "${MODEL_IDS[0]}" \
                         --model_2 "${MODEL_IDS[1]}"
 done
-~~~
+```
 
 - `BENCHMARKS`: One or more evaluation benchmarks or datasets for assessing the model's performance. For example, `("POPE" "MMBench")` can be used to evaluate the model on both the POPE and MMBench datasets. Each benchmark in the list will be processed sequentially.
 - `OUTPUT_DIR`: The directory for saving the evaluation results and output files.
@@ -384,77 +344,15 @@ done
 - `MODEL_NAME_OR_PATHS`: An array of two paths to the models' weights or their names if hosted on Hugging Face, such as `("llava-hf/llava-1.5-7b-hf" "llava-hf/llava-1.5-13b-hf")`.
 - `CHAT_TEMPLATES`: An array of two chat template IDs corresponding to each model, such as `("LLAVA" "LLAVA")`. This defines the format or style of responses generated by each model.
 
-To realize modal insensitive evaluation, the script is located in the `./scripts`. Parameters that require user input have been left empty and must be filled in prior to initiating the evaluation process. For example, for `evaluate_anything.sh`:
-
-~~~bash
-cd ../align_anything/evaluation
-
-MODALITY=""
-OUTPUT_DIR=""
-GENERATION_BACKEND=""
-MODEL_ID=""
-MODEL_NAME_OR_PATH=""
-CHAT_TEMPLATE=""
-
-python eval_anything.py \
-    --modality ${MODALITY} \
-    --output_dir ${OUTPUT_DIR} \
-    --generation_backend ${GENERATION_BACKEND} \
-    --model_id ${MODEL_ID} \
-    --model_name_or_path ${MODEL_NAME_OR_PATH} \
-    --chat_template ${CHAT_TEMPLATE}
-~~~
-
-- `MODALITY`: The input-output modality specifies the evaluation, such as `ti2t`.
-- `OUTPUT_DIR`: The directory for saving the evaluation results and output files.
-- `GENERATION_BACKEND`: The backend used for generating predictions, `vLLM` or `deepspeed`.
-- `MODEL_ID`: Unique identifier for the model, used to track and distinguish model evaluations, like `llava-1.5-7b-hf`.
-- `MODEL_NAME_OR_PATH`: The local path or Hugging Face link of model, such as `llava-hf/llava-1.5-7b-hf`.
-- `CHAT_TEMPLATE`: Chat template id of your model, like `LLAVA`. More details can be refered in `./align_anything/configs/template.py`.
-
 Additionally, you should modify the config file corresponding to the benchmark under `./align_anything/configs/evaluation/benchmarks` to adapt to specific evaluation tasks and specify test models.
 
 For more inference parameters, please see `./align_anything/configs/evaluation/vllm` and `./align_anything/configs/evaluation/deepspeed`, depending on your generation backend.
 
 For more details about the evaluation pipeline, refer to [here](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/evaluation/README.md).
 
+
+
 # Inference
-
-## Gradio Web UI
-
-To launch a Gradio demo locally, follow these steps by running the commands one by one. If you intend to launch multiple model workers to compare different checkpoints, you only need to launch the controller and the web server *ONCE*.
-
-### Launch a controller
-
-```Shell
-python -m align_anything.serve.controller --host 0.0.0.0 --port 10000
-```
-
-### Launch a gradio web server.
-
-```Shell
-python -m align_anything.serve.gradio_web_server --controller http://localhost:10000 --model-list-mode reload
-```
-
-You have just launched the Gradio web interface. Now, you can open the web interface using the URL printed on the screen. You may notice that there are no models listed yet. Do not worry, as we have not launched any model workers yet. The model list will be automatically updated once you launch a model worker.
-
-### Launch a model worker
-
-This is the actual *worker* that performs the inference on the GPU.  Each worker is responsible for a single model specified in `--model-path`, and check the template.py in align_anything.configs to find the according template name.
-
-```Shell
-python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port 40000 --worker http://localhost:40000 --model-path <ckpt>  --is-multimodal True --template "LLAVA"
-```
-
-Wait until the process completes loading the model and you see "Uvicorn running on ...". Then, refresh your Gradio web UI, and you will see the model you just started in the model list.
-
-You can start as many workers as you need and compare different model checkpoints within the same Gradio interface. Ensure that you keep the `--controller` the same, but change the `--port` and `--worker` to a unique port number for each worker.
-
-```Shell
-python -m align_anything.serve.model_worker --host 0.0.0.0 --controller http://localhost:10000 --port <different from 40000, say 40001> --worker http://localhost:<change accordingly, i.e. 40001> --model-path <ckpt2> --is-multimodal True  --template "LLAVA"
-```
-
-You can specify the mps device by using the `--device` flag: `--device mps`, if you are using an Apple device with an M1 or M2 chip.
 
 ## Interactive Client
 
@@ -485,7 +383,7 @@ If you have any questions in the process of using Align-Anything, don't hesitate
 
 Please cite the repo if you use the data or code in this repo.
 
-```
+```bibtex
 @misc{align_anything,
   author = {PKU-Alignment Team},
   title = {Align Anything: Training Any Modality Model with Feedback},
