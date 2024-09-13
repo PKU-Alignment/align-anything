@@ -83,13 +83,13 @@ class PreferenceDataset(Dataset):
             *optional_args,
             trust_remote_code=True,
         )
-        self.valid_indices = self.fillter_indices()
+        self.valid_indices = self.filter_indices()
 
         if size:
             size = min(size, len(self.raw_data))
             self.raw_data = self.raw_data.select(range(int(size)))
 
-    def fillter_indices(self):
+    def filter_indices(self):
         valid_indices = []
         for i, item in enumerate(self.raw_data):
             if not self.template.check_equal(item):
@@ -153,11 +153,11 @@ class PreferenceTokenizedDataset(Dataset):
         self.template = get_template_class(template)
         
         self.raw_data = torch.load(f"{path}/{data_files}", map_location=torch.device('cpu'))
-        self.valid_indices = self.fillter_indices()
+        self.valid_indices = self.filter_indices()
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
 
-    def fillter_indices(self):
+    def filter_indices(self):
         valid_indices = []
         for i, item in enumerate(self.raw_data):
             if not self.template.check_equal(item):

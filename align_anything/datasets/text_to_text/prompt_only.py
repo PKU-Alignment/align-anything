@@ -84,6 +84,7 @@ class PromptOnlyDataset(Dataset):
         self.processor = processor
         raw_data_duplicated = load_dataset(
             path,
+            name=name,
             split=split,
             data_files=data_files,
             subset=subset,

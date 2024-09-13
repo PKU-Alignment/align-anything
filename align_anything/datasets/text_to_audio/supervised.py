@@ -79,6 +79,7 @@ class SupervisedDataset(Dataset):
             optional_args = [optional_args]
         self.raw_data = load_dataset(
             path,
+            name=name,
             split=split,
             data_files=data_files,
             subset=subset,

@@ -25,13 +25,12 @@ set -x
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" &>/dev/null && pwd)"
 ROOT_DIR="$(dirname "${SCRIPT_DIR}")"
-
 export PYTHONPATH="${ROOT_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
 export LOGLEVEL="${LOGLEVEL:-WARNING}"
 
 MASTER_PORT_START=10000
 MASTER_PORT_END=65535
-MASTER_PORT="$(
+MASTER_PORT="$(e
 	comm -23 \
 		<(seq "${MASTER_PORT_START}" "${MASTER_PORT_END}" | sort) \
 		<(ss -Htan | awk '{ print $4 }' | awk -F ':' '{ print $NF }' | sort -u) |
