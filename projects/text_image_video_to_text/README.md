@@ -50,6 +50,8 @@ and set up the correct model path and dataset path, then run:
 bash scripts/sft_text_image_video_to_text.sh
 ```
 
+Note that this is the simplest example we provide. You can refer to their format and replace them with your own dataset.
+
 ### Reward Model Training
 
 Add a script named `rm_text_image_video_to_text.sh` under the `scripts` file like this:
@@ -94,13 +96,13 @@ Add a script named `ppo_text_image_video_to_text.sh` under the `scripts` file li
 # Initialize variables
 ACTOR_MODEL_NAME_OR_PATH="Qwen/Qwen2-VL-7B-Instruct"
 # You can replace it with a local model path
-CRITIC_MODEL_NAME_OR_PATH=""
-REWARD_MODEL_NAME_OR_PATH=""
+CRITIC_MODEL_NAME_OR_PATH="path/to/critic/model"
+REWARD_MODEL_NAME_OR_PATH="path/to/reward/model"
 # You can replace it with a local dataset path
-TRAIN_DATASETS=""
-PTX_DATASETS=""
+TRAIN_DATASETS="path/to/train/dataset"
+PTX_DATASETS="path/to/ptx/dataset"
 # You can replace it with a new path
-OUTPUT_DIR=""
+OUTPUT_DIR="path/to/output/dir"
 # For wandb online logging
 export WANDB_API_KEY=""
 # Source the setup script
