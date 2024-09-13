@@ -19,7 +19,8 @@ Add a script named `sft_text_image_video_to_text.sh` under the `scripts` file li
 # You can replace it with a local model path
 MODEL_NAME_OR_PATH="Qwen/Qwen2-VL-7B-Instruct"
 # You can replace it with a local dataset path
-TRAIN_DATASETS="path/to/dataset"
+TRAIN_DATASETS="../../data"
+TRAIN_DATA_FILE="text_image_video_to_text.json"
 # You can replace it with a new path
 OUTPUT_DIR="../outputs/sft_qwen2_vl"
 # Source the setup script
@@ -31,6 +32,7 @@ deepspeed \
 	--module align_anything.trainers.text_image_video_to_text.sft \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
+	--train_data_files ${TRAIN_DATA_FILE} \
 	--train_split 'train' \
 	--output_dir ${OUTPUT_DIR} \
 	--train_template TIV2T \

@@ -69,18 +69,15 @@ def format_sample(raw_sample: dict[str, Any]) -> dict[str, Any]:
     assistant_prompt: str = '\nASSISTANT:{output}'
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
-    # print(raw_sample)
     input_text = raw_sample['question']
     output_text = raw_sample['response']
     input_img = raw_sample['image_url']
     output_img = raw_sample['output_image_url']
     
     if isinstance(input_img, str):
-    # 单个图像
         input_images = [load_image(input_img)]
         num_imput_img = 1
     elif isinstance(input_img, list):
-        # 图像列表
         input_images = [load_image(img) for img in input_img]
         num_input_img = len(input_img)
     else:
