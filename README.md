@@ -143,11 +143,9 @@ docker run -it --rm \
 
 ## Quick Start
 
-Quick start examples can be found at [here](./examples/) <!-- TODO: examples里面加README -->
+Quick start examples can be found at [here](./examples/)
 
-To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, for `sft.sh`:
-
-<!-- TODO: SFT -->
+To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty.
 
 ### Some Training Bugs
 
@@ -351,6 +349,8 @@ Additionally, you should modify the config file corresponding to the benchmark u
 For more inference parameters, please see `./align_anything/configs/evaluation/vllm` and `./align_anything/configs/evaluation/deepspeed`, depending on your generation backend.
 
 For more details about the evaluation pipeline, refer to [here](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/evaluation/README.md).
+
+
 
 # Inference
 

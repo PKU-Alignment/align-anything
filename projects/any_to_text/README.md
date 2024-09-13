@@ -107,8 +107,8 @@ deepspeed \
 
 ### Model Weights
 
-- [Image-Text Multimodal Language Model](https://huggingface.co/PKU-Alignment/llama3.1-8b-instruct-vision/tree/main)
-- [Image-Audio-Text Multimodal Language Model](https://huggingface.co/PKU-Alignment/llama3.1-8b-vision-audio/tree/main)
+- [Image-Text Multimodal Language Model](https://huggingface.co/PKU-Alignment/llama3.1-8b-instruct-vision)
+- [Image-Audio-Text Multimodal Language Model](https://huggingface.co/PKU-Alignment/llama3.1-8b-vision-audio)
 
 ### Model Evaluation
 
