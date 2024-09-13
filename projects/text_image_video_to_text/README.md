@@ -3,7 +3,9 @@
 ## Environment setup
 
 Currently, the Transformer in pypi is not updated to support the latest Qwen2-VL model, so we need to install the forked stable version of the repo by running:
+```bash
 pip install git+https://github.com/huggingface/transformers.git
+```
 
 ## Model
 
