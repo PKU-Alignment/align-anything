@@ -19,7 +19,7 @@ from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from datasets import load_dataset
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 import re
@@ -138,10 +138,12 @@ def get_last_number(data):
         return ''
 
 def get_generated_answer(data):
+    answer = ''
     if '####' in data:
-        return get_last_number(data.split('####')[-1].strip())
-    else:
-        return get_last_number(data)
+        answer = get_last_number(data.split('####')[-1].strip())
+    if not answer:
+        answer = get_last_number(data)
+    return answer
     
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -149,14 +151,13 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    logger = EvalLogger('Evaluation')
     
     dict_configs, infer_configs = read_eval_cfgs('gsm8k', 'vLLM')
     
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
-        logger.log('error', "Config file is not exist or incomplete.")
+        print("Config file is not exist or incomplete.")
         exit()
 
     for k, v in unparsed_args.items():
@@ -168,12 +169,17 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    logger.log_dir = eval_configs.output_dir
+    logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
     dataloader = GSM8KDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
     eval_module = GSM8KGeneratorVLLM(model_config, infer_configs)
-    raw_outputs = eval_module.eval(test_data, eval_configs)
-
+    raw_outputs_dir = os.path.join(eval_configs.output_dir, f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl")
+    if os.path.exists(raw_outputs_dir):
+        raw_outputs = load_raw_outputs(raw_outputs_dir)
+    else:
+        raw_outputs = eval_module.eval(test_data, eval_configs)
+        save_raw_outputs(raw_outputs, raw_outputs_dir)
+    
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)

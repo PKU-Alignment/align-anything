@@ -19,13 +19,20 @@ from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict
 from datasets import load_dataset
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.eval_logger import EvalLogger
 from datasets import Dataset
 import multiprocessing
 import torch
+import signal
+
+class TimeoutException(Exception):
+    pass
+
+def handler(signum, frame):
+    raise TimeoutException
 
 class HumanEvalDataLoader(BaseDataLoader):
     def get_task_names(self):
@@ -62,15 +69,10 @@ class HumanEvalDataLoader(BaseDataLoader):
         })
 
     def set_fewshot_dataset(self, dataset, task): 
-        if self.cot:
-            with open('../cot_fewshot/HumanEval/' + task + '.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data
-        else:
-            return self.get_fewshot_data()
+        return self.get_fewshot_data()
         
     def build_example_prompt(self, data, with_answer=True, cot=False):
-        answer = f'Canonical_solution: {self.get_answer(data)}' if with_answer else 'Canonical_solution: '
+        answer = f'Canonical_solution: ```python\n{self.get_answer(data)}\n```' if with_answer else 'Canonical_solution: '
         return f"Function description: {data['prompt']}\n{answer}"
 
     def build_prompt(self, data):
@@ -119,8 +121,6 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: HumanEvalDataLoader
     responses = []
     cnt_sum = 0
     cnt_match = 0
-    cnt_fail = 0
-    flag_fail = True
     for instance in dataset:
         correct_answers.append(
             {
@@ -137,21 +137,16 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: HumanEvalDataLoader
                 'generated_answer': item.response[0] if item.response else ""
             }
         )
-    for correct_answer in correct_answers:
+    for correct_answer in tqdm(correct_answers, desc="Evaluating"):
         cnt_sum += 1
         for response in responses:
             if correct_answer['prompt'] in response['prompt']:
-                flag_fail = False
                 generated_answer = get_generated_answer(response)
                 true_or_false = judge_answer(correct_answer, generated_answer)
                 if true_or_false:
                     cnt_match += 1
                 save_detail(correct_answer['prompt'], '', correct_answer['answer'], response['generated_answer'], true_or_false, file_path)
                 break
-        if flag_fail:
-            cnt_fail += 1
-        else:
-            flag_fail = True
         
     return cnt_match, cnt_sum
 
@@ -163,44 +158,23 @@ def get_generated_answer(response):
     index_tail = response['generated_answer'][index_head + len_prefix_1:].find(prefix_2)
     return response['generated_answer'][index_head + len_prefix_1:][:index_tail]
 
-def model_eval(text, model, tokenizer, device):
-    model.eval()
-    model.to(device)
-
-    inputs = tokenizer(text, return_tensors='pt').to(device)
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=100,
-            do_sample=True,
-            temperature=0.7,
-            top_k=50,
-            top_p=0.95,
-            repetition_penalty=1.2,
-            bos_token_id=tokenizer.bos_token_id,
-            eos_token_id=tokenizer.eos_token_id,
-        )
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
-
 def code_test(code: str, time_limit: int) -> str:
-    def worker(result_queue: multiprocessing.Queue):
-        try:
-            exec_globals = {}
-            exec(code, exec_globals)
-            result_queue.put(1)
-        except Exception as e:
-            result_queue.put(0)
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(time_limit)
 
-    result_queue = multiprocessing.Queue()
-    process = multiprocessing.Process(target=worker, args=(result_queue,))
-    process.start()
+    try:
+        exec_globals = {}
+        exec(code, exec_globals)
+        result = 1
+    except TimeoutException:
+        result = 0
+    except Exception as e:
+        print(f'error: {e}')
+        result = 0
+    finally:
+        signal.alarm(0)
 
-    process.join(time_limit)
-    if process.is_alive():
-        process.terminate()
-        process.join()
-        result_queue.put(0)
-    return result_queue.get()
+    return result
 
 def judge_answer(data, response):
     check_program = (
@@ -217,14 +191,13 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    logger = EvalLogger('Evaluation')
     
     dict_configs, infer_configs = read_eval_cfgs('humaneval', 'vLLM')
 
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
-        logger.log('error', "Config file is not exist or incomplete.")
+        print("Config file is not exist or incomplete.")
         exit()
 
     for k, v in unparsed_args.items():
@@ -236,13 +209,18 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    logger.log_dir = eval_configs.output_dir
+    logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
     dataloader = HumanEvalDataLoader(dict_configs)
-    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
+    assert not dataloader.cot, "chain-of-thought cannot be used for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = HumanEvalGeneratorVLLM(model_config, infer_configs)
-    raw_outputs = eval_module.eval(test_data, eval_configs)
-
+    raw_outputs_dir = os.path.join(eval_configs.output_dir, f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl")
+    if os.path.exists(raw_outputs_dir):
+        raw_outputs = load_raw_outputs(raw_outputs_dir)
+    else:
+        raw_outputs = eval_module.eval(test_data, eval_configs)
+        save_raw_outputs(raw_outputs, raw_outputs_dir)
+   
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)

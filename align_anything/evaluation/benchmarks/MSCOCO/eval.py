@@ -15,21 +15,17 @@
 
 import argparse
 from align_anything.evaluation.inference.base_inference import *
-from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import List, Dict
-from datasets import DatasetDict
+from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader, CustomImageDataset
+from datasets import load_dataset, DatasetDict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from align_anything.utils.tools import image_crop, inception_score
 from align_anything.evaluation.eval_logger import EvalLogger
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import torch.multiprocessing as mp
-from threading import Lock
-import numpy as np
-import hpsv2
+from pytorch_fid import fid_score
 import uuid
 import os
 
-file_lock = Lock()
-class HPSv2DataLoader(BaseDataLoader):
+class MSCOCODataLoader(BaseDataLoader):
     def init_tokenizer(self):
         pass
 
@@ -45,24 +41,30 @@ class HPSv2DataLoader(BaseDataLoader):
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
         for task in self.task_names:
-            prompts = hpsv2.benchmark_prompts(task)
-            processed_inputs[task] = [prompt for prompt in prompts]
+            dataset = load_dataset(self.task_dir, task)[self.split]
+            processed_inputs[task] = []
+            for data in dataset:
+                prompt = ''.join(data['caption'])
+                processed_inputs[task].append({
+                    'prompt': prompt,
+                    'real_image': data['image']
+                })
         return processed_inputs
 
-class HPSv2Generator(BaseInferencer):
-    def parallel_eval(self, task2details, img_dir, data, device, position):
+class MSCOCOGenerator(BaseInferencer):
+    def parallel_eval(self, img_dir, data, device, position):
         self.init_model(device)
 
         for task, inputs in data.items():    
-            for prompt in tqdm(inputs, desc='Generating', position=position):
-                image_path = os.path.join(img_dir, task, f"{str(uuid.uuid4())}.jpg")
+            for input in tqdm(inputs, desc='Generating', position=position):
+                prompt = input['prompt']
+                real_image = input['real_image']
+                uid = str(uuid.uuid4())
+                image_path = os.path.join(img_dir, task, f"{uid}.jpg")
+                real_image_path = os.path.join(img_dir, f'{task}_real', f"{uid}.jpg")
                 self.text_to_image_genenrate(prompt, image_path)
-                task2details[task].extend(
-                    [{
-                        'prompt': prompt,
-                        'image_path': image_path
-                    }]
-                )
+                if os.path.isfile(image_path):
+                    real_image.save(real_image_path)
         
     def eval(self, data, img_dir):
         if not os.path.exists(img_dir):
@@ -74,10 +76,16 @@ class HPSv2Generator(BaseInferencer):
         
         task2details = {}
         for task, inputs in data.items():
-            task_dir = os.path.join(img_dir, task)
-            if not os.path.exists(task_dir):
-                os.makedirs(task_dir)
-            task2details[task] = mp.Manager().list()
+            image_dir = os.path.join(img_dir, task)
+            if not os.path.exists(image_dir):
+                os.makedirs(image_dir)
+            real_image_dir = os.path.join(img_dir, f'{task}_real')
+            if not os.path.exists(real_image_dir):
+                os.makedirs(real_image_dir)
+            task2details[task] = {
+                'image_dir': image_dir,
+                'real_image_dir': real_image_dir
+            }
             
         processes = []
         for i in range(num_processes):
@@ -86,7 +94,7 @@ class HPSv2Generator(BaseInferencer):
             for task, inputs in data.items():
                 chunk = inputs[i::num_processes]
                 chunks[task] = chunk
-            p = mp.Process(target=self.parallel_eval, args=(task2details, img_dir, chunks, device, i))
+            p = mp.Process(target=self.parallel_eval, args=(img_dir, chunks, device, i))
             p.start()
             processes.append(p)
         for p in processes:
@@ -94,23 +102,21 @@ class HPSv2Generator(BaseInferencer):
 
         return task2details
     
-    def evaluator(self, outputs, file_path):
-        tot_score = []
+    def evaluator(self, outputs):
         num_sum = 0
+        for filename in os.listdir(outputs['image_dir']):
+            img_path = os.path.join(outputs['image_dir'], filename)
+            if os.path.isfile(img_path):
+                num_sum += 1
+        
+        fid_value = fid_score.calculate_fid_given_paths([image_crop(outputs['image_dir']), image_crop(outputs['real_image_dir'])], batch_size=50, device='cuda', dims=2048)
+        batch_size = min(num_sum - 1, 32)
+        splits = min(num_sum, 10)
+        custom_dataset = CustomImageDataset(outputs['image_dir'])
+        IS_score, IS_std = inception_score(custom_dataset, cuda=True, batch_size=batch_size, resize=True, splits=splits)
+        
+        return fid_value, IS_score, IS_std, num_sum
 
-        for output in tqdm(outputs, desc="Evaluating"):
-            prompt = output['prompt']
-            img_path = output['image_path']
-            num_sum += 1
-            if os.path.exists(img_path):
-                score = float(hpsv2.score(img_path, prompt, hps_version="v2.0")[0])
-            else:
-                score = 0.0
-            tot_score.append(score)
-            save_detail(prompt, '', '', img_path, score, file_path)
-        
-        return tot_score, num_sum
-        
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
@@ -118,7 +124,7 @@ def main():
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
     
-    dict_configs, infer_configs = read_eval_cfgs('hpsv2', 'vLLM')
+    dict_configs, infer_configs = read_eval_cfgs('mscoco', 'vLLM')
     
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
@@ -136,10 +142,10 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
-    dataloader = HPSv2DataLoader(dict_configs)
+    dataloader = MSCOCODataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()
-    eval_module = HPSv2Generator(model_config.model_id, model_config.model_name_or_path, model_config.model_max_length, 42)
+    eval_module = MSCOCOGenerator(model_config.model_id, model_config.model_name_or_path, model_config.model_max_length, 42)
     img_dir = os.path.join(eval_configs.output_dir, f"./images/{eval_configs.uuid}")
     raw_outputs = eval_module.eval(test_data, img_dir)
     
@@ -147,46 +153,27 @@ def main():
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
-    tot_score = []
-    tot_num_sum = 0
     for task, outputs in raw_outputs.items():
-        file_path = f"{uuid_path}/{task}.json"
-        score, num_sum = eval_module.evaluator(outputs, file_path)
-        tot_score += score
-        tot_num_sum += num_sum
+        FID_score, IS_score, IS_std, num_sum = eval_module.evaluator(outputs)
 
         eval_results = {
                 'model_id': [dict_configs.default.model_cfgs.model_id],
                 'num_fewshot': [eval_configs.n_shot],
                 'chain_of_thought': [eval_configs.cot],
                 'num_sum': [num_sum],
-                'avg_score': [np.mean(score)*100],
+                'FID_score': [FID_score],
+                'IS_score': [IS_score],
                 }
-        logger.print_table(title=f'HPSv2/{task} Benchmark', data=eval_results)
+        logger.print_table(title=f'MSCOCO/{task} Benchmark', data=eval_results)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {eval_results['model_id'][0]},")
         logger.log('info', f"num_fewshot: {eval_results['num_fewshot'][0]},")
         logger.log('info', f"chain_of_thought: {eval_results['chain_of_thought'][0]},")
         logger.log('info', f"num_sum: {eval_results['num_sum'][0]},")
-        logger.log('info', f"score: {eval_results['avg_score'][0]} (±{np.std(score)}),")
+        logger.log('info', f"FID_score: {eval_results['FID_score'][0]},")
+        logger.log('info', f"IS_score: {eval_results['IS_score'][0]} (±{IS_std}),")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-
-    eval_results = {
-        'model_id': [dict_configs.default.model_cfgs.model_id],
-        'num_fewshot': [eval_configs.n_shot],
-        'chain_of_thought': [eval_configs.cot],
-        'tot_num_sum': [tot_num_sum],
-        'tot_avg_score': [np.mean(tot_score)*100],
-    }
-    logger.print_table(title=f'HPSv2 Benchmark', data=eval_results)
-    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    logger.log('info', f"model_id: {eval_results['model_id'][0]},")
-    logger.log('info', f"num_fewshot: {eval_results['num_fewshot'][0]},")
-    logger.log('info', f"chain_of_thought: {eval_results['chain_of_thought'][0]},")
-    logger.log('info', f"tot_num_sum: {eval_results['tot_num_sum'][0]},")
-    logger.log('info', f"tot_avg_score: {eval_results['tot_avg_score'][0]} (±{np.std(tot_score)}),")
-    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()

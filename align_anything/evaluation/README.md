@@ -10,9 +10,9 @@ Then, We have a roadmap for future development work `align-anything`:
 | :-------------------- | :----------------------------------------------------------- |
 | **Text ➡️ Text**       | [ARC](https://huggingface.co/datasets/allenai/ai2_arc), [BBH](https://huggingface.co/datasets/lukaemon/bbh), [Belebele](https://huggingface.co/datasets/facebook/belebele), [CMMLU](https://huggingface.co/datasets/haonan-li/cmmlu), [GSM8K](https://huggingface.co/datasets/openai/gsm8k), [HumanEval](https://huggingface.co/datasets/openai/openai_humaneval), [MMLU](https://huggingface.co/datasets/cais/mmlu), [MMLU-Pro](https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro), [MT-Bench](https://huggingface.co/datasets/HuggingFaceH4/mt_bench_prompts), [PAWS-X](https://huggingface.co/datasets/google-research-datasets/paws-x), [RACE](https://huggingface.co/datasets/ehovy/race), [TruthfulQA ](https://huggingface.co/datasets/truthfulqa/truthful_qa), ➖ |
 | **Image+Text ➡️ Text** | [A-OKVQA](https://huggingface.co/datasets/HuggingFaceM4/A-OKVQA), [LLaVA-Bench(COCO)](https://huggingface.co/datasets/lmms-lab/llava-bench-coco), [LLaVA-Bench(wild)](https://huggingface.co/datasets/lmms-lab/llava-bench-in-the-wild), [MathVista](https://huggingface.co/datasets/AI4Math/MathVista), [MM-SafetyBench](https://github.com/isXinLiu/MM-SafetyBench), [MMBench](https://huggingface.co/datasets/lmms-lab/MMBench), [MME](https://huggingface.co/datasets/lmms-lab/MME), [MMMU](https://huggingface.co/datasets/MMMU/MMMU), [MMStar](https://huggingface.co/datasets/Lin-Chen/MMStar), [MMVet](https://huggingface.co/datasets/lmms-lab/MMVet), [POPE](https://huggingface.co/datasets/lmms-lab/POPE), [ScienceQA](https://huggingface.co/datasets/derek-thomas/ScienceQA), [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL), [TextVQA](https://huggingface.co/datasets/lmms-lab/textvqa), [VizWizVQA](https://huggingface.co/datasets/lmms-lab/VizWiz-VQA), ➖ |
-| **Text ➡️ Image**      | [ImageReward](https://huggingface.co/datasets/THUDM/ImageRewardDB), [HPSv2](https://huggingface.co/datasets/zhwang/HPDv2)➖                                                            |
-| **Text ➡️ Video**      | ➖                                                            |
-| **Text ➡️ Audio**      | ➖                                                            |
+| **Text ➡️ Image**      | [HPSv2](https://huggingface.co/datasets/zhwang/HPDv2), [MSCOCO (ImageReward, FID, IS)](https://huggingface.co/datasets/nlphuji/mscoco_2014_5k_test_image_text_retrieval), ➖ |
+| **Text ➡️ Video**      | [ChronoMagic-Bench](https://huggingface.co/datasets/BestWishYsh/ChronoMagic-Bench), ➖ |
+| **Text ➡️ Audio**      | [AudioCaps (FAD)](https://github.com/cdjkim/audiocaps), ➖    |
 
 - ➖ : Features on going in our TODO list.
 
@@ -138,6 +138,40 @@ default:
 ~~~
 
 For more inference parameters, please see `./align_anything/configs/evaluation/vllm` and `./align_anything/configs/evaluation/deepspeed`, depends on our generation backend.
+
+### Benchmarks requiring OpenAI API access
+
+For the following benchmarks, OpenAI API is required for evaluation:
+
+- ChronoMagicBench
+- MM-SafetyBench
+- SPA-VL
+- MMVet
+- AGIEval
+- mt_bench
+- llava-bench-coco
+- llava-bench-in-the-wild
+- LongBench
+
+You can add your OpenAI API credentials in one of two ways:
+
+1. Using Environment Variables:
+
+   Set the OPENAI_API_KEY and OPENAI_API_BASE_URL environment variables before running the evaluation:
+
+   ~~~bash
+   export OPENAI_API_KEY="YOUR_API_KEY"
+   export OPENAI_API_BASE_URL="https://api.openai.com/v1/chat/completions"
+   ~~~
+
+2. Modifying the YAML Configuration Files:
+
+   Alternatively, you can specify your API key and base URL directly in the corresponding YAML configuration files for the benchmark, located in `./align_anything/configs/evaluation/benchmarks`. Update the `openai_api_key` and `openai_api_base_url` properties accordingly.
+
+### Attention
+
+1. For `SPA-VL/HarmEval` benchmark, the base model used is `llava-hf/llava-1.5-7b-hf`, while for `SPA-VL/HelpEval` benchmark, the base model is `gpt-4-turbo`.
+2. When evaluating `HPSv2`, you will need to manually configure the environment by downloading the file from https://github.com/tgxs002/HPSv2/blob/master/hpsv2/src/open_clip/bpe_simple_vocab_16e6.txt.gz and placing it in the directory `./your_env_name/lib/python3.11/site-packages/hpsv2/src/open_clip/`.
 
 
 ### Incorporating Custom Templates

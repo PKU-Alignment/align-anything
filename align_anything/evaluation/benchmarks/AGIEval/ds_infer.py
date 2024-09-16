@@ -41,14 +41,6 @@ class AGIEvalDataLoader(BaseDataLoader):
             data['answer'] = data['answer'][0]
         return data['answer']
 
-    def set_fewshot_dataset(self, dataset, task): 
-        if self.cot:
-            with open('../cot_fewshot/AGIEval/' + task + '.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data
-        else:
-            return dataset['validation']
-
     def build_example_prompt(self, data, with_answer=True, cot=False):
         choices = ''
         if data["choices"]:
@@ -58,40 +50,14 @@ class AGIEvalDataLoader(BaseDataLoader):
 
     def build_prompt(self, data):
         prompt = ""
-        cot_prompt = f" Let's think step by step. "
-        few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
-        if len(few_shot_examples) == 0:
-            question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
-        else:
-            if not self.cot:
-                few_shots = [
-                    self.build_example_prompt(
-                        {key: value[i] for key, value in few_shot_examples.items()}, True
-                    )
-                    for i in range(len(few_shot_examples['question']))
-                ]
-            else:
-                few_shots = [
-                    f"{example['question']}\n'Answer: '{example['answer']}" for example in few_shot_examples
-                ]
-            question = []
-            for item in data:
-                request = {}
-                for key, value in item.items():
-                    request[key] = value
-                examples = few_shots + [self.build_example_prompt(request, False)]
-                if self.cot:
-                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt))
-                else:
-                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
+        question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
 
         return question
     
     def load_dataset(self, eval_module) -> DatasetDict:
         for task in self.task_names:
             dataset = load_dataset(self.task_dir, task)
-            self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, token_ids = self.preprocess(dataset)
             processed_inputs = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
             eval_module.save_data(task, processed_inputs)
@@ -139,7 +105,7 @@ def main():
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     dataloader = AGIEvalDataLoader(dict_configs)
-    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
+    assert not (dataloader.num_shot > 0 or dataloader.cot), "Few-shot or chain-of-thought cannot be used for this benchmark."
     eval_module = AGIEvalGeneratorDS(model_config, infer_configs)
     dataloader.load_dataset(eval_module)
 

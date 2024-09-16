@@ -15,17 +15,17 @@
 
 import argparse
 from align_anything.evaluation.inference.base_inference import *
-from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import List, Dict
+from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader, CustomImageDataset
 from datasets import load_dataset, DatasetDict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from align_anything.utils.tools import image_crop, inception_score
 from align_anything.evaluation.eval_logger import EvalLogger
 import torch.multiprocessing as mp
 import ImageReward as RM
 import uuid
 import os
 
-class ImageRewardDBDataLoader(BaseDataLoader):
+class MSCOCODataLoader(BaseDataLoader):
     def init_tokenizer(self):
         pass
 
@@ -42,10 +42,10 @@ class ImageRewardDBDataLoader(BaseDataLoader):
         processed_inputs = {}
         for task in self.task_names:
             dataset = load_dataset(self.task_dir, task)[self.split]
-            processed_inputs[task] = [data['prompt'] for data in dataset]
+            processed_inputs[task] = [''.join(data['caption']) for data in dataset]
         return processed_inputs
 
-class ImageRewardDBGenerator(BaseInferencer):
+class MSCOCOGenerator(BaseInferencer):
     def parallel_eval(self, task2details, img_dir, data, device, position):
         self.init_model(device)
 
@@ -114,14 +114,13 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    logger = EvalLogger('Evaluation')
     
-    dict_configs, infer_configs = read_eval_cfgs('imagerewardDB', 'vLLM')
+    dict_configs, infer_configs = read_eval_cfgs('mscoco', 'vLLM')
     
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
-        logger.log('error', "Config file is not exist or incomplete.")
+        print("Config file is not exist or incomplete.")
         exit()
 
     for k, v in unparsed_args.items():
@@ -133,24 +132,21 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    logger.log_dir = eval_configs.output_dir
-    dataloader = ImageRewardDBDataLoader(dict_configs)
+    logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
+    dataloader = MSCOCODataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()
-    eval_module = ImageRewardDBGenerator(model_config.model_id, model_config.model_name_or_path, model_config.model_max_length, 42)
-    img_dir = f"./images/{eval_configs.uuid}"
+    eval_module = MSCOCOGenerator(model_config.model_id, model_config.model_name_or_path, model_config.model_max_length, 42)
+    img_dir = os.path.join(eval_configs.output_dir, f"./images/{eval_configs.uuid}")
     raw_outputs = eval_module.eval(test_data, img_dir)
 
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
-    tot_score, tot_num_sum = 0, 0
     for task, outputs in raw_outputs.items():
         file_path = f"{uuid_path}/{task}.json"
         score, num_sum = eval_module.evaluator(outputs, file_path)
-        tot_score += score
-        tot_num_sum += num_sum
 
         eval_results = {
                 'model_id': [dict_configs.default.model_cfgs.model_id],
@@ -159,7 +155,7 @@ def main():
                 'num_sum': [num_sum],
                 'avg_score': [score / num_sum],
                 }
-        logger.print_table(title=f'ImageRewardDB/{task} Benchmark', data=eval_results)
+        logger.print_table(title=f'MSCOCO-ImageReward/{task} Benchmark', data=eval_results)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {eval_results['model_id'][0]},")
@@ -168,22 +164,6 @@ def main():
         logger.log('info', f"num_sum: {eval_results['num_sum'][0]},")
         logger.log('info', f"avg_score: {eval_results['avg_score'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-
-    eval_results = {
-        'model_id': [dict_configs.default.model_cfgs.model_id],
-        'num_fewshot': [eval_configs.n_shot],
-        'chain_of_thought': [eval_configs.cot],
-        'tot_num_sum': [tot_num_sum],
-        'tot_avg_score': [tot_score / tot_num_sum]
-    }
-    logger.print_table(title=f'ImageRewardDB Benchmark', data=eval_results)
-    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    logger.log('info', f"model_id: {eval_results['model_id'][0]},")
-    logger.log('info', f"num_fewshot: {eval_results['num_fewshot'][0]},")
-    logger.log('info', f"chain_of_thought: {eval_results['chain_of_thought'][0]},")
-    logger.log('info', f"tot_num_sum: {eval_results['tot_num_sum'][0]},")
-    logger.log('info', f"tot_avg_score: {eval_results['tot_avg_score'][0]},")
-    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()

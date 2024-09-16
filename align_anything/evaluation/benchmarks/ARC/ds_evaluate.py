@@ -41,12 +41,7 @@ class ARCDataLoader(BaseDataLoader):
         return data['answerKey']
 
     def set_fewshot_dataset(self, dataset, task): 
-        if self.cot:
-            with open('../cot_fewshot/ARC/' + task + '.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data
-        else:
-            return dataset['validation']
+        return dataset['validation']
         
     def build_example_prompt(self, data, with_answer=True, cot=False):
         choices_text = []
@@ -223,7 +218,7 @@ def main():
     try:
         assert dict_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
-        logger.log('error', "Config file is not exist or incomplete.")
+        print("Config file is not exist or incomplete.")
         exit()
 
     for k, v in unparsed_args.items():

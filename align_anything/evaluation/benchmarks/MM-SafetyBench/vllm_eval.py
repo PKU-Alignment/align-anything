@@ -19,7 +19,7 @@ from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from datasets import load_dataset, DatasetDict, Dataset
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.eval_logger import EvalLogger
@@ -84,14 +84,6 @@ class MMSafetyBenchDataLoader(BaseDataLoader):
 
     def get_answer(self, data):
         return data['answer']
-
-    def set_fewshot_dataset(self, dataset, task): 
-        if self.cot:
-            with open('../cot_fewshot/MMSafetyBench/' + task + '.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data
-        else:
-            return None
         
     def build_example_prompt(self, data, with_answer=True):
         return data['question']
@@ -105,16 +97,15 @@ class MMSafetyBenchDataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        return self.build_prompt(data[self.split])
+        return self.build_prompt(data)
     
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
         for task in self.task_names:
-            dataset = load_local_dataset(task)
-            self.few_shot_data = self.set_fewshot_dataset(dataset, task)
+            dataset = load_dataset(self.task_dir, task)[self.split]
             prompts = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, image, question_id in zip(prompts, dataset[self.split]['image'], dataset[self.split]['question_id']):
+            for prompt, image, question_id in zip(prompts, dataset['image'], dataset['id']):
                 processed_input = InferenceInput(text=prompt, image_file=image)
                 processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
@@ -139,20 +130,28 @@ class MMSafetyBenchGeneratorVLLM(BaseInferencer_vllm):
         InferenceOutputs = [InferenceOutput.from_vllm_output(question_id=input.question_id, vllm_output=output, store_raw=True) for output, input in zip(outputs, inputs)]
         return InferenceOutputs
 
-def evaluator(test_dataset, output_data, api_key, base_url, file_path):
+def evaluator(test_dataset, output_data, gpt_data, gpt_data_file, api_key, base_url, file_path):
     num_match = 0
     num_sum = 0
     question_id = set()
     for test_item in tqdm(test_dataset, desc="Evaluating"):
         for output_item in output_data:
-            if test_item['question_id'] == output_item.question_id and output_item.question_id not in question_id:
+            if test_item['id'] == output_item.question_id and output_item.question_id not in question_id:
                 question_id.add(output_item.question_id)
                 time.sleep(0.01)
                 num_sum += 1
-                true_or_false = judger(output_item.response[0], api_key, base_url)
+                gpt_id = output_item.response[0]
+                if gpt_id in gpt_data:
+                    true_or_false = gpt_data[gpt_id]
+                else:
+                    true_or_false = judger(output_item.response[0], api_key, base_url)
+                    gpt_data[gpt_id] = true_or_false
                 if true_or_false:
                     num_match += 1
                 save_detail(test_item['question'], output_item.prompt, '', output_item.response[0], true_or_false, file_path)
+
+    with open(gpt_data_file, 'w', encoding='utf-8') as f:
+        json.dump(gpt_data, f, ensure_ascii=False, indent=4)
 
     return num_sum - num_match, num_sum
 
@@ -190,14 +189,13 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    logger = EvalLogger('Evaluation')
 
     dict_configs, infer_configs = read_eval_cfgs('mm-safetybench', 'vLLM')
 
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
-        logger.log('error', "Config file is not exist or incomplete.")
+        print("Config file is not exist or incomplete.")
         exit()
     
     for k, v in unparsed_args.items():
@@ -210,12 +208,17 @@ def main():
     model_config = dict_configs.default.model_cfgs
     data_cfgs = dict_configs.default.data_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    logger.log_dir = eval_configs.output_dir
+    logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
     dataloader = MMSafetyBenchDataLoader(dict_configs)
-    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
+    assert not (dataloader.num_shot > 0 or dataloader.cot), "Few-shot or chain-of-thought cannot be used for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = MMSafetyBenchGeneratorVLLM(model_config, infer_configs)
-    raw_outputs = eval_module.eval(test_data, eval_configs)
+    raw_outputs_dir = os.path.join(eval_configs.output_dir, f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl")
+    if os.path.exists(raw_outputs_dir):
+        raw_outputs = load_raw_outputs(raw_outputs_dir)
+    else:
+        raw_outputs = eval_module.eval(test_data, eval_configs)
+        save_raw_outputs(raw_outputs, raw_outputs_dir)
     
     api_key = eval_configs.openai_api_key or os.getenv("OPENAI_API_KEY")
     base_url = eval_configs.openai_api_base_url or os.getenv("OPENAI_API_BASE_URL")
@@ -229,11 +232,17 @@ def main():
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
+    gpt_data_file = os.path.join(eval_configs.output_dir, f"gpt_data.json")
+    gpt_data = {}
+    if os.path.exists(gpt_data_file):
+        with open(gpt_data_file, 'r', encoding='utf-8') as file:
+            gpt_data = json.load(file)
+
     tot_num_match, tot_num_sum = 0, 0
     for task, _ in raw_outputs.items():
-        test_data = load_local_dataset(task)[data_cfgs.split]
+        test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
         file_path = f"{uuid_path}/{task}.json"
-        num_match, num_sum = evaluator(test_data, raw_outputs[task], api_key, base_url, file_path)
+        num_match, num_sum = evaluator(test_data, raw_outputs[task], gpt_data, gpt_data_file, api_key, base_url, file_path)
         tot_num_match += num_match
         tot_num_sum += num_sum
 

@@ -13,10 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 
+import os
 import numpy as np
+from PIL import Image
 from tqdm import tqdm
 from pprint import pprint
 from abc import abstractmethod
+from torch.utils.data import Dataset
+from torchvision import transforms
 from typing import Union, List, Dict, Any, Tuple
 from datasets import load_dataset, DatasetDict
 from align_anything.evaluation.data_type import InferenceInput
@@ -89,3 +93,23 @@ class BaseDataLoader:
     @abstractmethod
     def get_answer(self, data):
         raise NotImplementedError
+
+class CustomImageDataset(Dataset):
+    def __init__(self, image_folder):
+        self.image_folder = image_folder
+        self.image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.endswith(('png', 'jpg', 'jpeg'))]
+        
+        self.transform = transforms.Compose([
+            transforms.Resize((299, 299)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+
+    def __len__(self):
+        return len(self.image_files)
+
+    def __getitem__(self, idx):
+        img_path = self.image_files[idx]
+        image = Image.open(img_path).convert('RGB')
+        image = self.transform(image)
+        return image

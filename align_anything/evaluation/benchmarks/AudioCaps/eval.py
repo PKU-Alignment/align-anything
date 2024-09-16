@@ -16,20 +16,15 @@
 import argparse
 from align_anything.evaluation.inference.base_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import List, Dict
 from datasets import DatasetDict
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
 from align_anything.evaluation.eval_logger import EvalLogger
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from diffusers import AudioLDM2Pipeline
+from collections import defaultdict
 import torch.multiprocessing as mp
-from threading import Lock
-import numpy as np
-import hpsv2
-import uuid
-import os
+import csv
 
-file_lock = Lock()
-class HPSv2DataLoader(BaseDataLoader):
+class AudioCapsDataLoader(BaseDataLoader):
     def init_tokenizer(self):
         pass
 
@@ -42,31 +37,59 @@ class HPSv2DataLoader(BaseDataLoader):
             ]
             return task_names
 
-    def load_dataset(self) -> DatasetDict:
-        processed_inputs = {}
-        for task in self.task_names:
-            prompts = hpsv2.benchmark_prompts(task)
-            processed_inputs[task] = [prompt for prompt in prompts]
-        return processed_inputs
+    def load_dataset(self, background_dir, csv_file) -> DatasetDict:
+        processed_inputs = defaultdict(list)
+        
+        total_rows = sum(1 for _ in open(csv_file, mode='r', encoding='utf-8'))
+        with open(csv_file, mode='r', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            
+            with tqdm(total=total_rows, desc='Audio downloading') as pbar:
+                for task in self.task_names:
+                    task_dir = background_dir
+                    
+                    file.seek(0)
+                    for row in reader:
+                        audiocap_id = row['audiocap_id']
+                        caption = row['caption']
+                        audio_path_real = os.path.join(task_dir, f'{audiocap_id}.mp3')
 
-class HPSv2Generator(BaseInferencer):
-    def parallel_eval(self, task2details, img_dir, data, device, position):
+                        processed_inputs[task].append({
+                            'audiocap_id': audiocap_id,
+                            'caption': caption,
+                            'audio_path_real': audio_path_real
+                        })
+                        pbar.update(1)
+                    processed_inputs[task] = processed_inputs[task]
+                        
+        return DatasetDict(processed_inputs)
+
+class AudioCapsGenerator(BaseInferencer):
+    def init_model(self, device) -> None:
+        self.model = AudioLDM2Pipeline.from_pretrained(self.model_name_or_path, torch_dtype=torch.float16).to(device)
+
+    def parallel_eval(self, task2details, audio_dir, data, device, position):
         self.init_model(device)
 
         for task, inputs in data.items():    
-            for prompt in tqdm(inputs, desc='Generating', position=position):
-                image_path = os.path.join(img_dir, task, f"{str(uuid.uuid4())}.jpg")
-                self.text_to_image_genenrate(prompt, image_path)
+            for input in tqdm(inputs, desc='Generating', position=position):
+                audiocap_id = input['audiocap_id']
+                caption = input['caption']
+                audio_path_real = input['audio_path_real']
+                audio_path = os.path.join(audio_dir, task, f"{audiocap_id}.mp3")
+                self.text_to_audio_generation(caption, audio_path)
                 task2details[task].extend(
                     [{
-                        'prompt': prompt,
-                        'image_path': image_path
+                        'audiocap_id': audiocap_id,
+                        'caption': caption,
+                        'audio_path': audio_path,
+                        'audio_path_real': audio_path_real
                     }]
                 )
-        
-    def eval(self, data, img_dir):
-        if not os.path.exists(img_dir):
-            os.makedirs(img_dir)
+
+    def eval(self, data, audio_dir):
+        if not os.path.exists(audio_dir):
+            os.makedirs(audio_dir)
             
         mp.set_start_method('spawn', force=True)
         num_processes = 8
@@ -74,7 +97,7 @@ class HPSv2Generator(BaseInferencer):
         
         task2details = {}
         for task, inputs in data.items():
-            task_dir = os.path.join(img_dir, task)
+            task_dir = os.path.join(audio_dir, task)
             if not os.path.exists(task_dir):
                 os.makedirs(task_dir)
             task2details[task] = mp.Manager().list()
@@ -86,7 +109,7 @@ class HPSv2Generator(BaseInferencer):
             for task, inputs in data.items():
                 chunk = inputs[i::num_processes]
                 chunks[task] = chunk
-            p = mp.Process(target=self.parallel_eval, args=(task2details, img_dir, chunks, device, i))
+            p = mp.Process(target=self.parallel_eval, args=(task2details, audio_dir, chunks, device, i))
             p.start()
             processes.append(p)
         for p in processes:
@@ -94,23 +117,21 @@ class HPSv2Generator(BaseInferencer):
 
         return task2details
     
-    def evaluator(self, outputs, file_path):
-        tot_score = []
+    def evaluator(self, outputs, file_path, score_path, background_dir, eval_dir):
         num_sum = 0
-
-        for output in tqdm(outputs, desc="Evaluating"):
-            prompt = output['prompt']
-            img_path = output['image_path']
+        os.system(f"python fad_score.py --datasetpath '{background_dir}' --logs '{eval_dir}' --name '{score_path}'")
+        for output in tqdm(outputs, desc="Result Saving"):
+            caption = output['caption']
+            audio_path = output['audio_path']
+            audio_path_real = output['audio_path_real']
             num_sum += 1
-            if os.path.exists(img_path):
-                score = float(hpsv2.score(img_path, prompt, hps_version="v2.0")[0])
-            else:
-                score = 0.0
-            tot_score.append(score)
-            save_detail(prompt, '', '', img_path, score, file_path)
+            save_detail(caption, '', audio_path_real, audio_path, '', file_path)
         
-        return tot_score, num_sum
-        
+        with open(score_path, 'r') as file:
+            data = json.load(file)
+
+        return data['fad_score'], num_sum
+
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
@@ -118,7 +139,7 @@ def main():
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
     
-    dict_configs, infer_configs = read_eval_cfgs('hpsv2', 'vLLM')
+    dict_configs, infer_configs = read_eval_cfgs('audiocaps', 'vLLM')
     
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
@@ -136,57 +157,41 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
-    dataloader = HPSv2DataLoader(dict_configs)
+    dataloader = AudioCapsDataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
-    test_data = dataloader.load_dataset()
-    eval_module = HPSv2Generator(model_config.model_id, model_config.model_name_or_path, model_config.model_max_length, 42)
-    img_dir = os.path.join(eval_configs.output_dir, f"./images/{eval_configs.uuid}")
-    raw_outputs = eval_module.eval(test_data, img_dir)
-    
+    audio_dir = os.path.join(eval_configs.output_dir, f"audio/{eval_configs.uuid}")
+    csv_file = './dataset.csv'
+    background_dir = '/aifs4su/yaodong/panrui/PR444/audiodata/audiocaps'
+    test_data = dataloader.load_dataset(background_dir, csv_file)
+    eval_module = AudioCapsGenerator(model_config.model_id, model_config.model_name_or_path, model_config.model_max_length, 42)
+    raw_outputs = eval_module.eval(test_data, audio_dir)
+
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
-    tot_score = []
-    tot_num_sum = 0
     for task, outputs in raw_outputs.items():
         file_path = f"{uuid_path}/{task}.json"
-        score, num_sum = eval_module.evaluator(outputs, file_path)
-        tot_score += score
-        tot_num_sum += num_sum
+        score_path = f"{uuid_path}/fad_score.jsonl"
+        eval_dir = os.path.join(audio_dir, task)
+        score, num_sum = eval_module.evaluator(outputs, file_path, score_path, background_dir, eval_dir)
 
         eval_results = {
                 'model_id': [dict_configs.default.model_cfgs.model_id],
                 'num_fewshot': [eval_configs.n_shot],
                 'chain_of_thought': [eval_configs.cot],
                 'num_sum': [num_sum],
-                'avg_score': [np.mean(score)*100],
+                'FAD_Score': [score],
                 }
-        logger.print_table(title=f'HPSv2/{task} Benchmark', data=eval_results)
+        logger.print_table(title=f'AudioCaps/{task} Benchmark', data=eval_results)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {eval_results['model_id'][0]},")
         logger.log('info', f"num_fewshot: {eval_results['num_fewshot'][0]},")
         logger.log('info', f"chain_of_thought: {eval_results['chain_of_thought'][0]},")
         logger.log('info', f"num_sum: {eval_results['num_sum'][0]},")
-        logger.log('info', f"score: {eval_results['avg_score'][0]} (±{np.std(score)}),")
+        logger.log('info', f"FAD_Score: {eval_results['FAD_Score'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-
-    eval_results = {
-        'model_id': [dict_configs.default.model_cfgs.model_id],
-        'num_fewshot': [eval_configs.n_shot],
-        'chain_of_thought': [eval_configs.cot],
-        'tot_num_sum': [tot_num_sum],
-        'tot_avg_score': [np.mean(tot_score)*100],
-    }
-    logger.print_table(title=f'HPSv2 Benchmark', data=eval_results)
-    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    logger.log('info', f"model_id: {eval_results['model_id'][0]},")
-    logger.log('info', f"num_fewshot: {eval_results['num_fewshot'][0]},")
-    logger.log('info', f"chain_of_thought: {eval_results['chain_of_thought'][0]},")
-    logger.log('info', f"tot_num_sum: {eval_results['tot_num_sum'][0]},")
-    logger.log('info', f"tot_avg_score: {eval_results['tot_avg_score'][0]} (±{np.std(tot_score)}),")
-    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()

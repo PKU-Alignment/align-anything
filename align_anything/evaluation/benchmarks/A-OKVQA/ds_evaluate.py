@@ -73,7 +73,7 @@ def main():
     try:
         assert dict_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
-        logger.log('error', "Config file is not exist or incomplete.")
+        print("Config file is not exist or incomplete.")
         exit()
 
     for k, v in unparsed_args.items():

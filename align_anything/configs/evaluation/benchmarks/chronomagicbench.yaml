@@ -23,8 +23,10 @@ default:
   eval_cfgs:
     # Output directory name
     output_dir: null
-    # Generation output directory
-    generation_output: null
+    #openai api url
+    openai_api_base_url: null
+    #openai api key
+    openai_api_key: null
     # Unique identifier for cache folder
     uuid: null
     # Num shot
@@ -34,9 +36,9 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: ['1k_group']
+    task: default
     # Task directory
-    task_dir: THUDM/ImageRewardDB
+    task_dir: BestWishYsh/ChronoMagic-Bench
     # Evaluation split
     split: test
 

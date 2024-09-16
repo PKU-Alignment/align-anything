@@ -52,9 +52,6 @@ class MMVetDataLoader(BaseDataLoader):
     def get_answer(self, data):
         return data['answer']
 
-    def set_fewshot_dataset(self, dataset, task: str=None):
-        return None
-
     def build_example_prompt(self, data, with_answer=True):
         cate_info = ''
         categories = data['capability'].split(',')
@@ -84,7 +81,6 @@ class MMVetDataLoader(BaseDataLoader):
         processed_inputs = {}
         for task in self.task_names:
             dataset = load_dataset(self.task_dir, task)[self.split]
-            self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
             for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset['question_id']):
@@ -208,6 +204,7 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = MMVetDataLoader(dict_configs)
+    assert not (dataloader.num_shot > 0 or dataloader.cot), "Few-shot or chain-of-thought cannot be used for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = MMVetGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)

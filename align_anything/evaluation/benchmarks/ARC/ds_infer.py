@@ -40,12 +40,7 @@ class ARCDataLoader(BaseDataLoader):
         return data['answerKey']
 
     def set_fewshot_dataset(self, dataset, task): 
-        if self.cot:
-            with open('../cot_fewshot/ARC/' + task + '.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data
-        else:
-            return dataset['validation']
+        return dataset['validation']
         
     def build_example_prompt(self, data, with_answer=True, cot=False):
         choices = get_choices(data)
@@ -142,7 +137,7 @@ def main():
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     dataloader = ARCDataLoader(dict_configs)
-    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
+    assert not dataloader.cot, "chain-of-thought cannot be used for this benchmark."
     eval_module = ARCGeneratorDS(model_config, infer_configs)
     dataloader.load_dataset(eval_module)
 

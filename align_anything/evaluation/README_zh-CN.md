@@ -10,9 +10,9 @@
 | :------------------- | :----------------------------------------------------------- |
 | **文本 ➡️ 文本**      | [ARC](https://huggingface.co/datasets/allenai/ai2_arc), [BBH](https://huggingface.co/datasets/lukaemon/bbh), [Belebele](https://huggingface.co/datasets/facebook/belebele), [CMMLU](https://huggingface.co/datasets/haonan-li/cmmlu), [GSM8K](https://huggingface.co/datasets/openai/gsm8k), [HumanEval](https://huggingface.co/datasets/openai/openai_humaneval), [MMLU](https://huggingface.co/datasets/cais/mmlu), [MMLU-Pro](https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro), [MT-Bench](https://huggingface.co/datasets/HuggingFaceH4/mt_bench_prompts), [PAWS-X](https://huggingface.co/datasets/google-research-datasets/paws-x), [RACE](https://huggingface.co/datasets/ehovy/race), [TruthfulQA ](https://huggingface.co/datasets/truthfulqa/truthful_qa), ➖ |
 | **图像+文本 ➡️ 文本** | [A-OKVQA](https://huggingface.co/datasets/HuggingFaceM4/A-OKVQA), [LLaVA-Bench(COCO)](https://huggingface.co/datasets/lmms-lab/llava-bench-coco), [LLaVA-Bench(wild)](https://huggingface.co/datasets/lmms-lab/llava-bench-in-the-wild), [MathVista](https://huggingface.co/datasets/AI4Math/MathVista), [MM-SafetyBench](https://github.com/isXinLiu/MM-SafetyBench), [MMBench](https://huggingface.co/datasets/lmms-lab/MMBench), [MME](https://huggingface.co/datasets/lmms-lab/MME), [MMMU](https://huggingface.co/datasets/MMMU/MMMU), [MMStar](https://huggingface.co/datasets/Lin-Chen/MMStar), [MMVet](https://huggingface.co/datasets/lmms-lab/MMVet), [POPE](https://huggingface.co/datasets/lmms-lab/POPE), [ScienceQA](https://huggingface.co/datasets/derek-thomas/ScienceQA), [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL), [TextVQA](https://huggingface.co/datasets/lmms-lab/textvqa), [VizWizVQA](https://huggingface.co/datasets/lmms-lab/VizWiz-VQA), ➖ |
-| **文本 ➡️ 图像**      | [ImageReward](https://huggingface.co/datasets/THUDM/ImageRewardDB), [HPSv2](https://huggingface.co/datasets/zhwang/HPDv2)➖                                                            |
-| **文本 ➡️ 视频**      | ➖                                                            |
-| **文本 ➡️ 语音**      | ➖                                                            |
+| **文本 ➡️ 图像**      | [HPSv2](https://huggingface.co/datasets/zhwang/HPDv2), [MSCOCO (ImageReward, FID, IS)](https://huggingface.co/datasets/nlphuji/mscoco_2014_5k_test_image_text_retrieval), ➖ |
+| **文本 ➡️ 视频**      | [ChronoMagic-Bench](https://huggingface.co/datasets/BestWishYsh/ChronoMagic-Bench), ➖ |
+| **文本 ➡️ 语音**      | [AudioCaps (FAD)](https://github.com/cdjkim/audiocaps), ➖    |
 
 - ➖ : 正在内部测试的功能，将尽快被更新。
 
@@ -134,6 +134,40 @@ default:
 ~~~
 
 如果想修改更多推理参数，请查看 `./align_anything/configs/evaluation/vllm` 和 `./align_anything/configs/evaluation/deepspeed`，具体取决于你选择的推理框架。
+
+### 需要 OpenAI API 访问的基准
+
+以下基准在评估时需要使用 OpenAI API：
+
+- ChronoMagicBench
+- MM-SafetyBench
+- SPA-VL
+- MMVet
+- AGIEval
+- mt_bench
+- llava-bench-coco
+- llava-bench-in-the-wild
+- LongBench
+
+你可以通过以下两种方式添加 OpenAI API 凭证：
+
+1. 使用环境变量：
+
+   在运行评估之前，设置 `OPENAI_API_KEY` 和 `OPENAI_API_BASE_URL` 环境变量：
+
+   ```
+   export OPENAI_API_KEY="YOUR_API_KEY"
+   export OPENAI_API_BASE_URL="https://api.openai.com/v1/chat/completions"
+   ```
+
+2. 修改 YAML 配置文件：
+
+   你可以直接在相应基准测试的 YAML 配置文件中指定 API 密钥和 URL，配置文件位于 `./align_anything/configs/evaluation/benchmarks` 目录下。更新 `openai_api_key` 和 `openai_api_base_url` 属性即可。
+
+### 注意事项
+
+1. 对于 `SPA-VL/HarmEval` 基准测试，使用的基准模型是 `llava-hf/llava-1.5-7b-hf`，而对于 `SPA-VL/HelpEval` 基准测试，使用的基准模型是 `gpt-4-turbo`。
+2. 评估 `HPSv2` 时，你需要手动配置环境，下载此文件：https://github.com/tgxs002/HPSv2/blob/master/hpsv2/src/open_clip/bpe_simple_vocab_16e6.txt.gz，并将其放置在 `./your_env_name/lib/python3.11/site-packages/hpsv2/src/open_clip/` 目录下。
 
 
 ### 整合自定义模板

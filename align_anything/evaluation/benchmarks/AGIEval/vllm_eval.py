@@ -20,7 +20,7 @@ from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from datasets import load_dataset
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.vllm_inference import update_results
@@ -54,14 +54,6 @@ class AGIEvalDataLoader(BaseDataLoader):
             data['answer'] = data['answer'][0]
         return data['answer']
 
-    def set_fewshot_dataset(self, dataset, task): 
-        if self.cot:
-            with open('../cot_fewshot/AGIEval/' + task + '.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data
-        else:
-            return dataset['validation']
-
     def build_example_prompt(self, data, with_answer=True, cot=False):
         choices = ''
         if data["choices"]:
@@ -71,33 +63,8 @@ class AGIEvalDataLoader(BaseDataLoader):
 
     def build_prompt(self, data):
         prompt = ""
-        cot_prompt = f" Let's think step by step. "
-        few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
-        if len(few_shot_examples) == 0:
-            question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
-        else:
-            if not self.cot:
-                few_shots = [
-                    self.build_example_prompt(
-                        {key: value[i] for key, value in few_shot_examples.items()}, True
-                    )
-                    for i in range(len(few_shot_examples['question']))
-                ]
-            else:
-                few_shots = [
-                    f"{example['question']}\n'Answer: '{example['answer']}" for example in few_shot_examples
-                ]
-            question = []
-            for item in data:
-                request = {}
-                for key, value in item.items():
-                    request[key] = value
-                examples = few_shots + [self.build_example_prompt(request, False)]
-                if self.cot:
-                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt))
-                else:
-                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
+        question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
 
         return question
 
@@ -108,7 +75,7 @@ class AGIEvalGeneratorVLLM(BaseInferencer_vllm):
             task2details[task] = self.generation(input)
         return task2details
 
-def evaluator(raw_output: List[InferenceOutput], dataloader: AGIEvalDataLoader, task: str, api_key, base_url, file_path):
+def evaluator(raw_output: List[InferenceOutput], dataloader: AGIEvalDataLoader, task: str, gpt_data, gpt_data_file, api_key, base_url, file_path):
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
     correct_answers = []
     responses = []
@@ -139,13 +106,21 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: AGIEvalDataLoader, 
                     true_or_false = judge_answer(correct_answer['answer'], response['answer'])
                     choices = '\n' + '\n'.join([f'({chr(label + 65)}) {correct_answer["choices"][label]}' for label in range(len(correct_answer["choices"]))])
                 else:
-                    true_or_false = gpt_judge_answer(correct_answer['prompt'], correct_answer['answer'], response['answer'], api_key, base_url)
+                    gpt_id = correct_answer['prompt'] + response['answer']
+                    if gpt_id in gpt_data:
+                        true_or_false = gpt_data[gpt_id]
+                    else:
+                        true_or_false = gpt_judge_answer(correct_answer['prompt'], correct_answer['answer'], response['answer'], api_key, base_url)
+                        gpt_data[gpt_id] = true_or_false
                     choices = ''
                 if true_or_false:
                     cnt_match += 1
                 save_detail(correct_answer['prompt'], choices, correct_answer['answer'], response['answer'], true_or_false, file_path)
                 break
 
+    with open(gpt_data_file, 'w', encoding='utf-8') as f:
+        json.dump(gpt_data, f, ensure_ascii=False, indent=4)
+ 
     return cnt_match, cnt_sum
 
 def gpt_judge_answer(question, correct_answer, response, api_key, base_url):
@@ -194,14 +169,13 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    logger = EvalLogger('Evaluation')
 
     dict_configs, infer_configs = read_eval_cfgs('agieval', 'vLLM')
 
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
-        logger.log('error', "Config file is not exist or incomplete.")
+        print("Config file is not exist or incomplete.")
         exit()
 
     for k, v in unparsed_args.items():
@@ -213,12 +187,17 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    logger.log_dir = eval_configs.output_dir
+    logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
     dataloader = AGIEvalDataLoader(dict_configs)
-    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
+    assert not (dataloader.num_shot > 0 or dataloader.cot), "Few-shot or chain-of-thought cannot be used for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = AGIEvalGeneratorVLLM(model_config, infer_configs)
-    raw_outputs = eval_module.eval(test_data, eval_configs)
+    raw_outputs_dir = os.path.join(eval_configs.output_dir, f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl")
+    if os.path.exists(raw_outputs_dir):
+        raw_outputs = load_raw_outputs(raw_outputs_dir)
+    else:
+        raw_outputs = eval_module.eval(test_data, eval_configs)
+        save_raw_outputs(raw_outputs, raw_outputs_dir)
 
     api_key = eval_configs.openai_api_key or os.getenv("OPENAI_API_KEY")
     base_url = eval_configs.openai_api_base_url or os.getenv("OPENAI_API_BASE_URL")
@@ -232,11 +211,17 @@ def main():
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
+    gpt_data_file = os.path.join(eval_configs.output_dir, f"gpt_data.json")
+    gpt_data = {}
+    if os.path.exists(gpt_data_file):
+        with open(gpt_data_file, 'r', encoding='utf-8') as file:
+            gpt_data = json.load(file)
+
     tot_num_match, tot_num_sum = 0, 0
     for task, _ in raw_outputs.items():
 
         file_path = f"{uuid_path}/{task}.json"
-        cnt_match, cnt_sum = evaluator(raw_outputs[task], dataloader, task, api_key, base_url, file_path)
+        cnt_match, cnt_sum = evaluator(raw_outputs[task], dataloader, task, gpt_data, gpt_data_file, api_key, base_url, file_path)
         tot_num_match += cnt_match
         tot_num_sum += cnt_sum
 

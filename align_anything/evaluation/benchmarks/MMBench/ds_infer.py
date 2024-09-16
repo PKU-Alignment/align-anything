@@ -46,52 +46,19 @@ class MMBenchDataLoader(BaseDataLoader):
     def get_answer(self, data):
         return data['answer']
 
-    def set_fewshot_dataset(self, dataset, task: str=None):
-        if self.cot:
-            with open('../cot_fewshot/MMBench' + task + '.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data
-        else:
-            return None
-
     def build_example_prompt(self, data, with_answer=True):
         choices = '(A) ' + data["A"] + '\n(B) ' + data["B"] + '\n(C) ' + data["C"] + '\n(D) ' + data["D"]
         answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
         return f"{data['hint']}\n{data['question']}Please choose the correct answer from the following options:\n{choices}\n{answer}"
 
-    def build_prompt(self, data: Dict[str, Any]) -> str:
+    def build_prompt(self, data):
         assert self.num_shot == 0, "MMBench does not support few-shot learning."
         prompt = f"The following are hints and multiple choice questions (with answers).\n\n"
-        cot_prompt = f" Let's think step by step. "
-        few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
-        if len(few_shot_examples) == 0:
-            question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
-        else:
-            if not self.cot:
-                few_shots = [
-                    self.build_example_prompt(
-                        {key: value[i] for key, value in few_shot_examples.items()}, True
-                    )
-                    for i in range(len(few_shot_examples['question']))
-                ]
-            else:
-                few_shots = [
-                    f"{example['question']}\n'Answer: '{example['answer']}" for example in few_shot_examples
-                ]
-            question = []
-            for item in data:
-                request = {}
-                for key, value in item.items():
-                    request[key] = value
-                examples = few_shots + [self.build_example_prompt(request, False)]
-                if self.cot:
-                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt))
-                else:
-                    question.append(template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=""))
-        
-        return question
+        question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
 
+        return question
+    
     def preprocess(self, data):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         raw_images = [item['image'] for item in data[self.split]]
@@ -105,7 +72,6 @@ class MMBenchDataLoader(BaseDataLoader):
         processed_inputs = {}
         for task in self.task_names:
             dataset = load_dataset(self.task_dir, task)
-            self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
             for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['index']):
@@ -229,6 +195,7 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = MMBenchDataLoader(dict_configs)
+    assert not (dataloader.num_shot > 0 or dataloader.cot), "Few-shot or chain-of-thought cannot be used for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = MMBenchGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)

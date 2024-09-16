@@ -45,44 +45,14 @@ class POPEDataLoader(BaseDataLoader):
     def get_answer(self, data):
         return data['answer']
 
-    def set_fewshot_dataset(self, dataset, task: str=None):
-        return None
-
     def build_example_prompt(self, data, with_answer=True):
         return f"{data['question']} Please answer yes or no."
 
-    def build_prompt(self, data: Dict[str, Any]) -> str:
+    def build_prompt(self, data):
         assert self.num_shot == 0, "POPE does not support few-shot learning."
-        prompt = f"The following are multiple choice questions (with answers).\n\n"
-        cot_prompt = f" Let's think step by step. "
-        few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
+        prompt = ""
         template = get_template_class(self.chat_template)
-        if len(few_shot_examples) == 0:
-            question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
-        else:
-            if not self.cot:
-                few_shots = [
-                    self.build_example_prompt(
-                        {key: value[i] for key, value in few_shot_examples.items()}, True
-                    )
-                    for i in range(len(few_shot_examples['question']))
-                ]
-            else:
-                few_shots = [
-                    f"{example['question']}\n'Answer: '{example['answer']}" for example in few_shot_examples
-                ]
-            question = []
-            for item in data:
-                num_images = len(get_image_keys(item))
-                request = {}
-                for key, value in item.items():
-                    request[key] = value
-                examples = few_shots + [self.build_example_prompt(request, False)]
-                if self.cot:
-                    base_prompt = template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt)
-                else:
-                    base_prompt = template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output="")
-                question.append([base_prompt] * num_images)
+        question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
 
         return question
 
@@ -230,6 +200,7 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = POPEDataLoader(dict_configs)
+    assert not (dataloader.num_shot > 0 or dataloader.cot), "Few-shot or chain-of-thought cannot be used for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = POPEGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)
