@@ -161,7 +161,7 @@ def main():
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     audio_dir = os.path.join(eval_configs.output_dir, f"audio/{eval_configs.uuid}")
     csv_file = './dataset.csv'
-    background_dir = '/aifs4su/yaodong/panrui/PR444/audiodata/audiocaps'
+    background_dir = './your_audio_data_path/audiocaps'
     test_data = dataloader.load_dataset(background_dir, csv_file)
     eval_module = AudioCapsGenerator(model_config.model_id, model_config.model_name_or_path, model_config.model_max_length, 42)
     raw_outputs = eval_module.eval(test_data, audio_dir)
