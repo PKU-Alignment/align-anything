@@ -300,7 +300,8 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
             cache_dir=cache_dir,
             trust_remote_code=trust_remote_code,
         )
-        setattr(processor, 'tokenizer', tokenizer)
+        if not hasattr(processor, 'tokenizer'):
+            setattr(processor, 'tokenizer', tokenizer)
     except:
         processor = None
     return model, tokenizer, processor

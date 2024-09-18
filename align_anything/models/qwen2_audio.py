@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-#
 # Copyright 2024 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,22 +13,18 @@
 # limitations under the License.
 # ==============================================================================
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "${SCRIPT_DIR}/../align_anything/evaluation" || exit 1
 
-BENCHMARKS=("")
-OUTPUT_DIR=""
-GENERATION_BACKEND=""
-MODEL_ID=""
-MODEL_NAME_OR_PATH=""
-CHAT_TEMPLATE=""
+from dataclasses import dataclass
 
-for BENCHMARK in "${BENCHMARKS[@]}"; do
-    python __main__.py \
-        --benchmark ${BENCHMARK} \
-        --output_dir ${OUTPUT_DIR} \
-        --generation_backend ${GENERATION_BACKEND} \
-        --model_id ${MODEL_ID} \
-        --model_name_or_path ${MODEL_NAME_OR_PATH} \
-        --chat_template ${CHAT_TEMPLATE}
-done
+import torch
+import torch.nn as nn
+from transformers import (
+    Qwen2AudioForConditionalGeneration,
+    Qwen2AudioPreTrainedModel
+)
+
+class AccustomedQwen2AudioModel( Qwen2AudioForConditionalGeneration):
+
+    @classmethod
+    def pretrain_class(cls) -> Qwen2AudioPreTrainedModel:
+        return Qwen2AudioPreTrainedModel

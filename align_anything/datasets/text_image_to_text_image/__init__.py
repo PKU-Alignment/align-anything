@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-#
 # Copyright 2024 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,23 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""Dataset classes for text to text training."""
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "${SCRIPT_DIR}/../align_anything/evaluation" || exit 1
 
-BENCHMARKS=("")
-OUTPUT_DIR=""
-GENERATION_BACKEND=""
-MODEL_ID=""
-MODEL_NAME_OR_PATH=""
-CHAT_TEMPLATE=""
-
-for BENCHMARK in "${BENCHMARKS[@]}"; do
-    python __main__.py \
-        --benchmark ${BENCHMARK} \
-        --output_dir ${OUTPUT_DIR} \
-        --generation_backend ${GENERATION_BACKEND} \
-        --model_id ${MODEL_ID} \
-        --model_name_or_path ${MODEL_NAME_OR_PATH} \
-        --chat_template ${CHAT_TEMPLATE}
-done
+from align_anything.datasets.text_image_to_text_image.supervised import *
+from align_anything.datasets.text_image_to_text_image.preference import *
+from align_anything.datasets.text_image_to_text_image.prompt_only import *

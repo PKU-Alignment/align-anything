@@ -24,6 +24,7 @@ import requests
 import librosa
 import requests
 import torch
+import torchaudio
 from PIL import Image
 from torchvision.io import read_video
 
@@ -40,9 +41,8 @@ def load_image(image_path: str):
         else:
             image = Image.open(image_path)
         return image
-    except Exception as e:
-        print(f"Error occured when dealing with {image_path}")
-        raise Exception
+    except Exception:
+        raise Exception(f"Error occurred when dealing with {image_path}")
 
 def insert_img_token(text, image):
     # do the same for worse
@@ -671,7 +671,40 @@ class LLAVA:
             f"{self.assistant_prompt.format(output='')}"
         )
 
+        image_file = f"http://images.cocodataset.org/val2017/{raw_sample['image']}"
+
+        return {
+            'text': text,
+            'prompt': prompt,
+            'image': load_image(image_file),
+        }
+
+@register_template('LLAVA_Local')
+class LLAVA_Local:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n<image>{input}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
+    separator: str = '###'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        raw_conversations = raw_sample['conversations']
+        raw_prompt = raw_conversations[0]['value'].replace('<image>\n', '').replace('\n<image>', '')
+
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=raw_prompt)}'
+            f"{self.assistant_prompt.format(output=raw_conversations[1]['value'])}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=raw_prompt)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+
         image_file = raw_sample['image']
+
         return {
             'text': text,
             'prompt': prompt,
@@ -935,25 +968,26 @@ class RLAIFV:
         prompt = raw_sample['question']
         image = raw_sample['image']
 
-        formatted_better_output = (
+        formatted_prompt = (
             f'{self.system_prompt}'
             f'{self.user_prompt.format(input=prompt)}'
+        )
+        formatted_better_output = (
             f'{self.assistant_prompt.format(output=better_response)}'
         )
         formatted_worse_output = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
             f'{self.assistant_prompt.format(output=worse_response)}'
         )
 
         return {
+            'prompt': formatted_prompt,
             'better_text': formatted_better_output,
             'worse_text': formatted_worse_output,
             'image': image,
         }
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
-        return False
+        return raw_sample['chosen'] == raw_sample['rejected']
 
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['question']
@@ -1540,3 +1574,91 @@ class Zephyr(Dialogue):
     user_prompt: str = '<human>:{input}\n'
     assistant_prompt: str = '<bot>:{output}'
     separator: str = '\n'
+
+@register_template('OpenAQA')
+class OpenAQA:
+    system_prompt: str = 'You are a helpful assistant.'
+    split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
+    separator: str = '<|im_end|>\n<|im_start|>assistant\n'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['instruction']
+        audio_url = raw_sample['audio_id']
+        response = raw_sample['output']
+
+        conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": response},
+        ]
+
+        return {
+            'conversation': conversation,
+            'prompt': conversation[:-1],
+        }
+    
+@register_template('RLHFAQA')
+class RLHFAQA:
+    system_prompt: str = 'You are a helpful assistant.'
+    split_token: str = 'assistant\n'
+    separator: str = 'assistant\n'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        raw_input = raw_sample['raw_input']
+        better_id = raw_sample['overall_response']
+
+        if int(better_id) == 1:
+            better_response = raw_input['output']
+            worse_response = raw_input['reject_answer']
+        elif int(better_id) == 2:
+            better_response = raw_input['reject_answer']
+            worse_response = raw_input['output']
+        else:
+            raise RuntimeError(f'Expect better_id is type `int`, but got: {better_id}')
+        prompt = raw_input['prompt']
+        audio_url = raw_input['audio_url']
+
+        better_conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": better_response},
+        ]
+        
+        worse_conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": worse_response},
+        ]
+
+        return {
+            'prompt': better_conversation[:-1],
+            'better_conversation': better_conversation,
+            'worse_conversation': worse_conversation,
+        }
+
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        raw_input = raw_sample['raw_input']
+        return raw_input['output']==raw_input['reject_answer']
+
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['raw_input']['prompt']
+        audio_url = raw_sample['raw_input']['audio_url']
+
+        conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+        ]
+
+        return {'conversation': conversation}

@@ -26,7 +26,7 @@ import torch.distributed as dist
 from tqdm import tqdm
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.ti_to_ti.preference import PreferenceDataset, PreferenceTokenizedDataset
+from align_anything.datasets.text_image_to_text_image.preference import PreferenceDataset, PreferenceTokenizedDataset
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.trainers.text_to_text.rm import RMTrainer as RMtextTrainer
 from align_anything.utils.tools import (
@@ -137,7 +137,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('ti_to_ti', 'rm')
+    task = os.path.join('text_image_to_text_image', 'rm')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # get custom configs from command line
