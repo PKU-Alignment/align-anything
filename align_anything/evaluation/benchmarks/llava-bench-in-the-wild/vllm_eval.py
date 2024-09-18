@@ -114,7 +114,7 @@ def evaluator(data: dict, task: str, api_key, base_url, file_path, eval_configs=
         system_prompts.append('You are a helpful and precise assistant for checking the quality of the answer.')
         user_prompts.append(content)
 
-    judger = API_Single_Eval(model = eval_configs.judge_model, num_workers = 20, temperature = 0, template_function= None,
+    judger = API_Single_Eval(model=eval_configs.judge_model, num_workers=20, temperature=0, template_function=None,
                       api_key=api_key, base_url=base_url)
     
     results = judger.evaluate(system_prompts, user_prompts)
@@ -143,7 +143,7 @@ def evaluator(data: dict, task: str, api_key, base_url, file_path, eval_configs=
             'response': output,
             'comment': comment
         })       
-        save_detail(data['question'][id], '', data['gpt_answer'][id], data['responses'][id], score[0] >= score[1], file_path, output)
+        save_detail(data['question'][id], '', data['gpt_answer'][id], data['responses'][id], score[0], file_path, output)
     
     return eval_case
 
@@ -173,6 +173,9 @@ def main():
 
     dataloader = llavawildDataLoader(dict_configs)
     test_data, gpt_data = dataloader.load_dataset()
+    new_sampling_params = infer_configs.SamplingParams._replace(temperature=0.2)
+    new_llm = infer_configs.LLM._replace(max_num_seqs=4)
+    infer_configs = infer_configs._replace(SamplingParams=new_sampling_params, LLM=new_llm)
     eval_module = llavawildGeneratorVLLM(model_config, infer_configs)
     raw_outputs_dir = os.path.join(eval_configs.output_dir, f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl")
     if os.path.exists(raw_outputs_dir):
@@ -211,16 +214,17 @@ def main():
             total_score2+=item['score'][1]
             total_count+=1
         total_score = total_score1 / total_score2
-
-        logger = EvalLogger('Evaluation')
         total_average = round(float(total_score) * 100,1)
 
         eval_results = {
+                'model_id': [dict_configs.default.model_cfgs.model_id],
                 'total_average': [float(total_average)],
                 'total_question': [total_count]
                 }
         logger.print_table(title=f'llava-bench-in-the-wild/{task} Benchmark', data=eval_results)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+        logger.log('info', f"task: {task}")
+        logger.log('info', f"model_id: {eval_results['model_id'][0]},")
         logger.log('info', f"total_average: {eval_results['total_average'][0]},")
         logger.log('info', f"total_question: {eval_results['total_question'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
