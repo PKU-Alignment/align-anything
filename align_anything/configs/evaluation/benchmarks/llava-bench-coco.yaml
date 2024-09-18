@@ -38,7 +38,7 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: default
+    task: [conv, detail, complex]
     # Task directory
     task_dir: lmms-lab/llava-bench-coco
     # Evaluation split

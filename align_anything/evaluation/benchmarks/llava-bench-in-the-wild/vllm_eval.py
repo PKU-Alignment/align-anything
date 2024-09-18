@@ -24,6 +24,7 @@ from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.eval.base_eval import API_Single_Eval
 from align_anything.evaluation.eval_logger import EvalLogger
+from collections import defaultdict
 import json
 
 class llavawildDataLoader(BaseDataLoader):
@@ -46,18 +47,28 @@ class llavawildDataLoader(BaseDataLoader):
         
         return question
     
-    def load_dataset(self):
+    def load_dataset(self, category_datasets):
         processed_inputs = {}
         gpt_data = {}
-        for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)[self.split]
+        for task, dataset in category_datasets.items():
             prompts = self.build_prompt(dataset)
-            images = dataset['image']
-
-            processed_inputs[task] = [InferenceInput(text=prompt,token_ids=None, image_file=image) for prompt, image in zip(prompts, images)]
-            gpt_data[task] = dataset.to_dict()
+            processed_inputs[task] = []
+            for prompt, i in zip(prompts, range(len(dataset))):
+                image = dataset[i]['image']
+                processed_inputs[task].append(InferenceInput(text=prompt,token_ids=None, image_file=image))
+            gpt_data[task] = convert_list_to_dict(dataset)
         return processed_inputs, gpt_data
+    
+    def get_category_datasets(self):
+        dataset = load_dataset(self.task_dir, 'default')[self.split]
 
+        category_datasets = defaultdict(list)
+        for i in tqdm(range(len(dataset)), desc='Dataset classification'):
+            category = dataset[i]['category']
+            if category in self.task_names:
+                category_datasets[category].append(dataset[i])
+                
+        return category_datasets
 
 class llavawildGeneratorVLLM(BaseInferencer_vllm):
     def _generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
@@ -91,7 +102,15 @@ def get_score(response: str):
     except Exception as e:
         print(e)
         return None, None
-        
+
+def convert_list_to_dict(dataset):
+    result = {}
+    for item in dataset:
+        for key in item:
+            if key not in result:
+                result[key] = []
+            result[key].append(item[key])
+    return result      
 
 def evaluator(data: dict, task: str, api_key, base_url, file_path, eval_configs= None):
     current_file_path = os.path.abspath(__file__)
@@ -172,7 +191,8 @@ def main():
     logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
 
     dataloader = llavawildDataLoader(dict_configs)
-    test_data, gpt_data = dataloader.load_dataset()
+    dataset = dataloader.get_category_datasets()
+    test_data, gpt_data = dataloader.load_dataset(dataset)
     new_sampling_params = infer_configs.SamplingParams._replace(temperature=0.2)
     new_llm = infer_configs.LLM._replace(max_num_seqs=4)
     infer_configs = infer_configs._replace(SamplingParams=new_sampling_params, LLM=new_llm)
@@ -200,34 +220,48 @@ def main():
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
-    merged_list = []
-    for task, _ in gpt_data.items():
+    total_average = 0.0
+    total_count = 0
+    for task, test_data in dataset.items():
         file_path = f"{uuid_path}/{task}.json"
         output = evaluator(gpt_data[task], task, api_key, base_url, file_path, eval_configs)
-        merged_list = merged_list + output
 
-        total_score1 = 0
-        total_score2 = 0
-        total_count = 0
-        for item in merged_list:
-            total_score1+=item['score'][0]
-            total_score2+=item['score'][1]
-            total_count+=1
-        total_score = total_score1 / total_score2
-        total_average = round(float(total_score) * 100,1)
+        score1 = 0
+        score2 = 0
+        count = 0
+        for item in output:
+            score1+=item['score'][0]
+            score2+=item['score'][1]
+            count+=1
+        score = score1 / score2
+        average = round(float(score) * 100,1)
+        total_average += average
+        total_count += count
 
         eval_results = {
                 'model_id': [dict_configs.default.model_cfgs.model_id],
-                'total_average': [float(total_average)],
-                'total_question': [total_count]
+                'average': [float(average)],
+                'question': [count]
                 }
         logger.print_table(title=f'llava-bench-in-the-wild/{task} Benchmark', data=eval_results)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {eval_results['model_id'][0]},")
-        logger.log('info', f"total_average: {eval_results['total_average'][0]},")
-        logger.log('info', f"total_question: {eval_results['total_question'][0]},")
+        logger.log('info', f"average: {eval_results['average'][0]},")
+        logger.log('info', f"question: {eval_results['question'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    eval_results = {
+            'model_id': [dict_configs.default.model_cfgs.model_id],
+            'total_average': [float(total_average/3)],
+            'total_question': [total_count]
+            }
+    logger.print_table(title=f'llava-bench-in-the-wild Benchmark', data=eval_results)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"model_id: {eval_results['model_id'][0]},")
+    logger.log('info', f"total_average: {eval_results['total_average'][0]},")
+    logger.log('info', f"total_question: {eval_results['total_question'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()
