@@ -38,7 +38,7 @@ default:
     # Task directory
     task_dir: PKU-Alignment/MM-SafetyBench
     # Evaluation split
-    split: test
+    split: [Text_only, SD, SD_TYPO, TYPO]
 
   # Model configurations
   model_cfgs:
