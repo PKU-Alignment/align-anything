@@ -39,14 +39,14 @@ def parse_eval_args() -> argparse.Namespace:
         "--benchmark",
         "-b",
         default=None,
-        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, LongBench, AGIEval, Eval-Anything, HPSv2, ImageRewardDB, MSCOCO, ChronoMagicBench, AudioCaps",
+        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, L-Eval, LongBench, AGIEval, Eval-Anything, HPSv2, ImageRewardDB, MSCOCO, ChronoMagicBench, AudioCaps",
         choices=[
             "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
             "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
             "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
             "MM-SafetyBench", "TextVQA", "VizWizVQA", "SPA-VL",
             "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
-            "ScienceQA", "MMStar", "LongBench", "AGIEval",
+            "ScienceQA", "MMStar", "L-Eval", "LongBench", "AGIEval",
             "Eval-Anything", "HPSv2", "MSCOCO", "ImageRewardDB", 
             "ChronoMagicBench", "AudioCaps"
         ],

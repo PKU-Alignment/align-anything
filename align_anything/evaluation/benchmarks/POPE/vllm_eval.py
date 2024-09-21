@@ -120,11 +120,11 @@ def evaluator(test_dataset, output_data, file_path):
     yes_ratio = num_yes / num_sum if num_sum > 0 else 0
     
     result = {
-        "accuracy": acc,
-        "precision": precision,
-        "recall": recall,
-        "f1_score": f1,
-        "yes_ratio": yes_ratio
+        "accuracy": acc*100,
+        "precision": precision*100,
+        "recall": recall*100,
+        "f1_score": f1*100,
+        "yes_ratio": yes_ratio*100
     }
     return result, num_sum
 
@@ -176,10 +176,16 @@ def main():
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
+    tot_accuracy, tot_precision, tot_recall, tot_f1_score, tot_yes_ratio = 0.0, 0.0, 0.0, 0.0, 0.0
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, data_cfgs.split)[task]
         file_path = f"{uuid_path}/{task}.json"
         result, num_sum = evaluator(test_data, raw_outputs[task], file_path)
+        tot_accuracy += result['accuracy']
+        tot_precision += result['precision']
+        tot_recall += result['recall']
+        tot_f1_score += result['f1_score']
+        tot_yes_ratio += result['yes_ratio']
 
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
@@ -201,6 +207,27 @@ def main():
         logger.log('info', f"f1_score: {output_dict['f1_score'][0]},")
         logger.log('info', f"yes_ratio: {output_dict['yes_ratio'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    output_dict = {
+        'model_id': [dict_configs.default.model_cfgs.model_id],
+        'num_sum': [num_sum],
+        'tot_accuracy': [tot_accuracy/3],
+        'tot_precision': [tot_precision/3],
+        'tot_recall': [tot_recall/3],
+        'tot_f1_score': [tot_f1_score/3],
+        'tot_yes_ratio': [tot_yes_ratio/3],
+    }
+    logger.print_table(title=f'POPE Benchmark', data=output_dict)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"task: {task}")
+    logger.log('info', f"model_id: {output_dict['model_id'][0]},")
+    logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
+    logger.log('info', f"tot_accuracy: {output_dict['tot_accuracy'][0]},")
+    logger.log('info', f"tot_precision: {output_dict['tot_precision'][0]},")
+    logger.log('info', f"tot_recall: {output_dict['tot_recall'][0]},")
+    logger.log('info', f"tot_f1_score: {output_dict['tot_f1_score'][0]},")
+    logger.log('info', f"tot_yes_ratio: {output_dict['tot_yes_ratio'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()

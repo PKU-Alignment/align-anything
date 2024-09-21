@@ -26,7 +26,7 @@ import requests
 import re
 from align_anything.evaluation.eval_logger import EvalLogger
 
-class LongBenchDataLoader(BaseDataLoader):
+class LEvalDataLoader(BaseDataLoader):
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
@@ -37,19 +37,20 @@ class LongBenchDataLoader(BaseDataLoader):
             return task_names
 
     def get_answer(self, data):
-        return data['answer']
+        return data['outputs']
 
     def set_fewshot_dataset(self, dataset, task): 
         if self.cot:
-            with open('../cot_fewshot/LongBench/longbench.json', 'r', encoding='utf-8') as f:
+            with open('../cot_fewshot/LEval/l-eval.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
         else:
             return None
     
     def build_example_prompt(self, data, with_answer=True, cot=False):
+        instructions = '\n'.join([f'Question({idx + 1}): {data["instructions"][idx]}' for idx in range(len(data["instructions"]))])
         answer = f'Answer: {self.get_answer(data)}' if with_answer else 'Answer: '
-        return f"{data['context']}\n{data['input']}\n{answer}"
+        return f"{data['input']}\n{instructions}\n{answer}"
 
     def build_prompt(self, data):
         prompt = ""
@@ -84,14 +85,14 @@ class LongBenchDataLoader(BaseDataLoader):
         
         return question
 
-class LongBenchGeneratorVLLM(BaseInferencer_vllm):
+class LEvalGeneratorVLLM(BaseInferencer_vllm):
     def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
         for task, input in data.items():
             task2details[task] = self.generation(input)      
         return task2details
 
-def evaluator(raw_output: List[InferenceOutput], dataloader: LongBenchDataLoader, task: str, file_path, gpt_data, gpt_data_file, api_key, base_url):
+def evaluator(raw_output: List[InferenceOutput], dataloader: LEvalDataLoader, task: str, file_path, gpt_data, gpt_data_file, api_key, base_url):
     dataset = load_dataset(dataloader.task_dir, task)[dataloader.split]
     responses = []
     cnt_sum = 0
@@ -107,22 +108,23 @@ def evaluator(raw_output: List[InferenceOutput], dataloader: LongBenchDataLoader
         cnt_sum += 1
         for response in responses:
             if correct_answer['input'] in response['prompt']:
-                gpt_id = correct_answer['input'] + ''.join(correct_answer['answers']) + response['answer']
+                gpt_id = ''.join(correct_answer["instructions"]) + ''.join(correct_answer['outputs']) + response['answer']
                 if gpt_id in gpt_data:
                     score = gpt_data[gpt_id]
                 else:
-                    score = judger(correct_answer['context'], correct_answer['input'], correct_answer['answers'], response['answer'], api_key, base_url)
+                    score = judger(correct_answer['input'], correct_answer["instructions"], correct_answer['outputs'], response['answer'], api_key, base_url)
                     gpt_data[gpt_id] = score
                 total_score += score
-                save_detail(correct_answer['context'] + '\n' + correct_answer['input'], '', correct_answer['answers'], response['answer'], score, file_path)
+                instructions = '\n'.join([f'{correct_answer["instructions"][idx]}' for idx in range(len(correct_answer["instructions"]))])
+                save_detail(correct_answer['input'] + instructions, '', correct_answer['outputs'], response['answer'], score, file_path)
                 break
-        
+
     with open(gpt_data_file, 'w', encoding='utf-8') as f:
         json.dump(gpt_data, f, ensure_ascii=False, indent=4)
 
     return cnt_sum, total_score / cnt_sum
 
-def gpt4_judger(text, question, answers, response, api_key, base_url):
+def gpt4_judger(text, question, answer, response, api_key, base_url):
     def get_response(prompt):
         data = {
             "model": "gpt-4-turbo",
@@ -143,7 +145,6 @@ def gpt4_judger(text, question, answers, response, api_key, base_url):
             return result['choices'][0]['message']['content']
         else:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
-    correct_answer = '\n'.join([f'{answers[idx]}' for idx in range(len(answers))])
     CRITERIA = {"accuracy": """
                 Score 1: The Answer is completely unrelated to the reference.
                 Score 3: The Answer has minor relevance but does not align with the reference.
@@ -151,24 +152,28 @@ def gpt4_judger(text, question, answers, response, api_key, base_url):
                 Score 7: The Answer aligns with the reference but has minor omissions.
                 Score 10: The Answer is completely accurate and aligns perfectly with the reference.
                 Only respond with a numberical score"""}
-    prompt = f"\nQuestion: {question}\nReference: {correct_answer}\nAnswer: {response}\n{CRITERIA['accuracy']}"
+    prompt = f"\nQuestion: {question}\nReference: {answer}\nAnswer: {response}\n{CRITERIA['accuracy']}"
     score = get_response(prompt)
 
     return score
 
-def judger(text, question, answers, response, api_key, base_url):
-    score = gpt4_judger(text, question, answers, response, api_key, base_url)
-    if not isinstance(score, float):
-        match = re.search(r'\d+(\.\d+)?', score)
-        if match:
-            score = float(match.group())
-            if score > 10:
+def judger(text, questions, answers, response, api_key, base_url):
+    total_score = 0.0
+    for question, answer in zip(questions, answers):
+        score = gpt4_judger(text, question, answer, response, api_key, base_url)
+        if not isinstance(score, float):
+            match = re.search(r'\d+(\.\d+)?', score)
+            if match:
+                score = float(match.group())
+                if score > 10:
+                    score = 1
+            else:
                 score = 1
-        else:
-            score = 1
+        total_score += score
+    avg_score = total_score / len(questions)
 
-    return score
-  
+    return avg_score
+
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _, unparsed_args = parser.parse_known_args()
@@ -176,12 +181,12 @@ def main():
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
     
-    dict_configs, infer_configs = read_eval_cfgs('longbench', 'vLLM')
+    dict_configs, infer_configs = read_eval_cfgs('l-eval', 'vLLM')
     
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
-        print("Config file is not exist or incomplete.")
+        logger.log('error', "Config file is not exist or incomplete.")
         exit()
 
     for k, v in unparsed_args.items():
@@ -194,16 +199,16 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
-    dataloader = LongBenchDataLoader(dict_configs)
+    dataloader = LEvalDataLoader(dict_configs)
     test_data = dataloader.load_dataset()
-    eval_module = LongBenchGeneratorVLLM(model_config, infer_configs)
+    eval_module = LEvalGeneratorVLLM(model_config, infer_configs)
     raw_outputs_dir = os.path.join(eval_configs.output_dir, f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl")
     if os.path.exists(raw_outputs_dir):
         raw_outputs = load_raw_outputs(raw_outputs_dir)
     else:
         raw_outputs = eval_module.eval(test_data, eval_configs)
         save_raw_outputs(raw_outputs, raw_outputs_dir)
-    
+   
     api_key = eval_configs.openai_api_key or os.getenv("OPENAI_API_KEY")
     base_url = eval_configs.openai_api_base_url or os.getenv("OPENAI_API_BASE_URL")
     
@@ -230,7 +235,7 @@ def main():
         num_task += 1
         tot_num_sum += cnt_sum
         tot_avg_score += avg_score
-
+        
         eval_results = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
             'num_fewshot': [eval_configs.n_shot],
@@ -238,7 +243,7 @@ def main():
             'num_sum': [cnt_sum],
             'average_score': [avg_score]
         }
-        logger.print_table(title=f'LongBench/{task} Benchmark', data=eval_results)
+        logger.print_table(title=f'LEval/{task} Benchmark', data=eval_results)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {eval_results['model_id'][0]},")

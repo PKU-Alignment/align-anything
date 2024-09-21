@@ -24,9 +24,27 @@ from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.eval_logger import EvalLogger
 from tqdm import tqdm
+import requests
 import os
 import re
 
+gpt_system_prompt = """
+You are tasked with matching a model's response to one of the provided multiple-choice options. You will be given a question, several options, and a response from the model. Your job is to determine which option (A, B, C, or D) the model's response aligns with. If the model's response does not align with any option, return the letter 'Z'.
+
+Here is the input format:
+
+Question: {INSERT_PROMPT_HERE}
+Choices:
+{INSERT_CHOICES_HERE}
+The model's response: {INSERT_TEXT_OF_RESPONSE_HERE}
+
+Please return one of the following:
+- A, if the response aligns with choice A
+- B, if the response aligns with choice B
+- C, if the response aligns with choice C
+- D, if the response aligns with choice D
+- Z, if the response does not match any of the choices
+"""
 class MMBenchDataLoader(BaseDataLoader):
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
@@ -87,7 +105,7 @@ class MMBenchGeneratorVLLM(BaseInferencer_vllm):
         InferenceOutputs = [InferenceOutput.from_vllm_output(question_id=input.question_id, vllm_output=output, store_raw=True) for output, input in zip(outputs, inputs)]
         return InferenceOutputs
 
-def evaluator(test_dataset, output_data, file_path):
+def evaluator(test_dataset, output_data, file_path, api_key, base_url):
     num_match = 0
     num_sum = 0
     question_id = set()
@@ -96,20 +114,57 @@ def evaluator(test_dataset, output_data, file_path):
             if test_item['index'] == output_item.question_id and output_item.question_id not in question_id:
                 question_id.add(output_item.question_id)
                 num_sum += 1
-                true_or_false = judger(test_item['answer'], output_item.response[0])
+                choices = '(A) ' + test_item["A"] + '\n(B) ' + test_item["B"] + '\n(C) ' + test_item["C"] + '\n(D) ' + test_item["D"]
+                true_or_false = judger(test_item['question'], choices, test_item['answer'], output_item.response[0], api_key, base_url)
                 if true_or_false:
                     num_match += 1
                 save_detail(test_item['question'], output_item.prompt, test_item['answer'], output_item.response[0], true_or_false, file_path)
 
     return num_match, num_sum
 
-def judger(correct_answer, response):
+def judger(question, choices, correct_answer, response, api_key, base_url):
     if correct_answer not in response:
         return False
     match = re.search(r'(?<![a-zA-Z])[A-Z](?![a-zA-Z])', response)
     if match:
         return correct_answer == match.group()
-    return False
+    return gpt_judge_answer(question, choices, response, api_key, base_url)
+
+def gpt_judge_answer(question, choices, response, api_key, base_url):
+    def get_response(prompt):
+        data = {
+            "model": "gpt-4-turbo",
+            "messages": [
+                {"role": "user", "content": prompt}
+            ]
+        }
+        response = requests.post(
+            base_url,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json=data
+        )
+        if response.status_code == 200:
+            result = response.json()
+            return result['choices'][0]['message']['content']
+        else:
+            raise Exception(f"Request failed: {response.status_code}, {response.text}")
+
+    prompt = gpt_system_prompt.format(
+        INSERT_PROMPT_HERE=question,
+        INSERT_CHOICES_HERE=choices,
+        INSERT_TEXT_OF_RESPONSE_HERE=response
+    )
+
+    choice = get_response(prompt).strip()
+    match = re.search(r'(?<![a-zA-Z])[A-DZ](?![a-zA-Z])', choice)
+    if match:
+        return match.group()
+    else:
+        return "Z"
+
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -147,7 +202,15 @@ def main():
     else:
         raw_outputs = eval_module.eval(test_data, eval_configs)
         save_raw_outputs(raw_outputs, raw_outputs_dir)
+
+    api_key = eval_configs.openai_api_key or os.getenv("OPENAI_API_KEY")
+    base_url = eval_configs.openai_api_base_url or os.getenv("OPENAI_API_BASE_URL")
     
+    if not api_key:
+        raise ValueError("OpenAI API key is not provided in eval_configs or environment variables.")
+    if not base_url:
+        raise ValueError("OpenAI API base URL is not provided in eval_configs or environment variables.")
+
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
@@ -156,7 +219,7 @@ def main():
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
         file_path = f"{uuid_path}/{task}.json"
-        num_match, num_sum = evaluator(test_data, raw_outputs[task], file_path)
+        num_match, num_sum = evaluator(test_data, raw_outputs[task], file_path, api_key, base_url)
         tot_num_match += num_match
         tot_num_sum += num_sum
 
@@ -164,7 +227,7 @@ def main():
             'model_id': [dict_configs.default.model_cfgs.model_id],
             'num_match': [num_match],
             'num_sum': [num_sum],
-            'accuracy': [num_match / num_sum]
+            'accuracy': [num_match*100 / num_sum]
         }
         logger.print_table(title=f'MMBench/{task} Benchmark', data=output_dict)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
@@ -179,7 +242,7 @@ def main():
         'model_id': [dict_configs.default.model_cfgs.model_id],
         'tot_num_match': [tot_num_match],
         'tot_num_sum': [tot_num_sum],
-        'tot_accuracy': [tot_num_match / tot_num_sum]
+        'tot_accuracy': [tot_num_match*100 / tot_num_sum]
     }
     logger.print_table(title=f'MMBench Benchmark', data=output_dict)
     logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')

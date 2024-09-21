@@ -134,7 +134,7 @@ def evaluator(data: dict, task: str, api_key, base_url, file_path, eval_configs=
         system_prompts.append('You are a helpful and precise assistant for checking the quality of the answer.')
         user_prompts.append(content)
 
-    judger = API_Single_Eval(model=eval_configs.judge_model, num_workers=20, temperature=0, template_function=None,
+    judger = API_Single_Eval(model='gpt-4-0314', num_workers=20, temperature=0, template_function=None,
                       api_key=api_key, base_url=base_url)
     
     results = judger.evaluate(system_prompts, user_prompts)
@@ -245,7 +245,7 @@ def main():
                 'average': [float(average)],
                 'question': [count]
                 }
-        logger.print_table(title=f'llava-bench-in-the-wild/{task} Benchmark', data=eval_results)
+        logger.print_table(title=f'llava-bench (coco)/{task} Benchmark', data=eval_results)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {eval_results['model_id'][0]},")
@@ -258,7 +258,7 @@ def main():
             'total_average': [float(total_average/3)],
             'total_question': [total_count]
             }
-    logger.print_table(title=f'llava-bench-in-the-wild Benchmark', data=eval_results)
+    logger.print_table(title=f'llava-bench (coco) Benchmark', data=eval_results)
     logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
     logger.log('info', f"model_id: {eval_results['model_id'][0]},")
     logger.log('info', f"total_average: {eval_results['total_average'][0]},")
