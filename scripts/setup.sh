@@ -30,7 +30,7 @@ export LOGLEVEL="${LOGLEVEL:-WARNING}"
 
 MASTER_PORT_START=10000
 MASTER_PORT_END=65535
-MASTER_PORT="$(e
+MASTER_PORT="$(
 	comm -23 \
 		<(seq "${MASTER_PORT_START}" "${MASTER_PORT_END}" | sort) \
 		<(ss -Htan | awk '{ print $4 }' | awk -F ':' '{ print $NF }' | sort -u) |

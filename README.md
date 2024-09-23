@@ -244,7 +244,7 @@ deepspeed \
 
 ## Evaluation Scripts
 
-The script for evaluation is also located in the `./scripts` directory. Parameters requiring user input have been left empty and must be filled in before starting the evaluation process:
+The script for evaluation, *i.e.* `evaluate.sh` is located in the `./scripts` directory. Parameters requiring user input have been left empty and must be filled in before starting the evaluation process:
 
 ```bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
