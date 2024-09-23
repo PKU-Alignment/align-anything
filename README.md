@@ -84,6 +84,7 @@ We support two types of evaluation datasets: `Text -> Text` and `Text + Image ->
 - 2024-07-17: We open-source the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
 - 2024-07-14: We open-source the Align-Anything framework.
 </details>
+
 # Installation
 
 - First, clone the repo.
