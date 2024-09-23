@@ -38,7 +38,7 @@
 
 </div>
 
-Align-Anything is an open-source alignment framework for academic research based on [DeepSpeed](https://github.com/microsoft/DeepSpeed) or [NeMo](https://github.com/NVIDIA/NeMo) (currently in development). It aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for LLMs and other related information can be found in [AI Alignment](https://alignmentsurvey.com).
+Align-Anything is an open-source alignment framework for academic research based on [DeepSpeed](https://github.com/microsoft/DeepSpeed). It aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for LLMs and other related information can be found in [AI Alignment](https://alignmentsurvey.com).
 
 # Features
 
