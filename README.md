@@ -47,9 +47,8 @@ Align-Anything is an open-source alignment framework for academic research. It a
 
 # Supported Features
 
-We have a roadmap for future development work Align-Anything:
-
-## Training
+## Algorithms
+We support alignment algorithms for various modalities, each of which may involve additional algorithms. For instance, in the text modality, we have also implemented SimPO, KTO, and others.
 
 | Modality                           | SFT | RM  | DPO | PPO |
 | ---------------------------------- | --- | --- | --- | --- |
@@ -61,8 +60,7 @@ We have a roadmap for future development work Align-Anything:
 | `Text -> Audio (t2a)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
 
 ## Evaluation
-
-We currently support two types of evaluation datasets: `Text -> Text` and `Text + Image -> Text`. For `Text -> Text`, we support 12 benchmark datasets, and for `Text + Image -> Text`, we support 15 benchmark datasets. We are actively working on expanding support to additional multimodal benchmarks. We have a roadmap for future development work Align-Anything:
+We support two types of evaluation datasets: `Text -> Text` and `Text + Image -> Text`.
 
 | Modality              | Supported Benchmarks                                                  |
 | :-------------------- | :----------------------------------------------------------- |
