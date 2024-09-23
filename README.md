@@ -182,13 +182,10 @@ TRAIN_TEMPLATE="" # dataset template
 TRAIN_SPLIT="" # split the dataset
 OUTPUT_DIR=""  # output dir
 
-# Source the setup script
-source ./setup.sh
+source ./setup.sh # source the setup script
 
-# You can replace it with your CUDA path
-export CUDA_HOME=$CONDA_PREFIX
+export CUDA_HOME=$CONDA_PREFIX # replace it with your CUDA path
 
-# Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
 	--module align_anything.trainers.text_image_to_text.dpo \
@@ -209,11 +206,10 @@ TRAIN_SPLIT="train" # split the dataset
 OUTPUT_DIR="../output/dpo" # output dir
 export WANDB_API_KEY="YOUR_WANDB_KEY" # wandb logging
 
-source ./setup.sh # Source the setup script
+source ./setup.sh # source the setup script
 
 export CUDA_HOME=$CONDA_PREFIX # replace it with your CUDA path
 
-# Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
 	--module align_anything.trainers.text_image_to_text.dpo \
