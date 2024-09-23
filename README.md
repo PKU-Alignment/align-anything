@@ -275,7 +275,7 @@ done
 - `MODEL_NAME_OR_PATH`: The local path or Hugging Face link of model, such as `llava-hf/llava-1.5-7b-hf`.
 - `CHAT_TEMPLATE`: Chat template id of your model, like `LLAVA`. More details can be refered in `./align_anything/configs/template.py`.
 
-To compare multiple models' performance across one or more benchmarks, located in the `./scripts`, the `models_pk.sh` script allows you to evaluate across different models and then compare their results. Ensure all parameters are correctly filled in before running the script.
+To compare the performance of multiple models across one or more benchmarks, the script located in `./scripts/models_pk.sh` allows you to evaluate different models and compare their results. Ensure that all parameters are correctly filled in before running the script.
 
 ```bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
