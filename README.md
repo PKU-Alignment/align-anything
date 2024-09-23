@@ -101,13 +101,12 @@ conda create -n align-anything python==3.11
 conda activate align-anything
 ```
 
-- [Optional] We recommend installing [CUDA](https://anaconda.org/nvidia/cuda) in your conda environment. After that, set the environment variable.
+- **`[Optional]`** We recommend installing [CUDA](https://anaconda.org/nvidia/cuda) in your conda environment. After that, set the environment variable.
 
 ```bash
-# We tested on the H800 computing cluster, 
-# and this version of CUDA works well. 
-# You can adjust this version according to 
-# the actual situation of the computing cluster.
+'''
+We tested on the H800 computing cluster, and this version of CUDA works well. You can adjust this version according to the actual situation of the computing cluster.
+'''
 conda install nvidia/label/cuda-12.2.0::cuda
 export CUDA_HOME=$CONDA_PREFIX
 ```
@@ -118,7 +117,7 @@ export CUDA_HOME=$CONDA_PREFIX
 export CUDA_HOME="/usr/local/cuda"
 ```
 
-Fianlly, you can install this project by:
+Fianlly, install this project by:
 
 ```bash
 pip install -e .
@@ -177,16 +176,11 @@ Quick start examples can be found at [here](./examples/)
 To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, the DPO scripts for `Text+Image -> Text` modality is as follow:
 
 ```bash
-# You can replace it with a local model path
-MODEL_NAME_OR_PATH=""
-# You can replace it with a local dataset path
-TRAIN_DATASETS=""
-# You should set the template according to the dataset
-TRAIN_TEMPLATE=""
-# You should set the split according to the dataset
-TRAIN_SPLIT=""
-# You can replace it with a new path with correct permission
-OUTPUT_DIR=""
+MODEL_NAME_OR_PATH="" # model path
+TRAIN_DATASETS="" # dataset path
+TRAIN_TEMPLATE="" # dataset template
+TRAIN_SPLIT="" # split the dataset
+OUTPUT_DIR=""  # output dir
 
 # Source the setup script
 source ./setup.sh
@@ -208,8 +202,8 @@ deepspeed \
 If you want to run DPO with [LLaVA-v1.5-7B](https://huggingface.co/llava-hf/llava-1.5-7b-hf) (HF format) and [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL) dataset, you can:
 
 ```bash
-MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # local model path
-TRAIN_DATASETS="sqrti/SPA-VL" # local dataset path
+MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # model path
+TRAIN_DATASETS="sqrti/SPA-VL" # dataset path
 TRAIN_TEMPLATE="SPA_VL" # dataset template
 TRAIN_SPLIT="train" # split the dataset
 OUTPUT_DIR="../output/dpo" # output dir
@@ -231,7 +225,7 @@ deepspeed \
 ```
 
 
-## Evaluation Scripts
+## Evaluation
 
 The script for evaluation, *i.e.* `evaluate.sh` is located in the `./scripts` directory. Parameters requiring user input have been left empty and must be filled in before starting the evaluation process:
 
