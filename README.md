@@ -470,15 +470,18 @@ After designing the aforementioned template, you just need to specify this templ
 python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
 ```
 
-![cli_demo](assets/cli_demo.gif)
+<img src="assets/cli_demo.gif" alt="cli_demo" style="width:600px;">
+
 
 ## Interactive Arena
 
 ```bash
-python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_model_name_or_path --blue_corner_model_name_or_path your_blue_model_name_or_path
+python3 -m align_anything.serve.arena \
+    --red_corner_model_name_or_path your_red_model_name_or_path \
+    --blue_corner_model_name_or_path your_blue_model_name_or_path
 ```
 
-![Arena-Demo](assets/arena_demo.gif)
+<img src="assets/arena_demo.gif" alt="arena_demo" style="width:600px;">
 
 ## Why do we open source align-anything?
 
