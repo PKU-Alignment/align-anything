@@ -40,8 +40,8 @@
 
 Align-Anything aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for Large Models can be found in [AI Alignment](https://alignmentsurvey.com). Overall, this framework has the following characteristics:
 
-- **Highly Modular Framework.** Our framework offers a comprehensive collection of diverse training and evaluation implementation for any-modal alignment. Its versatility stems from the abstraction of different algorithm types and a well-designed API, allowing users to easily modify and customize the code for different tasks.
-- **Support for Various Model Fine-Tuning.** The framework includes fine-tuning capabilities for models such as LLaMA, LLaVA, Gemma, Qwen, Baichuan, and others (see [Model Zoo](https://github.com/PKU-Alignment/align-anything/blob/main/Model-Zoo.md)).
+- **Highly Modular Framework.** Its versatility stems from the abstraction of different algorithm types and well-designed APIs, allowing users to easily modify and customize the code for different tasks.
+- **Support for Various Model Fine-Tuning.** This framework includes fine-tuning capabilities for models such as LLaMA3.1, LLaVA, Gemma, Qwen, Baichuan, and others (see [Model Zoo](https://github.com/PKU-Alignment/align-anything/blob/main/Model-Zoo.md)).
 - **Support Fine-Tuning across Any Modality.** It supports fine-tuning alignments for different modality model, including LLMs, VLMs, and other modalities (see [Development Roadmap](#development-roadmap)).
 - **Support Different Alignment Methods.** The framework supports different alignment algorithms, including SFT, DPO, PPO, and others (see [Example](https://github.com/PKU-Alignment/align-anything/tree/main/examples)).
 
