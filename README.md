@@ -208,24 +208,16 @@ deepspeed \
 If you want to run DPO with [LLaVA-v1.5-7B](https://huggingface.co/llava-hf/llava-1.5-7b-hf) (HF format) and [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL) dataset, you can:
 
 ```bash
-# You can replace it with a local model path
-MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf"
-# You can replace it with a local dataset path
-TRAIN_DATASETS="sqrti/SPA-VL"
-# You can replace it with a new path with correct permission
-TRAIN_TEMPLATE="SPA_VL"
-# You should set the split according to the dataset
-TRAIN_SPLIT="train"
-# You can replace it with a new path with correct permission
-OUTPUT_DIR="../output/dpo"
-# For wandb online logging
-export WANDB_API_KEY="YOUR_WANDB_KEY"
+MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # local model path
+TRAIN_DATASETS="sqrti/SPA-VL" # local dataset path
+TRAIN_TEMPLATE="SPA_VL" # dataset template
+TRAIN_SPLIT="train" # split the dataset
+OUTPUT_DIR="../output/dpo" # output dir
+export WANDB_API_KEY="YOUR_WANDB_KEY" # wandb logging
 
-# Source the setup script
-source ./setup.sh
+source ./setup.sh # Source the setup script
 
-# You can replace it with your CUDA path
-export CUDA_HOME=$CONDA_PREFIX
+export CUDA_HOME=$CONDA_PREFIX # replace it with your CUDA path
 
 # Execute deepspeed command
 deepspeed \
