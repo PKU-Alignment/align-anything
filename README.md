@@ -59,7 +59,7 @@ Align-Anything is an open-source alignment framework for academic research based
   - [Interactive Client](#interactive-client)
   - [Interactive Arena](#interactive-arena)
   - [Why do we open source align-anything?](#why-do-we-open-source-align-anything)
-    - [Report Issues](#report-issues)
+  - [Report Issues](#report-issues)
 - [Citation](#citation)
 - [License](#license)
 
@@ -144,6 +144,8 @@ export CUDA_HOME=$CONDA_PREFIX
 ```bash
 export CUDA_HOME="/usr/local/cuda"
 ```
+
+Fianlly, you can install this project by:
 
 ```bash
 pip install -e .
@@ -530,7 +532,7 @@ python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_m
 
 Ensuring that the behavior of AI system aligns with human intentions and values is crucial, and alignment techniques provide an effective solution. For large language models (LLMs), methods such as reinforcement learning with human feedback (RLHF) and direct preference optimization (DPO) have significantly improved performance and safety. As models evolve to handle any-modality inputs and outputs, effectively aligning them remains a current research challenge. Align-Anything framework integrates alignment tuning across modalities using well-designed interfaces and advanced abstractions, offering a comprehensive testbed for research.
 
-### Report Issues
+## Report Issues
 
 If you have any questions in the process of using Align-Anything, don't hesitate to ask your questions on [the GitHub issue page](https://github.com/PKU-Alignment/align-anything/issues/new/choose), we will reply to you in 2-3 working days.
 
