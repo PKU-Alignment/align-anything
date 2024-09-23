@@ -24,7 +24,7 @@
 [![PyPI](https://img.shields.io/pypi/v/align-anything?logo=pypi)](https://pypi.org/project/align-anything)
 [![License](https://img.shields.io/github/license/PKU-Alignment/align-anything?label=license)](#license)
 
-📘Documentation |
+[📘Documentation](https://pku-alignment.notion.site/Align-Anything-37a300fb5f774bb08e5b21fdeb476c64) |
 [🚀Features](#features) |
 [🆕Update News](#news) |
 [🛠️Installation](#installation) |
@@ -38,60 +38,118 @@
 
 </div>
 
-Align-Anything is an open-source alignment framework for academic research based on DeepSpeed or NeMo (currently in development). It aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for LLMs and other related information can be found in [AI Alignment](https://alignmentsurvey.com).
+Align-Anything is an open-source alignment framework for academic research based on [DeepSpeed](https://github.com/microsoft/DeepSpeed) or [NeMo](https://github.com/NVIDIA/NeMo) (currently in development). It aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for LLMs and other related information can be found in [AI Alignment](https://alignmentsurvey.com).
 
-### Features
+- [Features](#features)
+- [Development Roadmap](#development-roadmap)
+  - [Alignment Training](#alignment-training)
+  - [Alignment Evaluation](#alignment-evaluation)
+- [News](#news)
+- [Installation](#installation)
+  - [Wandb Logger](#wandb-logger)
+  - [Install from Dockerfile](#install-from-dockerfile)
+- [Quick Start](#quick-start)
+  - [Alignment Training Scripts](#alignment-training-scripts)
+  - [Alignment Evaluation Scripts](#alignment-evaluation-scripts)
+- [Advanced Usage and Guidence](#advanced-usage-and-guidence)
+  - [Dataset Integration](#dataset-integration)
+    - [Reward modeling](#reward-modeling)
+    - [RL fine-tuning](#rl-fine-tuning)
+- [Inference](#inference)
+  - [Interactive Client](#interactive-client)
+  - [Interactive Arena](#interactive-arena)
+  - [Why do we open source align-anything?](#why-do-we-open-source-align-anything)
+    - [Report Issues](#report-issues)
+- [Citation](#citation)
+- [License](#license)
 
-- Highly Modular Framework: Our framework offers a comprehensive collection of diverse alignment algorithms tailored for model alignment across various modalities. Its versatility stems from the abstraction of different algorithm types and a well-designed API, allowing users to easily modify and customize the code for different tasks.
-- Support for Various Model Fine-Tuning: The framework includes fine-tuning capabilities for models such as LLaMA, LLaVA, Gemma, Qwen, Baichuan, and others (see [model-zoo](https://github.com/PKU-Alignment/align-anything/blob/main/Model-Zoo.md)).
-- Support Alignment Fine-Tuning over Any Modality: It supports fine-tuning alignments for different modality model, including LLMs, VLMs, and other modalities (see [Development Roadmap](#development-roadmap)).
-- Support Various Alignment Algorithms: The framework supports various alignment algorithms, including SFT, DPO, PPO, and others (see [example](https://github.com/PKU-Alignment/align-anything/tree/main/examples)).
 
-#### Development Roadmap
+# Features
 
-We have a roadmap for future development work `align-anything`:
+- **Highly Modular Framework.** Our framework offers a comprehensive collection of diverse training and evaluation implementation for any-modal alignment. Its versatility stems from the abstraction of different algorithm types and a well-designed API, allowing users to easily modify and customize the code for different tasks.
+- **Support for Various Model Fine-Tuning.** The framework includes fine-tuning capabilities for models such as LLaMA, LLaVA, Gemma, Qwen, Baichuan, and others (see [Model-zoo](https://github.com/PKU-Alignment/align-anything/blob/main/Model-Zoo.md)).
+- **Support Alignment Fine-Tuning over Any Modality.** It supports fine-tuning alignments for different modality model, including LLMs, VLMs, and other modalities (see [Development Roadmap](#development-roadmap)).
+- **Support Various Alignment Algorithms.** The framework supports various alignment algorithms, including SFT, DPO, PPO, and others (see [Example](https://github.com/PKU-Alignment/align-anything/tree/main/examples)).
 
-- [x] Support alignment algorithms over the `diffusion model`, `text to any generation model` and other `vision-language model`.
-- [x] Support diverse parameter sizes including `LoRA`, `QLoRA`.
-- [x] Support `vllm` backbone for evaluation.
-- [ ] Support `NeMo` backbone for training.
+# Development Roadmap
+
+We have a roadmap for future development work Align-Anything:
+
+## Alignment Training
 
 | Modality                 | SFT | RM  | DPO | PPO |
 | ------------------------ | --- | --- | --- | --- |
-| Text -> Text             | ✔️   | ✔️   | ✔️   | ✔️   |
-| Text+Image -> Text       | ✔️   | ✔️   | ✔️   | ✔️   |
-| Text -> Image            | ✔️   | ⚒️   | ✔️   | ⚒️   |
-| Text -> Video            | ✔️   | ⚒️   | ✔️   | ⚒️   |
-| Text -> Audio            | ✔️   | ⚒️   | ✔️   | ⚒️   |
-| Text+Image -> Text+Image | ✔️   | ✔️   | ✔️   | ✔️   |
+| `Text -> Text`             | ✔️   | ✔️   | ✔️   | ✔️   |
+| `Text+Image -> Text`       | ✔️   | ✔️   | ✔️   | ✔️   |
+| `Text -> Image`            | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| `Text -> Video`            | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| `Text -> Audio`            | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| `Text+Image -> Text+Image` | ✔️   | ✔️   | ✔️   | ✔️   |
+
+## Alignment Evaluation
+
+We currently support two types of evaluation datasets: `Text -> Text` and `Text+Image -> Text`. For `Text -> Text`, we support 12 benchmark datasets, and for `Text+Image -> Text`, we support 15 benchmark datasets. We are actively working on expanding support to additional multimodal benchmarks. We have a roadmap for future development work Align-Anything:
+
+| Modality              | Supported Benchmarks                                                  |
+| :-------------------- | :----------------------------------------------------------- |
+| `Text -> Text`       | [ARC](https://huggingface.co/datasets/allenai/ai2_arc), [BBH](https://huggingface.co/datasets/lukaemon/bbh), [Belebele](https://huggingface.co/datasets/facebook/belebele), [CMMLU](https://huggingface.co/datasets/haonan-li/cmmlu), [GSM8K](https://huggingface.co/datasets/openai/gsm8k), [HumanEval](https://huggingface.co/datasets/openai/openai_humaneval), [MMLU](https://huggingface.co/datasets/cais/mmlu), [MMLU-Pro](https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro), [MT-Bench](https://huggingface.co/datasets/HuggingFaceH4/mt_bench_prompts), [PAWS-X](https://huggingface.co/datasets/google-research-datasets/paws-x), [RACE](https://huggingface.co/datasets/ehovy/race), [TruthfulQA ](https://huggingface.co/datasets/truthfulqa/truthful_qa) |
+| `Text+Image -> Text` | [A-OKVQA](https://huggingface.co/datasets/HuggingFaceM4/A-OKVQA), [LLaVA-Bench(COCO)](https://huggingface.co/datasets/lmms-lab/llava-bench-coco), [LLaVA-Bench(wild)](https://huggingface.co/datasets/lmms-lab/llava-bench-in-the-wild), [MathVista](https://huggingface.co/datasets/AI4Math/MathVista), [MM-SafetyBench](https://github.com/isXinLiu/MM-SafetyBench), [MMBench](https://huggingface.co/datasets/lmms-lab/MMBench), [MME](https://huggingface.co/datasets/lmms-lab/MME), [MMMU](https://huggingface.co/datasets/MMMU/MMMU), [MMStar](https://huggingface.co/datasets/Lin-Chen/MMStar), [MMVet](https://huggingface.co/datasets/lmms-lab/MMVet), [POPE](https://huggingface.co/datasets/lmms-lab/POPE), [ScienceQA](https://huggingface.co/datasets/derek-thomas/ScienceQA), [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL), [TextVQA](https://huggingface.co/datasets/lmms-lab/textvqa), [VizWizVQA](https://huggingface.co/datasets/lmms-lab/VizWiz-VQA) |
+| `Text -> Image`      | [ImageReward](https://huggingface.co/datasets/THUDM/ImageRewardDB), [HPSv2](https://huggingface.co/datasets/zhwang/HPDv2) |
+| `Text -> Video`      | ⚒️ |
+| `Text -> Audio`      | ⚒️ |
 
 - ✔️ : Features supported now.
 - ⚒️ : In the planning.
 
 # News
 
-- 2024-08-17 🔥 We support DPO and PPO for `Text+Image -> Text+Image` modality models.
-- 2024-08-15 🔥 We support a new function in the evaluation module: the `models_pk` script, which enables comparing the performance of two models across different benchmarks.
-- 2024-08-06 🔥 We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
-- 2024-08-06 🔥 We support `Text+Image -> Text+Image` modality for the SFT trainer and Chameleon models.
-- 2024-07-23 🔥 We support `Text -> Image`, `Text -> Audio`, and `Text -> Video` modalities for the SFT trainer and DPO trainer.
-- 2024-07-22 🔥 We support the **Chameleon** model for the SFT trainer and DPO trainer!
-- 2024-07-17 🎉 We open-source the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
-- 2024-07-14 🎉 We open-source the `align-anything` framework.
+- 2024-08-17: We support DPO and PPO for `Text+Image -> Text+Image` modality models.
+- 2024-08-15 We support a new function in the evaluation module: the `models_pk` script in [here](./scripts/models_pk.sh), which enables comparing the performance of two models across different benchmarks.
+- 2024-08-06: We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
+- 2024-08-06: We support `Text+Image -> Text+Image` modality for the SFT trainer and Chameleon models.
+- 2024-07-23: We support `Text -> Image`, `Text -> Audio`, and `Text -> Video` modalities for the SFT trainer and DPO trainer.
+- 2024-07-22: We support the **Chameleon** model for the SFT trainer and DPO trainer!
+- 2024-07-17: We open-source the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
+- 2024-07-14: We open-source the Align-Anything framework.
 
 # Installation
 
-All model weights, training parameters, and tokenizers are stored in the `OUTPUT_DIR` you specified in advance.
+- First, clone the repo.
+
+```bash
+git clone git@github.com:PKU-Alignment/align-anything.git
+cd align-anything
+```
+
+- Then, create the conda environment then activate it.
 
 ```bash
 conda create -n align-anything python==3.11
 conda activate align-anything
-git clone git@github.com:PKU-Alignment/align-anything.git
-cd align-anything
+```
+
+- [Optional] We recommend installing [CUDA](https://anaconda.org/nvidia/cuda) in your conda environment. After that, set the environment variable.
+
+```bash
+# We tested on the H800 computing cluster, 
+# and this version of CUDA works well. 
+# You can adjust this version according to 
+# the actual situation of the computing cluster.
+conda install nvidia/label/cuda-12.2.0::cuda
+export CUDA_HOME=$CONDA_PREFIX
+```
+
+> If your CUDA installed in a different location, such as `/usr/local/cuda/bin/nvcc`, you can set the environment variables as follows:
+
+```bash
+export CUDA_HOME="/usr/local/cuda"
+```
+
+```bash
 pip install -e .
 ```
 
-### Wandb Logger
+## Wandb Logger
 
 We support `wandb` logging. By default, it is set to offline. If you need to view wandb logs online, you can specify the environment variables of `WANDB_API_KEY` before starting the training:
 
@@ -99,10 +157,8 @@ We support `wandb` logging. By default, it is set to offline. If you need to vie
 export WANDB_API_KEY="..."  # your W&B API key here
 ```
 
-### Install from Dockerfile
+## Install from Dockerfile
 
-<details>
-<summary>How to build from Docker?</summary>
 1. build docker image
 
 
@@ -136,140 +192,81 @@ docker run -it --rm \
     test_docker
 ```
 
-</details>
 
+# Quick Start
 
-# Train
-
-## Quick Start
+## Alignment Training Scripts
 
 Quick start examples can be found at [here](./examples/)
 
-To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty.
-
-### Some Training Bugs
-
-1. If you encounter errors during the training process:
+To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, the DPO scripts for `Text+Image -> Text` modality is as follow:
 
 ```bash
-No such file or directory: ':/usr/local/cuda/bin/nvcc'
-```
+# You can replace it with a local model path
+MODEL_NAME_OR_PATH=""
+# You can replace it with a local dataset path
+TRAIN_DATASETS=""
+# You should set the template according to the dataset
+TRAIN_TEMPLATE=""
+# You should set the split according to the dataset
+TRAIN_SPLIT=""
+# You can replace it with a new path with correct permission
+OUTPUT_DIR=""
 
-To include the CUDA installation path and set the environment variables, modify the script as follows:
+# Source the setup script
+source ./setup.sh
 
-```bash
-export CUDA_HOME="/usr/local/cuda"
-```
-
-or
-
-```bash
+# You can replace it with your CUDA path
 export CUDA_HOME=$CONDA_PREFIX
+
+# Execute deepspeed command
+deepspeed \
+	--master_port ${MASTER_PORT} \
+	--module align_anything.trainers.text_image_to_text.dpo \
+	--model_name_or_path ${MODEL_NAME_OR_PATH} \
+	--train_datasets ${TRAIN_DATASETS} \
+	--train_template SPA_VL \
+	--train_split train \
+	--output_dir ${OUTPUT_DIR}
 ```
 
-The specific path depends on your `cuda` path.
+If you want to run DPO with [LLaVA-v1.5-7B](https://huggingface.co/llava-hf/llava-1.5-7b-hf) (HF format) and [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL) dataset, you can:
 
-## Customized Dataset
+```bash
+# You can replace it with a local model path
+MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf"
+# You can replace it with a local dataset path
+TRAIN_DATASETS="sqrti/SPA-VL"
+# You can replace it with a new path with correct permission
+TRAIN_TEMPLATE="SPA_VL"
+# You should set the split according to the dataset
+TRAIN_SPLIT="train"
+# You can replace it with a new path with correct permission
+OUTPUT_DIR="../output/dpo"
+# For wandb online logging
+export WANDB_API_KEY="YOUR_WANDB_KEY"
 
-Align-anything offers a highly scalable dataset registration interface, enabling users to embed customized datasets simply by designing and specifying their `template.py`.
+# Source the setup script
+source ./setup.sh
 
-Taking [PKU-Alignment/PKU-SafeRLHF](https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF) as an example, we illustrate here how to design the template and incorporate it into a complete RLHF workflow.
+# You can replace it with your CUDA path
+export CUDA_HOME=$CONDA_PREFIX
 
-The data key-value pairs for PKU-Alignment/PKU-SafeRLHF are as follows:
-
-```python
-{
-  'prompt': '...',
-  'response_0': '...',
-  'response_1': '...',
-  'better_response_id': 0
-}
+# Execute deepspeed command
+deepspeed \
+	--master_port ${MASTER_PORT} \
+	--module align_anything.trainers.text_image_to_text.dpo \
+	--model_name_or_path ${MODEL_NAME_OR_PATH} \
+	--train_datasets ${TRAIN_DATASETS} \
+	--train_template ${TRAIN_TEMPLATE} \
+	--train_split ${TRAIN_SPLIT} \
+	--output_dir ${OUTPUT_DIR}
 ```
 
-We first need to create a new template named PKUSafeRLHF for this dataset, and specify the required parameters such as system_prompt.
 
-```python
-@register_template('PKUSafeRLHF')
-class PKUSafeRLHF(Template):
-    system_prompt: str = 'BEGINNING OF CONVERSATION: '
-    user_prompt: str = 'USER: {input} '
-    assistant_prompt: str = 'ASSISTANT:{output}'
-    split_token: str = 'ASSISTANT:'
-```
+## Alignment Evaluation Scripts
 
-### Reward modeling
-
-The reward modeling requires the user to provide a dictionary with data keys as follows:
-
-```python
-{
-  'better_text': '...',
-  'worse_text': '...',
-}
-```
-
-Therefore, the user needs to implement a key-value transformation logic in `align-anything/configs/template.py`, for instance, in this case:
-
-```python
-@register_template('PKUSafeRLHF')
-class PKUSafeRLHF(Dialogue):
-
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        metrics = raw_sample['better_response_id']
-        better_response = raw_sample[f'response_{int(metrics)}']
-        worse_response = raw_sample[f'response_{1-int(metrics)}']
-        prompt = raw_sample['prompt']
-
-        formatted_better_output = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f'{self.assistant_prompt.format(output=better_response)}'
-        )
-        formatted_worse_output = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f'{self.assistant_prompt.format(output=worse_response)}'
-        )
-
-        return {
-            'better_text': formatted_better_output,
-            'worse_text': formatted_worse_output,
-        }
-```
-
-Here, `format_sample` parses the keys in the PKU-Alignment/PKU-SafeRLHF dataset, determines which response is better based on the `better_response_id`, and subsequently invokes previously defined parameters such as `system_prompt` to implement the transformation of key-value pairs.
-
-### RL fine-tuning
-
-During the RL fine-tuning phase, the model requires generation based on prompts within the dataset. Consequently, users need to implement key-value conversion in `template.py` using the following function:
-
-```python
-@register_template('PKUSafeRLHF')
-class PKUSafeRLHF(Template):
-    system_prompt: str = 'BEGINNING OF CONVERSATION: '
-    user_prompt: str = 'USER: {input} '
-    assistant_prompt: str = 'ASSISTANT:{output}'
-    split_token: str = 'ASSISTANT:'
-
-    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['prompt']
-
-        formatted_prompt = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f'{self.assistant_prompt.format(output="")}'
-        )
-
-        return {'text': formatted_prompt}
-```
-
-After designing the aforementioned template, you just need to specify this template by passing the `--train_template PKUSafeRLHF` argument when invoking the dataset to complete the corresponding training. Perhaps the above example still lacks specificity; therefore, we provide command references that encompass various models executing multiple algorithms on diverse datasets. You can expedite your training process by directly running or modifying these scripts [here](./examples/). For special task including `text image interleaved input and output` and  `any-to-text`, you can refer to [projects](./projects/).
-
-# Evaluate
-
-## Quick Start
-
-To prepare for the evaluation, the script is located in the `./scripts directory`. Parameters requiring user input have been left empty and must be filled in before starting the evaluation process. For example, for `evaluate.sh`:
+The script for evaluation is also located in the `./scripts` directory. Parameters requiring user input have been left empty and must be filled in before starting the evaluation process:
 
 ```bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -350,7 +347,166 @@ For more inference parameters, please see `./align_anything/configs/evaluation/v
 
 For more details about the evaluation pipeline, refer to [here](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/evaluation/README.md).
 
+# Advanced Usage and Guidence
 
+## Dataset Integration
+
+Align-Anything offers a highly scalable dataset registration interface, enabling users to embed customized datasets simply by designing and specifying their `template.py`.
+
+Taking [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL) as an example, we illustrate here how to design the template and incorporate it into a complete RLHF workflow.
+
+The orignal data key-value pairs for SPA-VL are as follows:
+
+```python
+{
+  'image': '...',
+  'question': '...',
+  'chosen': '...',
+  'rejected': '...',
+}
+```
+
+We first need to create a new template named `SPA_VL` for this dataset (we use `_` here because it is more pythonic), and specify the required parameters such as system_prompt.
+
+```python
+@register_template('SPA_VL')
+class SPA_VL:
+    system_prompt: str = "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. "
+    user_prompt: str = 'USER: \n<image> {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        better_response = raw_sample['chosen']
+        worse_response = raw_sample['rejected']
+        prompt = raw_sample['question']
+        image = raw_sample['image']
+
+        
+        formatted_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+        )
+        formatted_better_output = (
+            f'{self.assistant_prompt.format(output=better_response)}'
+        )
+        formatted_worse_output = (
+            f'{self.assistant_prompt.format(output=worse_response)}'
+        )
+        image = image.convert('RGBA')
+
+        return {
+            'prompt': formatted_prompt,
+            'better_text': formatted_better_output,
+            'worse_text': formatted_worse_output,
+            'image': image,
+        }
+
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return raw_sample['chosen'] == raw_sample['rejected']
+
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['question'].replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
+        image = raw_sample['image']
+
+        formatted_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f'{self.assistant_prompt.format(output="")}'
+        )
+        image = image.convert('RGBA')
+
+        return {
+            'text': formatted_prompt,
+            'image': image,
+        }
+```
+
+### Reward modeling
+
+The reward modeling requires the user to provide a dictionary with data keys as follows:
+
+```python
+{
+  'prompt': '...',
+  'image': '...',
+  'better_text': '...',
+  'worse_text': '...',
+}
+```
+
+Therefore, the user needs to implement a key-value transformation logic in `align-anything/configs/template.py`, for instance, in this case:
+
+```python
+@register_template('SPA_VL')
+class SPA_VL:
+    system_prompt: str = "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. "
+    user_prompt: str = 'USER: \n<image> {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        better_response = raw_sample['chosen']
+        worse_response = raw_sample['rejected']
+        prompt = raw_sample['question']
+        image = raw_sample['image']
+
+        formatted_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+        )
+        formatted_better_output = (
+            f'{self.assistant_prompt.format(output=better_response)}'
+        )
+        formatted_worse_output = (
+            f'{self.assistant_prompt.format(output=worse_response)}'
+        )
+        image = image.convert('RGBA')
+
+        return {
+            'prompt': formatted_prompt,
+            'better_text': formatted_better_output,
+            'worse_text': formatted_worse_output,
+            'image': image,
+        }
+```
+
+Here, `format_sample` parses the keys in the SPA-VL dataset, determines which response is better based on the `chosen` or `rejected`, and subsequently invokes previously defined parameters such as `system_prompt` to implement the transformation of key-value pairs.
+
+### RL fine-tuning
+
+During the RL fine-tuning phase, the model requires generation based on prompts within the dataset. Consequently, users need to implement key-value conversion in `template.py` using the following function:
+
+```python
+@register_template('SPA_VL')
+class SPA_VL:
+    system_prompt: str = "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. "
+    user_prompt: str = 'USER: \n<image> {input}'
+    assistant_prompt: str = '\nASSISTANT: {output}'
+    split_token: str = 'ASSISTANT:'
+
+    ...  # previous code here
+
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['question'].replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
+        image = raw_sample['image']
+
+        formatted_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f'{self.assistant_prompt.format(output="")}'
+        )
+        image = image.convert('RGBA')
+
+        return {
+            'text': formatted_prompt,
+            'image': image,
+        }
+```
+
+After designing the aforementioned template, you just need to specify this template by passing the `--train_template SPA_VL` argument when invoking the dataset to complete the corresponding training. Perhaps the above example still lacks specificity; therefore, we provide command references that encompass various models executing multiple algorithms on diverse datasets. 
+
+**Note:** You can expedite your training process by directly running or modifying these scripts [here](./examples/). For special task including `Text Image Interleaved Input and Output` and  `Any -> Text`, you can refer to [projects](./projects/).
 
 # Inference
 
@@ -372,14 +528,14 @@ python3 -m align_anything.serve.arena --red_corner_model_name_or_path your_red_m
 
 ## Why do we open source align-anything?
 
-Ensuring that the behavior of AI system aligns with human intentions and values is crucial, and alignment techniques provide an effective solution. For large language models (LLMs), methods such as reinforcement learning with human feedback (RLHF) and direct preference optimization (DPO) have significantly improved performance and safety. As models evolve to handle any-modality inputs and outputs, effectively aligning them remains a current research challenge. `Align-Anything` framework integrates alignment tuning across modalities using well-designed interfaces and advanced abstractions, offering a comprehensive testbed for research.
+Ensuring that the behavior of AI system aligns with human intentions and values is crucial, and alignment techniques provide an effective solution. For large language models (LLMs), methods such as reinforcement learning with human feedback (RLHF) and direct preference optimization (DPO) have significantly improved performance and safety. As models evolve to handle any-modality inputs and outputs, effectively aligning them remains a current research challenge. Align-Anything framework integrates alignment tuning across modalities using well-designed interfaces and advanced abstractions, offering a comprehensive testbed for research.
 
 ### Report Issues
 
 If you have any questions in the process of using Align-Anything, don't hesitate to ask your questions on [the GitHub issue page](https://github.com/PKU-Alignment/align-anything/issues/new/choose), we will reply to you in 2-3 working days.
 
 
-## Citation
+# Citation
 
 Please cite the repo if you use the data or code in this repo.
 
@@ -394,6 +550,6 @@ Please cite the repo if you use the data or code in this repo.
 }
 ```
 
-## License
+# License
 
 Align-Anything is released under Apache License 2.0.
