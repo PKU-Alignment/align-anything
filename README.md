@@ -38,12 +38,12 @@
 
 </div>
 
-Align-Anything is an open-source alignment framework for academic research based on [DeepSpeed](https://github.com/microsoft/DeepSpeed). It aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for LLMs and other related information can be found in [AI Alignment](https://alignmentsurvey.com).
+Align-Anything is an open-source alignment framework for academic research. It aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for LLMs and other related information can be found in [AI Alignment](https://alignmentsurvey.com).
 
 # Features
 
 - **Highly Modular Framework.** Our framework offers a comprehensive collection of diverse training and evaluation implementation for any-modal alignment. Its versatility stems from the abstraction of different algorithm types and a well-designed API, allowing users to easily modify and customize the code for different tasks.
-- **Support for Various Model Fine-Tuning.** The framework includes fine-tuning capabilities for models such as LLaMA, LLaVA, Gemma, Qwen, Baichuan, and others (see [Model-zoo](https://github.com/PKU-Alignment/align-anything/blob/main/Model-Zoo.md)).
+- **Support for Various Model Fine-Tuning.** The framework includes fine-tuning capabilities for models such as LLaMA, LLaVA, Gemma, Qwen, Baichuan, and others (see [Model Zoo](https://github.com/PKU-Alignment/align-anything/blob/main/Model-Zoo.md)).
 - **Support Alignment Fine-Tuning over Any Modality.** It supports fine-tuning alignments for different modality model, including LLMs, VLMs, and other modalities (see [Development Roadmap](#development-roadmap)).
 - **Support Various Alignment Algorithms.** The framework supports various alignment algorithms, including SFT, DPO, PPO, and others (see [Example](https://github.com/PKU-Alignment/align-anything/tree/main/examples)).
 
@@ -55,16 +55,16 @@ We have a roadmap for future development work Align-Anything:
 
 | Modality                 | SFT | RM  | DPO | PPO |
 | ------------------------ | --- | --- | --- | --- |
-| `Text -> Text`             | ✔️   | ✔️   | ✔️   | ✔️   |
-| `Text+Image -> Text`       | ✔️   | ✔️   | ✔️   | ✔️   |
-| `Text -> Image`            | ✔️   | ⚒️   | ✔️   | ⚒️   |
-| `Text -> Video`            | ✔️   | ⚒️   | ✔️   | ⚒️   |
-| `Text -> Audio`            | ✔️   | ⚒️   | ✔️   | ⚒️   |
-| `Text+Image -> Text+Image` | ✔️   | ✔️   | ✔️   | ✔️   |
+| `Text -> Text (t2t)`             | ✔️   | ✔️   | ✔️   | ✔️   |
+| `Text+Image -> Text (ti2t)`       | ✔️   | ✔️   | ✔️   | ✔️   |
+| `Text -> Image (t2i)`            | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| `Text -> Video (t2v)`            | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| `Text -> Audio (t2a)`            | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| `Text+Image -> Text+Image (ti2ti)` | ✔️   | ✔️   | ✔️   | ✔️   |
 
 ## Evaluation
 
-We currently support two types of evaluation datasets: `Text -> Text` and `Text+Image -> Text`. For `Text -> Text`, we support 12 benchmark datasets, and for `Text+Image -> Text`, we support 15 benchmark datasets. We are actively working on expanding support to additional multimodal benchmarks. We have a roadmap for future development work Align-Anything:
+We currently support two types of evaluation datasets: `Text -> Text` and `Text + Image -> Text`. For `Text -> Text`, we support 12 benchmark datasets, and for `Text + Image -> Text`, we support 15 benchmark datasets. We are actively working on expanding support to additional multimodal benchmarks. We have a roadmap for future development work Align-Anything:
 
 | Modality              | Supported Benchmarks                                                  |
 | :-------------------- | :----------------------------------------------------------- |
