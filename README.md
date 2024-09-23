@@ -43,10 +43,10 @@ Align-Anything is an open-source alignment framework for academic research. It a
 - **Highly Modular Framework.** Our framework offers a comprehensive collection of diverse training and evaluation implementation for any-modal alignment. Its versatility stems from the abstraction of different algorithm types and a well-designed API, allowing users to easily modify and customize the code for different tasks.
 - **Support for Various Model Fine-Tuning.** The framework includes fine-tuning capabilities for models such as LLaMA, LLaVA, Gemma, Qwen, Baichuan, and others (see [Model Zoo](https://github.com/PKU-Alignment/align-anything/blob/main/Model-Zoo.md)).
 - **Support Fine-Tuning across Any Modality.** It supports fine-tuning alignments for different modality model, including LLMs, VLMs, and other modalities (see [Development Roadmap](#development-roadmap)).
-- **Support Different Alignment Methods.** The framework supports various alignment algorithms, including SFT, DPO, PPO, and others (see [Example](https://github.com/PKU-Alignment/align-anything/tree/main/examples)).
+- **Support Different Alignment Methods.** The framework supports different alignment algorithms, including SFT, DPO, PPO, and others (see [Example](https://github.com/PKU-Alignment/align-anything/tree/main/examples)).
 
 ## Algorithms
-We support alignment algorithms for various modalities, each of which may involve additional algorithms. For instance, in the text modality, we have also implemented SimPO, KTO, and others.
+We support basic alignment algorithms for different modalities, each of which may involve additional algorithms. For instance, in the text modality, we have also implemented SimPO, KTO, and others.
 
 | Modality                           | SFT | RM  | DPO | PPO |
 | ---------------------------------- | --- | --- | --- | --- |
@@ -58,7 +58,7 @@ We support alignment algorithms for various modalities, each of which may involv
 | `Text -> Audio (t2a)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
 
 ## Evaluation
-We support two types of evaluation datasets: `Text -> Text` and `Text + Image -> Text`.
+We support evaluation datasets for `Text -> Text`, `Text + Image -> Text` and `Text -> Image`.
 
 | Modality              | Supported Benchmarks                                                  |
 | :-------------------- | :----------------------------------------------------------- |
@@ -87,16 +87,13 @@ We support two types of evaluation datasets: `Text -> Text` and `Text + Image ->
 
 # Installation
 
-- First, clone the repo.
 
 ```bash
+# clone the repository.
 git clone git@github.com:PKU-Alignment/align-anything.git
 cd align-anything
-```
 
-- Then, create the conda environment then activate it.
-
-```bash
+# create virtual env.
 conda create -n align-anything python==3.11
 conda activate align-anything
 ```
@@ -163,7 +160,7 @@ docker run -it --rm \
     --ulimit memlock=-1 \
     --ulimit stack=67108864 \
     --mount type=bind,source=<host's mode path>,target=<docker's mode path> \
-    test_docker
+    align-anything
 ```
 
 
@@ -173,7 +170,7 @@ docker run -it --rm \
 
 Quick start examples can be found at [here](./examples/)
 
-To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, the DPO scripts for `Text+Image -> Text` modality is as follow:
+To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, the DPO scripts for `Text + Image -> Text` modality is as follow:
 
 ```bash
 MODEL_NAME_OR_PATH="" # model path
