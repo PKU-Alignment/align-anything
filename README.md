@@ -51,7 +51,7 @@ Align-Anything is an open-source alignment framework for academic research based
 
 We have a roadmap for future development work Align-Anything:
 
-## Alignment Training
+## Training
 
 | Modality                 | SFT | RM  | DPO | PPO |
 | ------------------------ | --- | --- | --- | --- |
@@ -62,7 +62,7 @@ We have a roadmap for future development work Align-Anything:
 | `Text -> Audio`            | ✔️   | ⚒️   | ✔️   | ⚒️   |
 | `Text+Image -> Text+Image` | ✔️   | ✔️   | ✔️   | ✔️   |
 
-## Alignment Evaluation
+## Evaluation
 
 We currently support two types of evaluation datasets: `Text -> Text` and `Text+Image -> Text`. For `Text -> Text`, we support 12 benchmark datasets, and for `Text+Image -> Text`, we support 15 benchmark datasets. We are actively working on expanding support to additional multimodal benchmarks. We have a roadmap for future development work Align-Anything:
 
@@ -173,7 +173,7 @@ docker run -it --rm \
 
 # Quick Start
 
-## Alignment Training Scripts
+## Training Scripts
 
 Quick start examples can be found at [here](./examples/)
 
@@ -242,7 +242,7 @@ deepspeed \
 ```
 
 
-## Alignment Evaluation Scripts
+## Evaluation Scripts
 
 The script for evaluation is also located in the `./scripts` directory. Parameters requiring user input have been left empty and must be filled in before starting the evaluation process:
 
