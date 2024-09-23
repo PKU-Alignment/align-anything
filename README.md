@@ -168,7 +168,7 @@ docker run -it --rm \
 
 ## Training Scripts
 
-Quick start examples can be found at [here](./examples/)
+Quick start examples can be found at [here](./examples/).
 
 To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, the DPO scripts for `Text + Image -> Text` modality is as follow:
 
@@ -193,7 +193,7 @@ deepspeed \
 	--output_dir ${OUTPUT_DIR}
 ```
 
-If you want to run DPO with [LLaVA-v1.5-7B](https://huggingface.co/llava-hf/llava-1.5-7b-hf) (HF format) and [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL) dataset, you can:
+We can run DPO with [LLaVA-v1.5-7B](https://huggingface.co/llava-hf/llava-1.5-7b-hf) (HF format) and [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL) dataset using the follow script,
 
 ```bash
 MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # model path
