@@ -40,30 +40,6 @@
 
 Align-Anything is an open-source alignment framework for academic research based on [DeepSpeed](https://github.com/microsoft/DeepSpeed) or [NeMo](https://github.com/NVIDIA/NeMo) (currently in development). It aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for LLMs and other related information can be found in [AI Alignment](https://alignmentsurvey.com).
 
-- [Features](#features)
-- [Development Roadmap](#development-roadmap)
-  - [Alignment Training](#alignment-training)
-  - [Alignment Evaluation](#alignment-evaluation)
-- [News](#news)
-- [Installation](#installation)
-  - [Wandb Logger](#wandb-logger)
-  - [Install from Dockerfile](#install-from-dockerfile)
-- [Quick Start](#quick-start)
-  - [Alignment Training Scripts](#alignment-training-scripts)
-  - [Alignment Evaluation Scripts](#alignment-evaluation-scripts)
-- [Advanced Usage and Guidence](#advanced-usage-and-guidence)
-  - [Dataset Integration](#dataset-integration)
-    - [Reward modeling](#reward-modeling)
-    - [RL fine-tuning](#rl-fine-tuning)
-- [Inference](#inference)
-  - [Interactive Client](#interactive-client)
-  - [Interactive Arena](#interactive-arena)
-  - [Why do we open source align-anything?](#why-do-we-open-source-align-anything)
-  - [Report Issues](#report-issues)
-- [Citation](#citation)
-- [License](#license)
-
-
 # Features
 
 - **Highly Modular Framework.** Our framework offers a comprehensive collection of diverse training and evaluation implementation for any-modal alignment. Its versatility stems from the abstraction of different algorithm types and a well-designed API, allowing users to easily modify and customize the code for different tasks.
