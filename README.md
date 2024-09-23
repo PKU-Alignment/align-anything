@@ -45,8 +45,6 @@ Align-Anything is an open-source alignment framework for academic research. It a
 - **Support Fine-Tuning across Any Modality.** It supports fine-tuning alignments for different modality model, including LLMs, VLMs, and other modalities (see [Development Roadmap](#development-roadmap)).
 - **Support Different Alignment Methods.** The framework supports various alignment algorithms, including SFT, DPO, PPO, and others (see [Example](https://github.com/PKU-Alignment/align-anything/tree/main/examples)).
 
-# Supported Features
-
 ## Algorithms
 We support alignment algorithms for various modalities, each of which may involve additional algorithms. For instance, in the text modality, we have also implemented SimPO, KTO, and others.
 
@@ -79,10 +77,12 @@ We support two types of evaluation datasets: `Text -> Text` and `Text + Image ->
 - 2024-08-06: We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
 - 2024-08-06: We support `Text + Image -> Text + Image` modality for the SFT trainer and Chameleon models.
 <details><summary>More News</summary>
+
 - 2024-07-23: We support `Text -> Image`, `Text -> Audio`, and `Text -> Video` modalities for the SFT trainer and DPO trainer.
 - 2024-07-22: We support the **Chameleon** model for the SFT trainer and DPO trainer!
 - 2024-07-17: We open-source the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
 - 2024-07-14: We open-source the Align-Anything framework.
+
 </details>
 
 # Installation
