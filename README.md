@@ -54,16 +54,16 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
       <figcaption style="text-align: center;">Before Alignment</figcaption>
         <table>
           <tr>
-            <td style="width:30%; height:30%;">
+            <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/1.png?raw=true" alt="Image 1">
             </td>
-            <td style="width:30%; height:30%;">
+            <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/2.png?raw=true" alt="Image 2">
             </td>
-            <td style="width:30%; height:30%;">
+            <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/3.png?raw=true" alt="Image 3">
             </td>
-            <td style="width:30%; height:30%;">
+            <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/4.png?raw=true" alt="Image 4">
             </td>
           </tr>
@@ -77,19 +77,19 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
        <figcaption style="text-align: center;">After Alignment</figcaption>
         <table>
           <tr>
-            <td style="width:30%; height:30%;">
+            <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/1.png?raw=true" alt="Image 5">
               <details><summary>prompt</summary>Small white toilet sitting in a small corner next to a wall.</details>
             </td>
-            <td style="width:30%; height:30%;">
+            <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/2.png?raw=true" alt="Image 6">
               <details><summary>prompt</summary>A close up of a neatly made bed with two night stands</details>
             </td>
-            <td style="width:30%; height:30%;">
+            <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/3.png?raw=true" alt="Image 7">
               <details><summary>prompt</summary>A pizza is sitting on a plate at a restaurnat.</details>
             </td>
-            <td style="width:30%; height:30%;">
+            <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/4.png?raw=true" alt="Image 8">
               <details><summary>prompt</summary>A girl in a dress next to a piece of luggage and flowers.</details>
             </td>
