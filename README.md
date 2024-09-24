@@ -47,7 +47,7 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 
 
-<table style="width: 100%; max-width: 100%; table-layout: fixed;">
+<table style="width: 50%; max-width: 50%; table-layout: fixed;">
   <tr>
     <td colspan="4">
       <figure style="width: 100%;">
