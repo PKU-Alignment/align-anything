@@ -19,10 +19,8 @@ import threading
 from typing import Any, Callable, Generator, TypeVar, cast
 from typing_extensions import TypeAlias
 
-import optree
 import torch
 import torch.distributed as dist
-from optree.typing import PyTreeTypeVar
 from transformers.modeling_outputs import ModelOutput
 from transformers.tokenization_utils import BatchEncoding
 from transformers.utils import (
@@ -84,9 +82,6 @@ def get_all_reduce_max(tensor: torch.Tensor) -> torch.Tensor:
         dist.all_reduce(tensor, op=dist.ReduceOp.MAX)
     return tensor
 
-
-TensorTree: TypeAlias = PyTreeTypeVar('TensorTree', torch.Tensor)
-
 __PYTREE_REGISTRY_LOCK = threading.Lock()
 
 __PYTREE_INITIALIZED = False
@@ -104,50 +99,3 @@ def get_subclasses(cls: type, memo: set[type] | None = None) -> Generator[type, 
         memo.add(subclass)
         yield subclass
         yield from get_subclasses(subclass, memo=memo)
-
-
-def __initialize_pytree_registry_once() -> None:
-    # pylint: disable-next=import-outside-toplevel,unused-import
-
-    global __PYTREE_INITIALIZED  # pylint: disable=global-statement
-    if __PYTREE_INITIALIZED:
-        return
-
-    with __PYTREE_REGISTRY_LOCK:
-        if __PYTREE_INITIALIZED:
-            return
-
-        optree.register_pytree_node(
-            BatchEncoding,
-            lambda batch_encoding: (
-                [batch_encoding.data],
-                {'encoding': batch_encoding.encodings, 'n_sequences': batch_encoding.n_sequences},
-            ),
-            lambda metadata, children: BatchEncoding(children[0], **metadata),
-            namespace='align_anything',
-        )
-        optree.register_pytree_node(
-            ModelOutput,
-            lambda model_output: (model_output.values(), model_output.keys(), model_output.keys()),
-            lambda keys, values: ModelOutput(OrderedDict(zip(keys, values))),
-            namespace='align_anything',
-        )
-
-        for model_output_class in filter(dataclasses.is_dataclass, get_subclasses(ModelOutput)):
-            optree.register_pytree_node(
-                model_output_class,
-                lambda model_output: ([dataclasses.asdict(model_output)], type(model_output)),
-                lambda metadata, children: metadata(**children[0]),
-                namespace='align_anything',
-            )
-
-        __PYTREE_INITIALIZED = True
-
-
-def to_device(batch: TensorTree, device: torch.device | str | int | None) -> TensorTree:
-    """Move a batch of tensors to a device."""
-    if not __PYTREE_INITIALIZED:
-        __initialize_pytree_registry_once()
-    if device is None:
-        return batch
-    return optree.tree_map(lambda x: x.to(device), batch, namespace='align_anything')

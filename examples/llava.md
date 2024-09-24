@@ -1,8 +1,8 @@
-# LLAVA Training Scripts
+# Llava Training Scripts
 
-We provide examples of various scripts for fine-tuning based on the [LLAVA](https://huggingface.co/llava-hf) series models as follows. You can execute these commands in the `./scripts` directory to start the corresponding training.
+We provide examples of various scripts for fine-tuning based on the [Llava](https://huggingface.co/llava-hf) series models as follows. You can execute these commands in the `./scripts` directory to start the corresponding training.
 
-**Note:** The [LLaVA-Instruct-150K](https://huggingface.co/datasets/liuhaotian/LLaVA-Instruct-150K) dataset uses remote links to access images. However, due to the server hosting these images occasionally stopping its response, this can lead to unstable training. We strongly recommend that you download the [coco2017 dataset](http://images.cocodataset.org/zips/train2017.zip) locally here, then update the image paths in llava_instruct_150k.json to your local paths, and then use the `LLAVA_Local` template.
+**Note:** The [LLaVA-Instruct-150K](https://huggingface.co/datasets/liuhaotian/LLaVA-Instruct-150K) dataset uses remote links to access images. However, due to the server hosting these images occasionally stopping its response, this can lead to unstable training. We strongly recommend that you download the [coco2017 dataset](http://images.cocodataset.org/zips/train2017.zip) locally here, then update the image paths in llava_instruct_150k.json to your local paths, and then use the `Llava_Local` template.
 
 ## Supervised Fine-Tuning
 
@@ -26,7 +26,7 @@ deepspeed \
 	--train_datasets ${TRAIN_DATASETS} \
 	--output_dir ${OUTPUT_DIR} \
   	--train_split train \
-	--train_template LLAVA \
+	--train_template Llava \
 	--train_data_files llava_instruct_150k.json
 ```
 
@@ -121,7 +121,7 @@ deepspeed \
   --ptx_split train \
   --train_template SPA_VL \
   --ptx_datasets ${PTX_DATASETS} \
-  --ptx_template LLAVA \
+  --ptx_template Llava \
   --ptx_data_files llava_instruct_150k.json \
   --freeze_mm_proj True \
   --freeze_vision_tower False \

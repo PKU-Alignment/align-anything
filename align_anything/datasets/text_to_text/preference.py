@@ -74,6 +74,7 @@ class PreferenceDataset(Dataset):
             optional_args = [optional_args]
         self.raw_data = load_dataset(
             path,
+            name=name,
             split=split,
             data_files=data_files,
             subset=subset,
@@ -108,6 +109,7 @@ class PreferenceDataset(Dataset):
             raw_worse_text = formatted_sample['worse_text'] + self.tokenizer.eos_token
         else:
             raise NotImplementedError
+        
         return_dict['better_input_ids'] = self.tokenize(raw_better_text)
         return_dict['worse_input_ids'] = self.tokenize(raw_worse_text)
 

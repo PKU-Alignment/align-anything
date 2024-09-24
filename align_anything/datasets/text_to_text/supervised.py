@@ -72,6 +72,7 @@ class SupervisedDataset(Dataset):
         self.processor = processor
         self.raw_data = load_dataset(
             path,
+            name=name,
             split=split,
             data_files=data_files,
             subset=subset,

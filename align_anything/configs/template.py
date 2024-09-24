@@ -347,7 +347,7 @@ class AA_TF:
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
     
-    def format_sample(self, raw_sample: dict[str, Any], path: Optional) -> dict[str, Any]:
+    def format_sample(self, raw_sample: dict[str, Any], path: str|None=None) -> dict[str, Any]:
         input_text = raw_sample['question']
         input_img = raw_sample['image_url']
         
@@ -647,8 +647,8 @@ class ShareGPT4o:
         }
 
     
-@register_template('LLAVA')
-class LLAVA:
+@register_template('Llava')
+class Llava:
     system_prompt: str = ''
     user_prompt: str = 'USER: \n<image>{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
@@ -679,8 +679,8 @@ class LLAVA:
             'image': load_image(image_file),
         }
 
-@register_template('LLAVA_Local')
-class LLAVA_Local:
+@register_template('Llava_Local')
+class Llava_Local:
     system_prompt: str = ''
     user_prompt: str = 'USER: \n<image>{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'

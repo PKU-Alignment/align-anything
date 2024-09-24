@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 name = "align-anything"
 description = "Align Anything"
 readme = "README.md"
-requires-python = ">= 3.8"
+requires-python = ">= 3.11"
 authors = [{ name = "PKU-Alignment Team" }]
 license = { text = "Apache License, Version 2.0" }
 keywords = [
@@ -23,9 +23,6 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Intended Audience :: Science/Research",
@@ -33,6 +30,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
+    "vllm",
     "torch >= 1.13",
     "transformers @ git+https://github.com/huggingface/transformers.git@main",
     "datasets",
@@ -62,7 +60,6 @@ dependencies = [
     "torchaudio",
     "torchvision",
     "bitsandbytes",
-    "vllm",
     "yt_dlp",
 ]
 
