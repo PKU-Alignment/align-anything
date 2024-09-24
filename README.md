@@ -55,16 +55,16 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
         <table>
           <tr>
             <td>
-              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/1.png?raw=true" style="width:30%; height:30%;" alt="Image 1">
+              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/1.png?raw=true" style="width:50%; height:50%;" alt="Image 1">
             </td>
             <td>
-              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/2.png?raw=true" style="width:30%; height:30%;" alt="Image 2">
+              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/2.png?raw=true" style="width:50%; height:50%;" alt="Image 2">
             </td>
             <td>
-              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/3.png?raw=true" style="width:30%; height:30%;" alt="Image 3">
+              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/3.png?raw=true" style="width:50%; height:50%;" alt="Image 3">
             </td>
             <td>
-              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/4.png?raw=true" style="width:30%; height:30%;" alt="Image 4">
+              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/4.png?raw=true" style="width:50%; height:50%;" alt="Image 4">
             </td>
           </tr>
         </table>
@@ -78,20 +78,20 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
         <table>
           <tr>
             <td>
-              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/1.png?raw=true" style="width:30%; height:30%;" alt="Image 5">
-              <p class="image-caption">Small white toilet sitting in a small corner next to a wall.</p>
+              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/1.png?raw=true" style="width:50%; height:50%;" alt="Image 5">
+              <p style="word-wrap:break-word; white-space:normal; font-size:14px;">Small white toilet sitting in a small corner next to a wall.</p>
             </td>
             <td>
-              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/2.png?raw=true" style="width:30%; height:30%;" alt="Image 6">
-              <p class="image-caption">A close up of a neatly made bed with two night stands</p>
+              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/2.png?raw=true" style="width:50%; height:50%;" alt="Image 6">
+              <p style="word-wrap:break-word; white-space:normal; font-size:14px;">A close up of a neatly made bed with two night stands</p>
             </td>
             <td>
-              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/3.png?raw=true" style="width:30%; height:30%;" alt="Image 7">
-              <p class="image-caption">A pizza is sitting on a plate at a restaurnat.</p>
+              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/3.png?raw=true" style="width:50%; height:50%;" alt="Image 7">
+              <p style="word-wrap:break-word; white-space:normal; font-size:14px;">A pizza is sitting on a plate at a restaurnat.</p>
             </td>
             <td>
-              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/4.png?raw=true" style="width:30%; height:30%;" alt="Image 8">
-              <p class="image-caption">A girl in a dress next to a piece of luggage and flowers. </p>
+              <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/4.png?raw=true" style="width:50%; height:50%;" alt="Image 8">
+              <p style="word-wrap:break-word; white-space:normal; font-size:14px;">A girl in a dress next to a piece of luggage and flowers. </p>
             </td>
           </tr>
         </table>
