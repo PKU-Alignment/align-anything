@@ -79,19 +79,19 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
           <tr>
             <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/1.png?raw=true" style="width:50%; height:50%;" alt="Image 5">
-              <p style="word-wrap: break-word; white-space: normal; font-size: 14px; width: 50%; display: inline-block;">Small white toilet sitting in a small corner next to a wall.</p>
+              <details><summary>prompt</summary>Small white toilet sitting in a small corner next to a wall.</details>
             </td>
             <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/2.png?raw=true" style="width:50%; height:50%;" alt="Image 6">
-              <p style="word-wrap: break-word; white-space: normal; font-size: 14px; width: 50%; display: inline-block;">A close up of a neatly made bed with two night stands</p>
+              <details><summary>prompt</summary>A close up of a neatly made bed with two night stands</details>
             </td>
             <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/3.png?raw=true" style="width:50%; height:50%;" alt="Image 7">
-              <p style="word-wrap: break-word; white-space: normal; font-size: 14px; width: 50%; display: inline-block;">A pizza is sitting on a plate at a restaurnat.</p>
+              <details><summary>prompt</summary>A pizza is sitting on a plate at a restaurnat.</details>
             </td>
             <td>
               <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/4.png?raw=true" style="width:50%; height:50%;" alt="Image 8">
-              <p style="word-wrap: break-word; white-space: normal; font-size: 14px; width: 50%; display: inline-block;">A girl in a dress next to a piece of luggage and flowers. </p>
+              <details><summary>prompt</summary>A girl in a dress next to a piece of luggage and flowers.</details>
             </td>
           </tr>
         </table>
