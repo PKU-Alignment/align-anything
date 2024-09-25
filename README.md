@@ -25,10 +25,10 @@
 [![License](https://img.shields.io/github/license/PKU-Alignment/align-anything?label=license)](#license)
 
 [📘Documentation](https://pku-alignment.notion.site/Align-Anything-37a300fb5f774bb08e5b21fdeb476c64) |
-[🚀Features](#features) |
 [🆕Update News](#news) |
-[🛠️Installation](#installation) |
-[👀Training](#train) |
+[🛠️Quick Start](#quick-start) |
+[🚀Algorithms](#algorithms) |
+[👀Evaluation](#evaluation) |
 [🤔Reporting Issues](#report-issues)
 </div>
 
@@ -49,9 +49,9 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 || <details><summary>prompt</summary>Small white toilet sitting in a small corner next to a wall.</details> | <details><summary>prompt</summary>A close up of a neatly made bed with two night stands</details>  | <details><summary>prompt</summary>A pizza is sitting on a plate at a restaurant.</details> |<details><summary>prompt</summary>A girl in a dress next to a piece of luggage and flowers.</details>|
 |---| ---------------------------------- | --- | --- | --- |
 |Before Alignment ([Chameleon-7B](https://huggingface.co/facebook/chameleon-7b))| <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/1.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/2.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/3.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/4.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">|
-|**After Alignment ([Align-Anything Chameleon 7B Plus](https://huggingface.co/PKU-Alignment/AA-chameleon-7b-plus))**| <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/1.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/2.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/3.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/4.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">|
+|**After Alignment ([Chameleon 7B Plus](https://huggingface.co/PKU-Alignment/AA-chameleon-7b-plus))**| <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/1.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/2.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/3.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/4.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">|
 
-> Alignment can significantly enhance the instruction-following capabilities of large multimodal models. After alignment, Chameleon 7B Plus generates images that are more relevant to the prompt.
+> Alignment fine-tuning can significantly enhance the instruction-following capabilities of large multimodal models. After fine-tuning, Chameleon 7B Plus generates images that are more relevant to the prompt.
 
 ## Algorithms
 We support basic alignment algorithms for different modalities, each of which may involve additional algorithms. For instance, in the text modality, we have also implemented SimPO, KTO, and others.
@@ -66,7 +66,7 @@ We support basic alignment algorithms for different modalities, each of which ma
 | `Text -> Audio (t2a)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
 
 ## Evaluation
-We support evaluation datasets for `Text -> Text`, `Text + Image -> Text` and `Text -> Image`.
+We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Text -> Image`.
 
 | Modality              | Supported Benchmarks                                                  |
 | :-------------------- | :----------------------------------------------------------- |
@@ -78,20 +78,20 @@ We support evaluation datasets for `Text -> Text`, `Text + Image -> Text` and `T
 | `t2v`      | ⚒️ |
 | `t2a`      | ⚒️ |
 
-- ⚒️ : In the planning.
+- ⚒️ : coming soon.
 
 # News
 
-- 2024-08-17: We support DPO and PPO for `Text + Image -> Text + Image` modality models.
-- 2024-08-15 We support a new function in the evaluation module: the `models_pk` script in [here](./scripts/models_pk.sh), which enables comparing the performance of two models across different benchmarks.
+- 2024-08-17: We support DPO and PPO for `Text+Image -> Text+Image` modality models.
+- 2024-08-15: We support a new function in the evaluation module: the `models_pk` script in [here](./scripts/models_pk.sh), which enables comparing the performance of two models across different benchmarks.
 - 2024-08-06: We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
-- 2024-08-06: We support `Text + Image -> Text + Image` modality for the SFT trainer and Chameleon models.
+- 2024-08-06: We support `Text+Image -> Text+Image` modality for the SFT trainer and Chameleon models.
 <details><summary>More News</summary>
 
 - 2024-07-23: We support `Text -> Image`, `Text -> Audio`, and `Text -> Video` modalities for the SFT trainer and DPO trainer.
 - 2024-07-22: We support the **Chameleon** model for the SFT trainer and DPO trainer!
 - 2024-07-17: We open-source the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
-- 2024-07-14: We open-source the Align-Anything framework.
+- 2024-07-14: We open-source the align-anything framework.
 
 </details>
 
@@ -99,21 +99,21 @@ We support evaluation datasets for `Text -> Text`, `Text + Image -> Text` and `T
 
 
 ```bash
-# clone the repository.
+# clone the repository
 git clone git@github.com:PKU-Alignment/align-anything.git
 cd align-anything
 
-# create virtual env.
+# create virtual env
 conda create -n align-anything python==3.11
 conda activate align-anything
 ```
 
-- **`[Optional]`** We recommend installing [CUDA](https://anaconda.org/nvidia/cuda) in your conda environment. After that, set the environment variable.
+- **`[Optional]`** We recommend installing [CUDA](https://anaconda.org/nvidia/cuda) in the conda environment and set the environment variable.
 
 ```bash
-'''
-We tested on the H800 computing cluster, and this version of CUDA works well. You can adjust this version according to the actual situation of the computing cluster.
-'''
+# We tested on the H800 computing cluster, and this version of CUDA works well. 
+# You can adjust this version according to the actual situation of the computing cluster.
+
 conda install nvidia/label/cuda-12.2.0::cuda
 export CUDA_HOME=$CONDA_PREFIX
 ```
@@ -124,7 +124,7 @@ export CUDA_HOME=$CONDA_PREFIX
 export CUDA_HOME="/usr/local/cuda"
 ```
 
-Fianlly, install this project by:
+Fianlly, install `align-anything` by:
 
 ```bash
 pip install -e .
@@ -138,7 +138,7 @@ We support `wandb` logging. By default, it is set to offline. If you need to vie
 export WANDB_API_KEY="..."  # your W&B API key here
 ```
 
-## Install from Dockerfile
+<!-- ## Install from Dockerfile
 
 1. build docker image
 
@@ -171,7 +171,7 @@ docker run -it --rm \
     --ulimit stack=67108864 \
     --mount type=bind,source=<host's mode path>,target=<docker's mode path> \
     align-anything
-```
+``` -->
 
 
 # Quick Start
@@ -180,7 +180,7 @@ docker run -it --rm \
 
 Quick start examples can be found at [here](./examples/).
 
-To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, the DPO scripts for `Text + Image -> Text` modality is as follow:
+To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, the DPO scripts for `Text+Image -> Text` modality is as follow:
 
 ```bash
 MODEL_NAME_OR_PATH="" # model path
@@ -301,13 +301,9 @@ python3 -m align_anything.serve.arena \
 
 <img src="assets/arena_demo.gif" alt="arena_demo" style="width:600px;">
 
-## Why do we open source align-anything?
-
-Ensuring that the behavior of AI system aligns with human intentions and values is crucial, and alignment techniques provide an effective solution. For large language models (LLMs), methods such as reinforcement learning with human feedback (RLHF) and direct preference optimization (DPO) have significantly improved performance and safety. As models evolve to handle any-modality inputs and outputs, effectively aligning them remains a current research challenge. Align-Anything framework integrates alignment tuning across modalities using well-designed interfaces and advanced abstractions, offering a comprehensive testbed for research.
-
 ## Report Issues
 
-If you have any questions in the process of using Align-Anything, don't hesitate to ask your questions on [the GitHub issue page](https://github.com/PKU-Alignment/align-anything/issues/new/choose), we will reply to you in 2-3 working days.
+If you have any questions in the process of using align-anything, don't hesitate to ask your questions on [the GitHub issue page](https://github.com/PKU-Alignment/align-anything/issues/new/choose), we will reply to you in 2-3 working days.
 
 
 # Citation
@@ -317,7 +313,7 @@ Please cite the repo if you use the data or code in this repo.
 ```bibtex
 @misc{align_anything,
   author = {PKU-Alignment Team},
-  title = {Align Anything: Training Any Modality Model with Feedback},
+  title = {Align Anything: training all modality models to follow instructions with unified language feedback},
   year = {2024},
   publisher = {GitHub},
   journal = {GitHub repository},
@@ -327,4 +323,4 @@ Please cite the repo if you use the data or code in this repo.
 
 # License
 
-Align-Anything is released under Apache License 2.0.
+align-anything is released under Apache License 2.0.
