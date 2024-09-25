@@ -111,9 +111,8 @@ conda activate align-anything
 - **`[Optional]`** We recommend installing [CUDA](https://anaconda.org/nvidia/cuda) in the conda environment and set the environment variable.
 
 ```bash
-<<'COMMENT'
-We tested on the H800 computing cluster, and this version of CUDA works well. You can adjust this version according to the actual situation of the computing cluster.
-COMMENT
+# We tested on the H800 computing cluster, and this version of CUDA works well. 
+# You can adjust this version according to the actual situation of the computing cluster.
 
 conda install nvidia/label/cuda-12.2.0::cuda
 export CUDA_HOME=$CONDA_PREFIX
