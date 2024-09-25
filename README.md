@@ -125,7 +125,7 @@ export CUDA_HOME=$CONDA_PREFIX
 export CUDA_HOME="/usr/local/cuda"
 ```
 
-Fianlly, install this project by:
+Fianlly, install `align-anything` by:
 
 ```bash
 pip install -e .
@@ -139,7 +139,7 @@ We support `wandb` logging. By default, it is set to offline. If you need to vie
 export WANDB_API_KEY="..."  # your W&B API key here
 ```
 
-## Install from Dockerfile
+<!-- ## Install from Dockerfile
 
 1. build docker image
 
@@ -172,7 +172,7 @@ docker run -it --rm \
     --ulimit stack=67108864 \
     --mount type=bind,source=<host's mode path>,target=<docker's mode path> \
     align-anything
-```
+``` -->
 
 
 # Quick Start
@@ -181,7 +181,7 @@ docker run -it --rm \
 
 Quick start examples can be found at [here](./examples/).
 
-To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, the DPO scripts for `Text + Image -> Text` modality is as follow:
+To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, the DPO scripts for `Text+Image -> Text` modality is as follow:
 
 ```bash
 MODEL_NAME_OR_PATH="" # model path
@@ -302,9 +302,9 @@ python3 -m align_anything.serve.arena \
 
 <img src="assets/arena_demo.gif" alt="arena_demo" style="width:600px;">
 
-## Why do we open source align-anything?
+<!-- ## Why do we open source align-anything?
 
-Ensuring that the behavior of AI system aligns with human intentions and values is crucial, and alignment techniques provide an effective solution. For large language models (LLMs), methods such as reinforcement learning with human feedback (RLHF) and direct preference optimization (DPO) have significantly improved performance and safety. As models evolve to handle any-modality inputs and outputs, effectively aligning them remains a current research challenge. Align-Anything framework integrates alignment tuning across modalities using well-designed interfaces and advanced abstractions, offering a comprehensive testbed for research.
+Ensuring that the behavior of AI system aligns with human intentions and values is crucial, and alignment techniques provide an effective solution. For large language models (LLMs), methods such as reinforcement learning with human feedback (RLHF) and direct preference optimization (DPO) have significantly improved performance and safety. As models evolve to handle any-modality inputs and outputs, effectively aligning them remains a current research challenge. Align-Anything framework integrates alignment tuning across modalities using well-designed interfaces and advanced abstractions, offering a comprehensive testbed for research. -->
 
 ## Report Issues
 
