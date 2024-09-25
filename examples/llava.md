@@ -54,7 +54,7 @@ deepspeed \
 	--train_datasets ${TRAIN_DATASETS} \
 	--eval_datasets ${EVAL_DATASETS} \
 	--output_dir ${OUTPUT_DIR} \
-  	--train_split train \
+	--train_split train \
 	--eval_split train \
 	--train_template SPA_VL \
 	--eval_template SPA_VL

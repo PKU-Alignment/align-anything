@@ -3,7 +3,7 @@ Template and Dataset Custumization
 
 Align-Anything offers a highly scalable dataset registration interface,
 enabling users to embed customized datasets simply by designing and
-specifying their ``template.py``.
+specifying their `template.py <https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/configs/template.py>`__.
 
 Taking `SPA-VL <https://huggingface.co/datasets/sqrti/SPA-VL>`__ as an
 example, we illustrate here how to design the template and incorporate
@@ -39,7 +39,6 @@ required parameters such as system_prompt.
            prompt = raw_sample['question']
            image = raw_sample['image']
 
-           
            formatted_prompt = (
                f'{self.system_prompt}'
                f'{self.user_prompt.format(input=prompt)}'
@@ -171,13 +170,12 @@ key-value conversion in ``template.py`` using the following function:
            }
 
 After designing the aforementioned template, you just need to specify
-this template by passing the ``--train_template SPA_VL`` argument when
+this template by passing the ``train_template SPA_VL`` argument when
 invoking the dataset to complete the corresponding training. Perhaps the
 above example still lacks specificity; therefore, we provide command
 references that encompass various models executing multiple algorithms
 on diverse datasets.
 
-**Note:** You can expedite your training process by directly running or
-modifying these scripts `here <./examples/>`__. For special task
-including ``Text Image Interleaved Input and Output`` and
-``Any -> Text``, you can refer to `projects <./projects/>`__.
+.. note::
+
+    You can expedite your training process by directly running or modifying these scripts `here <./examples/>`__. For special task including ``Text Image Interleaved Input and Output`` and ``Any -> Text``, you can refer to `projects <./projects/>`__.

@@ -90,3 +90,4 @@ In addition, to facilitate your code debugging, we also support passing paramete
         --train_split ${TRAIN_SPLIT} \
         --output_dir ${OUTPUT_DIR}
 
+We have configured a set of default parameters for the user, which may not necessarily be optimal. If you wish to adjust them, you can check which hyperparameters can be adjusted and their default values at `here <https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/configs>`__.

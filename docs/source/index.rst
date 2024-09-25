@@ -23,3 +23,4 @@ Welcome to `Align-Anything <https://github.com/PKU-Alignment/align-anything>`_ i
     training/configs
     training/dataset_custom
     training/text_to_text
+    training/text_image_to_text

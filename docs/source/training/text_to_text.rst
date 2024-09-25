@@ -3,7 +3,7 @@ Text to Text Scripts
 
 We provide examples of various scripts for finetuning based on the
 `Llama <https://llama.meta.com/>`__ series models (or corresponding SFT
-version, *i.e.*, Alpaca-reproduced) as follows. You can execute these commands
+version, *i.e.*, `PKU-Alignment/alpaca-7b-reproduced <https://huggingface.co/PKU-Alignment/alpaca-7b-reproduced>`__) as follows. You can execute these commands
 under the ``./scripts`` to start the corresponding training.
 
 .. note::
@@ -64,7 +64,7 @@ Reward Model Training
    	--module align_anything.trainers.text_to_text.rm \
    	--model_name_or_path ${MODEL_NAME_OR_PATH} \
    	--train_datasets ${TRAIN_DATASETS} \
-    --train_template ${TRAIN_TEMPLATE} \
+   	--train_template ${TRAIN_TEMPLATE} \
    	--train_split ${TRAIN_SPLIT} \
    	--output_dir ${OUTPUT_DIR}
 
@@ -96,8 +96,8 @@ DPO Training
    	--master_port ${MASTER_PORT} \
    	--module align_anything.trainers.text_to_text.rm \
    	--model_name_or_path ${MODEL_NAME_OR_PATH} \
+   	--train_template ${TRAIN_TEMPLATE} \
    	--train_datasets ${TRAIN_DATASETS} \
-    --train_template ${TRAIN_TEMPLATE} \
    	--train_split ${TRAIN_SPLIT} \
    	--output_dir ${OUTPUT_DIR}
 
@@ -122,6 +122,7 @@ PPO Training
    PTX_TEMPLATE="Dialogue" # sft dataset template
    PTX_SPLIT="train" # split the sft dataset
 
+   OUTPUT_DIR="../output/ppo" # output dir
    # For wandb online logging
    export WANDB_API_KEY=""
 
