@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-# training configurations
+# The training configurations
 train_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
@@ -71,7 +71,7 @@ train_cfgs:
   num_mel_bins: 64
   # The number of frames for each audio clip
   max_frames: 500
-# Configuration for datasets
+# The data configurations
 data_cfgs:
   # Datasets to use for training
   train_datasets: null
@@ -111,7 +111,7 @@ logger_cfgs:
   cache_dir: null
   # The interval of saving models
   save_interval: 100000
-# Model configurations
+# The model configurations
 model_cfgs:
   # Pretrained model name or path
   model_name_or_path: null

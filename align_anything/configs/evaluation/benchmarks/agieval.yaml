@@ -42,7 +42,7 @@ default:
     # Evaluation split
     split: validation
 
-  # Model configurations
+  # The model configurations
   model_cfgs:
     model_id: null
     # Pretrained model name or path

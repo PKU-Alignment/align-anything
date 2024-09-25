@@ -12,9 +12,6 @@ import sys
 
 # -- Project information -----------------------------------------------------
 
-ROOT_DIR = pathlib.Path(__file__).absolute().parent.parent.parent
-sys.path.insert(0, str(ROOT_DIR / 'align_anything'))
-
 project = 'Align-Anything'
 copyright = '2024, PKU-Alignment Team'
 author = 'PKU-Alignment Team'

@@ -227,7 +227,6 @@ deepspeed \
 	--output_dir ${OUTPUT_DIR}
 ```
 
-
 ## Evaluation
 
 All evaluation scripts can be found in the `./scripts`. The `./scripts/evaluate.sh` script runs model evaluation on the benchmarks, and parameters that require user input have been left empty. The corresponding script is as follow:
