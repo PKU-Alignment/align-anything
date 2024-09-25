@@ -37,6 +37,7 @@ except ImportError:
 
 try:
     from transformers import Qwen2AudioConfig, Qwen2AudioForConditionalGeneration
+    from align_anything.models.qwen2_audio import AccustomedQwen2AudioModel
     Qwen2Audio_AVALIABLE = True
 except ImportError:
     Qwen2Audio_AVALIABLE = False
@@ -46,7 +47,6 @@ from transformers.utils.generic import ModelOutput
 
 from align_anything.models.llava_model import AccustomedLlavaModel
 from align_anything.models.llava_next_model import AccustomedLlavaNextModel
-from align_anything.models.qwen2_audio import AccustomedQwen2AudioModel
 from align_anything.models.llama_vision_audio_model import (
     LlamaVisionAudioConfig,
     AccustomedLlamaVisionAudioModel
