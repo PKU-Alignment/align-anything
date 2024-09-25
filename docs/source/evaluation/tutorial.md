@@ -1,5 +1,8 @@
-# tutorial
+# Tutorial
 
+To facilitate users in assessing the model's performance and effectiveness on multimodal benchmark, we offer a series of evaluation scripts located in the `./scripts` directory. These scripts support various evaluation benchmarks, allowing users to flexibly choose suitable settings to ensure the accuracy and comparability of results. By properly configuring evaluation parameters, users can effectively test and compare the model's performance across various tasks, thereby advancing the model's development and optimization.
+
+### evaluate.sh
 The `./scripts/evaluate.sh` script runs model evaluation on the benchmarks, and parameters that require user input have been left empty. The corresponding script is as follow:
 ~~~sh
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -29,7 +32,7 @@ done
 - `MODEL_NAME_OR_PATH`: Local path or Hugging Face link to the model weights.
 - `CHAT_TEMPLATE`: The chat template corresponding to the model.
 
-### evaluate_pk.sh
+### models_pk.sh
 
 The `./scripts/models_pk.sh` evaluates and compares two models across benchmarks. Ensure all parameters are set before running. The corresponding script is as follow:
 ~~~sh

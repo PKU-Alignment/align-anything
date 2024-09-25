@@ -1,8 +1,8 @@
 # Overview
 
-The evaluation module of Align-Anything supports a variety of multimodal benchmarks, such as `Text→Text`, `Text+Image/Video/Audio→Text`, and `Text→Image/Video/Audio`. For most modalities, we provide vLLM and Deepspeed as generation backends, allowing users to choose based on their devices and environments.  Since diffusion generation models for audio and video modalities primarily rely on different frameworks, we provide an option to load local files directly for evaluation in `Text→Image/Audio/Video` tasks (development completed and testing underway).
+The evaluation module of align-anything supports a variety of multimodal benchmarks, such as `Text→Text`, `Text+Image/Video/Audio→Text`, and `Text→Image/Video/Audio`. For most modalities, we provide vLLM and Deepspeed as generation backends, allowing users to choose based on their devices and environments.  Since diffusion generation models for audio and video modalities primarily rely on different frameworks, we provide an option to load local files directly for evaluation in `Text→Image/Audio/Video` tasks (development completed and testing underway).
 
-## Benchmarks List
+## Support Benchmarks
 
 <!DOCTYPE html>
 <html lang="en">
@@ -66,7 +66,7 @@ The evaluation module of Align-Anything supports a variety of multimodal benchma
                 <tr>
                     <td><a href="https://huggingface.co/datasets/allenai/ai2_arc" target="_blank">ARC</a></td>
                     <td>Text→Text</td>
-                    <td>vLLM/DeepSpeed</td>
+                    <td>vLLM</td>
                 </tr>
                 <tr>
                     <td><a href="https://huggingface.co/datasets/lukaemon/bbh" target="_blank">BBH</a></td>
@@ -213,7 +213,9 @@ The evaluation module of Align-Anything supports a variety of multimodal benchma
                     <td>vLLM</td>
                 </tr>
                 <tr>
-                    <td><a href="https://huggingface.co/datasets/THUDM/ImageRewardDB" target="_blank">ImageReward</a></td>
+                    <td>
+                        <a href="https://huggingface.co/datasets/sayakpaul/coco-30-val-2014" target="_blank">COCO-val2014-30k</a><span class="star">*</span>
+                    </td>
                     <td>Text→Image</td>
                     <td>Accelerate</td>
                 </tr>
@@ -223,9 +225,7 @@ The evaluation module of Align-Anything supports a variety of multimodal benchma
                     <td>Accelerate</td>
                 </tr>
                 <tr>
-                    <td>
-                        <a href="https://huggingface.co/datasets/sayakpaul/coco-30-val-2014" target="_blank">COCO-val2014-30k</a><span class="star">*</span>
-                    </td>
+                    <td><a href="https://huggingface.co/datasets/THUDM/ImageRewardDB" target="_blank">ImageReward</a></td>
                     <td>Text→Image</td>
                     <td>Accelerate</td>
                 </tr>
@@ -246,6 +246,6 @@ The evaluation module of Align-Anything supports a variety of multimodal benchma
             </table>
         </div>
     </div>
-    <div class="note"><span class="red-star">*</span> Benchmarks with an asterisk are in development.</div>
+    <div class="note"><span class="red-star">*</span> Benchmarks with an asterisk are in test.</div>
 </body>
 </html>

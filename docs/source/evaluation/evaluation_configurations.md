@@ -50,7 +50,7 @@ default:
     model_max_length: 2048
 ~~~
 
-To accommodate various inference devices and environments, we support Deepspeed and vLLM as inference backends. For more details, please refer to [here](./overview.md). You can adjust the inference parameters in `align_anything/configs/deepspeed` and `align_anything/configs/vllm`. For instance, you can adjust the vLLM inference configurations to suit your needs:
+To accommodate various inference devices and environments, we support Deepspeed and vLLM as inference backends. You can view the supported generation backend of each benchmark [here](./overview.md). You are able to adjust the inference parameters in `align_anything/configs/deepspeed` and `align_anything/configs/vllm`. For instance, you can adjust the vLLM inference configurations to suit your needs:
 
 ~~~json
 {
