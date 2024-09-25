@@ -303,7 +303,7 @@ python3 -m align_anything.serve.arena \
 
 ## Report Issues
 
-If you have any questions in the process of using align-Anything, don't hesitate to ask your questions on [the GitHub issue page](https://github.com/PKU-Alignment/align-anything/issues/new/choose), we will reply to you in 2-3 working days.
+If you have any questions in the process of using align-anything, don't hesitate to ask your questions on [the GitHub issue page](https://github.com/PKU-Alignment/align-anything/issues/new/choose), we will reply to you in 2-3 working days.
 
 
 # Citation
