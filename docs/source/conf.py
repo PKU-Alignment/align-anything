@@ -37,6 +37,7 @@ extensions = [
     'sphinx_design',
     'sphinx_copybutton',
     'sphinx_autodoc_typehints',
+    'sphinx_togglebutton',
 ]
 
 if not os.getenv('READTHEDOCS', None):

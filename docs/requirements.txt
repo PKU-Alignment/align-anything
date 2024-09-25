@@ -9,3 +9,4 @@ sphinx-autobuild
 sphinx-autodoc-typehints
 furo
 sphinxcontrib-spelling
+sphinx-togglebutton
