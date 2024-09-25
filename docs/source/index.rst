@@ -83,7 +83,7 @@ We support evaluation datasets for ``Text -> Text``,
 -  ⚒️ : coming soon.
 
 Installation
-============
+------------
 
 .. code:: bash
 
@@ -124,7 +124,7 @@ Fianlly, install ``align-anything`` by:
    pip install -e .
 
 Wandb Logger
-------------
+~~~~~~~~~~~~
 
 We support ``wandb`` logging. By default, it is set to offline. If you
 need to view wandb logs online, you can specify the environment
@@ -172,10 +172,10 @@ variables of ``WANDB_API_KEY`` before starting the training:
    ``` -->
 
 Quick Start
-===========
+-----------
 
 Training Scripts
-----------------
+~~~~~~~~~~~~~~~~
 
 Quick start examples can be found at `here <./examples/>`__.
 
@@ -235,7 +235,7 @@ dataset using the follow script:
 .. _evaluation-1:
 
 Evaluation
-----------
+~~~~~~~~~~
 
 All evaluation scripts can be found in the ``./scripts``. The
 ``./scripts/evaluate.sh`` script runs model evaluation on the
@@ -304,17 +304,17 @@ pipeline, refer to the
 `here <https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/evaluation/README.md>`__.
 
 Inference
-=========
+---------
 
 Interactive Client
-------------------
+~~~~~~~~~~~~~~~~~~
 
 .. code:: bash
 
    python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
 
 Interactive Arena
------------------
+~~~~~~~~~~~~~~~~~
 
 .. code:: bash
 
@@ -323,12 +323,12 @@ Interactive Arena
        --blue_corner_model_name_or_path your_blue_model_name_or_path
 
 Why do we open source align-anything
-------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Ensuring that the behavior of AI system aligns with human intentions and values is crucial, and alignment techniques provide an effective solution. For large language models (LLMs), methods such as reinforcement learning with human feedback (RLHF) and direct preference optimization (DPO) have significantly improved performance and safety. As models evolve to handle any-modality inputs and outputs, effectively aligning them remains a current research challenge. align-anything framework integrates alignment tuning across modalities using well-designed interfaces and advanced abstractions, offering a comprehensive testbed for research.
 
 Report Issues
--------------
+~~~~~~~~~~~~~
 
 If you have any questions in the process of using align-anything, don’t
 hesitate to ask your questions on `the GitHub issue
@@ -336,7 +336,7 @@ page <https://github.com/PKU-Alignment/align-anything/issues/new/choose>`__,
 we will reply to you in 2-3 working days.
 
 Citation
-========
+--------
 
 Please cite the repo if you use the data or code in this repo.
 
