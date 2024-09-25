@@ -352,6 +352,5 @@ Please cite the repo if you use the data or code in this repo.
     :caption: Evaluation
 
     evaluation/overview
-    evaluation/benchmarks
     evaluation/tutorial
     evaluation/evaluation_configurations
