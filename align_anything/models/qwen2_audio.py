@@ -14,17 +14,15 @@
 # ==============================================================================
 
 
-from dataclasses import dataclass
+try:
+    from transformers import Qwen2AudioForConditionalGeneration, Qwen2AudioPreTrainedModel
+    Qwen2Audio_AVALIABLE = True
+    class AccustomedQwen2AudioModel(Qwen2AudioForConditionalGeneration):
 
-import torch
-import torch.nn as nn
-from transformers import (
-    Qwen2AudioForConditionalGeneration,
-    Qwen2AudioPreTrainedModel
-)
-
-class AccustomedQwen2AudioModel( Qwen2AudioForConditionalGeneration):
-
-    @classmethod
-    def pretrain_class(cls) -> Qwen2AudioPreTrainedModel:
-        return Qwen2AudioPreTrainedModel
+        @classmethod
+        def pretrain_class(cls) -> Qwen2AudioPreTrainedModel:
+            return Qwen2AudioPreTrainedModel
+    
+except ImportError:
+    Qwen2Audio_AVALIABLE = False
+    print("Qwen2Audio is currently not available.")
