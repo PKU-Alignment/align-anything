@@ -302,10 +302,6 @@ python3 -m align_anything.serve.arena \
 
 <img src="assets/arena_demo.gif" alt="arena_demo" style="width:600px;">
 
-<!-- ## Why do we open source align-anything?
-
-Ensuring that the behavior of AI system aligns with human intentions and values is crucial, and alignment techniques provide an effective solution. For large language models (LLMs), methods such as reinforcement learning with human feedback (RLHF) and direct preference optimization (DPO) have significantly improved performance and safety. As models evolve to handle any-modality inputs and outputs, effectively aligning them remains a current research challenge. Align-Anything framework integrates alignment tuning across modalities using well-designed interfaces and advanced abstractions, offering a comprehensive testbed for research. -->
-
 ## Report Issues
 
 If you have any questions in the process of using Align-Anything, don't hesitate to ask your questions on [the GitHub issue page](https://github.com/PKU-Alignment/align-anything/issues/new/choose), we will reply to you in 2-3 working days.
@@ -318,7 +314,7 @@ Please cite the repo if you use the data or code in this repo.
 ```bibtex
 @misc{align_anything,
   author = {PKU-Alignment Team},
-  title = {Align Anything: Training Any Modality Model with Feedback},
+  title = {Align Anything: training all modality models to follow instructions with unified language feedback},
   year = {2024},
   publisher = {GitHub},
   journal = {GitHub repository},
