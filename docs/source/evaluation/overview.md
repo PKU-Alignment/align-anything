@@ -1,0 +1,3 @@
+# Overview
+
+The evaluation module of Align-Anything supports a variety of multimodal benchmarks, such as `Text→Text`, `Text+Image/Video/Audio→Text`, and `Text→Image/Video/Audio`. For most modalities, we provide vLLM and Deepspeed as generation backends, allowing users to choose based on their devices and environments.  Since diffusion generation models for audio and video modalities primarily rely on different frameworks, we provide an option to load local files directly for evaluation in `Text→Image/Audio/Video` tasks (development completed and testing underway).

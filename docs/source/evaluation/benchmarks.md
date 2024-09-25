@@ -37,6 +37,19 @@ Below are the benchmarks that we support
             text-decoration: none;
             color: inherit;
         }
+        .star {
+            color: red;
+            font-size: 0.8em;
+            vertical-align: super;
+        }
+        .note {
+            margin-top: 10px;
+            font-size: 0.9em;
+            text-align: left;
+        }
+        .red-star {
+            color: red;
+        }
     </style>
 </head>
 <body>
@@ -184,12 +197,16 @@ Below are the benchmarks that we support
                     <td>vLLM/DeepSpeed</td>
                 </tr>
                 <tr>
-                    <td><a href="https://huggingface.co/datasets/qyang1021/AIR-Bench-Dataset" target="_blank">AIR-Bench</a></td>
+                    <td>
+                        <a href="https://huggingface.co/datasets/qyang1021/AIR-Bench-Dataset" target="_blank">AIR-Bench</a><span class="star">*</span>
+                    </td>
                     <td>Text+Audio→Text</td>
                     <td>DeepSpeed</td>
                 </tr>
                 <tr>
-                    <td><a href="https://huggingface.co/datasets/lmms-lab/Video-MME" target="_blank">Video-MME</a></td>
+                    <td>
+                        <a href="https://huggingface.co/datasets/lmms-lab/Video-MME" target="_blank">Video-MME</a><span class="star">*</span>
+                    </td>
                     <td>Text+Video→Text</td>
                     <td>vLLM</td>
                 </tr>
@@ -204,22 +221,29 @@ Below are the benchmarks that we support
                     <td>Accelerate</td>
                 </tr>
                 <tr>
-                    <td><a href="https://huggingface.co/datasets/sayakpaul/coco-30-val-2014" target="_blank">COCO-val2014-30k</a></td>
+                    <td>
+                        <a href="https://huggingface.co/datasets/sayakpaul/coco-30-val-2014" target="_blank">COCO-val2014-30k</a><span class="star">*</span>
+                    </td>
                     <td>Text→Image</td>
                     <td>Accelerate</td>
                 </tr>
                 <tr>
-                    <td><a href="https://huggingface.co/datasets/AudioLLMs/audiocaps_test" target="_blank">AudioCaps</a></td>
+                    <td>
+                        <a href="https://huggingface.co/datasets/AudioLLMs/audiocaps_test" target="_blank">AudioCaps</a><span class="star">*</span>
+                    </td>
                     <td>Text→Audio</td>
                     <td>Accelerate</td>
                 </tr>
                 <tr>
-                    <td><a href="https://huggingface.co/datasets/BestWishYsh/ChronoMagic-Bench" target="_blank">ChronoMagic-Bench</a></td>
+                    <td>
+                        <a href="https://huggingface.co/datasets/BestWishYsh/ChronoMagic-Bench" target="_blank">ChronoMagic-Bench</a><span class="star">*</span>
+                    </td>
                     <td>Text→Video</td>
                     <td>Accelerate</td>
                 </tr>
             </table>
         </div>
     </div>
+    <div class="note"><span class="red-star">*</span> Benchmarks with an asterisk are in development.</div>
 </body>
 </html>
