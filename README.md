@@ -51,7 +51,7 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 |Before Alignment ([Chameleon-7B](https://huggingface.co/facebook/chameleon-7b))| <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/1.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/2.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/3.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/4.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">|
 |**After Alignment ([Align-Anything Chameleon 7B Plus](https://huggingface.co/PKU-Alignment/AA-chameleon-7b-plus))**| <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/1.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/2.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/3.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/4.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">|
 
-> Alignment can significantly enhance the instruction-following capabilities of large multimodal models. After alignment, Chameleon 7B Plus generates images that are more relevant to the prompt.
+> Alignment fine-tuning can significantly enhance the instruction-following capabilities of large multimodal models. After fine-tuning, Chameleon 7B Plus generates images that are more relevant to the prompt.
 
 ## Algorithms
 We support basic alignment algorithms for different modalities, each of which may involve additional algorithms. For instance, in the text modality, we have also implemented SimPO, KTO, and others.
@@ -66,7 +66,7 @@ We support basic alignment algorithms for different modalities, each of which ma
 | `Text -> Audio (t2a)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
 
 ## Evaluation
-We support evaluation datasets for `Text -> Text`, `Text + Image -> Text` and `Text -> Image`.
+We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Text -> Image`.
 
 | Modality              | Supported Benchmarks                                                  |
 | :-------------------- | :----------------------------------------------------------- |
@@ -83,7 +83,7 @@ We support evaluation datasets for `Text -> Text`, `Text + Image -> Text` and `T
 # News
 
 - 2024-08-17: We support DPO and PPO for `Text+Image -> Text+Image` modality models.
-- 2024-08-15 We support a new function in the evaluation module: the `models_pk` script in [here](./scripts/models_pk.sh), which enables comparing the performance of two models across different benchmarks.
+- 2024-08-15: We support a new function in the evaluation module: the `models_pk` script in [here](./scripts/models_pk.sh), which enables comparing the performance of two models across different benchmarks.
 - 2024-08-06: We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
 - 2024-08-06: We support `Text+Image -> Text+Image` modality for the SFT trainer and Chameleon models.
 <details><summary>More News</summary>
@@ -99,21 +99,22 @@ We support evaluation datasets for `Text -> Text`, `Text + Image -> Text` and `T
 
 
 ```bash
-# clone the repository.
+# clone the repository
 git clone git@github.com:PKU-Alignment/align-anything.git
 cd align-anything
 
-# create virtual env.
+# create virtual env
 conda create -n align-anything python==3.11
 conda activate align-anything
 ```
 
-- **`[Optional]`** We recommend installing [CUDA](https://anaconda.org/nvidia/cuda) in your conda environment. After that, set the environment variable.
+- **`[Optional]`** We recommend installing [CUDA](https://anaconda.org/nvidia/cuda) in the conda environment and set the environment variable.
 
 ```bash
-'''
+<<'COMMENT'
 We tested on the H800 computing cluster, and this version of CUDA works well. You can adjust this version according to the actual situation of the computing cluster.
-'''
+COMMENT
+
 conda install nvidia/label/cuda-12.2.0::cuda
 export CUDA_HOME=$CONDA_PREFIX
 ```
