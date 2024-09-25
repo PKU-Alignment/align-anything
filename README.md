@@ -25,10 +25,10 @@
 [![License](https://img.shields.io/github/license/PKU-Alignment/align-anything?label=license)](#license)
 
 [📘Documentation](https://pku-alignment.notion.site/Align-Anything-37a300fb5f774bb08e5b21fdeb476c64) |
-[🚀Features](#features) |
 [🆕Update News](#news) |
-[🛠️Installation](#installation) |
-[👀Training](#train) |
+[🛠️Quick Start](#quick-start) |
+[🚀Algorithms](#algorithms) |
+[👀Evaluation](#evaluation) |
 [🤔Reporting Issues](#report-issues)
 </div>
 
