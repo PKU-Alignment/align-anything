@@ -62,7 +62,7 @@ class MSCOCOGenerator(BaseInferencer):
                 uid = str(uuid.uuid4())
                 image_path = os.path.join(img_dir, task, f"{uid}.jpg")
                 real_image_path = os.path.join(img_dir, f'{task}_real', f"{uid}.jpg")
-                self.text_to_image_genenrate(prompt, image_path)
+                self.text_to_image_generation(prompt, image_path)
                 if os.path.isfile(image_path):
                     real_image.save(real_image_path)
         

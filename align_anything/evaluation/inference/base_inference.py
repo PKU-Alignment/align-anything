@@ -123,7 +123,7 @@ class BaseInferencer:
         else:
             raise ValueError(f"Model '{self.model_name_or_path}' is not supported or unknown.")
         
-    def text_to_image_genenrate(self, prompt, image_path) -> None:
+    def text_to_image_generation(self, prompt, image_path) -> None:
         model_name_lower = self.model_name_or_path.lower()
         if "cham" in model_name_lower:
             self.model.generation(prompt, image_path)

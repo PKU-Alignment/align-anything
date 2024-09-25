@@ -34,32 +34,19 @@ def get_uuid():
 def parse_eval_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--config", default=None, help="Path to a yaml file specifying all eval arguments, will ignore cli arguments if specified")
-    parser.add_argument("--chat_template", default="", help="Chat template id of your model, details can be refered in `align-anything/align_anything/configs/template.py`.")
     parser.add_argument(
         "--benchmark",
         "-b",
         default=None,
-        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, L-Eval, LongBench, AGIEval, HPSv2, ImageRewardDB, MSCOCO, ChronoMagicBench, AudioCaps",
+        help="The benchmark you want to test on. Choices: HPSv2, ImageRewardDB, ChronoMagicBench, AudioCaps",
         choices=[
-            "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
-            "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
-            "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
-            "MM-SafetyBench", "TextVQA", "VizWizVQA", "SPA-VL",
-            "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
-            "ScienceQA", "MMStar", "L-Eval", "LongBench", "AGIEval",
-            "HPSv2", "MSCOCO", "ImageRewardDB", 
-            "ChronoMagicBench", "AudioCaps"
+            "HPSv2", "ImageRewardDB", "ChronoMagicBench", "AudioCaps"
         ],
     )
     parser.add_argument(
         "--model_id",
         default="",
         help="Unique identifier for the model, used to track and distinguish model evaluations.",
-    )
-    parser.add_argument(
-        "--model_name_or_path",
-        default="",
-        help="The local path or hugggingface link of model",
     )
     parser.add_argument(
         "--n_fewshot",
@@ -99,11 +86,10 @@ def parse_eval_args() -> argparse.Namespace:
         help="If True, write out all model outputs and documents for per-sample measurement and post-hoc analysis",
     )
     parser.add_argument(
-        "--generation_backend",
+        "--generation_output",
         "-g",
-        default="vLLM",
         required=True,
-        help="vLLM or Deepspeed.",
+        help="Generation output directory",
     )
     args = parser.parse_args()
     return args
@@ -147,49 +133,13 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
 
     folder_path = './benchmarks/'
     subfolder = args.benchmark
-    args.generation_backend = args.generation_backend.lower()
     selected_subfolder_path = os.path.join(folder_path, subfolder)
 
     run_benchmark(selected_subfolder_path, args)
 
 def run_benchmark(file_path, args):
     uuid = get_uuid()
-    try:
-        file_names = [f for f in os.listdir(file_path) if os.path.isfile(os.path.join(file_path, f))]
-        if args.generation_backend == 'vllm':
-            if 'vllm_eval.py' not in file_names:
-                eval_logger.log('warning', 'vLLM backend is not support for this benchmark.')
-                if 'ds_evaluate.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using Deepspeed backend.')
-                    args.generation_backend = 'deepspeed'
-                elif 'eval.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using Non-accelerating backend')
-                    args.generation_backend = 'none'
-            else:
-                eval_logger.log('info', 'Generating responses using vLLM backend.')
-        elif args.generation_backend == 'deepspeed':
-            if 'ds_evaluate.py' not in file_names:
-                eval_logger.log('warning', 'Deepspeed backend is not support for this benchmark.')
-                if 'vllm_eval.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using vLLM backend.')
-                    args.generation_backend = 'vllm'
-                elif 'eval.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using Non-accelerating backend')
-                    args.generation_backend = 'none'
-            else:
-                eval_logger.log('info', 'Generating responses using Deepspeed backend')
-        else:
-            if 'eval.py' not in file_names:
-                eval_logger.log('warning', 'Non-accelerating backend is not support for this benchmark.')
-                if 'vllm_eval.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using vLLM backend.')
-                    args.generation_backend = 'vllm'
-                elif 'ds_evaluate.py' in file_names:
-                    eval_logger.log('info', 'Generating responses using Deepspeed backend.')
-                    args.generation_backend = 'deepspeed'
-            else:
-                eval_logger.log('info', 'Generating responses using Non-accelerating backend')
-        
+    try:     
         args_list = []
         args_list.append(f"--uuid")
         args_list.append(uuid)
@@ -201,7 +151,7 @@ def run_benchmark(file_path, args):
                 args_list.append(f"--{key}")
                 args_list.append(str(value))
         
-        command = f"bash eval.sh {' '.join(args_list)}"
+        command = f"bash eval_only.sh {' '.join(args_list)}"
         os.system(command)
         os.chdir(file_path)
 

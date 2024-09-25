@@ -38,58 +38,19 @@ class ImageRewardDBDataLoader(BaseDataLoader):
             ]
             return task_names
 
-    def load_dataset(self) -> DatasetDict:
-        processed_inputs = {}
-        for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)[self.split]
-            processed_inputs[task] = [data['prompt'] for data in dataset]
+    def load_dataset(self, gen_dir):
+        processed_inputs = []
+        with open(gen_dir, 'r', encoding='utf-8') as file:
+            datas = json.load(file)
+        for data in datas:
+            processed_inputs.append({
+                'id': data['id'],
+                'prompt': data['prompt'],
+                'image_path': data['image_path'],
+            })
         return processed_inputs
 
 class ImageRewardDBGenerator(BaseInferencer):
-    def parallel_eval(self, task2details, img_dir, data, device, position):
-        self.init_model(device)
-
-        for task, inputs in data.items():    
-            for prompt in tqdm(inputs, desc='Generating', position=position):
-                image_path = os.path.join(img_dir, task, f"{str(uuid.uuid4())}.jpg")
-                self.text_to_image_generation(prompt, image_path)
-                task2details[task].extend(
-                    [{
-                        'prompt': prompt,
-                        'image_path': image_path
-                    }]
-                )
-        
-    def eval(self, data, img_dir):
-        if not os.path.exists(img_dir):
-            os.makedirs(img_dir)
-            
-        mp.set_start_method('spawn', force=True)
-        num_processes = 8
-        num_gpus = 8
-        
-        task2details = {}
-        for task, inputs in data.items():
-            task_dir = os.path.join(img_dir, task)
-            if not os.path.exists(task_dir):
-                os.makedirs(task_dir)
-            task2details[task] = mp.Manager().list()
-            
-        processes = []
-        for i in range(num_processes):
-            device = f"cuda:{i%num_gpus}"
-            chunks = {}
-            for task, inputs in data.items():
-                chunk = inputs[i::num_processes]
-                chunks[task] = chunk
-            p = mp.Process(target=self.parallel_eval, args=(task2details, img_dir, chunks, device, i))
-            p.start()
-            processes.append(p)
-        for p in processes:
-            p.join()
-
-        return task2details
-    
     def evaluator(self, outputs, file_path):
         RM_model = RM.load("ImageReward-v1.0")
         tot_score = 0.0
@@ -135,58 +96,33 @@ def main():
     logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
     dataloader = ImageRewardDBDataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
-    test_data = dataloader.load_dataset()
     eval_module = ImageRewardDBGenerator(model_config.model_id, model_config.model_name_or_path, model_config.model_max_length, 42)
-    img_dir = f"./images/{eval_configs.uuid}"
-    raw_outputs_dir = os.path.join(eval_configs.output_dir, f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl")
-    if os.path.exists(raw_outputs_dir):
-        raw_outputs = load_raw_outputs(raw_outputs_dir)
-    else:
-        raw_outputs = eval_module.eval(test_data, eval_configs)
-        save_raw_outputs(raw_outputs, raw_outputs_dir)
+    raw_outputs = dataloader.load_dataset(eval_configs.generation_output)
 
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
     tot_score, tot_num_sum = 0, 0
-    for task, outputs in raw_outputs.items():
-        file_path = f"{uuid_path}/{task}.json"
-        score, num_sum = eval_module.evaluator(outputs, file_path)
-        tot_score += score
-        tot_num_sum += num_sum
-
-        eval_results = {
-                'model_id': [dict_configs.default.model_cfgs.model_id],
-                'num_fewshot': [eval_configs.n_shot],
-                'chain_of_thought': [eval_configs.cot],
-                'num_sum': [num_sum],
-                'avg_score': [score / num_sum],
-                }
-        logger.print_table(title=f'ImageRewardDB/{task} Benchmark', data=eval_results)
-        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-        logger.log('info', f"task: {task}")
-        logger.log('info', f"model_id: {eval_results['model_id'][0]},")
-        logger.log('info', f"num_fewshot: {eval_results['num_fewshot'][0]},")
-        logger.log('info', f"chain_of_thought: {eval_results['chain_of_thought'][0]},")
-        logger.log('info', f"num_sum: {eval_results['num_sum'][0]},")
-        logger.log('info', f"avg_score: {eval_results['avg_score'][0]},")
-        logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    file_path = f"{uuid_path}/default.json"
+    score, num_sum = eval_module.evaluator(raw_outputs, file_path)
+    tot_score += score
+    tot_num_sum += num_sum
 
     eval_results = {
-        'model_id': [dict_configs.default.model_cfgs.model_id],
-        'num_fewshot': [eval_configs.n_shot],
-        'chain_of_thought': [eval_configs.cot],
-        'tot_num_sum': [tot_num_sum],
-        'tot_avg_score': [tot_score / tot_num_sum]
-    }
+            'model_id': [dict_configs.default.model_cfgs.model_id],
+            'num_fewshot': [eval_configs.n_shot],
+            'chain_of_thought': [eval_configs.cot],
+            'num_sum': [num_sum],
+            'avg_score': [score / num_sum],
+            }
     logger.print_table(title=f'ImageRewardDB Benchmark', data=eval_results)
     logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
     logger.log('info', f"model_id: {eval_results['model_id'][0]},")
     logger.log('info', f"num_fewshot: {eval_results['num_fewshot'][0]},")
     logger.log('info', f"chain_of_thought: {eval_results['chain_of_thought'][0]},")
-    logger.log('info', f"tot_num_sum: {eval_results['tot_num_sum'][0]},")
-    logger.log('info', f"tot_avg_score: {eval_results['tot_avg_score'][0]},")
+    logger.log('info', f"num_sum: {eval_results['num_sum'][0]},")
+    logger.log('info', f"avg_score: {eval_results['avg_score'][0]},")
     logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':

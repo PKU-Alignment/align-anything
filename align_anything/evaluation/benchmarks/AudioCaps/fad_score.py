@@ -33,8 +33,8 @@ def get_fad_score(datasetpath, logs, output_dir):
         verbose=False
     )
     fad_score = frechet.score(
-        background_dir=datasetpath,
-        eval_dir=logs,
+        background_dir=datasetpath.strip("'"),
+        eval_dir=logs.strip("'"),
         dtype="float32"
     )
     
@@ -43,7 +43,7 @@ def get_fad_score(datasetpath, logs, output_dir):
         "fad_score": fad_score
     }
 
-    with open(output_dir, 'w') as file:
+    with open(output_dir.strip("'"), 'w') as file:
         json.dump(FADScore, file, indent=4)
 
 def main():

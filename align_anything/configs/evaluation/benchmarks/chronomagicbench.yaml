@@ -23,6 +23,8 @@ default:
   eval_cfgs:
     # Output directory name
     output_dir: null
+    # Generation output directory
+    generation_output: null
     #openai api url
     openai_api_base_url: null
     #openai api key
