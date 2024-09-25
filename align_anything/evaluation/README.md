@@ -2,7 +2,7 @@
 
 ## Development Roadmap
 
-Below is a list of benchmarks currently supported by our framework. For the full list, please refer to [this directory](https://github.com/XuyaoWang/align-anything/tree/fix-readme/align_anything/evaluation/benchmarks). More benchmarks are in the process of being added.
+Below is a list of benchmarks currently supported by our framework. For the full list, please refer to [this directory](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks). More benchmarks are in the process of being added.
 
 | Modality              | Supported Benchmarks                                                  |
 | :-------------------- | :----------------------------------------------------------- |
