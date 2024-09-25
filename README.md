@@ -82,10 +82,10 @@ We support evaluation datasets for `Text -> Text`, `Text + Image -> Text` and `T
 
 # News
 
-- 2024-08-17: We support DPO and PPO for `Text + Image -> Text + Image` modality models.
+- 2024-08-17: We support DPO and PPO for `Text+Image -> Text+Image` modality models.
 - 2024-08-15 We support a new function in the evaluation module: the `models_pk` script in [here](./scripts/models_pk.sh), which enables comparing the performance of two models across different benchmarks.
 - 2024-08-06: We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
-- 2024-08-06: We support `Text + Image -> Text + Image` modality for the SFT trainer and Chameleon models.
+- 2024-08-06: We support `Text+Image -> Text+Image` modality for the SFT trainer and Chameleon models.
 <details><summary>More News</summary>
 
 - 2024-07-23: We support `Text -> Image`, `Text -> Audio`, and `Text -> Video` modalities for the SFT trainer and DPO trainer.
