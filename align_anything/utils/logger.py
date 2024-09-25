@@ -142,7 +142,7 @@ class Logger:
         """Close the logger backend."""
         if self.log_type == 'tensorboard':
             self.writer.close()
-        elif self.log_type == 'wandb':
+        elif self.log_type == 'wandb' and self.wandb:
             self.wandb.finish()
 
     @staticmethod

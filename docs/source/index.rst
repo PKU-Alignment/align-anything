@@ -134,43 +134,6 @@ variables of ``WANDB_API_KEY`` before starting the training:
 
    export WANDB_API_KEY="..."  # your W&B API key here
 
-.. raw:: html
-
-   <!-- ## Install from Dockerfile
-
-   1. build docker image
-
-
-   ```bash
-   FROM nvcr.io/nvidia/pytorch:24.02-py3
-
-   RUN echo "export PS1='[\[\e[1;33m\]\u\[\e[0m\]:\[\e[1;35m\]\w\[\e[0m\]]\$ '" >> ~/.bashrc
-
-   WORKDIR /root/align-anything
-   COPY . .
-
-   RUN python -m pip install --upgrade pip \
-       && pip install -e .
-   ```
-
-   then,
-
-   ```bash
-   docker build --tag align-anything .
-   ```
-
-   2. run the container
-
-   ```bash
-   docker run -it --rm \
-       --gpus all \
-       --ipc=host \
-       --ulimit memlock=-1 \
-       --ulimit stack=67108864 \
-       --mount type=bind,source=<host's mode path>,target=<docker's mode path> \
-       align-anything
-   ``` -->
-
 Quick Start
 -----------
 
@@ -369,7 +332,12 @@ Please cite the repo if you use the data or code in this repo.
     training/configs
     training/dataset_custom
     training/text_to_text
+    training/text_to_image
+    training/text_to_audio
+    training/text_to_video
     training/text_image_to_text
+    training/text_audio_to_text
+    training/text_video_to_text
 
 .. toctree::
     :hidden:

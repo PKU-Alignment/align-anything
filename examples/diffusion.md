@@ -1,6 +1,6 @@
 # Diffusion Training Scripts
 
-We provide examples of various scripts for fine-tuning based on the [Stable Diffusion](https://huggingface.co/CompVis/stable-diffusion-v1-4) series models as follows. You can execute these commands in the `./scripts` directory to start the corresponding training.
+We provide examples of various scripts for fine-tuning based on the [Stable Diffusion](https://huggingface.co/CompVis/stable-diffusion-v1-4) series models as follows. You can execute these commands in the `./scripts` to start the corresponding training.
 
 ## Supervised Fine-Tuning
 
@@ -26,8 +26,8 @@ accelerate launch  \
 	--module align_anything.trainers.text_to_image.sft_diffusion \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
-        --train_template DiffusionDB \
-        --train_optional_args large_random_1k \
+    --train_template DiffusionDB \
+    --train_optional_args large_random_1k \
 	--train_split train \
 	--output_dir ${OUTPUT_DIR}
 ```
@@ -61,7 +61,7 @@ accelerate launch  \
 	--module align_anything.trainers.text_to_video.sft_diffusion \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
-        --train_template Webvid \
+    --train_template Webvid \
 	--train_split train \
 	--output_dir ${OUTPUT_DIR}
 ```
@@ -88,7 +88,7 @@ accelerate launch  \
 	--module align_anything.trainers.text_to_audio.sft_diffusion \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
-        --train_template WavCaps \
+    --train_template WavCaps \
 	--train_split train \
 	--output_dir ${OUTPUT_DIR}
 ```
@@ -142,7 +142,7 @@ accelerate launch  \
 	--module align_anything.trainers.text_to_video.dpo_diffusion \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
-        --train_template SafeSora \
+    --train_template SafeSora \
 	--train_split train \
 	--output_dir ${OUTPUT_DIR}
 ```
@@ -176,7 +176,7 @@ accelerate launch  \
 	--module align_anything.trainers.text_to_audio.dpo_diffusion \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
-        --train_template SOMOS \
+    --train_template SOMOS \
 	--train_split train \
 	--output_dir ${OUTPUT_DIR}
 ```
