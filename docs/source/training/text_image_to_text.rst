@@ -5,7 +5,7 @@ We provide examples of various scripts for finetuning based on the
 `LLaVA <https://huggingface.co/llava-hf>`__ series models as follows. You can execute these commands
 under the ``./scripts`` to start the corresponding training.
 
-Supervised FineTuning
+Supervised Fine-Tuning
 ----------------------
 
 .. warning::
