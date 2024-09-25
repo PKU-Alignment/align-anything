@@ -75,4 +75,4 @@ To accommodate various inference devices and environments, we support Deepspeed 
 }
 ~~~
 
-You can also modify the chat template according to your model in the way described in [here](../training/dataset_custom.rst).
+You can also modify the chat template according to your model in the way described in [here](../training/dataset_custom).
