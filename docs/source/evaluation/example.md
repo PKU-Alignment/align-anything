@@ -1,4 +1,4 @@
-# Tutorial
+# Example
 
 To facilitate users in assessing the model's performance and effectiveness on multimodal benchmark, we offer a series of evaluation scripts located in the `./scripts` directory. These scripts support various evaluation benchmarks, allowing users to flexibly choose suitable settings to ensure the accuracy and comparability of results. By properly configuring evaluation parameters, users can effectively test and compare the model's performance across various tasks, thereby advancing the model's development and optimization.
 

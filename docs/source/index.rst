@@ -342,9 +342,9 @@ Please cite the repo if you use the data or code in this repo.
 .. toctree::
     :hidden:
     :maxdepth: 3
-    :caption: Project
+    :caption: Tutorial
 
-    project/chameleon
+    tutorial/chameleon
 
 .. toctree::
     :hidden:
@@ -352,5 +352,5 @@ Please cite the repo if you use the data or code in this repo.
     :caption: Evaluation
 
     evaluation/overview
-    evaluation/tutorial
+    evaluation/example
     evaluation/evaluation_configurations
