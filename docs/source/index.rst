@@ -345,3 +345,10 @@ Please cite the repo if you use the data or code in this repo.
     :caption: Project
 
     project/chameleon
+
+.. toctree::
+    :hidden:
+    :maxdepth: 3
+    :caption: Evaluation
+
+    evaluation/benchmarks
