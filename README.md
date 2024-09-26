@@ -43,7 +43,7 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 - **Highly Modular Framework.** Its versatility stems from the abstraction of different algorithm types and well-designed APIs, allowing users to easily modify and customize the code for different tasks.
 - **Support for Various Model Fine-Tuning.** This framework includes fine-tuning capabilities for models such as LLaMA3.1, LLaVA, Gemma, Qwen, Baichuan, and others (see [Model Zoo](https://github.com/PKU-Alignment/align-anything/blob/main/Model-Zoo.md)).
 - **Support Fine-Tuning across Any Modality.** It supports fine-tuning alignments for different modality model, including LLMs, VLMs, and other modalities (see [Development Roadmap](#development-roadmap)).
-- **Support Different Alignment Methods.** The framework supports different alignment algorithms, including SFT, DPO, PPO, and others (see [Example](https://github.com/PKU-Alignment/align-anything/tree/main/examples)).
+- **Support Different Alignment Methods.** The framework supports different alignment algorithms, including SFT, DPO, PPO, and others.
 
 
 || <details><summary>prompt</summary>Small white toilet sitting in a small corner next to a wall.</details> | <details><summary>prompt</summary>A close up of a neatly made bed with two night stands</details>  | <details><summary>prompt</summary>A pizza is sitting on a plate at a restaurant.</details> |<details><summary>prompt</summary>A girl in a dress next to a piece of luggage and flowers.</details>|
@@ -178,9 +178,7 @@ docker run -it --rm \
 
 ## Training Scripts
 
-Quick start examples can be found at [here](./examples/).
-
-To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, the DPO scripts for `Text+Image -> Text` modality is as follow:
+To prepare for training, all scripts are located in the `./scripts` and parameters that require user input have been left empty. For example, the DPO scripts for `Text + Image -> Text` modality is as follow:
 
 ```bash
 MODEL_NAME_OR_PATH="" # model path
@@ -226,7 +224,6 @@ deepspeed \
 	--train_split ${TRAIN_SPLIT} \
 	--output_dir ${OUTPUT_DIR}
 ```
-
 
 ## Evaluation
 

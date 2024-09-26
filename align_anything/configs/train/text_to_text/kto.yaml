@@ -14,7 +14,7 @@
 # ==============================================================================
 
 
-# training configurations
+# The training configurations
 train_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
@@ -60,7 +60,7 @@ train_cfgs:
   scale_better: 1
   # The scale for worse responses
   scale_worse: 1
-# Configuration for datasets
+# The data configurations
 data_cfgs:
   # Datasets to use for training
   train_datasets: null
@@ -104,7 +104,7 @@ logger_cfgs:
   cache_dir: null
   # The interval of saving models
   save_interval: 100000
-# Model configurations
+# The model configurations
 model_cfgs:
   # Pretrained model name or path
   model_name_or_path: null
@@ -112,7 +112,7 @@ model_cfgs:
   trust_remote_code: True
   # The max token length
   model_max_length: 1024
-# Configuration for training with LoRA
+# The LoRA configurations
 lora_cfgs:
   # Whether to use LoRA
   use_lora: False
@@ -130,7 +130,7 @@ lora_cfgs:
   target_modules: ["q_proj", "v_proj"]
   # Whether to save the full model
   save_full_model: False
-# Configuration for training with QLoRA
+# The QLoRA configurations
 bnb_cfgs:
   # Whether to use BNB(For QLoRA)
   use_bnb: False

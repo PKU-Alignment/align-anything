@@ -35,7 +35,7 @@ default:
     task_dir: PKU-Alignment/eval-anything500
     # Evaluation split
     split: test
-  # Model configurations
+  # The model configurations
   model_cfgs:
     model_id: null
     # Pretrained model name or path

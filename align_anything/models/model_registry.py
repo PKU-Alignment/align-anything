@@ -21,33 +21,32 @@ from transformers import (
     AutoConfig,
     AutoModel,
     AutoModelForCausalLM,
-    LlamaConfig,
-    LlamaModel,
-    LlamaPreTrainedModel,
     LlavaConfig,
     LlavaForConditionalGeneration,
     LlavaNextConfig,
-    LlavaNextForConditionalGeneration,
-    LlavaPreTrainedModel,
-    Qwen2AudioForConditionalGeneration,
-    Qwen2AudioConfig
 )
 
 
 try:
-    from transformers import ChameleonConfig, ChameleonForConditionalGeneration
-    # from align_anything.models.chameleon.modeling_chameleon import ChameleonForConditionalGeneration
+    from transformers import ChameleonConfig
     from align_anything.models.chameleon_model import AccustomedChameleonModel
     CHAMELEON_AVALIABLE = True
 except ImportError:
     CHAMELEON_AVALIABLE = False
     print("Chameleon is currently not available.")
 
+try:
+    from transformers import Qwen2AudioConfig, Qwen2AudioForConditionalGeneration
+    from align_anything.models.qwen2_audio import AccustomedQwen2AudioModel
+    Qwen2Audio_AVALIABLE = True
+except ImportError:
+    Qwen2Audio_AVALIABLE = False
+    print("Qwen2Audio is currently not available.")
+
 from transformers.utils.generic import ModelOutput
 
 from align_anything.models.llava_model import AccustomedLlavaModel
 from align_anything.models.llava_next_model import AccustomedLlavaNextModel
-from align_anything.models.qwen2_audio import AccustomedQwen2AudioModel
 from align_anything.models.llama_vision_audio_model import (
     LlamaVisionAudioConfig,
     AccustomedLlamaVisionAudioModel
@@ -249,7 +248,8 @@ def register_model(auto_model: AutoModelForCausalLM) -> AutoModelForCausalLM:
     auto_model.register(LlavaConfig, LlavaForConditionalGeneration)
     auto_model.register(LlavaNextConfig, AccustomedLlavaNextModel)
     auto_model.register(LlamaVisionAudioConfig, AccustomedLlamaVisionAudioModel)
-    auto_model.register(Qwen2AudioConfig, Qwen2AudioForConditionalGeneration)
+    if Qwen2Audio_AVALIABLE:
+        auto_model.register(Qwen2AudioConfig, Qwen2AudioForConditionalGeneration)
     if CHAMELEON_AVALIABLE:
         auto_model.register(ChameleonConfig, AccustomedChameleonModel)
     return auto_model
@@ -259,7 +259,8 @@ def register_base_model(auto_model: AnyBaseModelCLS) -> AnyBaseModelCLS:
     auto_model.register(LlavaConfig, AccustomedLlavaModel)
     auto_model.register(LlavaNextConfig, AccustomedLlavaNextModel)
     auto_model.register(LlamaVisionAudioConfig, AccustomedLlamaVisionAudioModel)
-    auto_model.register(Qwen2AudioConfig, AccustomedQwen2AudioModel)
+    if Qwen2Audio_AVALIABLE:
+        auto_model.register(Qwen2AudioConfig, AccustomedQwen2AudioModel)
     return auto_model
 
 

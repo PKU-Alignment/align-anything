@@ -13,8 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-
-# training configurations
+# The training configurations
 train_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
@@ -40,6 +39,8 @@ train_cfgs:
   weight_decay: 0.01
   # Hyper-parameters for adam optimizer
   adam_betas: [0.9, 0.95]
+  # Hyper-parameters for adam epsilon
+  adam_epsilon: 1.e-8
   # Enable bfloat 16 precision
   bf16: True
   # Enable float 16 precision
@@ -48,11 +49,9 @@ train_cfgs:
   eval_strategy: epoch
   # The evaluation interval in step-wise evaluation case
   eval_interval: 10
-  # The reward modeling regularization
-  regularization: 0.001
-  # The scale coefficient
+  # The scale coefficient for adjusting DPO loss
   scale_coeff: 0.1
-# Configuration for datasets
+# The data configurations
 data_cfgs:
   # Datasets to use for training
   train_datasets: null
@@ -96,7 +95,7 @@ logger_cfgs:
   cache_dir: null
   # The interval of saving models
   save_interval: 100000
-# Model configurations
+# The model configurations
 model_cfgs:
   # Pretrained model name or path
   model_name_or_path: null
@@ -104,7 +103,7 @@ model_cfgs:
   trust_remote_code: True
   # The max token length
   model_max_length: 2048
-# Configuration for training with LoRA
+# The LoRA configurations
 lora_cfgs:
   # Whether to use LoRA
   use_lora: False
@@ -122,7 +121,7 @@ lora_cfgs:
   target_modules: ["q_proj", "v_proj"]
   # Whether to save the full model
   save_full_model: True
-# Configuration for training with QLoRA
+# The QLoRA configurations
 bnb_cfgs:
   # Whether to use BNB(For QLoRA)
   use_bnb: False

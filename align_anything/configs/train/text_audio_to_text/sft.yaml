@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-# training configurations
+# The training configurations
 train_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
@@ -57,7 +57,7 @@ train_cfgs:
   freeze_language_model: False
   # The max norm of gradient
   max_grad_norm: 1.0
-# Configuration for datasets
+# The data configurations
 data_cfgs:
   # Whether to use multi datasets
   load_multi_datasets: False
@@ -107,7 +107,7 @@ logger_cfgs:
   cache_dir: null
   # The interval of saving models
   save_interval: 100000
-# Model configurations
+# The model configurations
 model_cfgs:
   # Pretrained model name or path
   model_name_or_path: null

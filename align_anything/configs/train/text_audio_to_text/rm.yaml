@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-# training configurations
+# The training configurations
 train_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
@@ -49,7 +49,7 @@ train_cfgs:
   eval_interval: 10
   # The reward modeling regularization
   regularization: 0.001
-# Configuration for datasets
+# The data configurations
 data_cfgs:
   # Datasets to use for training
   train_datasets: null
@@ -93,7 +93,7 @@ logger_cfgs:
   cache_dir: null
   # The interval of saving models
   save_interval: 100000
-# Model configurations
+# The model configurations
 model_cfgs:
   # Pretrained model name or path
   model_name_or_path: null

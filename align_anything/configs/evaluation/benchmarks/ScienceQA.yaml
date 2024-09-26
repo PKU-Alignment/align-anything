@@ -43,7 +43,7 @@ default:
     # Candidate labels
     candidate_labels: ["A", "B", "C", "D", "E"]
 
-  # Model configurations
+  # The model configurations
   model_cfgs:
     model_id: null
     # Pretrained model name or path

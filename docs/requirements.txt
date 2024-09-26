@@ -1,0 +1,12 @@
+sphinx==7.1.2
+sphinx-copybutton
+sphinx-design
+sphinx-press-theme
+sphinx-markdown-tables
+recommonmark
+sphinx-autoapi
+sphinx-autobuild
+sphinx-autodoc-typehints
+furo
+sphinxcontrib-spelling
+sphinx-togglebutton
