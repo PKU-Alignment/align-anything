@@ -137,13 +137,8 @@ def main():
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = ImageRewardDBGenerator(model_config.model_id, model_config.model_name_or_path, model_config.model_max_length, 42)
-    img_dir = f"./images/{eval_configs.uuid}"
-    raw_outputs_dir = os.path.join(eval_configs.output_dir, f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl")
-    if os.path.exists(raw_outputs_dir):
-        raw_outputs = load_raw_outputs(raw_outputs_dir)
-    else:
-        raw_outputs = eval_module.eval(test_data, eval_configs)
-        save_raw_outputs(raw_outputs, raw_outputs_dir)
+    img_dir = os.path.join(eval_configs.output_dir, f"./images/{eval_configs.uuid}")
+    raw_outputs = eval_module.eval(test_data, img_dir)
 
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"

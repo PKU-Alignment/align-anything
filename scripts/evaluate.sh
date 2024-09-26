@@ -26,6 +26,7 @@ MODEL_NAME_OR_PATH=""
 CHAT_TEMPLATE=""
 
 for BENCHMARK in "${BENCHMARKS[@]}"; do
+    OUTPUT_DIR="${OUTPUT_DIR}/${BENCHMARK}"
     python __main__.py \
         --benchmark ${BENCHMARK} \
         --output_dir ${OUTPUT_DIR} \
