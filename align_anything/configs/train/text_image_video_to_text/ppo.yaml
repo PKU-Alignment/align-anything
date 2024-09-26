@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-# Configuration for training
+# The training configurations
 train_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
@@ -83,7 +83,7 @@ train_cfgs:
   freeze_vision_tower: True
   # Freeze the language model
   freeze_language_model: False
-# Configuration for datasets
+# The data configurations
 data_cfgs:
   # Datasets to use for training
   train_datasets: null
@@ -127,7 +127,7 @@ data_cfgs:
   ptx_data_files: null
   # The optional arguments for loading ptx training datasets
   ptx_optional_args: []
-# Configuration for logging
+# The logging configurations
 logger_cfgs:
   # Type of logging to use, choosing from [wandb, tensorboard]
   log_type: wandb
@@ -141,7 +141,7 @@ logger_cfgs:
   cache_dir: null
   # The interval of saving models
   save_interval: 100000
-# Model configurations
+# The model configurations
 model_cfgs:
   # Pretrained model name or path for the actor model in RLHF
   actor_model_name_or_path: null

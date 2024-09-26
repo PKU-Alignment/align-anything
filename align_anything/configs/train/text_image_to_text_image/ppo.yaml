@@ -127,7 +127,7 @@ data_cfgs:
   ptx_data_files: null
   # The optional arguments for loading ptx training datasets
   ptx_optional_args: []
-# Configuration for logging
+# The logging configurations
 logger_cfgs:
   # Type of logging to use, choosing from [wandb, tensorboard]
   log_type: wandb

@@ -83,7 +83,7 @@ train_cfgs:
   freeze_vision_tower: True
   # Freeze the language model
   freeze_language_model: False
-# The data configurations
+# The logging configurations
 data_cfgs:
   # Datasets to use for training
   train_datasets: null
