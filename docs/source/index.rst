@@ -30,9 +30,7 @@ the following characteristics:
    other modalities (see `Development
    Roadmap <#development-roadmap>`__).
 -  **Support Different Alignment Methods.** The framework supports
-   different alignment algorithms, including SFT, DPO, PPO, and others
-   (see
-   `Example <https://github.com/PKU-Alignment/align-anything/tree/main/examples>`__).
+   different alignment algorithms, including SFT, DPO, PPO, and others.
 
 
 Algorithms
@@ -136,8 +134,6 @@ Quick Start
 
 Training Scripts
 ~~~~~~~~~~~~~~~~
-
-Quick start examples can be found at `here <./examples/>`__.
 
 To prepare for training, all scripts are located in the ``./scripts``
 and parameters that require user input have been left empty. For
