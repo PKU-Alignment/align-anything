@@ -1,0 +1,117 @@
+# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+# training configurations
+train_cfgs:
+  # The deepspeed configuration
+  ds_cfgs: ds_z3_config.json
+  # Number of training epochs
+  epochs: 3
+  # Seed for random number generator
+  seed: 42
+  # Batch size per device for training
+  per_device_train_batch_size: 4
+  # Batch size per device for evaluation
+  per_device_eval_batch_size: 4
+  # The number of gradient accumulation steps
+  gradient_accumulation_steps: 2
+  # Whether to use gradient checkpointing
+  gradient_checkpointing: True
+  # Initial learning rate
+  learning_rate: 2.e-5
+  # Type of learning rate scheduler
+  lr_scheduler_type: cosine
+  # Ratio of warmup steps for learning rate
+  lr_warmup_ratio: 0.03
+  # Weight decay coefficient
+  weight_decay: 0.0
+  # Hyper-parameters for adam optimizer
+  adam_betas: [0.9, 0.95]
+  # Hyper-parameters for adam epsilon
+  adam_epsilon: 1.e-8
+  # Enable bfloat 16 precision
+  bf16: True
+  # Enable float 16 precision
+  fp16: False
+  # The strategy of evaluation, choosing form [epoch, steps]
+  eval_strategy: epoch
+  # The evaluation interval in step-wise evaluation case
+  eval_interval: 10
+  # Freeze the multi modal projection layer
+  freeze_mm_proj: True
+  # Freeze the vison tower model
+  freeze_vision_tower: True
+  # Freeze the language model
+  freeze_language_model: False
+  # The max norm of gradient
+  max_grad_norm: 1.0
+# Configuration for datasets
+data_cfgs:
+  # Datasets to use for training
+  train_datasets: null
+  # The format template for training
+  train_template: null
+  # The name of training datasets
+  train_name: null
+  # The total number for training
+  train_size: null
+  # The split of train datasets
+  train_split: null
+  # The subset of training datasets
+  train_subset: null
+  # The training data files to be used
+  train_data_files: null
+  # The optional arguments for loading training datasets
+  train_optional_args: []
+  # Datasets to use for evaluation
+  eval_datasets: null
+  # The format template for evaluation
+  eval_template: null
+  # The name of evaluation datasets
+  eval_name: null
+  # The total number for evaluation
+  eval_size: null
+  # The split of evaluation datasets
+  eval_split: null
+  # The subset of evaluation datasets
+  eval_subset: null
+  # The evaluation data files to be used
+  eval_data_files: null
+  # The optional arguments for loading training evaluation datasets
+  eval_optional_args: []
+# Configuration for logging
+logger_cfgs:
+  # Type of logging to use, choosing from [wandb, tensorboard]
+  log_type: wandb
+  # Project name for logging
+  log_project: align-anything
+  # Run name for logging
+  log_run_name: sft
+  # Output directory name
+  output_dir: null
+  # The directory to cache the downloaded model
+  cache_dir: null
+  # The interval of saving models
+  save_interval: 100000
+# Model configurations
+model_cfgs:
+  # Pretrained model name or path
+  model_name_or_path: null
+  # Whether to trust remote code
+  trust_remote_code: True
+  # The max token length
+  model_max_length: 4096
+# Customized special tokens
+special_tokens: null

@@ -194,7 +194,7 @@ def process_data(gpu, input_data, model_path, output_path, cache_dir):
     processor = ChameleonProcessor.from_pretrained(model_path)
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     local_output_paths = []
-    max_length = 0  # To track the maximum length
+    max_length = 0
     num_img = 0
     num_text = 0
     for piece in tqdm(input_data, desc=f"Processing on GPU {gpu}"):
@@ -222,8 +222,8 @@ def process_data(gpu, input_data, model_path, output_path, cache_dir):
                     updated_piece[key] = value.cpu()
             file_name = str(uuid.uuid4()) + '.pt'
             file_path = os.path.join(cache_dir, file_name)
-            torch.save(updated_piece, file_path)  # Save the tensor data to file in CPU format
-            local_output_paths.append(file_path)  # Store the path for future reference
+            torch.save(updated_piece, file_path)
+            local_output_paths.append(file_path)
             
         # Clean up memory
         del updated_piece
@@ -237,7 +237,9 @@ def main():
     parser.add_argument("--input_path", type=str, required=True)
     parser.add_argument("--output_path", type=str, required=True)
     parser.add_argument("--model_path", type=str, required=True)
-    parser.add_argument("--cache_dir", type=str, required=True)
+    parser.add_argument("--cache_dir", type=str, default=".cache")
+    parser.add_argument("--num_processes", type=int, default=8)
+    parser.add_argument("--num_gpus", type=int, default=8)
     
     args = parser.parse_args()
 
@@ -250,8 +252,8 @@ def main():
     if not os.path.exists(cache_path):
         os.makedirs(cache_path)
     
-    num_processes = 16
-    num_gpus = 8
+    num_processes = args.num_processes
+    num_gpus = args.num_gpus
     mp.set_start_method('spawn', force=True)
     output_paths = mp.Manager().list()  # For collecting results from multiple processes
     

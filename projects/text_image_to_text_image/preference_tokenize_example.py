@@ -66,7 +66,6 @@ def load_image(image_path: str):
         raise Exception
 
 def insert_img_token(text, image):
-    # do the same for worse
     if isinstance(image, str):
         decoded_images = [load_image(image)]
         num_images = 1
@@ -255,8 +254,8 @@ def process_data(gpu, input_data, model_path, output_path, cache_dir):
                     updated_piece[key] = value.cpu()
             file_name = str(uuid.uuid4()) + '.pt'
             file_path = os.path.join(cache_dir, file_name)
-            torch.save(updated_piece, file_path)  # Save the tensor data to file in CPU format
-            local_output_paths.append(file_path)  # Store the path for future reference
+            torch.save(updated_piece, file_path)
+            local_output_paths.append(file_path)
             
         # Clean up memory
         del updated_piece
@@ -271,7 +270,9 @@ def main():
     parser.add_argument("--input_path", type=str, required=True)
     parser.add_argument("--output_path", type=str, required=True)
     parser.add_argument("--model_path", type=str, required=True)
-    parser.add_argument("--cache_dir", type=str, required=True)
+    parser.add_argument("--cache_dir", type=str, default=".cache")
+    parser.add_argument("--num_processes", type=int, default=8)
+    parser.add_argument("--num_gpus", type=int, default=8)
     
     args = parser.parse_args()
 
@@ -287,8 +288,8 @@ def main():
     with open(input_path, 'r') as f:
         input_data = json.load(f)
 
-    num_processes = 16
-    num_gpus = 8
+    num_processes = args.num_processes
+    num_gpus = args.num_gpus
     mp.set_start_method('spawn', force=True)
     output_paths = mp.Manager().list()  # For collecting results from multiple processes
     

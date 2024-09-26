@@ -51,20 +51,13 @@ python prompt_only_tokenize_example.py
 Add a script named `sft_text_image_to_text_image.sh` under the `scripts` file like this:
 
 ```bash
-# You can replace it with a local model path
 MODEL_NAME_OR_PATH=""
-# You can replace it with a local dataset path, note that it should not include the name of the datat file
 TRAIN_DATASETS="path/to/dataset"
-# the file name should look like "dataset_file_name.pt"
-PT_NAME="dataset_file_name" 
-# You can replace it with a new path
+PT_NAME="dataset_file_name"
 OUTPUT_DIR="../outputs/sft_text_image_to_text_image"
-# For wandb online logging
 export WANDB_API_KEY=""
-# Source the setup script
 source ./setup.sh
 
-# Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
 	--module align_anything.trainers.text_image_to_text_image.sft \
@@ -95,18 +88,13 @@ bash scripts/sft_text_image_to_text_image.sh
 Add a script named `dpo_text_image_to_text_image.sh` under the `scripts` file like this:
 
 ```bash
-# Initialize variables
 MODEL_NAME_OR_PATH=""
 TRAIN_DATASETS="path/to/dataset"
 OUTPUT_DIR="../outputs/dpo_text_image_to_text_image"
-# the file name should look like "dataset_file_name.pt"
-PT_NAME="dataset_file_name" 
-# For wandb online logging
+PT_NAME="dataset_file_name"
 export WANDB_API_KEY=""
-# Source the setup script
 source ./setup.sh
 
-# Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
 	--module align_anything.trainers.text_image_to_text_image.dpo \
@@ -137,21 +125,15 @@ bash scripts/dpo_text_image_to_text_image.sh
 Add a script named `rm_text_image_to_text_image.sh` under the `scripts` file like this:
 
 ```bash
-# Initialize variables
 MODEL_NAME_OR_PATH=""
 TRAIN_DATASETS="path/to/dataset"
-# the file name should look like "dataset_file_name.pt"
 TRAIN_PT_NAME="dataset_file_name" 
 EVAL_DATASETS="path/to/dataset"
-# the file name should look like "dataset_file_name.pt"
 EVAL_PT_NAME="dataset_file_name" 
 OUTPUT_DIR="../outputs/rm_text_image_to_text_image"
-# For wandb online logging
 export WANDB_API_KEY=""
-# Source the setup script
 source ./setup.sh
 
-# Execute deepspeed command
 deepspeed \
 	--master_port ${MASTER_PORT} \
 	--module align_anything.trainers.text_image_to_text_image.rm \
@@ -185,22 +167,17 @@ bash scripts/rm_text_image_to_text_image.sh
 Add a script named `ppo_text_image_to_text_image.sh` under the `scripts` file like this:
 
 ```bash
-# Initialize variables
 ACTOR_MODEL_NAME_OR_PATH=""
 CRITIC_MODEL_NAME_OR_PATH=""
 REWARD_MODEL_NAME_OR_PATH=""
 TRAIN_DATASETS=""
-# the file name should look like "dataset_file_name.pt"
 TRAIN_PT_NAME="dataset_file_name" 
 PTX_DATASETS=""
-# the file name should look like "dataset_file_name.pt"
 PTX_PT_NAME="dataset_file_name" 
 OUTPUT_DIR="../outputs/ppo_text_image_to_text_image"
 
-# Source the setup script
 source ./setup.sh
 
-# Execute deepspeed command
 deepspeed \
   --master_port ${MASTER_PORT} \
   --module align_anything.trainers.text_image_to_text_image.ppo \
