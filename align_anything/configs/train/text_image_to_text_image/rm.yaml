@@ -30,13 +30,13 @@ train_cfgs:
   # Whether to use gradient checkpointing
   gradient_checkpointing: True
   # Initial learning rate
-  learning_rate: 5.e-6
+  learning_rate: 2.e-5
   # Type of learning rate scheduler
   lr_scheduler_type: cosine
   # Ratio of warmup steps for learning rate
   lr_warmup_ratio: 0.03
   # Weight decay coefficient
-  weight_decay: 0.01
+  weight_decay: 0.0
   # Hyper-parameters for adam optimizer
   adam_betas: [0.9, 0.95]
   # Enable bfloat 16 precision
@@ -44,17 +44,15 @@ train_cfgs:
   # Enable float 16 precision
   fp16: False
   # The strategy of evaluation, choosing form [epoch, steps]
-  eval_strategy: epoch
+  eval_strategy: steps
   # The evaluation interval in step-wise evaluation case
-  eval_interval: 10
+  eval_interval: 100
   # The reward modeling regularization
   regularization: 0.001
-  # The scale coefficient
-  scale_coeff: 0.1
   # Freeze the multi modal projection layer
   freeze_mm_proj: True
   # Freeze the vison tower model
-  freeze_vision_tower: False
+  freeze_vision_tower: True
   # Freeze the language model
   freeze_language_model: True
 # The data configurations
@@ -87,14 +85,14 @@ data_cfgs:
   eval_data_files: null
   # The optional arguments for loading training evaluation datasets
   eval_optional_args: []
-# Configuration for logging
+# The logging configurations
 logger_cfgs:
   # Type of logging to use, choosing from [wandb, tensorboard]
   log_type: wandb
   # Project name for logging
   log_project: align-anything
   # Run name for logging
-  log_run_name: dpo
+  log_run_name: rm
   # Output directory name
   output_dir: null
   # The directory to cache the downloaded model
@@ -108,6 +106,6 @@ model_cfgs:
   # Whether to trust remote code
   trust_remote_code: True
   # The max token length
-  model_max_length: 4096
+  model_max_length: 2048
 # Customized special tokens
 special_tokens: null

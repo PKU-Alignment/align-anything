@@ -61,6 +61,8 @@ We support basic alignment algorithms for different modalities, each of which ma
 | `Text -> Text (t2t)`               | ✔️   | ✔️   | ✔️   | ✔️   |
 | `Text+Image -> Text (ti2t)`        | ✔️   | ✔️   | ✔️   | ✔️   |
 | `Text+Image -> Text+Image (ti2ti)` | ✔️   | ✔️   | ✔️   | ✔️   |
+| `Text+Audio -> Text (ta2t)`        | ✔️   | ✔️   | ✔️   | ✔️   |
+| `Text+Video -> Text (tv2t)`        | ✔️   | ✔️   | ✔️   | ✔️   |
 | `Text -> Image (t2i)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
 | `Text -> Video (t2v)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
 | `Text -> Audio (t2a)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
@@ -82,6 +84,8 @@ We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Tex
 
 # News
 
+- 2024-09-24: We support SFT, DPO, RM and PPO for `Text + Video -> Text` modality models.
+- 2024-09-13: We support SFT, DPO, RM and PPO for `Text + Audio -> Text` modality models.
 - 2024-08-17: We support DPO and PPO for `Text+Image -> Text+Image` modality models.
 - 2024-08-15: We support a new function in the evaluation module: the `models_pk` script in [here](./scripts/models_pk.sh), which enables comparing the performance of two models across different benchmarks.
 - 2024-08-06: We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).

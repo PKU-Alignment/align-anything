@@ -280,8 +280,8 @@ class VQAv2:
             'image': raw_sample['image'],
         }
 
-@register_template('ti2ti_preference')
-class TI2TI_PREFERENCE:
+@register_template('Chameleon_preference')
+class CHAMELEON_PREFERENCE:
     system_prompt: str = ''
     user_prompt: str = 'USER: \n{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
@@ -837,8 +837,8 @@ class DiffusionDB:
             'image': raw_sample['image'].convert('RGB'),
         }
         
-@register_template('ti2ti')
-class TI2TI:
+@register_template('Chameleon')
+class CHAMELEON:
     system_prompt: str = ''
     user_prompt: str = 'USER: \n{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
@@ -1157,6 +1157,104 @@ class SOMOS:
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
         return False
+
+@register_template('Qwen2-VL')
+class QWEN2VL:
+    system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
+    user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
+    assistant_prompt: str = '<|im_start|>assistant\n{output}'
+    split_token: str = '\n'
+    separator: str = 'assistant\n'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['prompt']
+        output = raw_sample['output']
+
+        return_text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f"{self.assistant_prompt.format(output=output)}"
+        )
+
+        return_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+
+        video_info = raw_sample['video_path']
+        if isinstance(video_info, str):
+            video_info = [video_info]
+
+        return_dict = {
+            "text": return_text,
+            "prompt": return_prompt,
+            "image": [],
+            "video": video_info,
+        }
+        return return_dict
+
+@register_template('Qwen2-VL_preference')
+class QWEN2VL_PREF:
+    system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
+    user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
+    assistant_prompt: str = '<|im_start|>assistant\n{output}'
+    split_token: str = '\n'
+    separator: str = 'assistant\n'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['prompt']
+        better_output = raw_sample['better_output']
+        worse_output = raw_sample['worse_output']
+
+        return_better_text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f"{self.assistant_prompt.format(output=better_output)}"
+        )
+
+        return_worse_text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f"{self.assistant_prompt.format(output=worse_output)}"
+        )
+
+        video_info = raw_sample['video_path']
+        if isinstance(video_info, str):
+            video_info = [video_info]
+
+        return_dict = {
+            "better_text": return_better_text,
+            "worse_text": return_worse_text,
+            "image": [],
+            "video": video_info,
+        }
+        return return_dict 
+    
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        if raw_sample['better_output'] == raw_sample['worse_output']:
+            return True
+        else:
+            return False
+
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['prompt']
+
+        return_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f"{self.assistant_prompt.format(output='')}"    
+        )
+
+        video_info = raw_sample['video_path']
+        if isinstance(video_info, str):
+            video_info = [video_info]
+
+        return {
+            'text': return_prompt,
+            'image': [],
+            'video': video_info,
+        }
 
 
 @register_template('Alpaca')
@@ -1662,3 +1760,28 @@ class RLHFAQA:
         ]
 
         return {'conversation': conversation}
+    
+@register_template('Qwen2Audio')
+class Qwen2Audio:
+    system_prompt: str = 'You are a helpful assistant.'
+    split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
+    separator: str = '<|im_end|>\n<|im_start|>assistant\n'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['instruction']
+        audio_url = raw_sample['audio_id']
+        response = raw_sample['output']
+
+        conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": response},
+        ]
+
+        return {
+            'conversation': conversation,
+            'prompt': conversation[:-1],
+        }

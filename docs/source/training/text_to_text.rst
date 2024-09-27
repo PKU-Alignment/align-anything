@@ -83,7 +83,7 @@ DPO Training
    TRAIN_TEMPLATE="PKUSafeRLHF" # dataset template
    TRAIN_SPLIT="train" # split the dataset
 
-   OUTPUT_DIR="../output/rm" # output dir
+   OUTPUT_DIR="../output/dpo" # output dir
 
    # For wandb online logging
    export WANDB_API_KEY=""
@@ -94,7 +94,7 @@ DPO Training
    # Execute deepspeed command
    deepspeed \
    	--master_port ${MASTER_PORT} \
-   	--module align_anything.trainers.text_to_text.rm \
+   	--module align_anything.trainers.text_to_text.dpo \
    	--model_name_or_path ${MODEL_NAME_OR_PATH} \
    	--train_template ${TRAIN_TEMPLATE} \
    	--train_datasets ${TRAIN_DATASETS} \
