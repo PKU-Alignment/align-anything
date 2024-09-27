@@ -280,8 +280,8 @@ class VQAv2:
             'image': raw_sample['image'],
         }
 
-@register_template('ti2ti_preference')
-class TI2TI_PREFERENCE:
+@register_template('Chameleon_preference')
+class CHAMELEON_PREFERENCE:
     system_prompt: str = ''
     user_prompt: str = 'USER: \n{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
@@ -837,8 +837,8 @@ class DiffusionDB:
             'image': raw_sample['image'].convert('RGB'),
         }
         
-@register_template('ti2ti')
-class TI2TI:
+@register_template('Chameleon')
+class CHAMELEON:
     system_prompt: str = ''
     user_prompt: str = 'USER: \n{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
