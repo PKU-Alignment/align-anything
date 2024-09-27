@@ -243,7 +243,8 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
 
         def __init__(self, config: AutoConfig):
             super().__init__(config)
-            self.score_head = nn.Linear(3584, 1, bias=False)
+            self.score_head = nn.Linear(3584, 1, bias=False) 
+            # Note that if you are dealing with Qwen2-VL-2B, you should change 3584 to 1536. For Qwen2-VL-72B, you should change 3584 to 8192
 
         def forward(
             self,
