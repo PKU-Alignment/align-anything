@@ -280,8 +280,8 @@ class VQAv2:
             'image': raw_sample['image'],
         }
 
-@register_template('ti2ti_preference')
-class TI2TI_PREFERENCE:
+@register_template('Chameleon_preference')
+class CHAMELEON_PREFERENCE:
     system_prompt: str = ''
     user_prompt: str = 'USER: \n{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
@@ -837,8 +837,8 @@ class DiffusionDB:
             'image': raw_sample['image'].convert('RGB'),
         }
         
-@register_template('ti2ti')
-class TI2TI:
+@register_template('Chameleon')
+class CHAMELEON:
     system_prompt: str = ''
     user_prompt: str = 'USER: \n{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
@@ -1158,8 +1158,8 @@ class SOMOS:
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
         return False
 
-@register_template('TV2T')
-class TV2T:
+@register_template('Qwen2-VL')
+class QWEN2VL:
     system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
     user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
     assistant_prompt: str = '<|im_start|>assistant\n{output}'
@@ -1194,8 +1194,8 @@ class TV2T:
         }
         return return_dict
 
-@register_template('TV2T_preference')
-class TV2T_PREF:
+@register_template('Qwen2-VL_preference')
+class QWEN2VL_PREF:
     system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
     user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
     assistant_prompt: str = '<|im_start|>assistant\n{output}'
