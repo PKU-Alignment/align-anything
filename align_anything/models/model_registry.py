@@ -238,12 +238,11 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
                 end_index=end_index,  # size = (B,)
             )
             
-    class TIV2TRewardModel(Qwen2VLForConditionalGeneration):
+    class TV2TRewardModel(Qwen2VLForConditionalGeneration):
         supports_gradient_checkpointing = True
 
         def __init__(self, config: AutoConfig):
             super().__init__(config)
-            # setattr(self, self.base_model_prefix, base_llm_model(config))
             self.score_head = nn.Linear(3584, 1, bias=False)
 
         def forward(
@@ -307,7 +306,7 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
     elif modality == 'text_audio':
         RewardModel = TA2TRewardModel
     elif modality == 'text_video':
-        RewardModel = TIV2TRewardModel
+        RewardModel = TV2TRewardModel
 
     return RewardModel
 
