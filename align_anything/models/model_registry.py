@@ -306,7 +306,7 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
         RewardModel = TI2TRewardModel
     elif modality == 'text_audio':
         RewardModel = TA2TRewardModel
-    elif modality == 'text_image_video':
+    elif modality == 'text_video':
         RewardModel = TIV2TRewardModel
 
     return RewardModel

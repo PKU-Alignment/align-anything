@@ -27,7 +27,7 @@ from transformers import GenerationConfig
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from typing import Any
-from align_anything.datasets.text_image_video_to_text import PromptOnlyBatch, PromptOnlyDataset, SupervisedDataset
+from align_anything.datasets.text_video_to_text import PromptOnlyBatch, PromptOnlyDataset, SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.trainers.text_to_text.ppo import PPOTrainer as PPOTextTrainer
@@ -410,7 +410,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-            modality='text_image_video'
+            modality='text_video'
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = (
@@ -419,7 +419,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
                 model_max_length=self.cfgs.model_cfgs.model_max_length,
                 padding_side='left',
                 trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-                modality='text_image_video'
+                modality='text_video'
             )
         )
         # initial checking
@@ -463,7 +463,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('text_image_video_to_text', 'ppo')
+    task = os.path.join('text_video_to_text', 'ppo')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # get custom configs from command line

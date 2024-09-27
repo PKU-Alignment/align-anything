@@ -25,7 +25,7 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 import torch.nn.functional as F
 
 from align_anything.datasets.text_to_text.preference import PreferenceBatch
-from align_anything.datasets.text_image_video_to_text.preference import PreferenceDataset
+from align_anything.datasets.text_video_to_text.preference import PreferenceDataset
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.trainers.text_to_text.rm import RMTrainer as RMtextTrainer
 from align_anything.utils.multi_process import get_current_device
@@ -58,7 +58,7 @@ class RMTrainer(RMtextTrainer):
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
-            modality='text_image_video',
+            modality='text_video',
         )
 
     def loss(
@@ -111,7 +111,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('text_image_video_to_text', 'rm')
+    task = os.path.join('text_video_to_text', 'rm')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # get custom configs from command line

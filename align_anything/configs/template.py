@@ -1158,8 +1158,8 @@ class SOMOS:
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
         return False
 
-@register_template('TIV2T')
-class TIV2T:
+@register_template('TV2T')
+class TV2T:
     system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
     user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
     assistant_prompt: str = '<|im_start|>assistant\n{output}'
@@ -1194,8 +1194,8 @@ class TIV2T:
         }
         return return_dict
 
-@register_template('TIV2T_preference')
-class TIV2T_PREF:
+@register_template('TV2T_preference')
+class TV2T_PREF:
     system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
     user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
     assistant_prompt: str = '<|im_start|>assistant\n{output}'
