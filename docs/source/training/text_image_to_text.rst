@@ -62,7 +62,7 @@ Reward Model Training
    # Execute deepspeed command
    deepspeed \
         --master_port ${MASTER_PORT} \
-        --module align_anything.trainers.text_to_text.rm \
+        --module align_anything.trainers.text_image_to_text.rm \
         --model_name_or_path ${MODEL_NAME_OR_PATH} \
         --train_datasets ${TRAIN_DATASETS} \
         --train_template ${TRAIN_TEMPLATE} \
@@ -125,7 +125,7 @@ PPO Training
    # Execute deepspeed command
    deepspeed \
      --master_port ${MASTER_PORT} \
-     --module align_anything.trainers.text_to_text.ppo \
+     --module align_anything.trainers.text_image_to_text.ppo \
      --actor_model_name_or_path ${ACTOR_MODEL_NAME_OR_PATH} \
      --reward_model_name_or_path ${REWARD_MODEL_NAME_OR_PATH} \
      --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME_OR_PATH} \
