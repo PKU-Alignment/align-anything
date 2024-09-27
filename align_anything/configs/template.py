@@ -1194,7 +1194,7 @@ class QWEN2VL:
         }
         return return_dict
 
-@register_template('Qwen2VL_preference')
+@register_template('Qwen2-VL_preference')
 class QWEN2VL_PREF:
     system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
     user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
