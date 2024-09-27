@@ -1760,3 +1760,28 @@ class RLHFAQA:
         ]
 
         return {'conversation': conversation}
+    
+@register_template('Qwen2Audio')
+class Qwen2Audio:
+    system_prompt: str = 'You are a helpful assistant.'
+    split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
+    separator: str = '<|im_end|>\n<|im_start|>assistant\n'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['instruction']
+        audio_url = raw_sample['audio_id']
+        response = raw_sample['output']
+
+        conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": response},
+        ]
+
+        return {
+            'conversation': conversation,
+            'prompt': conversation[:-1],
+        }
