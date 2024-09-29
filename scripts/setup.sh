@@ -25,7 +25,6 @@ set -x
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" &>/dev/null && pwd)"
 ROOT_DIR="$(dirname "${SCRIPT_DIR}")"
-
 export PYTHONPATH="${ROOT_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
 export LOGLEVEL="${LOGLEVEL:-WARNING}"
 

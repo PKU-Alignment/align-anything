@@ -36,9 +36,9 @@ default:
     # Task name
     task: default
     # Task directory
-    task_dir: null
+    task_dir: d0rj/audiocaps
     # Evaluation split
-    split: null
+    split: test
 
   # Model configurations
   model_cfgs:

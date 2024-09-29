@@ -35,7 +35,7 @@ default:
     task_dir: AI4Math/MathVista
     # Evaluation split
     split: testmini
-  # Model configurations
+  # The model configurations
   model_cfgs:
     model_id: null
     # Pretrained model name or path

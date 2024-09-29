@@ -36,33 +36,22 @@ class AudioCapsDataLoader(BaseDataLoader):
             self.data_cfgs.task
             ]
             return task_names
-
-    def load_dataset(self, background_dir, csv_file) -> DatasetDict:
-        processed_inputs = defaultdict(list)
         
-        total_rows = sum(1 for _ in open(csv_file, mode='r', encoding='utf-8'))
-        with open(csv_file, mode='r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            
-            with tqdm(total=total_rows, desc='Audio downloading') as pbar:
-                for task in self.task_names:
-                    task_dir = background_dir
-                    
-                    file.seek(0)
-                    for row in reader:
-                        audiocap_id = row['audiocap_id']
-                        caption = row['caption']
-                        audio_path_real = os.path.join(task_dir, f'{audiocap_id}.mp3')
-
-                        processed_inputs[task].append({
-                            'audiocap_id': audiocap_id,
-                            'caption': caption,
-                            'audio_path_real': audio_path_real
-                        })
-                        pbar.update(1)
-                    processed_inputs[task] = processed_inputs[task]
-                        
-        return DatasetDict(processed_inputs)
+    def load_dataset(self, background_dir) -> DatasetDict:
+        processed_inputs = defaultdict(list)
+        for task in self.task_names:
+            dataset = load_dataset(self.task_dir, task)[self.split]
+            for data in dataset:
+                audiocap_id = data['audiocap_id']
+                caption = data['caption']
+                audio_path_real = os.path.join(background_dir, f'{audiocap_id}.mp3')
+                assert os.path.exists(audio_path_real), f"Audio file {audio_path_real} does not exist."
+                processed_inputs[task].append({
+                    'audiocap_id': audiocap_id,
+                    'caption':  caption,
+                    'audio_path_real': audio_path_real
+                })
+        return processed_inputs
 
 class AudioCapsGenerator(BaseInferencer):
     def init_model(self, device) -> None:
@@ -160,9 +149,9 @@ def main():
     dataloader = AudioCapsDataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     audio_dir = os.path.join(eval_configs.output_dir, f"audio/{eval_configs.uuid}")
-    csv_file = './dataset.csv'
-    background_dir = './your_audio_data_path/audiocaps'
-    test_data = dataloader.load_dataset(background_dir, csv_file)
+    background_dir = './the_real_audio_folder'
+    assert os.path.exists(background_dir), f"Directory {background_dir} does not exist."
+    test_data = dataloader.load_dataset(background_dir)
     eval_module = AudioCapsGenerator(model_config.model_id, model_config.model_name_or_path, model_config.model_max_length, 42)
     raw_outputs = eval_module.eval(test_data, audio_dir)
 

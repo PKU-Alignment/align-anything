@@ -41,7 +41,7 @@ class MSCOCODataLoader(BaseDataLoader):
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
         for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)[self.split]
+            dataset = load_dataset(self.task_dir, task)[self.split].select(range(5))
             processed_inputs[task] = []
             for data in dataset:
                 prompt = ''.join(data['caption'])

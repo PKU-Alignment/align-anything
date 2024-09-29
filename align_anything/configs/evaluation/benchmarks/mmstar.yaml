@@ -39,7 +39,7 @@ default:
     split: val
     # Candidate labels
     candidate_labels: ["A", "B", "C", "D"]
-  # Model configurations
+  # The model configurations
   model_cfgs:
     model_id: null
     # Pretrained model name or path

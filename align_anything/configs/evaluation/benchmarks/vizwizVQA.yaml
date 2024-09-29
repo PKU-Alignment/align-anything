@@ -35,7 +35,7 @@ default:
     task_dir: lmms-lab/VizWiz-VQA
     # Evaluation split
     split: val
-  # Model configurations
+  # The model configurations
   model_cfgs:
     model_id: null
     # Pretrained model name or path
