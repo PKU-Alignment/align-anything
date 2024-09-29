@@ -44,9 +44,8 @@ class MSCOCODataLoader(BaseDataLoader):
             dataset = load_dataset(self.task_dir, task)[self.split]
             processed_inputs[task] = []
             for data in dataset:
-                prompt = ''.join(data['caption'])
                 processed_inputs[task].append({
-                    'prompt': prompt,
+                    'prompt': data['caption'],
                     'real_image': data['image']
                 })
         return processed_inputs
@@ -109,8 +108,8 @@ class MSCOCOGenerator(BaseInferencer):
             if os.path.isfile(img_path):
                 num_sum += 1
         
-        fid_value = fid_score.calculate_fid_given_paths([image_crop(outputs['image_dir']), image_crop(outputs['real_image_dir'])], batch_size=50, device='cuda', dims=2048)
         batch_size = min(num_sum - 1, 32)
+        fid_value = fid_score.calculate_fid_given_paths([image_crop(outputs['image_dir']), image_crop(outputs['real_image_dir'])], batch_size=batch_size, device='cuda', dims=2048)
         splits = min(num_sum, 10)
         custom_dataset = CustomImageDataset(outputs['image_dir'])
         IS_score, IS_std = inception_score(custom_dataset, cuda=True, batch_size=batch_size, resize=True, splits=splits)

@@ -32,11 +32,11 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: TEST
+    task: default
     # Task directory
-    task_dir: nlphuji/mscoco_2014_5k_test_image_text_retrieval
+    task_dir: sayakpaul/coco-30-val-2014
     # Evaluation split
-    split: test
+    split: train
 
   # Model configurations
   model_cfgs:
