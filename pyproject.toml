@@ -30,8 +30,9 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "vllm",
+    "vllm >= 0.6.2",
     "torch >= 1.13",
+    "frechet_audio_distance",
     "transformers @ git+https://github.com/huggingface/transformers.git@main",
     "datasets",
     "tokenizers >= 0.13.3",
@@ -61,6 +62,12 @@ dependencies = [
     "torchvision",
     "bitsandbytes",
     "yt_dlp",
+    "opencv-python==4.6.0.66",
+    "moviepy",
+    "hpsv2",
+    "image-reward",
+    "clip",
+    "pytorch_fid",
 ]
 
 dynamic = ["version"]

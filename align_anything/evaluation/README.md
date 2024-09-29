@@ -4,15 +4,15 @@
 
 Below is a list of benchmarks currently supported by our framework. For the full list, please refer to [this directory](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks). More benchmarks are in the process of being added.
 
-| Modality              | Supported Benchmarks                                                  |
-| :-------------------- | :----------------------------------------------------------- |
-| `t2t`       | [ARC](https://huggingface.co/datasets/allenai/ai2_arc), [BBH](https://huggingface.co/datasets/lukaemon/bbh), [Belebele](https://huggingface.co/datasets/facebook/belebele), [CMMLU](https://huggingface.co/datasets/haonan-li/cmmlu), [GSM8K](https://huggingface.co/datasets/openai/gsm8k), [HumanEval](https://huggingface.co/datasets/openai/openai_humaneval), [MMLU](https://huggingface.co/datasets/cais/mmlu), [MMLU-Pro](https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro), [MT-Bench](https://huggingface.co/datasets/HuggingFaceH4/mt_bench_prompts), [PAWS-X](https://huggingface.co/datasets/google-research-datasets/paws-x), [RACE](https://huggingface.co/datasets/ehovy/race), [TruthfulQA ](https://huggingface.co/datasets/truthfulqa/truthful_qa) |
-| `ti2t` | [A-OKVQA](https://huggingface.co/datasets/HuggingFaceM4/A-OKVQA), [LLaVA-Bench(COCO)](https://huggingface.co/datasets/lmms-lab/llava-bench-coco), [LLaVA-Bench(wild)](https://huggingface.co/datasets/lmms-lab/llava-bench-in-the-wild), [MathVista](https://huggingface.co/datasets/AI4Math/MathVista), [MM-SafetyBench](https://huggingface.co/datasets/PKU-Alignment/MM-SafetyBench), [MMBench](https://huggingface.co/datasets/lmms-lab/MMBench), [MME](https://huggingface.co/datasets/lmms-lab/MME), [MMMU](https://huggingface.co/datasets/MMMU/MMMU), [MMStar](https://huggingface.co/datasets/Lin-Chen/MMStar), [MMVet](https://huggingface.co/datasets/lmms-lab/MMVet), [POPE](https://huggingface.co/datasets/lmms-lab/POPE), [ScienceQA](https://huggingface.co/datasets/derek-thomas/ScienceQA), [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL), [TextVQA](https://huggingface.co/datasets/lmms-lab/textvqa), [VizWizVQA](https://huggingface.co/datasets/lmms-lab/VizWiz-VQA) |
-|`tv2t` |⚒️ |
-|`ta2t` |⚒️ |
-| `t2i`      | [ImageReward](https://huggingface.co/datasets/THUDM/ImageRewardDB), [HPSv2](https://huggingface.co/datasets/zhwang/HPDv2) |
-| `t2v`      | ⚒️ |
-| `t2a`      | ⚒️ |
+| Modality | Supported Benchmarks                                         |
+| :------- | :----------------------------------------------------------- |
+| `t2t`    | [ARC](https://huggingface.co/datasets/allenai/ai2_arc), [BBH](https://huggingface.co/datasets/lukaemon/bbh), [Belebele](https://huggingface.co/datasets/facebook/belebele), [CMMLU](https://huggingface.co/datasets/haonan-li/cmmlu), [GSM8K](https://huggingface.co/datasets/openai/gsm8k), [HumanEval](https://huggingface.co/datasets/openai/openai_humaneval), [MMLU](https://huggingface.co/datasets/cais/mmlu), [MMLU-Pro](https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro), [MT-Bench](https://huggingface.co/datasets/HuggingFaceH4/mt_bench_prompts), [PAWS-X](https://huggingface.co/datasets/google-research-datasets/paws-x), [RACE](https://huggingface.co/datasets/ehovy/race), [TruthfulQA ](https://huggingface.co/datasets/truthfulqa/truthful_qa) |
+| `ti2t`   | [A-OKVQA](https://huggingface.co/datasets/HuggingFaceM4/A-OKVQA), [LLaVA-Bench(COCO)](https://huggingface.co/datasets/lmms-lab/llava-bench-coco), [LLaVA-Bench(wild)](https://huggingface.co/datasets/lmms-lab/llava-bench-in-the-wild), [MathVista](https://huggingface.co/datasets/AI4Math/MathVista), [MM-SafetyBench](https://huggingface.co/datasets/PKU-Alignment/MM-SafetyBench), [MMBench](https://huggingface.co/datasets/lmms-lab/MMBench), [MME](https://huggingface.co/datasets/lmms-lab/MME), [MMMU](https://huggingface.co/datasets/MMMU/MMMU), [MMStar](https://huggingface.co/datasets/Lin-Chen/MMStar), [MMVet](https://huggingface.co/datasets/lmms-lab/MMVet), [POPE](https://huggingface.co/datasets/lmms-lab/POPE), [ScienceQA](https://huggingface.co/datasets/derek-thomas/ScienceQA), [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL), [TextVQA](https://huggingface.co/datasets/lmms-lab/textvqa), [VizWizVQA](https://huggingface.co/datasets/lmms-lab/VizWiz-VQA) |
+| `tv2t`   | ⚒️                                                            |
+| `ta2t`   | ⚒️                                                            |
+| `t2i`    | [ImageReward](https://huggingface.co/datasets/THUDM/ImageRewardDB), [HPSv2](https://huggingface.co/datasets/zhwang/HPDv2) |
+| `t2v`    | ⚒️                                                            |
+| `t2a`    | ⚒️                                                            |
 
 - ⚒️ : In the planning.
 
@@ -135,7 +135,41 @@ default:
 
 For inference parameters, refer to [vLLM settings](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/configs/evaluation/vllm) or [DeepSpeed settings](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/configs/evaluation/deepspeed), based on your chosen generation backend.
 
-### Chat Templates
+### Benchmarks requiring OpenAI API access
+
+For the following benchmarks, OpenAI API is required for evaluation:
+
+- ChronoMagicBench
+- MM-SafetyBench
+- SPA-VL
+- MMVet
+- AGIEval
+- mt_bench
+- llava-bench-coco
+- llava-bench-in-the-wild
+- LongBench
+
+You can add your OpenAI API credentials in one of two ways:
+
+1. Using Environment Variables:
+
+   Set the OPENAI_API_KEY and OPENAI_API_BASE_URL environment variables before running the evaluation:
+
+   ~~~bash
+   export OPENAI_API_KEY="YOUR_API_KEY"
+   export OPENAI_API_BASE_URL="https://api.openai.com/v1/chat/completions"
+   ~~~
+
+2. Modifying the YAML Configuration Files:
+
+   Alternatively, you can specify your API key and base URL directly in the corresponding YAML configuration files for the benchmark, located in `./align_anything/configs/evaluation/benchmarks`. Update the `openai_api_key` and `openai_api_base_url` properties accordingly.
+
+### Attention
+
+1. For `SPA-VL/HarmEval` benchmark, the base model used is `llava-hf/llava-1.5-7b-hf`, while for `SPA-VL/HelpEval` benchmark, the base model is `gpt-4-turbo`.
+2. When evaluating `HPSv2`, you will need to manually configure the environment by downloading the file from https://github.com/tgxs002/HPSv2/blob/master/hpsv2/src/open_clip/bpe_simple_vocab_16e6.txt.gz and placing it in the directory `./your_env_name/lib/python3.11/site-packages/hpsv2/src/open_clip/`.
+3. When evaluating `AudioCaps`, the `background_dir` variable, located in the `./align_anything/evaluation/benchmarks/AudioCaps/eval.py` file, should point to the directory containing the standard audio files for the evaluation set. This directory must only contain audio files in MP3 format, and each audio file should be named according to its corresponding `audiocap_id`. For example, if the `audiocap_id` is 103541, the audio file should be named `103541.mp3`.
+
 
 To utilize a custom template, you need to implement and register the template in [here](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/configs/template.py). For example, here is the implementation of `Llava` template:
 

@@ -19,7 +19,7 @@ from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from datasets import load_dataset, DatasetDict
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.eval_logger import EvalLogger
@@ -72,14 +72,6 @@ class MMVetDataLoader(BaseDataLoader):
 
     def get_answer(self, data):
         return data['answer']
-
-    def set_fewshot_dataset(self, dataset, task): 
-        if self.cot:
-            with open('../cot_fewshot/MMVet/' + task + '.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data
-        else:
-            return None
         
     def build_example_prompt(self, data, with_answer=True):
         cate_info = ''
@@ -105,7 +97,6 @@ class MMVetDataLoader(BaseDataLoader):
         processed_inputs = {}
         for task in self.task_names:
             dataset = load_dataset(self.task_dir, task)[self.split]
-            self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts = self.preprocess(dataset)
             processed_inputs[task] = []
             for prompt, image, question_id in zip(prompts, dataset['image'], dataset['question_id']):
@@ -133,7 +124,7 @@ class MMVetGeneratorVLLM(BaseInferencer_vllm):
         InferenceOutputs = [InferenceOutput.from_vllm_output(question_id=input.question_id, vllm_output=output, store_raw=True) for output, input in zip(outputs, inputs)]
         return InferenceOutputs
 
-def evaluator(test_dataset, output_data, api_key, base_url, file_path):
+def evaluator(test_dataset, output_data, gpt_data, gpt_data_file, api_key, base_url, file_path):
     num_sum = 0
     question_id = set()
     tot_score = 0.0
@@ -142,10 +133,18 @@ def evaluator(test_dataset, output_data, api_key, base_url, file_path):
             if test_item['question_id'] == output_item.question_id and output_item.question_id not in question_id:
                 question_id.add(output_item.question_id)
                 num_sum += 1
-                score = judger(test_item['question'], test_item['answer'].lower(), output_item.response[0].lower(), api_key, base_url)
+                gpt_id = test_item['question_id'] + output_item.response[0].lower()
+                if gpt_id in gpt_data:
+                    score = gpt_data[gpt_id]
+                else:
+                    score = judger(test_item['question'], test_item['answer'].lower(), output_item.response[0].lower(), api_key, base_url)
+                    gpt_data[gpt_id] = score
                 tot_score += score
                 save_detail(test_item['question'], output_item.prompt, test_item['answer'].lower(), output_item.response[0].lower(), score, file_path)
 
+    with open(gpt_data_file, 'w', encoding='utf-8') as f:
+        json.dump(gpt_data, f, ensure_ascii=False, indent=4)
+        
     return tot_score / num_sum, num_sum
 
 def judger(question, correct_answer, response, api_key, base_url):
@@ -190,14 +189,13 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    logger = EvalLogger('Evaluation')
 
     dict_configs, infer_configs = read_eval_cfgs('mmvet', 'vLLM')
 
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
-        logger.log('error', "Config file is not exist or incomplete.")
+        print("Config file is not exist or incomplete.")
         exit()
     
     for k, v in unparsed_args.items():
@@ -210,13 +208,18 @@ def main():
     model_config = dict_configs.default.model_cfgs
     data_cfgs = dict_configs.default.data_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    logger.log_dir = eval_configs.output_dir
+    logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
     dataloader = MMVetDataLoader(dict_configs)
-    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
+    assert not (dataloader.num_shot > 0 or dataloader.cot), "Few-shot or chain-of-thought cannot be used for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = MMVetGeneratorVLLM(model_config, infer_configs)
-    raw_outputs = eval_module.eval(test_data, eval_configs)
-
+    raw_outputs_dir = os.path.join(eval_configs.output_dir, f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl")
+    if os.path.exists(raw_outputs_dir):
+        raw_outputs = load_raw_outputs(raw_outputs_dir)
+    else:
+        raw_outputs = eval_module.eval(test_data, eval_configs)
+        save_raw_outputs(raw_outputs, raw_outputs_dir)
+   
     api_key = eval_configs.openai_api_key or os.getenv("OPENAI_API_KEY")
     base_url = eval_configs.openai_api_base_url or os.getenv("OPENAI_API_BASE_URL")
     
@@ -229,10 +232,16 @@ def main():
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
+    gpt_data_file = os.path.join(eval_configs.output_dir, f"gpt_data.json")
+    gpt_data = {}
+    if os.path.exists(gpt_data_file):
+        with open(gpt_data_file, 'r', encoding='utf-8') as file:
+            gpt_data = json.load(file)
+
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
         file_path = f"{uuid_path}/{task}.json"
-        score, num_sum = evaluator(test_data, raw_outputs[task], api_key, base_url, file_path)
+        score, num_sum = evaluator(test_data, raw_outputs[task], gpt_data, gpt_data_file, api_key, base_url, file_path)
         
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],

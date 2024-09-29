@@ -18,7 +18,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import cv2
+import glob
 import random
+import base64
 from collections import namedtuple
 from typing import Any, NamedTuple
 import yt_dlp
@@ -28,10 +31,17 @@ import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 import yaml
+from PIL import Image
+import torch.utils.data
+from scipy.stats import entropy
+from moviepy.editor import AudioFileClip
 from torch.nn.utils.rnn import pad_sequence
 from torch.types import Number
+from torch.autograd import Variable
+from torchvision.models.inception import inception_v3
 from transformers import PreTrainedTokenizerBase, ProcessorMixin
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
+import pickle
 
 
 def right_padding(sequences: list[torch.Tensor], padding_value: Number) -> torch.Tensor:
@@ -472,3 +482,156 @@ def download_video(url, video_path):
     except yt_dlp.utils.DownloadError as e:
         print(f"Error downloading {url}: {e}")
         return False
+    
+def save_raw_outputs(raw_outputs, raw_outputs_dir):
+    with open(raw_outputs_dir, 'wb') as f:
+        pickle.dump(raw_outputs, f)
+
+def load_raw_outputs(raw_outputs_dir):
+    with open(raw_outputs_dir, 'rb') as f:
+        inference_output = pickle.load(f)
+    return inference_output
+
+def download_audio(youtube_id, start_time, audiocap_id, output_dir):
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': os.path.join(output_dir, f'{audiocap_id}.webm'),
+        'noplaylist': True,
+    }
+    
+    youtube_url = f'https://www.youtube.com/watch?v={youtube_id}'
+    
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([youtube_url])
+    except yt_dlp.utils.DownloadError as e:
+        print(f"Download failed for {youtube_url}. Error: {e}")
+        return None, f"Download failed for {youtube_url}. Error: {e}"
+    
+    audio_path = os.path.join(output_dir, f'{audiocap_id}.webm')
+    
+    try:
+        audio_clip = AudioFileClip(audio_path)
+        end_time = audio_clip.duration
+        start_time_sec = float(start_time)
+        audio_segment = audio_clip.subclip(start_time_sec, min(end_time, start_time_sec + 10))
+        
+        output_audio_path = os.path.join(output_dir, f'{audiocap_id}.mp3')
+        audio_segment.write_audiofile(output_audio_path)
+        
+        os.remove(audio_path)
+        if output_audio_path.endswith('.mp3') and os.path.isfile(output_audio_path):
+            return output_audio_path, ""
+        return None, ".webm file connot be saved."
+    except Exception as e:
+        print(f"Error processing audio for {audiocap_id}. Error: {e}")
+        return None, f"Error processing audio for {audiocap_id}. Error: {e}"
+
+def image_crop(input_folder):
+    output_folder = f'{input_folder}_crop'
+    os.makedirs(output_folder, exist_ok=True)
+    for filename in os.listdir(input_folder):
+        img_path = os.path.join(input_folder, filename)
+        if os.path.isfile(img_path):
+            try:
+                with Image.open(img_path) as img:
+                    img = img.convert("RGB")
+                    img_resized = img.resize((1024, 1024))
+                    output_path = os.path.join(output_folder, filename)
+                    img_resized.save(output_path)
+            except Exception as e:
+                print(f"Error processing {filename}: {e}")
+                
+    return output_folder
+
+def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
+    N = len(imgs)
+    assert batch_size > 0
+    assert N > batch_size
+
+    device = torch.device("cuda" if cuda and torch.cuda.is_available() else "cpu")
+
+    dataloader = torch.utils.data.DataLoader(imgs, batch_size=batch_size)
+    inception_model = inception_v3(pretrained=True, transform_input=False).to(device)
+    inception_model.eval()
+    up = nn.Upsample(size=(299, 299), mode='bilinear').to(device)
+    def get_pred(x):
+        if resize:
+            x = up(x)
+        x = inception_model(x)
+        return F.softmax(x).data.cpu().numpy()
+
+    preds = np.zeros((N, 1000))
+
+    for i, batch in enumerate(dataloader, 0):
+        batch = batch.to(device)
+        batchv = Variable(batch)
+        batch_size_i = batch.size()[0]
+
+        preds[i*batch_size:i*batch_size + batch_size_i] = get_pred(batchv)
+
+    split_scores = []
+
+    for k in range(splits):
+        part = preds[k * (N // splits): (k+1) * (N // splits), :]
+        py = np.mean(part, axis=0)
+        scores = []
+        for i in range(part.shape[0]):
+            pyx = part[i, :]
+            scores.append(entropy(pyx, py))
+        split_scores.append(np.exp(np.mean(scores)))
+
+    return np.mean(split_scores), np.std(split_scores)
+
+def resize_frame(frame, short_edge=256):
+    height, width = frame.shape[:2]
+    if min(height, width) <= short_edge:
+        return frame
+    else:
+        scale = short_edge / width if height > width else short_edge / height
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+        resized_frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
+        return resized_frame
+
+def get_frames(video_path, output_folder, num_frames=8):
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"Error opening video file {video_path}")
+        return
+
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    frames_to_capture = set([0, total_frames - 1])
+    frames_interval = (total_frames - 1) // (num_frames - 1)
+    for i in range(1, num_frames - 1):
+        frames_to_capture.add(i * frames_interval)
+
+    count = 0
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if count in frames_to_capture:
+            resized_frame = resize_frame(frame)
+            frame_name = f"{os.path.splitext(os.path.basename(video_path))[0]}_frame{count}.png"
+            output_path = os.path.join(output_folder, frame_name)
+            cv2.imwrite(output_path, resized_frame)
+        count += 1
+
+    cap.release()
+
+def process_videos(video_id, video_path, frames_dir):
+    video_images = glob.glob(os.path.join(frames_dir, f"{video_id}_frame*.png"))
+    
+    if len(video_images) == 8:
+        return
+    for img in video_images:
+        os.remove(img)
+
+    get_frames(video_path, frames_dir)
+    frames = sorted(glob.glob(os.path.join(frames_dir, f"{video_id}_frame*.png")))
+    return [os.path.basename(frame) for frame in frames]
+
+def image_b64(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')

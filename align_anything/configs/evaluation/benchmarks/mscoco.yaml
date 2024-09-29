@@ -27,15 +27,18 @@ default:
     uuid: null
     # Num shot
     n_shot: 0
+    # Use Chain of Thought
+    cot: false
   # Configuration for data
   data_cfgs:
     # Task name
-    task: all
+    task: default
     # Task directory
-    task_dir: PKU-Alignment/eval-anything500
+    task_dir: sayakpaul/coco-30-val-2014
     # Evaluation split
-    split: test
-  # The model configurations
+    split: train
+
+  # Model configurations
   model_cfgs:
     model_id: null
     # Pretrained model name or path

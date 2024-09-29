@@ -17,12 +17,16 @@ import os
 import re
 import json
 import torch
+import scipy
 from tqdm import tqdm
+import soundfile as sf
 from typing import Dict, Any
+from transformers import pipeline
+from datasets import load_dataset
+from diffusers.utils import export_to_video
 from align_anything.models.chameleon_model_t2i import ChameleonTextToImagePipeline
 from align_anything.utils.tools import requestoutput_to_dict
 from diffusers import StableDiffusionPipeline, DiffusionPipeline
-from transformers import ChameleonForConditionalGeneration, ChameleonProcessor, set_seed
 
 def update_results(output_dir:str,
                      brief_filename:str,
@@ -90,7 +94,7 @@ def save_detail(question, prompt, correct_answer, response, score, file_path, gp
             data.append(record)
             file.seek(0)
             json.dump(data, file, ensure_ascii=False, indent=4)
-            
+
 class BaseInferencer:
     def __init__(self, 
                  model_id: str,
@@ -119,7 +123,7 @@ class BaseInferencer:
         else:
             raise ValueError(f"Model '{self.model_name_or_path}' is not supported or unknown.")
         
-    def text_to_image_genenrate(self, prompt, image_path) -> None:
+    def text_to_image_generation(self, prompt, image_path) -> None:
         model_name_lower = self.model_name_or_path.lower()
         if "cham" in model_name_lower:
             self.model.generation(prompt, image_path)
@@ -131,3 +135,47 @@ class BaseInferencer:
             image.save(image_path)
         else:
             raise ValueError(f"Model '{self.model_name_or_path}' is not supported or unknown. Supported models are: chameleon, stable-diffusion, flux, sdxl.")
+        
+    def text_to_video_generation(
+        self,
+        prompt: str,
+        output_path: str,
+        num_inference_steps: int = 40,
+        guidance_scale: float = 7.0,
+        num_videos_per_prompt: int = 1,
+        dtype: torch.dtype = torch.bfloat16,
+    ):
+        video = self.pipe(
+            prompt=prompt,
+            num_videos_per_prompt=num_videos_per_prompt,
+            num_inference_steps=num_inference_steps,
+            num_frames=49,
+            use_dynamic_cfg=True,
+            guidance_scale=guidance_scale,
+            generator=torch.Generator().manual_seed(42),
+        ).frames[0]
+
+        export_to_video(video, output_path, fps=8)
+
+    def text_to_audio_generation(
+        self,
+        prompt: str,
+        output_path: str,
+    ):
+        model_name_lower = self.model_name_or_path.lower()
+        if "audioldm2" in model_name_lower:
+            audio = self.model(prompt, num_inference_steps=200, audio_length_in_s=10.0).audios[0]
+            scipy.io.wavfile.write(output_path, rate=16000, data=audio)
+        elif "speecht5" in model_name_lower:
+            try:
+                speech = self.synthesiser(prompt, forward_params={"speaker_embeddings": self.speaker_embedding})
+                if speech.get("audio") is None or speech.get("sampling_rate") is None:
+                    return False
+                
+                sf.write(output_path, speech["audio"], samplerate=speech["sampling_rate"])
+                return True
+            except Exception as e:
+                print(f"An error occurred in text_to_audio_generation: {e}")
+                return False
+        else:
+            raise ValueError(f"Model '{self.model_name_or_path}' is not supported or unknown. Supported models are: audioldm2, speecht5_tts.")

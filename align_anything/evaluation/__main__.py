@@ -39,15 +39,16 @@ def parse_eval_args() -> argparse.Namespace:
         "--benchmark",
         "-b",
         default=None,
-        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, LongBench, L-Eval, AGIEval, Eval-Anything, HPSv2, ImageRewardDB",
+        help="The benchmark you want to test on. Choices: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, L-Eval, LongBench, AGIEval, HPSv2, ImageRewardDB, MSCOCO, ChronoMagicBench, AudioCaps",
         choices=[
             "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
             "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
             "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
             "MM-SafetyBench", "TextVQA", "VizWizVQA", "SPA-VL",
             "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
-            "ScienceQA", "MMStar", "LongBench", "L-Eval",
-            "AGIEval", "Eval-Anything", "HPSv2", "ImageRewardDB"
+            "ScienceQA", "MMStar", "L-Eval", "LongBench", "AGIEval",
+            "HPSv2", "MSCOCO", "ImageRewardDB", 
+            "ChronoMagicBench", "AudioCaps"
         ],
     )
     parser.add_argument(
@@ -107,7 +108,7 @@ def parse_eval_args() -> argparse.Namespace:
     args = parser.parse_args()
     return args
 
-def save_result(model_id, result_dir):
+def save_result(model_id, output_dir, result_dir):
     results = []
     for filename in os.listdir(result_dir):
         if filename.endswith('.json'):
@@ -124,7 +125,7 @@ def save_result(model_id, result_dir):
                         result = 0
                     results.append(result)
     result_dict = {model_id: results}
-    output_file_path = os.path.join(os.getcwd(), f'{model_id}_result.json')
+    output_file_path = os.path.join(os.getcwd(), output_dir, f'{model_id}_result.json')
     
     with open(output_file_path, 'w', encoding='utf-8') as json_file:
         json.dump(result_dict, json_file, indent=4, ensure_ascii=False)
@@ -206,7 +207,7 @@ def run_benchmark(file_path, args):
 
         result_dir = os.path.join(vars(args)['output_dir'], uuid)
         if os.path.exists(result_dir):
-            save_result(vars(args)['model_id'], result_dir)
+            save_result(vars(args)['model_id'], args.output_dir, result_dir)
 
         print(f"{file_path} executed successfully with arguments {args}.")
     except subprocess.CalledProcessError as e:

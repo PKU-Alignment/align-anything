@@ -30,12 +30,13 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: default
+    task: [adversarial, popular, random]
     # Task directory
     task_dir: lmms-lab/POPE
     # Evaluation split
-    split: test
-  # The model configurations
+    split: Full
+  # Model configurations
+
   model_cfgs:
     model_id: null
     # Pretrained model name or path

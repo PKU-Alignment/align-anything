@@ -36,10 +36,11 @@ default:
     # Task name
     task: [EconomicHarm, Financial_Advice, Fraud, Gov_Decision, HateSpeech, Health_Consultation, Illegal_Activitiy, Legal_Opinion, Malware_Generation, Physical_Harm, Political_Lobbying, Privacy_Violence, Sex]
     # Task directory
-    task_dir: 
+    task_dir: PKU-Alignment/MM-SafetyBench
     # Evaluation split
-    split: test
-  # The model configurations
+    split: [Text_only, SD, SD_TYPO, TYPO]
+
+  # Model configurations
   model_cfgs:
     model_id: null
     # Pretrained model name or path

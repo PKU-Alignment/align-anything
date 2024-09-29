@@ -280,6 +280,64 @@ class VQAv2:
             'image': raw_sample['image'],
         }
 
+@register_template('ti2ti_preference')
+class TI2TI_PREFERENCE:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n{input}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
+    separator: str = '###'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        input_text = raw_sample['input_text']
+        input_img = raw_sample['input_image']
+
+        better_text = raw_sample['better_text']
+        better_img = raw_sample['better_img']
+
+        worse_text = raw_sample['worse_text']
+        worse_img = raw_sample['worse_img']
+
+        input_text_processed, input_images = insert_img_token(input_text, input_img)
+
+        better_text_processed, better_images = insert_img_token(better_text, better_img)
+
+        worse_text_processed, worse_images = insert_img_token(worse_text, worse_img)
+
+        better_text_full = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text_processed)}'
+            f"{self.assistant_prompt.format(output=better_text_processed)}"
+        )
+
+        better_images_full = safe_add(input_images, better_images)
+
+        worse_text_full = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text_processed)}'
+            f"{self.assistant_prompt.format(output=worse_text_processed)}"
+        )
+
+        worse_images_full = safe_add(input_images, worse_images)
+
+        return {
+            'better_text': better_text_full,
+            'worse_text': worse_text_full,
+            'better_images': better_images_full,
+            'worse_images': worse_images_full,
+        }
+
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        input_text = raw_sample['input_text']
+        input_img = raw_sample['input_image']
+
+        input_text_processed, input_images = insert_img_token(input_text, input_img)
+
+        return {
+            'text': input_text_processed,
+            'image': input_images,
+        }
+
 @register_template('Chameleon_preference')
 class CHAMELEON_PREFERENCE:
     system_prompt: str = ''
@@ -447,7 +505,7 @@ class TI2TI_SPAVL:
         }
         
 @register_template('PICKAPIC_TI2TI')
-class Pickapic_TI2TI(TI2TI_PREFERENCE):
+class Pickapic_TI2TI(Chameleon_preference):
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['caption']
         better_id = int(raw_sample['label_1'])
@@ -837,6 +895,63 @@ class DiffusionDB:
             'image': raw_sample['image'].convert('RGB'),
         }
         
+@register_template('ti2ti')
+class TI2TI:
+    system_prompt: str = ''
+    user_prompt: str = 'USER: \n{input}'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
+    separator: str = '###'
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        input_text = raw_sample['input_text']
+        output_text = raw_sample['output_text']
+        input_img = raw_sample['input_image']
+        output_img = raw_sample['output_image']
+
+        if isinstance(input_img, str):
+            input_images = [load_image(input_img)]
+            num_imput_img = 1
+        elif isinstance(input_img, list):
+            input_images = [load_image(img) for img in input_img]
+            num_input_img = len(input_img)
+        else:
+            raise ValueError("input_image must be either a string or a list of strings")
+
+
+        input_text = f"{'<image>' * num_imput_img}{input_text}"
+
+        # do the same for output
+        if isinstance(output_img, str):
+            output_images = [load_image(output_img)]
+            num_output_img = 1
+
+        elif isinstance(output_img, list):
+            output_images = [load_image(img) for img in output_img]
+            num_output_img = len(output_img)
+        else:
+            raise ValueError("output_image must be either a string or a list of strings")
+
+        output_text = f"{output_text}{'<image>' * num_output_img}"
+
+        text = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text)}'
+            f"{self.assistant_prompt.format(output=output_text)}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=input_text)}'
+            f"{self.assistant_prompt.format(output='')}"
+        )
+
+        return {
+            'text': text,
+            'prompt': prompt,
+            'images': input_images + output_images,
+        }
+
 @register_template('Chameleon')
 class CHAMELEON:
     system_prompt: str = ''

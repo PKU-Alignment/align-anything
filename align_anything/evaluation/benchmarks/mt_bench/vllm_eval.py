@@ -18,7 +18,7 @@ import argparse
 from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
 from datasets import load_dataset, DatasetDict
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
@@ -115,10 +115,9 @@ class API_Eval(API_Single_Eval):
         return input
 
 
-def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOutput], dataloader: MTBenchDataLoader, task: str, result_file_path, eval_configs= None):
+def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOutput], dataloader: MTBenchDataLoader, task: str, result_file_path, api_key, base_url, eval_configs= None):
     current_file_path = os.path.abspath(__file__)
     current_dir = os.path.dirname(current_file_path)
-    dataset = load_dataset(current_dir,task)[dataloader.split]
     dataset = load_dataset(current_dir,split='train',data_files='test.jsonl')
     prompts= []
     file_path = "./judge_prompts.jsonl"
@@ -178,7 +177,7 @@ def evaluator(raw_output1: List[InferenceOutput], raw_output2: List[InferenceOut
         )
     system_prompts = []
     user_prompts = []
-    judger = API_Eval(model = eval_configs.judge_model, num_workers = 20, temperature = 0, template_function= None, api_key=eval_configs.openai_api_key, base_url=eval_configs.openai_api_base_url )
+    judger = API_Eval(model = eval_configs.judge_model, num_workers = 20, temperature = 0, template_function= None, api_key=api_key, base_url=base_url)
     for response in responses:
         
         if not response['ref_answer_1']:
@@ -228,14 +227,13 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    logger = EvalLogger('Evaluation')
     
     dict_configs, infer_configs = read_eval_cfgs('mt_bench', 'vLLM')
 
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
-        logger.log('error', "Config file is not exist or incomplete.")
+        print("Config file is not exist or incomplete.")
         exit()
 
     for k, v in unparsed_args.items():
@@ -253,7 +251,7 @@ def main():
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data_round1 = dataloader.load_dataset()
     eval_module = MTBenchGeneratorVLLM(model_config, infer_configs)
-    logger.log_dir = eval_configs.output_dir
+    logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
     output_data_round1 = eval_module.eval(test_data_round1, eval_configs)
     
     test_data_round2 = dataloader.load_dataset_round2(output_data_round1)
@@ -265,10 +263,19 @@ def main():
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
+    
+    api_key = eval_configs.openai_api_key or os.getenv("OPENAI_API_KEY")
+    base_url = eval_configs.openai_api_base_url or os.getenv("OPENAI_API_BASE_URL")
+    
+    if not api_key:
+        raise ValueError("OpenAI API key is not provided in eval_configs or environment variables.")
+    if not base_url:
+        raise ValueError("OpenAI API base URL is not provided in eval_configs or environment variables.")
+    base_url = base_url.split("/chat")[0]
 
     for task, _ in output_data_round2.items():
         file_path = f"{uuid_path}/{task}.json"
-        responses,evals = evaluator(output_data_round1[task],output_data_round2[task], dataloader, task, file_path, eval_configs)
+        responses,evals = evaluator(output_data_round1[task],output_data_round2[task], dataloader, task, file_path, api_key, base_url, eval_configs)
     
     merged_list=[]
     for resp, eval_ in zip(responses, evals):

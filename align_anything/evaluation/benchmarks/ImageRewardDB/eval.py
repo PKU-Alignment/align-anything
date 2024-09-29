@@ -18,7 +18,7 @@ from align_anything.evaluation.inference.base_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict
 from datasets import load_dataset, DatasetDict
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
 from align_anything.evaluation.eval_logger import EvalLogger
 import torch.multiprocessing as mp
 import ImageReward as RM
@@ -52,7 +52,7 @@ class ImageRewardDBGenerator(BaseInferencer):
         for task, inputs in data.items():    
             for prompt in tqdm(inputs, desc='Generating', position=position):
                 image_path = os.path.join(img_dir, task, f"{str(uuid.uuid4())}.jpg")
-                self.text_to_image_genenrate(prompt, image_path)
+                self.text_to_image_generation(prompt, image_path)
                 task2details[task].extend(
                     [{
                         'prompt': prompt,
@@ -114,7 +114,6 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    logger = EvalLogger('Evaluation')
     
     dict_configs, infer_configs = read_eval_cfgs('imagerewardDB', 'vLLM')
     
@@ -133,12 +132,12 @@ def main():
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    logger.log_dir = eval_configs.output_dir
+    logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
     dataloader = ImageRewardDBDataLoader(dict_configs)
     assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = ImageRewardDBGenerator(model_config.model_id, model_config.model_name_or_path, model_config.model_max_length, 42)
-    img_dir = f"./images/{eval_configs.uuid}"
+    img_dir = os.path.join(eval_configs.output_dir, f"./images/{eval_configs.uuid}")
     raw_outputs = eval_module.eval(test_data, img_dir)
 
     os.makedirs(logger.log_dir, exist_ok=True)

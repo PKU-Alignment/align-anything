@@ -242,6 +242,7 @@ def main():
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = MMMUDataLoader(dict_configs)
+    assert not dataloader.cot, "chain-of-thought cannot be used for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = MMMUGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)

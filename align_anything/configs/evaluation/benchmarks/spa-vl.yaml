@@ -32,14 +32,13 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: validation
+    task: ['harm', 'help']
     # Task directory
     task_dir: sqrti/SPA-VL
     # Evaluation split
-    split: validation
-    # Candidate labels
-    candidate_labels: ["A", "B"]
-  # The model configurations
+    split: test 
+
+  # Model configurations
   model_cfgs:
     model_id: null
     # Pretrained model name or path

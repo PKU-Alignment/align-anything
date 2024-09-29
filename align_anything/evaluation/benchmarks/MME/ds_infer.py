@@ -45,9 +45,6 @@ class MMEDataLoader(BaseDataLoader):
     def get_answer(self, data):
         return data['answer']
 
-    def set_fewshot_dataset(self, dataset, task: str=None):
-        return None
-
     def build_example_prompt(self, data, with_answer=True):
         prompt = f"This is a {data['category']} problem.\n\n"
         return f"{prompt}{data['question']}"
@@ -71,7 +68,6 @@ class MMEDataLoader(BaseDataLoader):
     def load_dataset(self, category_datasets) -> DatasetDict:
         processed_inputs = {}
         for task, dataset in category_datasets.items():
-            self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
             for prompt, input_ids, pixel_values, i in zip(prompts, inputs['input_ids'], inputs['pixel_values'], range(len(dataset))):
@@ -207,6 +203,7 @@ def main():
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = MMEDataLoader(dict_configs)
     dataset = dataloader.get_category_datasets()
+    assert not (dataloader.num_shot > 0 or dataloader.cot), "Few-shot or chain-of-thought cannot be used for this benchmark."
     test_data = dataloader.load_dataset(dataset)
     eval_module = MMEGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)

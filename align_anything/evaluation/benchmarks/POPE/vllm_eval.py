@@ -19,7 +19,7 @@ from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from datasets import load_dataset, DatasetDict
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
+from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.eval_logger import EvalLogger
@@ -39,17 +39,9 @@ class POPEDataLoader(BaseDataLoader):
 
     def get_answer(self, data):
         return data['answer']
-
-    def set_fewshot_dataset(self, dataset, task): 
-        if self.cot:
-            with open('../cot_fewshot/POPE/' + task + '.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            return data
-        else:
-            return None
         
     def build_example_prompt(self, data, with_answer=True):
-        return f"{data['question']} Please answer yes or no."
+        return f"{data['question']}"
 
     def build_prompt(self, data):
         assert self.num_shot == 0, "POPE does not support few-shot learning."
@@ -60,16 +52,15 @@ class POPEDataLoader(BaseDataLoader):
         return question
     
     def preprocess(self, data):
-        return self.build_prompt(data[self.split])
+        return self.build_prompt(data)
     
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
         for task in self.task_names:
-            dataset = load_dataset(self.task_dir, task)
-            self.few_shot_data = self.set_fewshot_dataset(dataset, task)
+            dataset = load_dataset(self.task_dir, self.split)[task]
             prompts = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, image, question_id in zip(prompts, dataset[self.split]['image'], dataset[self.split]['question_id']):
+            for prompt, image, question_id in zip(prompts, dataset['image'], dataset['question_id']):
                 processed_input = InferenceInput(text=prompt, image_file=image)
                 processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
@@ -95,30 +86,54 @@ class POPEGeneratorVLLM(BaseInferencer_vllm):
         return InferenceOutputs
 
 def evaluator(test_dataset, output_data, file_path):
-    num_match = 0
     num_sum = 0
+    num_yes = 0
     question_id = set()
+
+    TP, TN, FP, FN = 0, 0, 0, 0
     for test_item in tqdm(test_dataset, desc="Evaluating"):
         for output_item in output_data:
             if test_item['question_id'] == output_item.question_id and output_item.question_id not in question_id:
                 question_id.add(output_item.question_id)
                 num_sum += 1
-                true_or_false = judger(test_item['answer'].lower(), output_item.response[0].lower())
-                if true_or_false:
-                    num_match += 1
-                save_detail(test_item['question'], output_item.prompt, test_item['answer'].lower(), output_item.response[0].lower(), true_or_false, file_path)
+                response = output_item.response[0].lower()
+                correct_answer = test_item['answer'].lower()
+                pred = judger(response)
+                label = 1 if correct_answer == 'yes' else 0
+                num_yes += pred
+                
+                if pred == 1 and label == 1:
+                    TP += 1
+                elif pred == 1 and label == 0:
+                    FP += 1
+                elif pred == 0 and label == 0:
+                    TN += 1
+                elif pred == 0 and label == 1:
+                    FN += 1
 
-    return num_match, num_sum
+                save_detail(test_item['question'], '', correct_answer, response, pred, file_path)
 
-def judger(correct_answer, response):
-    if correct_answer not in response:
-        return False
-    last_yes = response.rfind('yes')
-    last_no = response.rfind('no')
-    if last_yes > last_no:
-        return correct_answer == "yes"
-    elif last_no > last_yes:
-        return correct_answer == "no"
+    precision = float(TP) / (TP + FP) if (TP + FP) > 0 else 0
+    recall = float(TP) / (TP + FN) if (TP + FN) > 0 else 0
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+    acc = (TP + TN) / (TP + TN + FP + FN) if (TP + TN + FP + FN) > 0 else 0
+    yes_ratio = num_yes / num_sum if num_sum > 0 else 0
+    
+    result = {
+        "accuracy": acc*100,
+        "precision": precision*100,
+        "recall": recall*100,
+        "f1_score": f1*100,
+        "yes_ratio": yes_ratio*100
+    }
+    return result, num_sum
+
+def judger(response):
+    response = response.replace(',', '')
+    words = response.split(' ')
+    if 'not' in words or 'no' in words:
+        return 0
+    return 1
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -126,14 +141,13 @@ def main():
     keys = [k[2:] for k in unparsed_args[0::2]]
     values = list(unparsed_args[1::2])
     unparsed_args = dict(zip(keys, values))
-    logger = EvalLogger('Evaluation')
 
     dict_configs, infer_configs = read_eval_cfgs('pope', 'vLLM')
 
     try:
         assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
     except AssertionError as e:
-        logger.log('error', "Config file is not exist or incomplete.")
+        print("Config file is not exist or incomplete.")
         exit()
     
     for k, v in unparsed_args.items():
@@ -146,36 +160,74 @@ def main():
     model_config = dict_configs.default.model_cfgs
     data_cfgs = dict_configs.default.data_cfgs
     eval_configs = dict_configs.default.eval_cfgs
-    logger.log_dir = eval_configs.output_dir
+    logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
     dataloader = POPEDataLoader(dict_configs)
-    assert not (dataloader.num_shot > 0 and dataloader.cot), "Few-shot and chain-of-thought cannot be used simultaneously for this benchmark."
+    assert not (dataloader.num_shot > 0 or dataloader.cot), "Few-shot or chain-of-thought cannot be used for this benchmark."
     test_data = dataloader.load_dataset()
     eval_module = POPEGeneratorVLLM(model_config, infer_configs)
-    raw_outputs = eval_module.eval(test_data, eval_configs)
-
+    raw_outputs_dir = os.path.join(eval_configs.output_dir, f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl")
+    if os.path.exists(raw_outputs_dir):
+        raw_outputs = load_raw_outputs(raw_outputs_dir)
+    else:
+        raw_outputs = eval_module.eval(test_data, eval_configs)
+        save_raw_outputs(raw_outputs, raw_outputs_dir)
+   
     os.makedirs(logger.log_dir, exist_ok=True)
     uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
     os.makedirs(uuid_path, exist_ok=True)
 
+    tot_accuracy, tot_precision, tot_recall, tot_f1_score, tot_yes_ratio = 0.0, 0.0, 0.0, 0.0, 0.0
     for task, _ in raw_outputs.items():
-        test_data = load_dataset(data_cfgs.task_dir, task)[data_cfgs.split]
+        test_data = load_dataset(data_cfgs.task_dir, data_cfgs.split)[task]
         file_path = f"{uuid_path}/{task}.json"
-        num_match, num_sum = evaluator(test_data, raw_outputs[task], file_path)
-        
+        result, num_sum = evaluator(test_data, raw_outputs[task], file_path)
+        tot_accuracy += result['accuracy']
+        tot_precision += result['precision']
+        tot_recall += result['recall']
+        tot_f1_score += result['f1_score']
+        tot_yes_ratio += result['yes_ratio']
+
         output_dict = {
             'model_id': [dict_configs.default.model_cfgs.model_id],
-            'num_match': [num_match],
             'num_sum': [num_sum],
-            'accuracy': [num_match / num_sum]
+            'accuracy': [result['accuracy']],
+            'precision': [result['precision']],
+            'recall': [result['recall']],
+            'f1_score': [result['f1_score']],
+            'yes_ratio': [result['yes_ratio']],
         }
         logger.print_table(title=f'POPE/{task} Benchmark', data=output_dict)
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
         logger.log('info', f"task: {task}")
         logger.log('info', f"model_id: {output_dict['model_id'][0]},")
-        logger.log('info', f"num_match: {output_dict['num_match'][0]},")
         logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
         logger.log('info', f"accuracy: {output_dict['accuracy'][0]},")
+        logger.log('info', f"precision: {output_dict['precision'][0]},")
+        logger.log('info', f"recall: {output_dict['recall'][0]},")
+        logger.log('info', f"f1_score: {output_dict['f1_score'][0]},")
+        logger.log('info', f"yes_ratio: {output_dict['yes_ratio'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+    output_dict = {
+        'model_id': [dict_configs.default.model_cfgs.model_id],
+        'num_sum': [num_sum],
+        'tot_accuracy': [tot_accuracy/3],
+        'tot_precision': [tot_precision/3],
+        'tot_recall': [tot_recall/3],
+        'tot_f1_score': [tot_f1_score/3],
+        'tot_yes_ratio': [tot_yes_ratio/3],
+    }
+    logger.print_table(title=f'POPE Benchmark', data=output_dict)
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    logger.log('info', f"task: {task}")
+    logger.log('info', f"model_id: {output_dict['model_id'][0]},")
+    logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
+    logger.log('info', f"tot_accuracy: {output_dict['tot_accuracy'][0]},")
+    logger.log('info', f"tot_precision: {output_dict['tot_precision'][0]},")
+    logger.log('info', f"tot_recall: {output_dict['tot_recall'][0]},")
+    logger.log('info', f"tot_f1_score: {output_dict['tot_f1_score'][0]},")
+    logger.log('info', f"tot_yes_ratio: {output_dict['tot_yes_ratio'][0]},")
+    logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 if __name__ == '__main__':
     main()
