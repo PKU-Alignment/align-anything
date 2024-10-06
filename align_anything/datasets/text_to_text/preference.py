@@ -95,7 +95,7 @@ class PreferenceDataset(Dataset):
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_sample(raw_sample)
+        formatted_sample = self.template.format_preference_sample(raw_sample)
         return_dict = {}
 
         raw_better_text = ''
@@ -208,7 +208,7 @@ class RandomPreferenceDataset(Dataset):
         self, raw_sample_1: dict[str, Any], raw_sample_2: dict[str, Any]
     ) -> PreferenceSample:
 
-        formatted_sample_2 = self.template.format_sample(raw_sample_2)['better_text']
+        formatted_sample_2 = self.template.format_preference_sample(raw_sample_2)['better_text']
         assert isinstance(formatted_sample_2, str)
         formatted_prompt_1 = self.template.format_prompt_only_sample(raw_sample_1)['text']
         formatted_prompt_2 = self.template.format_prompt_only_sample(raw_sample_2)['text']
