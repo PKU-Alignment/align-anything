@@ -44,6 +44,12 @@ def load_image(image_path: str):
     except Exception:
         raise Exception(f"Error occurred when dealing with {image_path}")
 
+def load_image_from_base64(base64_string):    
+    image_stream = io.BytesIO(base64_string)
+    image = Image.open(image_stream)
+    
+    return image
+
 def insert_img_token(text, image):
     # do the same for worse
     if isinstance(image, str):
@@ -127,7 +133,7 @@ class Dialogue(Template):
     assistant_prompt: str = 'ASSISTANT:{output}'
     separator: str = ''
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         text = (
             f'{self.system_prompt}'
             f"{self.user_prompt.format(input=' '.join((raw_sample['instruction'], raw_sample['input'])))}"
@@ -153,7 +159,7 @@ class Aligner(Template):
     assistant_prompt: str = '##CORRECTION: {correction}'
     separator: str = ''
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         
         text = (
             f'{self.system_prompt}'
@@ -182,7 +188,7 @@ class PKUSafeRLHF(Template):
     split_token: str = 'ASSISTANT:'
     separator: str = ''
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         metrics = raw_sample['better_response_id']
         better_response = raw_sample[f'response_{int(metrics)}']
         worse_response = raw_sample[f'response_{1-int(metrics)}']
@@ -226,7 +232,7 @@ class ShareGPT:
     split_token: str = 'ASSISTANT:'
     end_token: str = '<|end_of_text|>'
 
-    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations'][:-2]
         last_conversations = raw_sample['conversations'][-2:]
         
@@ -288,65 +294,7 @@ class TI2TI_PREFERENCE:
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        input_text = raw_sample['input_text']
-        input_img = raw_sample['input_image']
-
-        better_text = raw_sample['better_text']
-        better_img = raw_sample['better_img']
-
-        worse_text = raw_sample['worse_text']
-        worse_img = raw_sample['worse_img']
-
-        input_text_processed, input_images = insert_img_token(input_text, input_img)
-
-        better_text_processed, better_images = insert_img_token(better_text, better_img)
-
-        worse_text_processed, worse_images = insert_img_token(worse_text, worse_img)
-
-        better_text_full = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=input_text_processed)}'
-            f"{self.assistant_prompt.format(output=better_text_processed)}"
-        )
-
-        better_images_full = safe_add(input_images, better_images)
-
-        worse_text_full = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=input_text_processed)}'
-            f"{self.assistant_prompt.format(output=worse_text_processed)}"
-        )
-
-        worse_images_full = safe_add(input_images, worse_images)
-
-        return {
-            'better_text': better_text_full,
-            'worse_text': worse_text_full,
-            'better_images': better_images_full,
-            'worse_images': worse_images_full,
-        }
-
-    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        input_text = raw_sample['input_text']
-        input_img = raw_sample['input_image']
-
-        input_text_processed, input_images = insert_img_token(input_text, input_img)
-
-        return {
-            'text': input_text_processed,
-            'image': input_images,
-        }
-
-@register_template('Chameleon_preference')
-class CHAMELEON_PREFERENCE:
-    system_prompt: str = ''
-    user_prompt: str = 'USER: \n{input}'
-    assistant_prompt: str = '\nASSISTANT:{output}'
-    split_token: str = 'ASSISTANT:'
-    separator: str = '###'
-
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         input_text = raw_sample['input_text']
         input_img = raw_sample['input_image']
         
@@ -405,7 +353,7 @@ class AA_TF:
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
     
-    def format_sample(self, raw_sample: dict[str, Any], path: str|None=None) -> dict[str, Any]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any], path: str|None=None) -> dict[str, Any]:
         input_text = raw_sample['question']
         input_img = raw_sample['image_url']
         
@@ -451,7 +399,7 @@ class TI2TI_SPAVL:
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         input_text = raw_sample['question']
         input_img = raw_sample['image']
         
@@ -505,8 +453,8 @@ class TI2TI_SPAVL:
         }
         
 @register_template('PICKAPIC_TI2TI')
-class Pickapic_TI2TI(Chameleon_preference):
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+class Pickapic_TI2TI(TI2TI_PREFERENCE):
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['caption']
         better_id = int(raw_sample['label_1'])
         worse_id = int(raw_sample['label_0'])
@@ -705,15 +653,15 @@ class ShareGPT4o:
         }
 
     
-@register_template('Llava')
-class Llava:
+@register_template('LLAVA')
+class LLAVA:
     system_prompt: str = ''
     user_prompt: str = 'USER: \n<image>{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations']
         raw_prompt = raw_conversations[0]['value'].replace('<image>\n', '').replace('\n<image>', '')
 
@@ -737,15 +685,15 @@ class Llava:
             'image': load_image(image_file),
         }
 
-@register_template('Llava_Local')
-class Llava_Local:
+@register_template('LLAVA_Local')
+class LLAVA_Local:
     system_prompt: str = ''
     user_prompt: str = 'USER: \n<image>{input}'
     assistant_prompt: str = '\nASSISTANT:{output}'
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations']
         raw_prompt = raw_conversations[0]['value'].replace('<image>\n', '').replace('\n<image>', '')
 
@@ -774,7 +722,7 @@ class LLAVA_CC3M:
     user_prompt: str = 'USER: \n{input}'
     assistant_prompt: str = '\nASSISTANT: {output}'
     
-    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
         raw_conversations = raw_sample['conversations']
         question = raw_conversations[0]['value']
         answer = raw_conversations[1]['value']
@@ -886,7 +834,7 @@ class DiffusionDB:
     assistant_prompt: str = ' ASSISTANT:{output}'
     split_token: str = ' ASSISTANT:'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
 
         text = raw_sample['prompt']
         return {
@@ -903,64 +851,7 @@ class TI2TI:
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        input_text = raw_sample['input_text']
-        output_text = raw_sample['output_text']
-        input_img = raw_sample['input_image']
-        output_img = raw_sample['output_image']
-
-        if isinstance(input_img, str):
-            input_images = [load_image(input_img)]
-            num_imput_img = 1
-        elif isinstance(input_img, list):
-            input_images = [load_image(img) for img in input_img]
-            num_input_img = len(input_img)
-        else:
-            raise ValueError("input_image must be either a string or a list of strings")
-
-
-        input_text = f"{'<image>' * num_imput_img}{input_text}"
-
-        # do the same for output
-        if isinstance(output_img, str):
-            output_images = [load_image(output_img)]
-            num_output_img = 1
-
-        elif isinstance(output_img, list):
-            output_images = [load_image(img) for img in output_img]
-            num_output_img = len(output_img)
-        else:
-            raise ValueError("output_image must be either a string or a list of strings")
-
-        output_text = f"{output_text}{'<image>' * num_output_img}"
-
-        text = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=input_text)}'
-            f"{self.assistant_prompt.format(output=output_text)}"
-        )
-
-        prompt = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=input_text)}'
-            f"{self.assistant_prompt.format(output='')}"
-        )
-
-        return {
-            'text': text,
-            'prompt': prompt,
-            'images': input_images + output_images,
-        }
-
-@register_template('Chameleon')
-class CHAMELEON:
-    system_prompt: str = ''
-    user_prompt: str = 'USER: \n{input}'
-    assistant_prompt: str = '\nASSISTANT:{output}'
-    split_token: str = 'ASSISTANT:'
-    separator: str = '###'
-
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         input_text = raw_sample['input_text']
         output_text = raw_sample['output_text']
         input_img = raw_sample['input_image']
@@ -971,7 +862,6 @@ class CHAMELEON:
             num_imput_img = 1
         elif isinstance(input_img, list):
             input_images = [load_image(img) for img in input_img]
-            num_input_img = len(input_img)
         else:
             raise ValueError("input_image must be either a string or a list of strings")
         
@@ -1017,7 +907,7 @@ class ANYTHING_TI2TI:
     split_token: str = 'ASSISTANT:'
     separator: str = '###'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         input_text = raw_sample['question']
         output_text = raw_sample['response']
         input_img = raw_sample['image_url']
@@ -1077,7 +967,7 @@ class RLAIFV:
     assistant_prompt: str = '\nASSISTANT:{output}'
     split_token: str = 'ASSISTANT:'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         better_response = raw_sample['chosen']
         worse_response = raw_sample['rejected']
         prompt = raw_sample['question']
@@ -1127,7 +1017,7 @@ class SPA_VL:
     assistant_prompt: str = '\nASSISTANT: {output}'
     split_token: str = 'ASSISTANT:'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         better_response = raw_sample['chosen']
         worse_response = raw_sample['rejected']
         prompt = raw_sample['question']
@@ -1176,7 +1066,7 @@ class SPA_VL:
 @register_template('Pickapic')
 class Pickapic:
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['caption']
         better_id = int(raw_sample['label_1'])
         worse_id = int(raw_sample['label_0'])
@@ -1213,7 +1103,7 @@ class Webvid:
 
 @register_template('SafeSora')
 class SafeSora:
-    def format_sample(self, raw_sample: dict[str, Any], path: str = None) -> dict[str, Any]:
+    def format_preference_sample(self, raw_sample: dict[str, Any], path: str = None) -> dict[str, Any]:
         prompt = raw_sample['prompt_text']
 
         better_id = None
@@ -1272,104 +1162,6 @@ class SOMOS:
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
         return False
-
-@register_template('Qwen2-VL')
-class QWEN2VL:
-    system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
-    user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
-    assistant_prompt: str = '<|im_start|>assistant\n{output}'
-    split_token: str = '\n'
-    separator: str = 'assistant\n'
-
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['prompt']
-        output = raw_sample['output']
-
-        return_text = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f"{self.assistant_prompt.format(output=output)}"
-        )
-
-        return_prompt = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f"{self.assistant_prompt.format(output='')}"
-        )
-
-        video_info = raw_sample['video_path']
-        if isinstance(video_info, str):
-            video_info = [video_info]
-
-        return_dict = {
-            "text": return_text,
-            "prompt": return_prompt,
-            "image": [],
-            "video": video_info,
-        }
-        return return_dict
-
-@register_template('Qwen2-VL_preference')
-class QWEN2VL_PREF:
-    system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
-    user_prompt: str = '<|im_start|>user\n{input}<|im_end|>\n'
-    assistant_prompt: str = '<|im_start|>assistant\n{output}'
-    split_token: str = '\n'
-    separator: str = 'assistant\n'
-
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['prompt']
-        better_output = raw_sample['better_output']
-        worse_output = raw_sample['worse_output']
-
-        return_better_text = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f"{self.assistant_prompt.format(output=better_output)}"
-        )
-
-        return_worse_text = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f"{self.assistant_prompt.format(output=worse_output)}"
-        )
-
-        video_info = raw_sample['video_path']
-        if isinstance(video_info, str):
-            video_info = [video_info]
-
-        return_dict = {
-            "better_text": return_better_text,
-            "worse_text": return_worse_text,
-            "image": [],
-            "video": video_info,
-        }
-        return return_dict 
-    
-    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
-        if raw_sample['better_output'] == raw_sample['worse_output']:
-            return True
-        else:
-            return False
-
-    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['prompt']
-
-        return_prompt = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f"{self.assistant_prompt.format(output='')}"    
-        )
-
-        video_info = raw_sample['video_path']
-        if isinstance(video_info, str):
-            video_info = [video_info]
-
-        return {
-            'text': return_prompt,
-            'image': [],
-            'video': video_info,
-        }
 
 
 @register_template('Alpaca')
@@ -1794,7 +1586,7 @@ class OpenAQA:
     split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
     separator: str = '<|im_end|>\n<|im_start|>assistant\n'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['instruction']
         audio_url = raw_sample['audio_id']
         response = raw_sample['output']
@@ -1819,7 +1611,7 @@ class RLHFAQA:
     split_token: str = 'assistant\n'
     separator: str = 'assistant\n'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         raw_input = raw_sample['raw_input']
         better_id = raw_sample['overall_response']
 
@@ -1876,16 +1668,153 @@ class RLHFAQA:
 
         return {'conversation': conversation}
     
-@register_template('Qwen2Audio')
-class Qwen2Audio:
-    system_prompt: str = 'You are a helpful assistant.'
-    split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
-    separator: str = '<|im_end|>\n<|im_start|>assistant\n'
+@register_template('AA_TI2T')
+class AA_TI2T:
+    system_prompt: str = ""
+    user_prompt: str = 'USER: {input}\n<image>'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
 
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['instruction']
-        audio_url = raw_sample['audio_id']
-        response = raw_sample['output']
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        better_id = int(raw_sample['overall_response'])
+        worse_id = 2 if better_id==1 else 1
+
+        better_response = raw_sample[f'response_{better_id}']
+        worse_response = raw_sample[f'response_{worse_id}']
+        prompt = raw_sample['question']
+        image_path = raw_sample['image']
+        image = load_image_from_base64(image_path).convert('RGBA')
+
+        formatted_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+        )
+        formatted_better_output = (
+            f'{self.assistant_prompt.format(output=better_response)}'
+        )
+        formatted_worse_output = (
+            f'{self.assistant_prompt.format(output=worse_response)}'
+        )
+
+        return {
+            'prompt': formatted_prompt,
+            'better_text': formatted_better_output,
+            'worse_text': formatted_worse_output,
+            'image': image,
+        }
+
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        better_id = int(raw_sample['overall_response'])
+        worse_id = 2 if better_id==1 else 1
+        better_response = raw_sample[f'response_{better_id}']
+        worse_response = raw_sample[f'response_{worse_id}']
+
+        return better_response == worse_response
+
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['question'].replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
+        image = raw_sample['image']
+
+        formatted_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f'{self.assistant_prompt.format(output="")}'
+        )
+        image = image.convert('RGBA')
+
+        return {
+            'text': formatted_prompt,
+            'image': image,
+        }
+    
+@register_template('LLAMA_3_2')
+class LLAMA_3_2:
+    system_prompt: str = ''
+    user_prompt: str = '<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n<|image|>{input}<|eot_id|>'
+    assistant_prompt: str = '<|start_header_id|>assistant<|end_header_id|>\n{output}'
+    split_token: str = '<|start_header_id|>assistant<|end_header_id|>'
+    separator: str = '###'
+
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['question']
+        answer = raw_sample['answer']
+        image_path = raw_sample['image']
+        image = load_image_from_base64(image_path).convert('RGBA')
+
+        formatted_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f'{self.assistant_prompt.format(output="")}'
+        )
+        formatted_answer = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f'{self.assistant_prompt.format(output=answer)}'
+        )
+
+        return {
+            'text': formatted_answer,
+            'prompt': formatted_prompt,
+            'image': image,
+        }
+
+@register_template('AA_TA2T')
+class AA_TA2T:
+    system_prompt: str = 'You are a helpful assistant.'
+    split_token: str = 'assistant\n'
+    separator: str = 'assistant\n'
+
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        better_id = int(raw_sample['overall_response'])
+        worse_id = 2 if better_id==1 else 1
+        better_response = raw_sample[f'response_{better_id}']
+        worse_response = raw_sample[f'response_{worse_id}']
+        prompt = raw_sample['prompt']
+        audio_url = raw_sample['audio_path']
+
+        better_conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": better_response},
+        ]
+
+        worse_conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": worse_response},
+        ]
+
+        formatted_prompt = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+        ]
+
+        return {
+            'prompt': formatted_prompt,
+            'better_conversation': better_conversation,
+            'worse_conversation': worse_conversation,
+        }
+
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        better_id = int(raw_sample['overall_response'])
+        worse_id = 2 if better_id==1 else 1
+        better_response = raw_sample[f'response_{better_id}']
+        worse_response = raw_sample[f'response_{worse_id}']
+
+        return better_response==worse_response
+
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['prompt']
+        audio_url = raw_sample['audio_path']
 
         conversation = [
             {'role': 'system', 'content': self.system_prompt},
@@ -1893,10 +1822,7 @@ class Qwen2Audio:
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
                 ]},
-            {"role": "assistant", "content": response},
         ]
 
-        return {
-            'conversation': conversation,
-            'prompt': conversation[:-1],
-        }
+        return {'conversation': conversation}
+    
