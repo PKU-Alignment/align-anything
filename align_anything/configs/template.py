@@ -505,7 +505,7 @@ class TI2TI_SPAVL:
         }
         
 @register_template('PICKAPIC_TI2TI')
-class Pickapic_TI2TI(Chameleon_preference):
+class Pickapic_TI2TI(CHAMELEON_PREFERENCE):
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['caption']
         better_id = int(raw_sample['label_1'])
@@ -1878,7 +1878,9 @@ class RLHFAQA:
     
 @register_template('Qwen2Audio')
 class Qwen2Audio:
-    system_prompt: str = 'You are a helpful assistant.'
+    system_prompt: str = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
+    user_prompt: str = '<|im_start|>user\nAudio 1: <|audio_bos|><|AUDIO|><|audio_eos|>\n{input}<|im_end|>\n'
+    assistant_prompt: str = '<|im_start|>assistant{output}'
     split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
     separator: str = '<|im_end|>\n<|im_start|>assistant\n'
 
@@ -1888,7 +1890,7 @@ class Qwen2Audio:
         response = raw_sample['output']
 
         conversation = [
-            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'system', 'content': 'You are a helpful assistant.'},
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
