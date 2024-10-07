@@ -20,6 +20,7 @@ import json
 import os
 import cv2
 import glob
+import math
 import random
 import base64
 from collections import namedtuple
@@ -38,6 +39,8 @@ from moviepy.editor import AudioFileClip
 from torch.nn.utils.rnn import pad_sequence
 from torch.types import Number
 from torch.autograd import Variable
+from torchvision import transforms
+from torchvision.transforms import InterpolationMode
 from torchvision.models.inception import inception_v3
 from transformers import PreTrainedTokenizerBase, ProcessorMixin
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
@@ -635,3 +638,90 @@ def process_videos(video_id, video_path, frames_dir):
 def image_b64(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
+
+def read_video_pyav(container, indices):
+    frames = []
+    container.seek(0)
+    start_index = indices[0]
+    end_index = indices[-1]
+    for i, frame in enumerate(container.decode(video=0)):
+        if i > end_index:
+            break
+        if i >= start_index and i in indices:
+            frames.append(frame)
+    return np.stack([x.to_ndarray(format="rgb24") for x in frames])
+
+def smart_resize(height: int, width: int, factor: int = 28, min_pixels: int = 4 * 28 * 28, max_pixels: int = 16384 * 28 * 28):
+    if max(height, width) / min(height, width) > 200:
+        raise ValueError(f"absolute aspect ratio must be smaller than 200, got {max(height, width) / min(height, width)}")
+    h_bar = max(factor, round(height / factor) * factor)
+    w_bar = max(factor, round(width / factor) * factor)
+    if h_bar * w_bar > max_pixels:
+        beta = math.sqrt((height * width) / max_pixels)
+        h_bar = math.floor(height / beta / factor) * factor
+        w_bar = math.floor(width / beta / factor) * factor
+    elif h_bar * w_bar < min_pixels:
+        beta = math.sqrt(min_pixels / (height * width))
+        h_bar = math.ceil(height * beta / factor) * factor
+        w_bar = math.ceil(width * beta / factor) * factor
+    return h_bar, w_bar
+
+def smart_nframes(ele: dict, total_frames: int, video_fps: int | float):
+    fps = ele.get("fps", 2.0)
+    min_frames = math.ceil(ele.get("min_frames", 4) / 2) * 2
+    max_frames = math.floor(ele.get("max_frames", min(768, total_frames)) / 2) * 2
+    nframes = total_frames / video_fps * fps
+    nframes = min(max(nframes, min_frames), max_frames)
+    nframes = round(nframes / 2) * 2
+    if not (2 <= nframes and nframes <= total_frames):
+        raise ValueError(f"nframes should in interval [2, {total_frames}], but got {nframes}.")
+    return nframes
+
+def read_video(ele: dict, task_idx):
+    import decord
+    video_path = ele["video"]
+    vr = decord.VideoReader(video_path)
+    total_frames, video_fps = len(vr), vr.get_avg_fps()
+    nframes = smart_nframes(ele, total_frames=total_frames, video_fps=video_fps)
+    nframes = min(task_idx, nframes)
+    idx = torch.linspace(0, total_frames - 1, nframes).round().long().tolist()
+    video = vr.get_batch(idx).asnumpy()
+    video = torch.tensor(video).permute(0, 3, 1, 2)
+    return video
+
+def fetch_video(ele: dict, task_idx, image_factor: int = 28):
+    video = read_video(ele, task_idx)
+    nframes, _, height, width = video.shape
+
+    min_pixels = ele.get("min_pixels", 128 * 28 * 28)
+    total_pixels = ele.get("total_pixels", 24576 * 28 * 28)
+    max_pixels = max(min(768 * 28 * 28, total_pixels / nframes * 2), int(min_pixels * 1.05))
+    max_pixels = ele.get("max_pixels", max_pixels)
+    if "resized_height" in ele and "resized_width" in ele:
+        resized_height, resized_width = smart_resize(ele["resized_height"], ele["resized_width"], factor=image_factor)
+    else:
+        resized_height, resized_width = smart_resize(height, width, factor=image_factor, min_pixels=min_pixels, max_pixels=max_pixels)
+    video = transforms.functional.resize(video, [resized_height, resized_width], interpolation=InterpolationMode.BICUBIC, antialias=True).float()
+    return video
+
+def extract_vision_info(conversations: list[dict] | list[list[dict]]):
+    vision_infos = []
+    if isinstance(conversations[0], dict):
+        conversations = [conversations]
+    for conversation in conversations:
+        for message in conversation:
+            if isinstance(message["content"], list):
+                for ele in message["content"]:
+                    if ("video" in ele or ele["type"] in ("video")):
+                        vision_infos.append(ele)
+    return vision_infos
+
+def process_vision(conversations: list[dict] | list[list[dict]], task_idx):
+    vision_infos = extract_vision_info(conversations)
+    video_inputs = []
+    for vision_info in vision_infos:
+        if "video" in vision_info:
+            video_inputs.append(fetch_video(vision_info, task_idx))
+        else:
+            raise ValueError("video should in content.")
+    return video_inputs
