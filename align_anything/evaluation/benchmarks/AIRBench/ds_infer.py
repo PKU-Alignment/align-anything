@@ -171,31 +171,34 @@ class AIRBenchGeneratorDS(BaseInferencer_deepspeed):
             
         for batch in tqdm(dataloader):
             local_rank = int(os.environ['LOCAL_RANK'])
-            outputs = self.model.generate(
-                **batch["inputs"][0].to(f"cuda:{local_rank}"),
-                return_dict_in_generate=True, 
-                early_stopping=True,
-                output_scores=True,
-                max_new_tokens=1024,
-            )
-            outputs = outputs.sequences[:, batch["inputs"][0].input_ids.size(1):]
-            responses = self.processor.batch_decode(outputs, skip_special_tokens=True)
-            
-            for i in range(self.batch_size):
-                token_ids = batch["token_ids"][i]
-                text = batch["text"][i]
-                response = responses[i]
-                inference_output = InferenceOutput.from_deepspeed_output(deepspeed_output={
-                        "prompt": text,
-                        "prompt_token_ids": token_ids,
-                        "prompt_logprobs": None,
-                        "response": response,
-                        "response_token_ids": None,
-                        "response_logprobs": None,
-                        "raw_output":  None
-                    }, store_raw=True)
-                inference_output.question_id = batch["question_id"][i]
-                InferenceOutputs.append(inference_output)
+            try:
+                outputs = self.model.generate(
+                    **batch["inputs"][0].to(f"cuda:{local_rank}"),
+                    return_dict_in_generate=True, 
+                    early_stopping=True,
+                    output_scores=True,
+                    max_new_tokens=1024,
+                )
+                outputs = outputs.sequences[:, batch["inputs"][0].input_ids.size(1):]
+                responses = self.processor.batch_decode(outputs, skip_special_tokens=True)
+                
+                for i in range(self.batch_size):
+                    token_ids = batch["token_ids"][i]
+                    text = batch["text"][i]
+                    response = responses[i]
+                    inference_output = InferenceOutput.from_deepspeed_output(deepspeed_output={
+                            "prompt": text,
+                            "prompt_token_ids": token_ids,
+                            "prompt_logprobs": None,
+                            "response": response,
+                            "response_token_ids": None,
+                            "response_logprobs": None,
+                            "raw_output":  None
+                        }, store_raw=True)
+                    inference_output.question_id = batch["question_id"][i]
+                    InferenceOutputs.append(inference_output)
+            except Exception as e:
+                continue
         return InferenceOutputs
 
     def save_pickle(self, output_data: List[InferenceOutput], task_dir: str=None):
