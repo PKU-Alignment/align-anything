@@ -505,7 +505,7 @@ class TI2TI_SPAVL:
         }
         
 @register_template('PICKAPIC_TI2TI')
-class Pickapic_TI2TI(TI2TI_PREFERENCE):
+class Pickapic_TI2TI(Chameleon_preference):
     def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['caption']
         better_id = int(raw_sample['label_1'])
