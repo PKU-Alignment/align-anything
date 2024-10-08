@@ -214,7 +214,14 @@ The evaluation module of align-anything supports a variety of multimodal benchma
                 </tr>
                 <tr>
                     <td>
-                        <a href="https://huggingface.co/datasets/sayakpaul/coco-30-val-2014" target="_blank">COCO-val2014-30k</a><span class="star">*</span>
+                        <a href="https://huggingface.co/datasets/OpenGVLab/MVBench" target="_blank">MVBench</a><span class="star">*</span>
+                    </td>
+                    <td>Text+Video→Text</td>
+                    <td>vLLM</td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="https://huggingface.co/datasets/sayakpaul/coco-30-val-2014" target="_blank">COCO-val2014-30k</a><!-- <span class="star">*</span> -->
                     </td>
                     <td>Text→Image</td>
                     <td>Accelerate</td>
@@ -231,14 +238,14 @@ The evaluation module of align-anything supports a variety of multimodal benchma
                 </tr>
                 <tr>
                     <td>
-                        <a href="https://huggingface.co/datasets/AudioLLMs/audiocaps_test" target="_blank">AudioCaps</a><span class="star">*</span>
+                        <a href="https://huggingface.co/datasets/AudioLLMs/audiocaps_test" target="_blank">AudioCaps</a><!-- <span class="star">*</span> -->
                     </td>
                     <td>Text→Audio</td>
                     <td>Accelerate</td>
                 </tr>
                 <tr>
                     <td>
-                        <a href="https://huggingface.co/datasets/BestWishYsh/ChronoMagic-Bench" target="_blank">ChronoMagic-Bench</a><span class="star">*</span>
+                        <a href="https://huggingface.co/datasets/BestWishYsh/ChronoMagic-Bench" target="_blank">ChronoMagic-Bench</a><!-- <span class="star">*</span> -->
                     </td>
                     <td>Text→Video</td>
                     <td>Accelerate</td>

@@ -98,7 +98,8 @@ def judger(meta_info, question, answer_gt, response, api_key, base_url):
         prompt = gpt_prompt.replace("XAudioX", meta_info).replace("XQuestionX", question).replace("XAssistant1X", answer_gt).replace("XAssistant2X", response)
         try:
             gpt_score = get_response(prompt).strip().replace('\n','')
-        except Exception:
+        except Exception as e:
+            print(f"Error occurred: {str(e)}")
             continue
             
         scores = gpt_score.split(' ')

@@ -175,9 +175,9 @@ class AIRBenchGeneratorDS(BaseInferencer_deepspeed):
                 outputs = self.model.generate(
                     **batch["inputs"][0].to(f"cuda:{local_rank}"),
                     return_dict_in_generate=True, 
-                    early_stopping=True,
                     output_scores=True,
-                    max_new_tokens=1024,
+                    repetition_penalty=1.3,
+                    temperature=0.1
                 )
                 outputs = outputs.sequences[:, batch["inputs"][0].input_ids.size(1):]
                 responses = self.processor.batch_decode(outputs, skip_special_tokens=True)
