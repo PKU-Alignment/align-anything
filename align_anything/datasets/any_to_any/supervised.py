@@ -13,9 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-import copy
 from typing import Any, Callable, Dict, Optional
-from regex import D
 from typing_extensions import TypedDict  # Python 3.10+
 
 import torch
