@@ -51,6 +51,13 @@ except ImportError:
     QWEN2VL_AVALIABLE = False
     print("Qwen2VL is currently not available.")
 
+try:
+    from align_anything.models.modeling_emu3.mllm.processing_emu3 import Emu3Processor
+    EMU_AVAILABLE = True
+except ImportError:
+    EMU_AVAILABLE = False
+    print(f"Emu is currently not available")
+
 from transformers.utils.generic import ModelOutput
 
 from align_anything.models.llava_model import AccustomedLlavaModel

@@ -38,6 +38,8 @@ from transformers import (
     CLIPTextModel,
     PreTrainedModel,
     PreTrainedTokenizerBase,
+    AutoModel,
+    AutoImageProcessor,
 )
 
 
@@ -114,44 +116,44 @@ def resize_tokenizer_embedding(tokenizer: PreTrainedTokenizerBase, model: PreTra
         ).format,
     )
 
-    special_tokens_dict = {}
-    if tokenizer.pad_token is None:
-        special_tokens_dict['pad_token'] = DEFAULT_PAD_TOKEN
-    if tokenizer.eos_token is None:
-        special_tokens_dict['eos_token'] = DEFAULT_EOS_TOKEN
-    if tokenizer.bos_token is None:
-        special_tokens_dict['bos_token'] = DEFAULT_BOS_TOKEN
-    if tokenizer.unk_token is None:
-        special_tokens_dict['unk_token'] = DEFAULT_UNK_TOKEN
+    # special_tokens_dict = {}
+    # if tokenizer.pad_token is None:
+    #     special_tokens_dict['pad_token'] = DEFAULT_PAD_TOKEN
+    # if tokenizer.eos_token is None:
+    #     special_tokens_dict['eos_token'] = DEFAULT_EOS_TOKEN
+    # if tokenizer.bos_token is None:
+    #     special_tokens_dict['bos_token'] = DEFAULT_BOS_TOKEN
+    # if tokenizer.unk_token is None:
+    #     special_tokens_dict['unk_token'] = DEFAULT_UNK_TOKEN
 
-    num_new_tokens = tokenizer.add_special_tokens(special_tokens_dict)
+    # num_new_tokens = tokenizer.add_special_tokens(special_tokens_dict)
     new_num_embeddings = len(tokenizer)
 
     model.config.bos_token_id = tokenizer.bos_token_id
     model.config.eos_token_id = tokenizer.eos_token_id
     model.config.pad_token_id = tokenizer.pad_token_id
 
-    if num_new_tokens > 0:
-        hf_device_map = getattr(model, 'hf_device_map', {})
-        devices = {
-            torch.device(device)
-            for device in hf_device_map.values()
-            if device not in {'cpu', 'disk'}
-        }
-        is_model_parallel = len(devices) > 1
+    # if num_new_tokens > 0:
+    #     hf_device_map = getattr(model, 'hf_device_map', {})
+    #     devices = {
+    #         torch.device(device)
+    #         for device in hf_device_map.values()
+    #         if device not in {'cpu', 'disk'}
+    #     }
+    #     is_model_parallel = len(devices) > 1
 
-        if not is_model_parallel:
-            model.resize_token_embeddings(new_num_embeddings)
-            init_new_embeddings(
-                model.get_input_embeddings(),
-                new_num_embeddings=new_num_embeddings,
-                num_new_embeddings=num_new_tokens,
-            )
-            init_new_embeddings(
-                model.get_output_embeddings(),
-                new_num_embeddings=new_num_embeddings,
-                num_new_embeddings=num_new_tokens,
-            )
+    #     if not is_model_parallel:
+    #         model.resize_token_embeddings(new_num_embeddings)
+    #         init_new_embeddings(
+    #             model.get_input_embeddings(),
+    #             new_num_embeddings=new_num_embeddings,
+    #             num_new_embeddings=num_new_tokens,
+    #         )
+    #         init_new_embeddings(
+    #             model.get_output_embeddings(),
+    #             new_num_embeddings=new_num_embeddings,
+    #             num_new_embeddings=num_new_tokens,
+    #         )
 
     verify_vocabulary_embedding_sizes(
         tokenizer=tokenizer,
@@ -184,6 +186,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     auto_tokenizer_kwargs: dict[str, Any] | None = None,
     bnb_cfgs: dict[str, Any] | None = None,
     lora_cfgs: dict[str, Any] | None = None,
+    processor_name_or_path: str | os.PathLike | None = None,
 ) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
     """Load pre-trained model and tokenizer from a given path."""
     model_name_or_path = os.path.expanduser(model_name_or_path)
@@ -294,16 +297,45 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     )
     resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
 
-    try:
+    # try:
+    if "emu" in model_name_or_path.lower():
+        print("Loading Emu3 processor")
+        print(f"Processor name or path: {processor_name_or_path}")
+        from align_anything.models.modeling_emu3.tokenizer.modeling_emu3visionvq import Emu3VisionVQModel
+        image_processor = AutoImageProcessor.from_pretrained(processor_name_or_path, trust_remote_code=True)
+        image_tokenizer = Emu3VisionVQModel.from_pretrained(processor_name_or_path)
+        # for name, param in image_tokenizer.named_parameters():
+        #     print(f"{name}: {param.shape}")
+            # if  param.shape == torch.Size([0]):
+            #     raise ValueError(f"Image tokenizer is empty for {name}")
+        image_tokenizer = deepspeed.init_inference(
+                image_tokenizer,
+                dtype=torch.float16,  
+                replace_with_kernel_inject=True 
+            )
+        image_tokenizer.eval()
+        # for name, param in image_tokenizer.named_parameters():
+        #     print(f"{name}: {param.shape}")
+        #     if  param.shape == torch.Size([0]):
+        #         raise ValueError(f"Image tokenizer is empty for {name}")
+        # exit()
+        from align_anything.models.modeling_emu3.mllm.processing_emu3 import Emu3Processor
+        processor = Emu3Processor(
+            image_processor,
+            image_tokenizer,
+            tokenizer,
+        )
+    else:
         processor = AutoProcessor.from_pretrained(
             model_name_or_path,
             cache_dir=cache_dir,
             trust_remote_code=trust_remote_code,
         )
-        if not hasattr(processor, 'tokenizer'):
-            setattr(processor, 'tokenizer', tokenizer)
-    except:
-        processor = None
+    if not hasattr(processor, 'tokenizer'):
+        setattr(processor, 'tokenizer', tokenizer)
+    # except Exception as e:
+    #     print(f"Error loading processor: {e}")
+    #     processor = None
     return model, tokenizer, processor
 
 
