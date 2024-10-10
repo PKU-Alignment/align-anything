@@ -1,5 +1,4 @@
-# coding=utf-8
-# Copyright 2024 The Emu team, BAAI and The HuggingFace Inc. team. All rights reserved.
+# Copyright 2024 PKU-Alignment Team, The Emu team, BAAI and The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -145,7 +144,6 @@ class Emu3Processor(ProcessorMixin):
 
             image_inputs = self.image_processor(image, return_tensors="pt")["pixel_values"]
             image_inputs = image_inputs.to(self.vision_tokenizer.device, self.vision_tokenizer.dtype)
-            # print(f"Shape of image_inputs: {image_inputs.shape}")
             image_tokens = self.vision_tokenizer.encode(image_inputs)
 
             if len(text) != len(image_tokens):
@@ -159,7 +157,6 @@ class Emu3Processor(ProcessorMixin):
             
             image_outputs = self.image_processor(output_image, return_tensors="pt")["pixel_values"]
             image_outputs = image_outputs.to(self.vision_tokenizer.device, self.vision_tokenizer.dtype)
-            # print(f"Shape of image_outputs: {image_outputs.shape}")
             image_tokens = self.vision_tokenizer.encode(image_outputs)
 
 
@@ -174,7 +171,6 @@ class Emu3Processor(ProcessorMixin):
             
             image_inputs = self.image_processor(image, return_tensors="pt")["pixel_values"]
             image_inputs = image_inputs.to(self.vision_tokenizer.device, self.vision_tokenizer.dtype)
-            # print(f"Shape of image_inputs: {image_inputs.shape}")
             image_tokens = self.vision_tokenizer.encode(image_inputs)
         
         else:

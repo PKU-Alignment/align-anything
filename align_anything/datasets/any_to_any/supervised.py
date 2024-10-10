@@ -90,9 +90,6 @@ class SupervisedDataset(Dataset):
         formatted_sample = self.template.format_sample(raw_sample)
         return_dict = {}
         if formatted_sample['mode'] == 'TG':
-
-            # print(f"input_text: {formatted_sample['input_text']}")
-            # print(f"output_image: {formatted_sample['output_image']}")
             input_kwargs = dict(
                 mode='G',
                 ratio="1:1",
@@ -100,7 +97,6 @@ class SupervisedDataset(Dataset):
                 return_tensors="pt",
             )
             inputs = self.processor(text=formatted_sample['input_text'], **input_kwargs)
-            # print(f"Inputs: {inputs}")
             output_kwargs = dict(
                 mode='TG',
                 ratio="1:1",
@@ -108,7 +104,6 @@ class SupervisedDataset(Dataset):
                 return_tensors="pt",
             )
             outputs = self.processor(text=formatted_sample['input_text'], output_image=formatted_sample['output_image'], **output_kwargs)
-            # print(f"Outputs: {outputs.keys()}")
             full_input_ids = outputs['input_ids'][0]
             labels = full_input_ids.clone()
             prompt_input_ids = inputs['input_ids'][0]
@@ -118,8 +113,6 @@ class SupervisedDataset(Dataset):
             return return_dict
         
         elif formatted_sample['mode'] == 'TU':
-            # print(f"input_text: {formatted_sample['input_text']}")
-            # print(f"output_image: {formatted_sample['output_image']}")
             inputs = self.processor(
                 text=formatted_sample['input_text'],
                 image=formatted_sample['input_image'],
@@ -128,7 +121,6 @@ class SupervisedDataset(Dataset):
                 padding="longest",
                 return_tensors="pt",
             )
-            # print(f"Inputs: {inputs}")
             outputs = self.processor(
                 text=formatted_sample['input_text'],
                 image=formatted_sample['input_image'],
@@ -138,7 +130,6 @@ class SupervisedDataset(Dataset):
                 padding="longest",
                 return_tensors="pt",
             )
-            # print(f"Outputs: {outputs.keys()}")
             full_input_ids = outputs['input_ids'][0]
             labels = full_input_ids.clone()
             prompt_input_ids = inputs['input_ids'][0]
@@ -149,7 +140,6 @@ class SupervisedDataset(Dataset):
 
         else:
             raise ValueError(f"Invalid mode: {formatted_sample['mode']}")
-        # return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
         return SupervisedCollator(self.tokenizer, self.processor)
@@ -232,7 +222,6 @@ class SupervisedCollator(DataCollatorForSeq2Seq):
         self.processor = processor
 
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
-        # return_dict = {}
         current_device = get_current_device()
         features: Dict[str, "torch.Tensor"] = super().__call__(samples)
         for k, v in features.items():
