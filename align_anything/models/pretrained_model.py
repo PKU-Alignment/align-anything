@@ -297,45 +297,36 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     )
     resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
 
-    # try:
-    if "emu" in model_name_or_path.lower():
-        print("Loading Emu3 processor")
-        print(f"Processor name or path: {processor_name_or_path}")
-        from align_anything.models.modeling_emu3.tokenizer.modeling_emu3visionvq import Emu3VisionVQModel
-        image_processor = AutoImageProcessor.from_pretrained(processor_name_or_path, trust_remote_code=True)
-        image_tokenizer = Emu3VisionVQModel.from_pretrained(processor_name_or_path)
-        # for name, param in image_tokenizer.named_parameters():
-        #     print(f"{name}: {param.shape}")
-            # if  param.shape == torch.Size([0]):
-            #     raise ValueError(f"Image tokenizer is empty for {name}")
-        image_tokenizer = deepspeed.init_inference(
+    try:
+        if "emu" in model_name_or_path.lower():
+            print("Loading Emu3 processor")
+            print(f"Processor name or path: {processor_name_or_path}")
+            from align_anything.models.modeling_emu3.tokenizer.modeling_emu3visionvq import Emu3VisionVQModel
+            image_processor = AutoImageProcessor.from_pretrained(processor_name_or_path, trust_remote_code=True)
+            image_tokenizer = Emu3VisionVQModel.from_pretrained(processor_name_or_path)
+            image_tokenizer = deepspeed.init_inference(
+                    image_tokenizer,
+                    dtype=torch.float16,  
+                    replace_with_kernel_inject=True 
+                )
+            image_tokenizer.eval()
+            from align_anything.models.modeling_emu3.mllm.processing_emu3 import Emu3Processor
+            processor = Emu3Processor(
+                image_processor,
                 image_tokenizer,
-                dtype=torch.float16,  
-                replace_with_kernel_inject=True 
+                tokenizer,
             )
-        image_tokenizer.eval()
-        # for name, param in image_tokenizer.named_parameters():
-        #     print(f"{name}: {param.shape}")
-        #     if  param.shape == torch.Size([0]):
-        #         raise ValueError(f"Image tokenizer is empty for {name}")
-        # exit()
-        from align_anything.models.modeling_emu3.mllm.processing_emu3 import Emu3Processor
-        processor = Emu3Processor(
-            image_processor,
-            image_tokenizer,
-            tokenizer,
-        )
-    else:
-        processor = AutoProcessor.from_pretrained(
-            model_name_or_path,
-            cache_dir=cache_dir,
-            trust_remote_code=trust_remote_code,
-        )
-    if not hasattr(processor, 'tokenizer'):
-        setattr(processor, 'tokenizer', tokenizer)
-    # except Exception as e:
-    #     print(f"Error loading processor: {e}")
-    #     processor = None
+        else:
+            processor = AutoProcessor.from_pretrained(
+                model_name_or_path,
+                cache_dir=cache_dir,
+                trust_remote_code=trust_remote_code,
+            )
+        if not hasattr(processor, 'tokenizer'):
+            setattr(processor, 'tokenizer', tokenizer)
+    except Exception as e:
+        print(f"Warning: Failed to load processor: {e}. This is ok if you are using models without processor.")
+        processor = None
     return model, tokenizer, processor
 
 

@@ -37,7 +37,6 @@ from align_anything.utils.tools import (
 
 import transformers
 from transformers import AutoImageProcessor, AutoTokenizer, AutoModel
-from align_anything.models.modeling_emu3.tokenizer.modeling_emu3visionvq import Emu3VisionVQModel
 from align_anything.models.modeling_emu3.mllm.processing_emu3 import Emu3Processor
 
 transformers.logging.set_verbosity_info()
@@ -52,8 +51,6 @@ class SuperviseTrainer(SupervisedtextTrainer):
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
-        # if self.ds_train_cfgs is not None and self.ds_train_cfgs['zero_optimization']['stage'] == 3:
-        #     self.dstchf = HfDeepSpeedConfig(self.ds_train_cfgs)
         self.model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
             processor_name_or_path=self.cfgs.model_cfgs.processor_name_or_path,
@@ -62,17 +59,8 @@ class SuperviseTrainer(SupervisedtextTrainer):
             trust_remote_code=True,
         )
         processor_name_or_path = self.cfgs.model_cfgs.processor_name_or_path
-        print(processor_name_or_path)
         image_processor = AutoImageProcessor.from_pretrained(processor_name_or_path, trust_remote_code=True)
         image_tokenizer = AutoModel.from_pretrained(processor_name_or_path, trust_remote_code=True).eval()
-        # for name, param in image_tokenizer.named_parameters():
-        #     print(f"{name}: {param.shape}")
-        # image_tokenizer = deepspeed.init_inference(
-        #         image_tokenizer,
-        #         dtype=torch.float16,  
-        #         replace_with_kernel_inject=True 
-        #     )
-        # image_tokenizer.eval()
         tokenizer = AutoTokenizer.from_pretrained(self.cfgs.model_cfgs.model_name_or_path, trust_remote_code=True)
         processor = Emu3Processor(
             image_processor,
@@ -81,12 +69,6 @@ class SuperviseTrainer(SupervisedtextTrainer):
         )
         self.processor = processor
         self.tokenizer = tokenizer
-        # for name, param in image_tokenizer.named_parameters():
-        #     print(f"{name}: {param.shape}")
-        # exit()
-        # print(f"Model loaded: {self.model}")
-        # print(f"Tokenizer loaded: {self.tokenizer}")
-        # print(f"Processor loaded: {self.processor}")
 
 
 def main():
