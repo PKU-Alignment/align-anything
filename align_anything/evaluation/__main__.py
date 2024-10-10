@@ -48,7 +48,7 @@ def parse_eval_args() -> argparse.Namespace:
             "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
             "ScienceQA", "MMStar", "L-Eval", "LongBench", "AGIEval",
             "HPSv2", "MSCOCO", "ImageRewardDB", "ChronoMagicBench", "AudioCaps",
-            "MVBench", "VideoMME"
+            "MVBench", "VideoMME", "AIRBench"
         ],
     )
     parser.add_argument(
