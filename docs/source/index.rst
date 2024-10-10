@@ -331,6 +331,7 @@ Please cite the repo if you use the data or code in this repo.
     training/text_image_to_text
     training/text_audio_to_text
     training/text_video_to_text
+    training/any_to_any
 
 .. toctree::
     :hidden:
