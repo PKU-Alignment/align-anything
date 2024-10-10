@@ -26,10 +26,9 @@ MODEL_NAME_OR_PATH=""
 CHAT_TEMPLATE=""
 
 for BENCHMARK in "${BENCHMARKS[@]}"; do
-    OUTPUT_DIR="${OUTPUT_DIR}/${BENCHMARK}"
     python __main__.py \
         --benchmark ${BENCHMARK} \
-        --output_dir ${OUTPUT_DIR} \
+        --output_dir "${OUTPUT_DIR}/${BENCHMARK}" \
         --generation_backend ${GENERATION_BACKEND} \
         --model_id ${MODEL_ID} \
         --model_name_or_path ${MODEL_NAME_OR_PATH} \

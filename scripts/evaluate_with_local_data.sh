@@ -24,10 +24,9 @@ GENERATION_OUTPUT=""
 MODEL_ID=""
 
 for BENCHMARK in "${BENCHMARKS[@]}"; do
-    OUTPUT_DIR="${OUTPUT_DIR}/${BENCHMARK}"
     python eval_only.py \
         --benchmark ${BENCHMARK} \
-        --output_dir ${OUTPUT_DIR} \
+        --output_dir "${OUTPUT_DIR}/${BENCHMARK}" \
         --generation_output ${GENERATION_OUTPUT} \
         --model_id ${MODEL_ID}
 done
