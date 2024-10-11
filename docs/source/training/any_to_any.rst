@@ -9,8 +9,26 @@ Supervised Fine-Tuning
 
 .. warning::
 
-    The format of training data is quite different from the other modalities, as it differs generation and understanding tasks. See `htlou/Any_to_any_example <https://huggingface.co/datasets/htlou/Any_to_any_example>` for a small example, which contains example training data of both generation (marked as ``TG``) and understanding (marked as ``TU``) tasks. You could download the dataset and use it to debug, or you could also build your own dataset in this format.
+    The format of training data is quite different from the other modalities, as it differs generation and understanding tasks. See the small example below, which contains example training data of both generation (marked as ``TG``) and understanding (marked as ``TU``) tasks. You could copy the file and use it to debug, or you could also build your own dataset in this format.
 
+Example training data:
+
+.. code-block:: json
+    [
+        {
+            "mode": "TU",
+            "input_text": "Please tell me what you see in this image.",
+            "input_image": "example.jpg",
+            "output_text": "I see an old British train coming towards the station, and a group of people waiting for it."
+        },
+        {
+            "mode": "TG",
+            "input_text": "Generate an image where an old british train is coming towards the station, and a group of people is waiting for it.",
+            "output_image": "example.jpg"
+        }
+    ]
+
+Example training script:
 
 .. code:: bash
 
