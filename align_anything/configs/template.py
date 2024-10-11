@@ -119,7 +119,6 @@ class Template(ABC):
         else:
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
-
 @register_template('Dialogue')
 class Dialogue(Template):
     system_prompt: str = 'BEGINNING OF CONVERSATION: '
@@ -396,6 +395,17 @@ class CHAMELEON_PREFERENCE:
             'image': input_images,
         }
         
+@register_template('Any2Any')
+class ANY2ANY(Template):
+
+    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        output_dict = raw_sample.copy()
+        if 'input_image' in raw_sample and raw_sample['input_image'] is not None:
+            output_dict['input_image'] = load_image(raw_sample['input_image'])
+        if 'output_image' in raw_sample and raw_sample['output_image'] is not None:
+            output_dict['output_image'] = load_image(raw_sample['output_image'])
+        print(f"Get output dict: {output_dict}")
+        return output_dict
         
 @register_template('AA_textfeedback')
 class AA_TF:
