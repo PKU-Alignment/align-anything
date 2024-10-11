@@ -13,7 +13,8 @@ Supervised Fine-Tuning
 
 Example training data:
 
-.. code-block:: json
+.. code-block:: JSON
+    
     [
         {
             "mode": "TU",
@@ -32,7 +33,7 @@ Example training script:
 
 .. code:: bash
 
-   # Initialize variables
+    # Initialize variables
     MODEL_NAME_OR_PATH="BAAI/Emu3-Chat"
     PROCESSOR_NAME_OR_PATH="BAAI/Emu3-VisionTokenizer"
     TRAIN_DATASETS=""
