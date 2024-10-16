@@ -75,11 +75,7 @@ class PreferenceDataset(Dataset):
         if isinstance(optional_args, str):
             optional_args = [optional_args]
         
-        if 'json' in path:
-            with open(path, 'r', encoding='utf-8') as f:
-                self.raw_data = json.load(f)
-        else:
-            self.raw_data = load_dataset(
+        self.raw_data = load_dataset(
             path,
             name=name,
             split=split,
