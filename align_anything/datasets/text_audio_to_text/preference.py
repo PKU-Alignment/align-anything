@@ -14,6 +14,7 @@
 # ==============================================================================
 
 
+import json
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
@@ -73,7 +74,12 @@ class PreferenceDataset(Dataset):
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        self.raw_data = load_dataset(
+        
+        if 'json' in path:
+            with open(path, 'r', encoding='utf-8') as f:
+                self.raw_data = json.load(f)
+        else:
+            self.raw_data = load_dataset(
             path,
             name=name,
             split=split,
@@ -96,7 +102,7 @@ class PreferenceDataset(Dataset):
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_sample(raw_sample)
+        formatted_sample = self.template.format_preference_sample(raw_sample)
         return_dict = {}
 
         raw_better_text = formatted_sample['better_conversation']

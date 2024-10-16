@@ -16,6 +16,7 @@
 
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
+from PIL import Image
 
 import torch
 import transformers
@@ -86,8 +87,7 @@ class SupervisedDataset(Dataset):
         self.template = get_template_class(template)
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_sample(raw_sample)
-        return_dict = {}
+        formatted_sample = self.template.format_supervised_sample(raw_sample)
         raw_text = ''
         if isinstance(formatted_sample['text'], list):
             raw_text = self.tokenizer.eos_token.join(formatted_sample['text'])
@@ -95,27 +95,19 @@ class SupervisedDataset(Dataset):
             raw_text = formatted_sample['text'] + self.tokenizer.eos_token
         else:
             raise NotImplementedError
-        return_dict['input_ids'] = self.tokenize(raw_text)
-
+        
+        inputs = self.tokenize(
+            raw_text,
+            formatted_sample['image']
+        )
+        inputs['input_ids'] = inputs['input_ids'][0].clone()
         formatted_prompt = formatted_sample['prompt']
-        labels = return_dict['input_ids'].clone()
+        labels = inputs['input_ids'].clone()
         # mask non-assistant input
-        labels[: len(self.tokenize(formatted_prompt))] = IGNORE_INDEX
-        return_dict['labels'] = labels
+        labels[: len(self.tokenize(formatted_prompt, formatted_sample['image'])['input_ids'][0])] = IGNORE_INDEX
+        inputs['labels'] = labels
 
-        raw_image = formatted_sample.get('image', None)
-        if raw_image:
-            try:
-                return_dict['pixel_values'] = self.processor.image_processor(
-                    raw_image, return_tensors='pt'
-                )['pixel_values'][0]
-            except Exception as e:
-                print(f'Error when processing image: {e}')
-                return_dict['pixel_values'] = None
-        else:
-            return_dict['pixel_values'] = None
-
-        return return_dict
+        return inputs
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
         return SupervisedCollator(self.tokenizer.pad_token_id)
@@ -123,6 +115,7 @@ class SupervisedDataset(Dataset):
     def tokenize(
         self,
         text: str,
+        image: Image.Image,
         add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
         truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
@@ -132,14 +125,15 @@ class SupervisedDataset(Dataset):
         if max_length is None:
             max_length = self.tokenizer.model_max_length
 
-        return self.tokenizer(
+        return self.processor(
+            image,
             text,
+            return_tensors="pt",
             add_special_tokens=add_special_tokens,
             padding=padding,
-            max_length=max_length,
             truncation=truncation,
-            return_tensors='pt',
-        )['input_ids'][0]
+            max_length=max_length,
+        )
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
@@ -176,50 +170,29 @@ class SupervisedCollator:
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
         )
 
-        if 'pixel_values' in samples[0].keys():
+        return_dict['pixel_values'] = torch.stack(
+            [sample['pixel_values'] for sample in samples]
+        ).to(current_device).squeeze(1)
 
-            a = return_dict['attention_mask'].shape[0]
+        if 'aspect_ratio_ids' in samples[0].keys():
+            return_dict['aspect_ratio_ids'] = torch.stack(
+                [sample['aspect_ratio_ids'] for sample in samples]
+            ).to(current_device).squeeze(1)
+
+        if 'aspect_ratio_mask' in samples[0].keys():
+            return_dict['aspect_ratio_mask'] = torch.stack(
+                [sample['aspect_ratio_mask'] for sample in samples]
+            ).to(current_device).squeeze(1)
+
+        if 'cross_attention_mask' in samples[0].keys():
+            cross_attention_mask = []
+            for sample in samples:
+                if 'cross_attention_mask' in sample.keys():
+                    cross_attention_mask.append(sample['cross_attention_mask'].squeeze(0))
             
-            if samples[0]['pixel_values'] is not None:
-                if samples[0]['pixel_values'].dim() == 4:
-                    # init list for pixel_values
-                    return_dict['image_sizes'] = [ sample['pixel_values'].to(current_device).size(0) for sample in samples ]
-                    
-                    _pixel_values_list = []
-                    for sample in samples:
-                        pixel_values = sample['pixel_values']  # size = (P, C, H, W)
-                        _pixel_values_list.append(pixel_values)
-                    
-                    return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
-                    # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
-                elif samples[0]['pixel_values'].dim() == 5:
-                    return_dict['image_sizes'] = [tensor.size(0) for sample in samples for tensor in sample['pixel_values'].to(current_device)]
-                    
-                    new_samples = []
-                    
-                    for sample in samples:
-                        
-                        sample['pixel_values'] = torch.cat(
-                            [tensor.to(current_device) for tensor in sample['pixel_values']], dim=0
-                        )
-                    
-                        new_samples.append(sample)
-                    
-                    _pixel_values_list = []
-                    for sample in new_samples:
-                        pixel_values = sample['pixel_values']  # size = (P, C, H, W)
-                        _pixel_values_list.append(pixel_values)
-                    
-                    return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
-                    # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
-                    
-                else:
-                    # original code for non-patches 
-                    return_dict['pixel_values'] = torch.stack(
-                        [sample['pixel_values'] for sample in samples]
-                    ).to(current_device)
-            else:
-                return_dict['pixel_values'] = None
-
+            return_dict['cross_attention_mask'] = right_padding(
+                cross_attention_mask,
+                padding_value=0,
+            ).to(current_device)
 
         return return_dict

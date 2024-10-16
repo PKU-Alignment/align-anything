@@ -97,7 +97,7 @@ class PreferenceDataset(Dataset):
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_sample(raw_sample, self.path)
+        formatted_sample = self.template.format_preference_sample(raw_sample, self.path)
         return_dict = {}
 
         return_dict['input_ids'] = self.tokenize(
