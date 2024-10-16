@@ -419,7 +419,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         num_prompt_only_batches = len(self.prompt_only_dataloader)
         num_ptx_batches = len(self.ptx_dataloader)
         num_ptx_replicas = (num_prompt_only_batches + num_ptx_batches - 1) // num_ptx_batches
-        for epoch in range(self.cfgs.train_cfgs.epochs):
+        for epoch in range(int(self.cfgs.train_cfgs.epochs)):
             for prompt_only_batch, ptx_batch in zip(
                 self.prompt_only_dataloader,
                 itertools.chain.from_iterable([self.ptx_dataloader] * num_ptx_replicas),

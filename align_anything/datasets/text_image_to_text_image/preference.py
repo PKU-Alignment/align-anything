@@ -97,7 +97,7 @@ class PreferenceDataset(Dataset):
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_sample(raw_sample)
+        formatted_sample = self.template.format_preference_sample(raw_sample)
         return_dict = {}
 
         raw_better_text = ''

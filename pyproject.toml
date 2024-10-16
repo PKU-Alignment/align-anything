@@ -33,7 +33,7 @@ dependencies = [
     "vllm >= 0.6.2",
     "torch >= 1.13",
     "frechet_audio_distance",
-    "transformers @ git+https://github.com/huggingface/transformers.git@main",
+    "transformers",
     "datasets",
     "tokenizers >= 0.13.3",
     "accelerate",
@@ -68,6 +68,7 @@ dependencies = [
     "image-reward",
     "clip",
     "pytorch_fid",
+    "av",
 ]
 
 dynamic = ["version"]

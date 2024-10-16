@@ -90,7 +90,7 @@ class SupervisedDataset(Dataset):
         self.template = get_template_class(template)
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_sample(raw_sample, self.path)
+        formatted_sample = self.template.format_supervised_sample(raw_sample, self.path)
         return_dict = {}
         return_dict['input_ids'] = self.tokenize(
             formatted_sample['prompt'], add_special_tokens=False
