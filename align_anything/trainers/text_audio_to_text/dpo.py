@@ -22,13 +22,7 @@ import sys
 import deepspeed
 import torch
 import torch.distributed
-import torch.nn.functional as F
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
-from transformers import AutoModelForCausalLM
-
-from align_anything.datasets.text_to_text.preference import PreferenceBatch
 from align_anything.datasets.text_audio_to_text.preference import PreferenceDataset
-from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
@@ -37,7 +31,6 @@ from align_anything.utils.tools import (
     read_cfgs,
     seed_everything,
     update_dict,
-    gather_log_probabilities,
 )
 
 
