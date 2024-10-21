@@ -16,7 +16,7 @@
 # The training configurations
 train_cfgs:
   # The deepspeed configuration
-  ds_cfgs: ds_z3_config.json
+  ds_cfgs: ds_z0_config.json
   # Number of training epochs
   epochs: 3
   # Seed for random number generator
