@@ -68,25 +68,28 @@ class SupervisedTrainerBase:
 
     def get_dataloaders(self, train_data_dtype, eval_data_dtype) -> None:
         """Get the dataloaders based on data_dtype."""
-        self.train_template = get_template_class(self.cfgs.data_cfgs.train_template)
-        train_dataset = train_data_dtype(
-            path=self.cfgs.data_cfgs.train_datasets,
-            template=self.cfgs.data_cfgs.train_template,
-            tokenizer=self.tokenizer,
-            processor=self.processor,
-            name=self.cfgs.data_cfgs.train_name,
-            size=self.cfgs.data_cfgs.train_size,
-            split=self.cfgs.data_cfgs.train_split,
-            subset=self.cfgs.data_cfgs.train_subset,
-            data_files=self.cfgs.data_cfgs.train_data_files,
-            optional_args=self.cfgs.data_cfgs.train_optional_args,
-        )
-        train_dataloader = DataLoader(
-            train_dataset,
-            collate_fn=train_dataset.get_collator(),
-            sampler=DistributedSampler(train_dataset, shuffle=True),
-            batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
-        )
+        train_dataloader = []
+        eval_dataloader = []
+        if self.cfgs.data_cfgs.train_datasets:
+            self.train_template = get_template_class(self.cfgs.data_cfgs.train_template)
+            train_dataset = train_data_dtype(
+                path=self.cfgs.data_cfgs.train_datasets,
+                template=self.cfgs.data_cfgs.train_template,
+                tokenizer=self.tokenizer,
+                processor=self.processor,
+                name=self.cfgs.data_cfgs.train_name,
+                size=self.cfgs.data_cfgs.train_size,
+                split=self.cfgs.data_cfgs.train_split,
+                subset=self.cfgs.data_cfgs.train_subset,
+                data_files=self.cfgs.data_cfgs.train_data_files,
+                optional_args=self.cfgs.data_cfgs.train_optional_args,
+            )
+            train_dataloader = DataLoader(
+                train_dataset,
+                collate_fn=train_dataset.get_collator(),
+                sampler=DistributedSampler(train_dataset, shuffle=True),
+                batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
+            )
         if self.cfgs.data_cfgs.eval_datasets:
             self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
             eval_dataset = eval_data_dtype(
@@ -107,9 +110,8 @@ class SupervisedTrainerBase:
                 sampler=DistributedSampler(eval_dataset, shuffle=True),
                 batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
             )
-            return train_dataloader, eval_dataloader
 
-        return train_dataloader, None
+        return train_dataloader, eval_dataloader
     
     def get_multi_dataloaders(self, train_data_dtype, eval_data_dtype) -> None:
         """Get the dataloaders based on data_dtype."""

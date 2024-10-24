@@ -36,7 +36,7 @@ from align_anything.utils.tools import (
     read_cfgs,
     seed_everything,
     update_dict,
-    gather_log_probabilities,
+    gather_log_probabilities
 )
 
 

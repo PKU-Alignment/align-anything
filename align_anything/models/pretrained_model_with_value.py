@@ -62,6 +62,7 @@ def load_pretrained_model_with_value_head(
         base_pretrained_class = base_class.__base__
 
     AnyRewardModel = get_score_model(base_pretrained_class, base_class, modality)
+    ignore_mismatched_sizes = modality in ['text_audio_to_text']
     model = AnyRewardModel.from_pretrained(
         model_name_or_path,
         *auto_model_args,
@@ -69,7 +70,7 @@ def load_pretrained_model_with_value_head(
         torch_dtype=dtype,
         device_map=device_map,
         trust_remote_code=trust_remote_code,
-        ignore_mismatched_sizes=True,
+        ignore_mismatched_sizes=ignore_mismatched_sizes,
         **auto_model_kwargs,
     )
 

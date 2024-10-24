@@ -184,6 +184,24 @@ class PKUSafeRLHF(Template):
     split_token: str = 'ASSISTANT:'
     separator: str = ''
 
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        text = (
+            f'{self.system_prompt}'
+            f"{self.user_prompt.format(input=raw_sample['prompt'])}"
+            f"{self.assistant_prompt.format(output=raw_sample['answer'])}"
+        )
+
+        prompt = (
+            f'{self.system_prompt}'
+            f"{self.user_prompt.format(input=raw_sample['prompt'])}"
+            f"{self.assistant_prompt.format(output='')}"
+        )
+        
+        return {
+            'text': text,
+            'prompt': prompt,
+        }
+
     def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         metrics = raw_sample['better_response_id']
         better_response = raw_sample[f'response_{int(metrics)}']
