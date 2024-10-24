@@ -30,7 +30,10 @@ def load_pretrained_model_with_value_head(
     padding_side: Literal['left', 'right'] = 'right',
     auto_device_mapping: bool = False,
     freeze_vision_tower: bool = True,
+    freeze_audio_tower: bool = True,
     freeze_mm_proj: bool = True,
+    freeze_vision_proj: bool = True,
+    freeze_audio_proj: bool = True,
     freeze_language_model: bool = False,
     dtype: torch.dtype | str | None = 'auto',
     *,
@@ -73,8 +76,15 @@ def load_pretrained_model_with_value_head(
     forbidden_modules = set()
     if freeze_vision_tower:
         forbidden_modules.add('vision_tower')
+    if freeze_audio_tower:
+        forbidden_modules.add('audio_tower')
+    # attribute name of llava
     if freeze_mm_proj:
         forbidden_modules.add('multi_modal_projector')
+    if freeze_vision_proj:
+        forbidden_modules.add('image_projector')
+    if freeze_audio_proj:
+        forbidden_modules.add('audio_projector')
     if freeze_language_model:
         forbidden_modules.add('language_model')
     for name, param in model.named_parameters():

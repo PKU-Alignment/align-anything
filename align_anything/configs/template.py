@@ -16,8 +16,8 @@
 
 import io
 import os
-from abc import ABC, abstractmethod
-from typing import Any, Optional
+from abc import ABC
+from typing import Any
 
 import random
 import requests
@@ -2081,7 +2081,7 @@ class LLAMA_3_2:
 
 @register_template('Qwen2Audio')
 class Qwen2Audio:
-    system_prompt: str = 'You are a helpful assistant.'
+    system_prompt: str = ''
     user_prompt: str = '<|im_start|>user\nAudio 1: <|audio_bos|><|AUDIO|><|audio_eos|>\n{input}<|im_end|>\n'
     assistant_prompt: str = '<|im_start|>assistant{output}'
     split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
@@ -2168,3 +2168,76 @@ class Qwen2Audio:
 
         return {'conversation': conversation}
     
+@register_template('Qwen2AudioCritique')
+class Qwen2AudioCritique:
+    system_prompt: str = ''
+    user_prompt: str = '<|im_start|>user\nAudio 1: <|audio_bos|><|AUDIO|><|audio_eos|>\n{input}<|im_end|>\n'
+    assistant_prompt: str = '<|im_start|>assistant{output}'
+    split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
+    separator: str = '<|im_end|>\n<|im_start|>assistant\n'
+
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['prompt']
+        audio_url = raw_sample['audio_path']
+        response = raw_sample['response']
+        critique = raw_sample['critique']
+        critique_prompt = 'Please provide the ##Critique and ##Refinement.'
+        conversation = [
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": response},
+            {'role': 'user', 'content': [{"type": "text", "text": critique_prompt}]},
+            {"role": "assistant", "content": critique},
+        ]
+
+        return {
+            'conversation': conversation,
+            'prompt': conversation[:-1],
+        }
+
+
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        better_response = raw_sample['refinement']
+        worse_response = raw_sample['response']
+        prompt = raw_sample['prompt']
+        audio_url = raw_sample['audio_path']
+
+        better_conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": better_response},
+        ]
+
+        worse_conversation = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+            {"role": "assistant", "content": worse_response},
+        ]
+
+        formatted_prompt = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': [
+                    {"type": "audio", "audio_url": audio_url},
+                    {"type": "text", "text": prompt},
+                ]},
+        ]
+
+        return {
+            'prompt': formatted_prompt,
+            'better_conversation': better_conversation,
+            'worse_conversation': worse_conversation,
+        }
+
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        better_response = raw_sample['refinement']
+        worse_response = raw_sample['response']
+
+        return better_response==worse_response

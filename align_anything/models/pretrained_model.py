@@ -123,8 +123,6 @@ def resize_tokenizer_embedding(tokenizer: PreTrainedTokenizerBase, model: PreTra
         special_tokens_dict['eos_token'] = DEFAULT_EOS_TOKEN
     if tokenizer.bos_token is None:
         special_tokens_dict['bos_token'] = DEFAULT_BOS_TOKEN
-    if tokenizer.unk_token is None:
-        special_tokens_dict['unk_token'] = DEFAULT_UNK_TOKEN
 
     num_new_tokens = tokenizer.add_special_tokens(special_tokens_dict)
     new_num_embeddings = len(tokenizer)
@@ -274,9 +272,9 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     if freeze_mm_proj:
         forbidden_modules.add('multi_modal_projector')
     if freeze_vision_proj:
-        forbidden_modules.add('audio_projector')
-    if freeze_audio_proj:
         forbidden_modules.add('image_projector')
+    if freeze_audio_proj:
+        forbidden_modules.add('audio_projector')
     if freeze_language_model:
         forbidden_modules.add('language_model')
     for name, param in model.named_parameters():
@@ -320,6 +318,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
                 model_name_or_path,
                 cache_dir=cache_dir,
                 trust_remote_code=trust_remote_code,
+                padding_side=padding_side,
             )
         if not hasattr(processor, 'tokenizer'):
             setattr(processor, 'tokenizer', tokenizer)

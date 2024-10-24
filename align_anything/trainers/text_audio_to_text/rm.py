@@ -22,7 +22,8 @@ import sys
 import deepspeed
 import torch
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
-import torch.nn.functional as F
+
+
 
 from align_anything.datasets.text_audio_to_text.preference import PreferenceDataset
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
@@ -34,6 +35,7 @@ from align_anything.utils.tools import (
     read_cfgs,
     seed_everything,
     update_dict,
+
 )
 
 
@@ -55,7 +57,8 @@ class RMTrainer(RMtextTrainer):
             padding_side='right',
             trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
-            freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
+            freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
+            freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
             modality='text_audio',
         )

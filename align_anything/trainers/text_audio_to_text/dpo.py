@@ -22,13 +22,12 @@ import sys
 import deepspeed
 import torch
 import torch.distributed
-import torch.nn.functional as F
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from transformers import AutoModelForCausalLM
+import torch.nn.functional as F
 
-from align_anything.datasets.text_to_text.preference import PreferenceBatch
-from align_anything.datasets.text_audio_to_text.preference import PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
+from align_anything.datasets.text_audio_to_text.preference import PreferenceDataset, PreferenceBatch
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
@@ -48,6 +47,120 @@ class DPOTrainer(DPOtextTrainer):
         self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
             PreferenceDataset, PreferenceDataset
         )
+
+    def init_models(self) -> None:
+        """Initialize model and tokenizer."""
+        if self.ds_train_cfgs is not None and self.ds_train_cfgs['zero_optimization']['stage'] == 3:
+            self.dstchf = HfDeepSpeedConfig(self.ds_train_cfgs)
+
+        self.model, self.tokenizer, self.processor = load_pretrained_models(
+            self.cfgs.model_cfgs.model_name_or_path,
+            model_max_length=self.cfgs.model_cfgs.model_max_length,
+            padding_side='left',
+            trust_remote_code=True,
+            freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
+            freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
+            freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
+            freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
+        )
+        self.reference_model, _, _ = load_pretrained_models(
+            self.cfgs.model_cfgs.model_name_or_path,
+            model_max_length=self.cfgs.model_cfgs.model_max_length,
+            padding_side='left',
+            trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
+            freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
+            freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
+            freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
+        )
+
+    @staticmethod
+    def compute_log_probs(
+        model: AutoModelForCausalLM,
+        batch: PreferenceBatch,
+    ) -> torch.Tensor:
+        """Compute log probabilities of given sequences."""
+        keys_to_remove = ['better_response_lens', 'worse_response_lens', 'response_lens']
+
+        infer_batch = {key: value for key, value in batch.items() if key not in keys_to_remove}
+        logits = model(**infer_batch).logits
+        device = logits.device
+        input_ids = batch['input_ids']
+        batch_size = len(batch['response_lens'])
+        logprob_list = []
+        for idx in range(batch_size):
+            response_length = batch['response_lens'][idx]
+            logit = logits[idx][-response_length:].unsqueeze(0)
+            input_id = input_ids[idx][-response_length:].unsqueeze(0)
+            logprob_list.append(gather_log_probabilities(logit[:, :-1], input_id[:, 1:]).squeeze())
+        return torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(device)
+
+    def loss(  # pylint: disable=too-many-locals
+        self,
+        batch: PreferenceBatch,
+    ) -> dict[str, torch.Tensor]:
+        """Loss function for the DPO algorithm."""
+        sequence_log_probs = self.compute_log_probs(
+            self.model,
+            batch,
+        )
+        (
+            better_sequence_log_probs,  # size = (B, L - 1)
+            worse_sequence_log_probs,  # size = (B, L - 1)
+        ) = sequence_log_probs.chunk(chunks=2, dim=0)
+
+        with torch.no_grad():
+            ref_sequence_log_probs = self.compute_log_probs(  # size = (2 * B, L - 1)
+                self.reference_model,
+                batch,
+            )
+            ref_better_sequence_log_probs, ref_worse_sequence_log_probs = (
+                ref_sequence_log_probs.chunk(chunks=2, dim=0)
+            )
+
+        losses = []
+        better_sample_rewards = []
+        worse_sample_rewards = []
+
+        better_input_ids, worse_input_ids = batch['input_ids'].chunk(chunks=2, dim=0)
+
+        batch_size = better_input_ids.size(0)
+        for i in range(batch_size):
+            if torch.all(torch.eq(better_input_ids[i], worse_input_ids[i])).item():
+                continue
+            better_log_prob = better_sequence_log_probs[i, :].sum(dim=-1)
+            worse_log_prob = worse_sequence_log_probs[i, :].sum(dim=-1)
+            ref_better_log_prob = ref_better_sequence_log_probs[i, :].sum(dim=-1)
+            ref_worse_log_prob = ref_worse_sequence_log_probs[i, :].sum(dim=-1)
+            better_log_ratio = better_log_prob - ref_better_log_prob
+            worse_log_ratio = worse_log_prob - ref_worse_log_prob
+
+            losses.append(
+                -F.logsigmoid(
+                    self.cfgs.train_cfgs.scale_coeff * (better_log_ratio - worse_log_ratio),
+                ),
+            )
+            better_sample_rewards.append(
+                self.cfgs.train_cfgs.scale_coeff * better_log_ratio.detach(),
+            )
+            worse_sample_rewards.append(self.cfgs.train_cfgs.scale_coeff * worse_log_ratio.detach())
+
+        loss = torch.stack(losses).mean()  # size = ()
+        better_sample_reward = torch.stack(better_sample_rewards)  # size = (B,)
+        worse_sample_reward = torch.stack(worse_sample_rewards)  # size = (B,)
+        reward = better_sample_reward + worse_sample_reward  # size = (B,)
+        reward_accuracy = (better_sample_reward > worse_sample_reward).float().mean()  # size = ()
+        reward_margin = better_sample_reward - worse_sample_reward  # size = (B,)
+
+        return {
+            'loss': loss,
+            'reward': reward,
+            'better_sample_reward': better_sample_reward,
+            'worse_sample_reward': worse_sample_reward,
+            'reward_accuracy': reward_accuracy,
+            'reward_margin': reward_margin,
+        }
+
 
 def main():
     # setup distribution training
