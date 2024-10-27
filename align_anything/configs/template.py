@@ -2106,12 +2106,11 @@ class Qwen2Audio:
     separator: str = '<|im_end|>\n<|im_start|>assistant\n'
 
     def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['instruction']
-        audio_url = raw_sample['audio_id']
+        prompt = ' '.join((raw_sample['instruction'], raw_sample['input']))
+        audio_url = raw_sample['audio_path']
         response = raw_sample['output']
 
         conversation = [
-            {'role': 'system', 'content': self.system_prompt},
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2133,7 +2132,6 @@ class Qwen2Audio:
         audio_url = raw_sample['audio_path']
 
         better_conversation = [
-            {'role': 'system', 'content': self.system_prompt},
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2142,7 +2140,6 @@ class Qwen2Audio:
         ]
 
         worse_conversation = [
-            {'role': 'system', 'content': self.system_prompt},
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2151,7 +2148,6 @@ class Qwen2Audio:
         ]
 
         formatted_prompt = [
-            {'role': 'system', 'content': self.system_prompt},
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2223,7 +2219,6 @@ class Qwen2AudioCritique:
         audio_url = raw_sample['audio_path']
 
         better_conversation = [
-            {'role': 'system', 'content': self.system_prompt},
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2232,7 +2227,6 @@ class Qwen2AudioCritique:
         ]
 
         worse_conversation = [
-            {'role': 'system', 'content': self.system_prompt},
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2241,7 +2235,6 @@ class Qwen2AudioCritique:
         ]
 
         formatted_prompt = [
-            {'role': 'system', 'content': self.system_prompt},
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},

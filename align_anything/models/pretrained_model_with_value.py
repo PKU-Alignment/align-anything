@@ -79,7 +79,6 @@ def load_pretrained_model_with_value_head(
         forbidden_modules.add('vision_tower')
     if freeze_audio_tower:
         forbidden_modules.add('audio_tower')
-    # attribute name of llava
     if freeze_mm_proj:
         forbidden_modules.add('multi_modal_projector')
     if freeze_vision_proj:

@@ -206,34 +206,11 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
 
             last_hidden_state = outputs.hidden_states[-1]
             scores = self.score_head(last_hidden_state).float()
-            B, L, E = last_hidden_state.size()
+            B, _, _ = scores.size()
 
-            if attention_mask is None:
-                if B > 1:
-                    raise ValueError("'attention_mask' is required when batch size > 1.")
-                attention_mask = last_hidden_state.new_ones(B, L, dtype=torch.bool)  # size = (B, L)
-
-            end_index = torch.cat([m.nonzero()[-1] for m in attention_mask])  # size = (B,)
-            end_last_hidden_state = torch.gather(  # size = (B, 1, E)
-                last_hidden_state,
-                dim=1,
-                index=(
-                    end_index.to(last_hidden_state.device)
-                    .unsqueeze(dim=1)
-                    .unsqueeze(dim=2)
-                    .expand(-1, -1, last_hidden_state.size(-1))
-                ),
-            )
-            end_scores = torch.gather(  # size = (B, 1, D)
-                scores,
-                dim=1,
-                index=(
-                    end_index.to(scores.device)
-                    .unsqueeze(dim=1)
-                    .unsqueeze(dim=2)
-                    .expand(-1, -1, scores.size(-1))
-                ),
-            )
+            end_index = -torch.ones((B,))  # size = (B,)
+            end_last_hidden_state = last_hidden_state[:, -1, :].unsqueeze(1)
+            end_scores = self.score_head(end_last_hidden_state).float()
             end_last_hidden_state = end_last_hidden_state.squeeze(dim=1)  # size = (B, E)
             end_scores = end_scores.squeeze(dim=1)  # size = (B, D)
 

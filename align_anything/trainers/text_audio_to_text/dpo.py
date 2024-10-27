@@ -29,7 +29,7 @@ import torch.nn.functional as F
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.datasets.text_audio_to_text.preference import PreferenceDataset, PreferenceBatch
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
-from align_anything.utils.multi_process import get_current_device
+from align_anything.utils.multi_process import get_current_device, is_main_process
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -39,6 +39,9 @@ from align_anything.utils.tools import (
     gather_log_probabilities
 )
 
+def strip_pad(seq: torch.Tensor, pad_token_id: int):
+    # remove the pad token in the tensor
+    return seq[seq != pad_token_id]
 
 class DPOTrainer(DPOtextTrainer):
 
@@ -74,8 +77,8 @@ class DPOTrainer(DPOtextTrainer):
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
         )
 
-    @staticmethod
     def compute_log_probs(
+        self,
         model: AutoModelForCausalLM,
         batch: PreferenceBatch,
     ) -> torch.Tensor:
@@ -90,9 +93,11 @@ class DPOTrainer(DPOtextTrainer):
         logprob_list = []
         for idx in range(batch_size):
             response_length = batch['response_lens'][idx]
+            raw_input_id = strip_pad(input_ids[idx], self.tokenizer.pad_token_id)
             logit = logits[idx][-response_length:].unsqueeze(0)
-            input_id = input_ids[idx][-response_length:].unsqueeze(0)
-            logprob_list.append(gather_log_probabilities(logit[:, :-1], input_id[:, 1:]).squeeze())
+            input_id = raw_input_id[-response_length:].unsqueeze(0)
+            log_p = gather_log_probabilities(logit[:, :-1], input_id[:, 1:])
+            logprob_list.append(log_p.squeeze(0))
         return torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(device)
 
     def loss(  # pylint: disable=too-many-locals

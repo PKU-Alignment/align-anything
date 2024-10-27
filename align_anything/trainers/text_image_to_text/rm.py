@@ -72,9 +72,6 @@ class RMTrainer(RMtextTrainer):
         ) = batch[
             'input_ids'
         ].chunk(chunks=2, dim=0)
-        keys_to_remove = ['better_response_lens', 'worse_response_lens', 'response_lens']
-
-        infer_batch = {key: value for key, value in batch.items() if key not in keys_to_remove}
         assert better_input_ids.size(0) == worse_input_ids.size(0), 'batch size mismatch!'
         output = self.model(
             input_ids=batch['input_ids'],
