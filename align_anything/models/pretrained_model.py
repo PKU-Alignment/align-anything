@@ -254,7 +254,6 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
                 **auto_model_kwargs,
             )
     else:
-        print('after this')
         model = AnyModel.from_pretrained(
             model_name_or_path,
             *auto_model_args,
@@ -264,7 +263,6 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
             trust_remote_code=trust_remote_code,
             **auto_model_kwargs,
         )
-        print('before this')
 
     forbidden_modules = set()
     if freeze_vision_tower:
@@ -328,14 +326,6 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     except Exception as e:
         print(f"Warning: Failed to load processor: {e}. This is ok if you are using models without processor.")
         processor = None
-    
-    if hasattr(model, 'audio_tower'):
-        config = AutoConfig.from_pretrained(model_name_or_path)
-        model.audio_tower = AutoModel.from_config(config.audio_config)
-        model.post_init()
-        print(model)
-        print(111)
-        exit()
 
     return model, tokenizer, processor
 

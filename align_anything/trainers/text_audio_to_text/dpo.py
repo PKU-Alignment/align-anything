@@ -92,7 +92,7 @@ class DPOTrainer(DPOtextTrainer):
         batch_size = len(batch['response_lens'])
         logprob_list = []
         for idx in range(batch_size):
-            response_length = batch['response_lens'][idx]
+            response_length = batch['response_lens'][idx] + 1 # for the eos token
             raw_input_id = strip_pad(input_ids[idx], self.tokenizer.pad_token_id)
             logit = logits[idx][-response_length:].unsqueeze(0)
             input_id = raw_input_id[-response_length:].unsqueeze(0)
