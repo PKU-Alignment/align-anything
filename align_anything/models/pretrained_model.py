@@ -263,7 +263,8 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
             trust_remote_code=trust_remote_code,
             **auto_model_kwargs,
         )
-
+    if hasattr(model, 'audio_tower'):
+        deepspeed.zero.register_external_parameter(model, model.audio_tower.embed_positions.weight)
     forbidden_modules = set()
     if freeze_vision_tower:
         forbidden_modules.add('vision_tower')

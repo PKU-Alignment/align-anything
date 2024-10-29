@@ -55,7 +55,7 @@ train_cfgs:
   # Freeze the audio projector
   freeze_audio_proj: False
   # Freeze the vison tower model
-  freeze_audio_tower: True
+  freeze_audio_tower: False
   # Freeze the language model
   freeze_language_model: False
   # The scale coefficient

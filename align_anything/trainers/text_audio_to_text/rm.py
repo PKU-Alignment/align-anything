@@ -22,7 +22,7 @@ import sys
 import deepspeed
 import torch
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
-
+import torch.nn.functional as F
 
 
 from align_anything.datasets.text_to_text.preference import PreferenceBatch

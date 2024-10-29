@@ -53,9 +53,10 @@ class DPOTrainer(DPOtextTrainer):
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
-        if self.ds_train_cfgs is not None and self.ds_train_cfgs['zero_optimization']['stage'] == 3:
-            self.dstchf = HfDeepSpeedConfig(self.ds_train_cfgs)
-
+        if self.ds_train_cfgs['zero_optimization']['stage'] == 3:
+            self.dstchf_train = HfDeepSpeedConfig(self.ds_train_cfgs)
+        if self.ds_eval_cfgs['zero_optimization']['stage'] == 3:
+            self.dsechf_eval = HfDeepSpeedConfig(self.ds_eval_cfgs)
         self.model, self.tokenizer, self.processor = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
@@ -93,9 +94,8 @@ class DPOTrainer(DPOtextTrainer):
         logprob_list = []
         for idx in range(batch_size):
             response_length = batch['response_lens'][idx] + 1 # for the eos token
-            raw_input_id = strip_pad(input_ids[idx], self.tokenizer.pad_token_id)
             logit = logits[idx][-response_length:].unsqueeze(0)
-            input_id = raw_input_id[-response_length:].unsqueeze(0)
+            input_id = input_ids[idx][-response_length:].unsqueeze(0)
             log_p = gather_log_probabilities(logit[:, :-1], input_id[:, 1:])
             logprob_list.append(log_p.squeeze(0))
         return torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(device)
@@ -106,7 +106,7 @@ class DPOTrainer(DPOtextTrainer):
     ) -> dict[str, torch.Tensor]:
         """Loss function for the DPO algorithm."""
         sequence_log_probs = self.compute_log_probs(
-            self.model,
+            self.model.module,
             batch,
         )
         (
@@ -116,7 +116,7 @@ class DPOTrainer(DPOtextTrainer):
 
         with torch.no_grad():
             ref_sequence_log_probs = self.compute_log_probs(  # size = (2 * B, L - 1)
-                self.reference_model,
+                self.reference_model.module,
                 batch,
             )
             ref_better_sequence_log_probs, ref_worse_sequence_log_probs = (
