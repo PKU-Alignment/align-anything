@@ -61,7 +61,7 @@ class RMTrainer(RMtextTrainer):
             freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
             freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
-            modality='text_audio',
+            modality='text_audio_to_text',
         )
 
     def loss(

@@ -286,11 +286,11 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
             
     if modality == 'text':
         RewardModel = T2TRewardModel
-    elif modality == 'text_image':
+    elif modality == 'text_image_to_text':
         RewardModel = TI2TRewardModel
-    elif modality == 'text_audio':
+    elif modality == 'text_audio_to_text':
         RewardModel = TA2TRewardModel
-    elif modality == 'text_video':
+    elif modality == 'text_video_to_text':
         RewardModel = TV2TRewardModel
 
     return RewardModel

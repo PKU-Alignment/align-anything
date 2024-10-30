@@ -124,6 +124,8 @@ def resize_tokenizer_embedding(tokenizer: PreTrainedTokenizerBase, model: PreTra
         special_tokens_dict['eos_token'] = DEFAULT_EOS_TOKEN
     if tokenizer.bos_token is None:
         special_tokens_dict['bos_token'] = DEFAULT_BOS_TOKEN
+    if tokenizer.unk_token is None:
+        special_tokens_dict['unk_token'] = DEFAULT_UNK_TOKEN
 
     num_new_tokens = tokenizer.add_special_tokens(special_tokens_dict)
     new_num_embeddings = len(tokenizer)

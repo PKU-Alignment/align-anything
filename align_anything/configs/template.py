@@ -1897,6 +1897,91 @@ class RLHFAQA:
 
         return {'conversation': conversation}
     
+@register_template('AA_TI2T_Local')
+class AA_TI2T_Local:
+    system_prompt: str = ""
+    user_prompt: str = 'USER: {input}\n<image>'
+    assistant_prompt: str = '\nASSISTANT:{output}'
+    split_token: str = 'ASSISTANT:'
+
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        better_id = int(raw_sample['overall_response'])
+        worse_id = 2 if better_id==1 else 1
+
+        better_response = raw_sample[f'response_{better_id}']
+        worse_response = raw_sample[f'response_{worse_id}']
+        prompt = raw_sample['question']
+        image_path = raw_sample['image']
+        image = load_image(image_path).convert('RGBA')
+
+        formatted_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+        )
+        formatted_better_output = (
+            f'{self.assistant_prompt.format(output=better_response)}'
+        )
+        formatted_worse_output = (
+            f'{self.assistant_prompt.format(output=worse_response)}'
+        )
+
+        return {
+            'prompt': formatted_prompt,
+            'better_text': formatted_better_output,
+            'worse_text': formatted_worse_output,
+            'image': image,
+        }
+
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        better_id = int(raw_sample['overall_response'])
+        if better_id not in [1, 2]:
+            return True
+        worse_id = 2 if better_id==1 else 1
+        better_response = raw_sample[f'response_{better_id}']
+        worse_response = raw_sample[f'response_{worse_id}']
+
+        return better_response == worse_response
+
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['question'].replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
+
+        formatted_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f'{self.assistant_prompt.format(output="")}'
+        )
+
+        image_path = raw_sample['image']
+        image = load_image(image_path).convert('RGBA')
+
+        return {
+            'text': formatted_prompt,
+            'image': image,
+        }
+    
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['prompt']
+        answer = raw_sample['response']
+        image_path = raw_sample['image']
+        image = load_image(image_path).convert('RGBA')
+
+        formatted_prompt = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f'{self.assistant_prompt.format(output="")}'
+        )
+        formatted_answer = (
+            f'{self.system_prompt}'
+            f'{self.user_prompt.format(input=prompt)}'
+            f'{self.assistant_prompt.format(output=answer)}'
+        )
+
+        return {
+            'text': formatted_answer,
+            'prompt': formatted_prompt,
+            'image': image,
+        }
+
 @register_template('AA_TI2T')
 class AA_TI2T:
     system_prompt: str = ""

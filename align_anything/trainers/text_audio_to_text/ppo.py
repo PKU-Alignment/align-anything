@@ -45,6 +45,41 @@ from align_anything.utils.tools import (
     remove_pad_tokens,
 )
 
+def move_padding_left(input_tensor, padding_value=0):
+    """Moves the padding values in each row of the input_tensor from the right to the left.
+
+    Args:
+        input_tensor (Tensor): A 2D tensor to be processed.
+        padding_value (int): The value used for padding, default is 0.
+
+    Returns:
+        Tensor: The tensor with padding values moved to the left.
+    """
+    # Calculate the number of padding elements at the start of each row
+    start_pad_counts = (input_tensor == padding_value).cumsum(dim=1).eq(torch.arange(1, input_tensor.size(1) + 1)).sum(dim=1)
+    
+    # Calculate the number of non-padding elements in each row
+    non_pad_counts = (input_tensor != padding_value).sum(dim=1)
+
+    # Create a new tensor of the same size as input_tensor, filled with padding_value
+    output_tensor = torch.full_like(input_tensor, padding_value)
+    
+    # Get the indices for each row
+    max_len = input_tensor.size(1)
+    indices = torch.arange(max_len).expand(len(non_pad_counts), max_len)
+    
+    # Calculate the shift for each row
+    shifts = max_len - non_pad_counts.unsqueeze(1) - start_pad_counts.unsqueeze(1)
+    
+    # Compute the new indices
+    new_indices = (indices - shifts) % max_len
+    
+    # Rearrange the tensor using the gather function
+    output_tensor = torch.gather(input_tensor, 1, new_indices)
+    
+    return output_tensor
+
+
 
 class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attributes
     """Trainer base class for PPO training."""
@@ -85,7 +120,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-            modality='text_audio',
+            modality='text_audio_to_text',
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = (
@@ -94,7 +129,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
                 model_max_length=self.cfgs.model_cfgs.model_max_length,
                 padding_side='left',
                 trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-                modality='text_audio',
+                modality='text_audio_to_text',
                 freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
                 freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
                 freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
