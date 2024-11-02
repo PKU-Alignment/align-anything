@@ -351,6 +351,7 @@ class SupervisedTrainerBase:
             model = self.model  # pylint: disable=no-member
         
         output_dir = os.path.join(self.cfgs.logger_cfgs.output_dir, f'slice_{tag or "end"}')
+        os.makedirs(output_dir, exist_ok=True)
 
         self.logger.print(f'Saving model to "{output_dir}" ...')
 
