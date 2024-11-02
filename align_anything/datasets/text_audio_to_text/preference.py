@@ -103,8 +103,8 @@ class PreferenceDataset(Dataset):
 
         raw_better_text = formatted_sample['better_conversation']
         raw_worse_text = formatted_sample['worse_conversation']
-        raw_better_response = formatted_sample['better_conversation'][-1]['content'] + self.tokenizer.eos_token
-        raw_worse_response = formatted_sample['worse_conversation'][-1]['content'] + self.tokenizer.eos_token
+        raw_better_response = formatted_sample['better_conversation'][-1]['content']
+        raw_worse_response = formatted_sample['worse_conversation'][-1]['content']
 
         better_text = self.processor.apply_chat_template(raw_better_text, add_generation_prompt=False, tokenize=False)
         worse_text = self.processor.apply_chat_template(raw_worse_text, add_generation_prompt=False, tokenize=False)
@@ -126,8 +126,8 @@ class PreferenceDataset(Dataset):
 
         return_dict['better_input_ids'] = better_input_wo_padding['input_ids'][0]
         return_dict['worse_input_ids'] = worse_input_wo_padding['input_ids'][0]
-        return_dict['better_response_lens'] = len(self.tokenize(raw_better_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0])
-        return_dict['worse_response_lens'] = len(self.tokenize(raw_worse_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0])
+        return_dict['better_response_lens'] = len(self.tokenize(raw_better_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0]) + 2 # for the eos token
+        return_dict['worse_response_lens'] = len(self.tokenize(raw_worse_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0]) + 2 # for the eos token
 
         return_dict['better_feature_attention_mask'] = better_inputs['feature_attention_mask']
         return_dict['better_input_features'] = better_inputs['input_features']
@@ -138,10 +138,10 @@ class PreferenceDataset(Dataset):
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        if self.tokenizer.padding_side == 'left':
-            return LeftPaddingPreferenceCollator(self.tokenizer.pad_token_id)
+        if self.processor.tokenizer.padding_side == 'left':
+            return LeftPaddingPreferenceCollator(self.processor.tokenizer.pad_token_id)
         else:
-            return RightPaddingPreferenceCollator(self.tokenizer.pad_token_id)
+            return RightPaddingPreferenceCollator(self.processor.tokenizer.pad_token_id)
 
     def tokenize(
         self,

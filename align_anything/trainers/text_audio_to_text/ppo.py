@@ -56,17 +56,17 @@ def move_padding_left(input_tensor, padding_value=0):
         Tensor: The tensor with padding values moved to the left.
     """
     # Calculate the number of padding elements at the start of each row
-    start_pad_counts = (input_tensor == padding_value).cumsum(dim=1).eq(torch.arange(1, input_tensor.size(1) + 1)).sum(dim=1)
+    start_pad_counts = (input_tensor == padding_value).cumsum(dim=1).eq(torch.arange(1, input_tensor.size(1) + 1, device=input_tensor.device)).sum(dim=1)
     
     # Calculate the number of non-padding elements in each row
     non_pad_counts = (input_tensor != padding_value).sum(dim=1)
 
     # Create a new tensor of the same size as input_tensor, filled with padding_value
-    output_tensor = torch.full_like(input_tensor, padding_value)
+    output_tensor = torch.full_like(input_tensor, padding_value, device=input_tensor.device)
     
     # Get the indices for each row
     max_len = input_tensor.size(1)
-    indices = torch.arange(max_len).expand(len(non_pad_counts), max_len)
+    indices = torch.arange(max_len, device=input_tensor.device).expand(len(non_pad_counts), max_len)
     
     # Calculate the shift for each row
     shifts = max_len - non_pad_counts.unsqueeze(1) - start_pad_counts.unsqueeze(1)
@@ -171,6 +171,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             synced_gpus=True,
             do_sample=True,
         )
+        sequences = move_padding_left(sequences.contiguous(), self.tokenizer.pad_token_id)
         attention_mask = torch.logical_and(
             sequences.not_equal(self.tokenizer.pad_token_id),
             sequences.not_equal(self.tokenizer.unk_token_id),
@@ -181,11 +182,10 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         response_lens = []
         batch_size = sequences.size(0)
         for idx in range(batch_size):
-            prompt_length = mini_prompt_only_batch['input_ids'][idx].size(-1) -1
-            response = sequences[idx].squeeze()[prompt_length:].tolist()
-            response_wo_pad = remove_pad_tokens(response=response, pad_token_id=self.tokenizer.pad_token_id)
-            response_lens.append(len(response_wo_pad))
-        
+            prompt_length = len(remove_pad_tokens(mini_prompt_only_batch['input_ids'][idx].squeeze().tolist(), self.tokenizer.pad_token_id))
+            sequence_wo_pad = remove_pad_tokens(sequences[idx].squeeze().tolist(), self.tokenizer.pad_token_id)
+            response = sequence_wo_pad[prompt_length:]
+            response_lens.append(len(response))
         return actor_batch, response_lens
 
     @torch.no_grad()

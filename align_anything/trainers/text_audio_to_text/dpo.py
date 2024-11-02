@@ -59,9 +59,8 @@ class DPOTrainer(DPOtextTrainer):
             self.dsechf_eval = HfDeepSpeedConfig(self.ds_eval_cfgs)
         self.model, self.tokenizer, self.processor = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
-            trust_remote_code=True,
+            trust_remote_code=False,
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
             freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
@@ -69,7 +68,6 @@ class DPOTrainer(DPOtextTrainer):
         )
         self.reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
             trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
@@ -93,7 +91,7 @@ class DPOTrainer(DPOtextTrainer):
         batch_size = len(batch['response_lens'])
         logprob_list = []
         for idx in range(batch_size):
-            response_length = batch['response_lens'][idx] + 1 # for the eos token
+            response_length = batch['response_lens'][idx] # for the eos token
             logit = logits[idx][-response_length:].unsqueeze(0)
             input_id = input_ids[idx][-response_length:].unsqueeze(0)
             log_p = gather_log_probabilities(logit[:, :-1], input_id[:, 1:])

@@ -2184,7 +2184,7 @@ class LLAMA_3_2:
 
 @register_template('Qwen2Audio')
 class Qwen2Audio:
-    system_prompt: str = ''
+    system_prompt: str = 'You are a helpful assistant.'
     user_prompt: str = '<|im_start|>user\nAudio 1: <|audio_bos|><|AUDIO|><|audio_eos|>\n{input}<|im_end|>\n'
     assistant_prompt: str = '<|im_start|>assistant{output}'
     split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
@@ -2196,6 +2196,9 @@ class Qwen2Audio:
         response = raw_sample['output']
 
         conversation = [
+            {
+                "role": "system", "content": self.system_prompt
+            },
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2217,6 +2220,9 @@ class Qwen2Audio:
         audio_url = raw_sample['audio_path']
 
         better_conversation = [
+            {
+                "role": "system", "content": self.system_prompt
+            },
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2225,6 +2231,9 @@ class Qwen2Audio:
         ]
 
         worse_conversation = [
+            {
+                "role": "system", "content": self.system_prompt
+            },
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2233,6 +2242,9 @@ class Qwen2Audio:
         ]
 
         formatted_prompt = [
+            {
+                "role": "system", "content": self.system_prompt
+            },
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2269,7 +2281,7 @@ class Qwen2Audio:
     
 @register_template('Qwen2AudioCritique')
 class Qwen2AudioCritique:
-    system_prompt: str = ''
+    system_prompt: str = 'You are a helpful assistant.'
     user_prompt: str = '<|im_start|>user\nAudio 1: <|audio_bos|><|AUDIO|><|audio_eos|>\n{input}<|im_end|>\n'
     assistant_prompt: str = '<|im_start|>assistant{output}'
     split_token: str = '<|im_end|>\n<|im_start|>assistant\n'
@@ -2282,6 +2294,9 @@ class Qwen2AudioCritique:
         critique = raw_sample['critique']
         critique_prompt = 'Please provide the ##Critique and ##Refinement.'
         conversation = [
+            {
+                "role": "system", "content": self.system_prompt
+            },
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2304,6 +2319,9 @@ class Qwen2AudioCritique:
         audio_url = raw_sample['audio_path']
 
         better_conversation = [
+            {
+                "role": "system", "content": self.system_prompt
+            },
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2312,6 +2330,9 @@ class Qwen2AudioCritique:
         ]
 
         worse_conversation = [
+            {
+                "role": "system", "content": self.system_prompt
+            },
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},
@@ -2320,6 +2341,9 @@ class Qwen2AudioCritique:
         ]
 
         formatted_prompt = [
+            {
+                "role": "system", "content": self.system_prompt
+            },
             {'role': 'user', 'content': [
                     {"type": "audio", "audio_url": audio_url},
                     {"type": "text", "text": prompt},

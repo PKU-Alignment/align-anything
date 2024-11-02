@@ -288,49 +288,9 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
         else:
             param.requires_grad_(False)
 
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_name_or_path,
-        *auto_tokenizer_args,
-        cache_dir=cache_dir,
-        model_max_length=model_max_length,
-        padding_side=padding_side,
-        trust_remote_code=trust_remote_code,
-        **auto_tokenizer_kwargs,
-    )
-    if not "emu" in model_name_or_path.lower():
-        resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
-
-    try:
-        if "emu" in model_name_or_path.lower():
-            from align_anything.models.modeling_emu3.tokenizer.modeling_emu3visionvq import Emu3VisionVQModel
-            image_processor = AutoImageProcessor.from_pretrained(processor_name_or_path, trust_remote_code=True)
-            image_tokenizer = Emu3VisionVQModel.from_pretrained(processor_name_or_path)
-            image_tokenizer = deepspeed.init_inference(
-                    image_tokenizer,
-                    dtype=torch.float16,  
-                    replace_with_kernel_inject=True 
-                )
-            image_tokenizer.eval()
-            from align_anything.models.modeling_emu3.mllm.processing_emu3 import Emu3Processor
-            processor = Emu3Processor(
-                image_processor,
-                image_tokenizer,
-                tokenizer,
-            )
-        else:
-            processor = AutoProcessor.from_pretrained(
-                model_name_or_path,
-                cache_dir=cache_dir,
-                trust_remote_code=trust_remote_code,
-                padding_side=padding_side,
-            )
-        if not hasattr(processor, 'tokenizer'):
-            setattr(processor, 'tokenizer', tokenizer)
-    except Exception as e:
-        print(f"Warning: Failed to load processor: {e}. This is ok if you are using models without processor.")
-        processor = None
-
-    return model, tokenizer, processor
+    processor = AutoProcessor.from_pretrained(model_name_or_path)
+    resize_tokenizer_embedding(tokenizer=processor.tokenizer, model=model)
+    return model, processor.tokenizer, processor
 
 
 def load_pretrained_image_diffusion_models(  # pylint: disable=too-many-arguments
