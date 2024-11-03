@@ -360,7 +360,7 @@ class SupervisedTrainerBase:
 
         if is_main_process():
             model_to_save.config.to_json_file(output_config_file)
-            # self.tokenizer.save_pretrained(self.cfgs.logger_cfgs.output_dir)
+            self.tokenizer.save_pretrained(output_dir)
             if self.processor is not None:
                 self.processor.save_pretrained(output_dir)
 
