@@ -33,7 +33,7 @@ required parameters such as system_prompt.
        assistant_prompt: str = '\nASSISTANT: {output}'
        split_token: str = 'ASSISTANT:'
 
-       def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+       def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
            better_response = raw_sample['chosen']
            worse_response = raw_sample['rejected']
            prompt = raw_sample['question']
@@ -104,7 +104,7 @@ in ``align-anything/configs/template.py``, for instance, in this case:
        assistant_prompt: str = '\nASSISTANT: {output}'
        split_token: str = 'ASSISTANT:'
 
-       def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+       def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
            better_response = raw_sample['chosen']
            worse_response = raw_sample['rejected']
            prompt = raw_sample['question']
@@ -129,7 +129,7 @@ in ``align-anything/configs/template.py``, for instance, in this case:
                'image': image,
            }
 
-Here, ``format_sample`` parses the keys in the SPA-VL dataset,
+Here, ``format_preference_sample`` parses the keys in the SPA-VL dataset,
 determines which response is better based on the ``chosen`` or
 ``rejected``, and subsequently invokes previously defined parameters
 such as ``system_prompt`` to implement the transformation of key-value
