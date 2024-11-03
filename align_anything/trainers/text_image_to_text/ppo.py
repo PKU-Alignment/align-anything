@@ -63,10 +63,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             synced_gpus=True,
             do_sample=True,
         )
-        attention_mask = torch.logical_and(
-            sequences.not_equal(self.tokenizer.pad_token_id),
-            sequences.not_equal(self.tokenizer.unk_token_id),
-        )
+        attention_mask = sequences.not_equal(self.tokenizer.pad_token_id)
         actor_batch['input_ids'] = sequences
         actor_batch['attention_mask'] = attention_mask
         

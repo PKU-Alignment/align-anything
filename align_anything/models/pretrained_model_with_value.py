@@ -110,15 +110,14 @@ def load_pretrained_model_with_value_head(
         print('[MoE] set output_router_logits as True')
         model.config.output_router_logits = True
 
-    resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
     try:
-        processor = AutoProcessor.from_pretrained(
-            model_name_or_path,
-            cache_dir=cache_dir,
-            trust_remote_code=trust_remote_code,
-        )
-        setattr(processor, 'tokenizer', tokenizer)
-    except Exception as e:
-        processor = None
+        processor = AutoProcessor.from_pretrained(model_name_or_path)
+        processor.tokenizer.padding_side = padding_side
+        resize_tokenizer_embedding(tokenizer=processor.tokenizer, model=model)
 
-    return model, tokenizer, processor
+        return model, processor.tokenizer, processor
+    except Exception:
+        processor = None
+        resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
+        
+        return model, tokenizer, processor

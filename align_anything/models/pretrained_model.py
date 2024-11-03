@@ -38,9 +38,6 @@ from transformers import (
     CLIPTextModel,
     PreTrainedModel,
     PreTrainedTokenizerBase,
-    AutoModel,
-    AutoImageProcessor,
-    AutoConfig,
 )
 
 
@@ -118,14 +115,8 @@ def resize_tokenizer_embedding(tokenizer: PreTrainedTokenizerBase, model: PreTra
     )
 
     special_tokens_dict = {}
-    # if tokenizer.pad_token is None:
-    #     special_tokens_dict['pad_token'] = DEFAULT_PAD_TOKEN
-    # if tokenizer.eos_token is None:
-    #     special_tokens_dict['eos_token'] = DEFAULT_EOS_TOKEN
-    # if tokenizer.bos_token is None:
-    #     special_tokens_dict['bos_token'] = DEFAULT_BOS_TOKEN
-    # if tokenizer.unk_token is None:
-    #     special_tokens_dict['unk_token'] = DEFAULT_UNK_TOKEN
+    if tokenizer.pad_token is None:
+        special_tokens_dict['pad_token'] = DEFAULT_PAD_TOKEN
 
     num_new_tokens = tokenizer.add_special_tokens(special_tokens_dict)
     new_num_embeddings = len(tokenizer)
@@ -288,9 +279,27 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
         else:
             param.requires_grad_(False)
 
-    processor = AutoProcessor.from_pretrained(model_name_or_path)
-    resize_tokenizer_embedding(tokenizer=processor.tokenizer, model=model)
-    return model, processor.tokenizer, processor
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name_or_path,
+        *auto_tokenizer_args,
+        cache_dir=cache_dir,
+        model_max_length=model_max_length,
+        padding_side=padding_side,
+        trust_remote_code=trust_remote_code,
+        **auto_tokenizer_kwargs,
+    )
+
+    try:
+        processor = AutoProcessor.from_pretrained(model_name_or_path)
+        processor.tokenizer.padding_side = padding_side
+        resize_tokenizer_embedding(tokenizer=processor.tokenizer, model=model)
+
+        return model, processor.tokenizer, processor
+    except Exception:
+        processor = None
+        resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
+        
+        return model, tokenizer, processor
 
 
 def load_pretrained_image_diffusion_models(  # pylint: disable=too-many-arguments

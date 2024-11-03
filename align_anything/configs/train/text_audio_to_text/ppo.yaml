@@ -92,7 +92,7 @@ data_cfgs:
   # The format template for training
   train_template: null
   # The total number for training
-  train_size: 5000
+  train_size: null
   # The split of train datasets
   train_split: null
   # The subset of training datasets
