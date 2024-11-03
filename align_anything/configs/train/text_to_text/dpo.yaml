@@ -22,11 +22,11 @@ train_cfgs:
   # Seed for random number generator
   seed: 42
   # Batch size per device for training
-  per_device_train_batch_size: 4
+  per_device_train_batch_size: 2
   # Batch size per device for evaluation
-  per_device_eval_batch_size: 4
+  per_device_eval_batch_size: 2
   # The number of gradient accumulation steps
-  gradient_accumulation_steps: 8
+  gradient_accumulation_steps: 1
   # Whether to use gradient checkpointing
   gradient_checkpointing: True
   # Initial learning rate

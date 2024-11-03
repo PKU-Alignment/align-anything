@@ -14,7 +14,7 @@
 # ==============================================================================
 """The align anything project."""
 
-__version__ = '0.0.1dev0'
+__version__ = '0.0.1.dev0'
 __license__ = 'Apache License, Version 2.0'
 __author__ = 'PKU-Alignment Team'
 __release__ = False

@@ -253,7 +253,7 @@ class SupervisedDataset(Dataset):
 
     
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_sample(raw_sample)
+        formatted_sample = self.template.format_supervised_sample(raw_sample)
         return_dict = {}
         
         text = formatted_sample['text']

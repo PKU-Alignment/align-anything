@@ -16,17 +16,17 @@
 # The training configurations
 train_cfgs:
   # The deepspeed configuration
-  ds_cfgs: ds_z3_config.json
+  ds_cfgs: ds_z0_config.json
   # Number of training epochs
   epochs: 3
   # Seed for random number generator
   seed: 42
   # Batch size per device for training
-  per_device_train_batch_size: 4
+  per_device_train_batch_size: 1
   # Batch size per device for evaluation
-  per_device_eval_batch_size: 4
+  per_device_eval_batch_size: 1
   # The number of gradient accumulation steps
-  gradient_accumulation_steps: 16
+  gradient_accumulation_steps: 1
   # Whether to use gradient checkpointing
   gradient_checkpointing: True
   # Initial learning rate
@@ -39,8 +39,6 @@ train_cfgs:
   weight_decay: 0.0
   # Hyper-parameters for adam optimizer
   adam_betas: [0.9, 0.95]
-  # Hyper-parameters for adam epsilon
-  adam_epsilon: 1.e-8
   # Enable bfloat 16 precision
   bf16: True
   # Enable float 16 precision
@@ -49,26 +47,14 @@ train_cfgs:
   eval_strategy: epoch
   # The evaluation interval in step-wise evaluation case
   eval_interval: 10
-  # Freeze the multi modal projection layer
-  freeze_mm_proj: False
-  # Freeze the audio projector
-  freeze_audio_proj: False
-  # Freeze the vison tower model
-  freeze_audio_tower: False
-  # Freeze the language model
-  freeze_language_model: False
-  # The max norm of gradient
-  max_grad_norm: 1.0
+  # The reward modeling regularization
+  regularization: 0.001
 # The data configurations
 data_cfgs:
-  # Whether to use multi datasets
-  load_multi_datasets: False
   # Datasets to use for training
   train_datasets: null
   # The format template for training
   train_template: null
-  # The name of training datasets
-  train_name: null
   # The total number for training
   train_size: null
   # The split of train datasets
@@ -83,8 +69,6 @@ data_cfgs:
   eval_datasets: null
   # The format template for evaluation
   eval_template: null
-  # The name of evaluation datasets
-  eval_name: null
   # The total number for evaluation
   eval_size: null
   # The split of evaluation datasets
@@ -102,7 +86,7 @@ logger_cfgs:
   # Project name for logging
   log_project: align-anything
   # Run name for logging
-  log_run_name: sft
+  log_run_name: rm
   # Output directory name
   output_dir: null
   # The directory to cache the downloaded model

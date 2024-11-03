@@ -66,10 +66,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             synced_gpus=True,
             do_sample=True,
         )
-        attention_mask = torch.logical_and(
-            sequences.not_equal(self.tokenizer.pad_token_id),
-            sequences.not_equal(self.tokenizer.unk_token_id),
-        )
+        attention_mask = sequences.not_equal(self.tokenizer.pad_token_id)
         actor_batch['input_ids'] = sequences
         actor_batch['attention_mask'] = attention_mask
         
@@ -410,7 +407,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-            modality='text_video'
+            modality='text_video_to_text'
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = (
@@ -419,7 +416,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
                 model_max_length=self.cfgs.model_cfgs.model_max_length,
                 padding_side='left',
                 trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-                modality='text_video'
+                modality='text_video_to_text'
             )
         )
         # initial checking

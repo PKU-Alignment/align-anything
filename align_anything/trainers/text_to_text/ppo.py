@@ -203,10 +203,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             synced_gpus=True,
             do_sample=True,
         )
-        attention_mask = torch.logical_and(
-            sequences.not_equal(self.tokenizer.pad_token_id),
-            sequences.not_equal(self.tokenizer.unk_token_id),
-        )
+        attention_mask = sequences.not_equal(self.tokenizer.pad_token_id)
         actor_batch['input_ids'] = sequences
         actor_batch['attention_mask'] = attention_mask
 
@@ -419,7 +416,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         num_prompt_only_batches = len(self.prompt_only_dataloader)
         num_ptx_batches = len(self.ptx_dataloader)
         num_ptx_replicas = (num_prompt_only_batches + num_ptx_batches - 1) // num_ptx_batches
-        for epoch in range(self.cfgs.train_cfgs.epochs):
+        for epoch in range(int(self.cfgs.train_cfgs.epochs)):
             for prompt_only_batch, ptx_batch in zip(
                 self.prompt_only_dataloader,
                 itertools.chain.from_iterable([self.ptx_dataloader] * num_ptx_replicas),

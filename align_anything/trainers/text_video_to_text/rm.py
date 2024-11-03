@@ -58,7 +58,7 @@ class RMTrainer(RMtextTrainer):
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
-            modality='text_video',
+            modality='text_video_to_text',
         )
 
     def loss(

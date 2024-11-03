@@ -22,17 +22,18 @@ import torch
 import transformers
 from torch.utils.data import Dataset
 from torchvision import transforms
-from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
+from transformers.tokenization_utils import PaddingStrategy
 
-from align_anything.utils.multi_process import get_current_device
+from align_anything.utils.multi_process import get_current_device, is_main_process
 from align_anything.utils.template_registry import get_template_class
-from align_anything.utils.tools import right_padding
+from align_anything.utils.tools import right_padding, left_padding
 from datasets import load_dataset
 
 
 __all__ = [
     'PreferenceDataset',
-    'PreferenceCollator',
+    'RightPaddingPreferenceCollator',
+    'LeftPaddingPreferenceCollator',
     'PreferenceSample',
     'PreferenceBatch',
 ]
@@ -73,6 +74,7 @@ class PreferenceDataset(Dataset):
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
+        
         self.raw_data = load_dataset(
             path,
             name=name,
@@ -96,14 +98,16 @@ class PreferenceDataset(Dataset):
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_sample(raw_sample)
+        formatted_sample = self.template.format_preference_sample(raw_sample)
         return_dict = {}
 
         raw_better_text = formatted_sample['better_conversation']
         raw_worse_text = formatted_sample['worse_conversation']
+        raw_better_response = formatted_sample['better_conversation'][-1]['content']
+        raw_worse_response = formatted_sample['worse_conversation'][-1]['content']
 
-        better_text = self.processor.apply_chat_template(raw_better_text, add_generation_prompt=True, tokenize=False)
-        worse_text = self.processor.apply_chat_template(raw_worse_text, add_generation_prompt=True, tokenize=False)
+        better_text = self.processor.apply_chat_template(raw_better_text, add_generation_prompt=False, tokenize=False)
+        worse_text = self.processor.apply_chat_template(raw_worse_text, add_generation_prompt=False, tokenize=False)
         audios = []
 
         for message in raw_better_text:
@@ -115,39 +119,46 @@ class PreferenceDataset(Dataset):
                                 ele['audio_url'], 
                                 sr=self.processor.feature_extractor.sampling_rate)[0]
                         )
-        better_inputs = self.tokenize(text=better_text, audios=audios)
-        worse_inputs = self.tokenize(text=worse_text, audios=audios)
-        return_dict['better_input_ids'] = better_inputs['input_ids'][0]
-        return_dict['worse_input_ids'] = worse_inputs['input_ids'][0]
-        return_dict['feature_attention_mask'] = better_inputs['feature_attention_mask']
+        better_inputs = self.tokenize(text=better_text, audios=audios, padding=True)
+        worse_inputs = self.tokenize(text=worse_text, audios=audios, padding=True)
+        better_input_wo_padding = self.tokenize(text=better_text, audios=audios, padding=PaddingStrategy.DO_NOT_PAD)
+        worse_input_wo_padding = self.tokenize(text=worse_text, audios=audios, padding=PaddingStrategy.DO_NOT_PAD)
+
+        return_dict['better_input_ids'] = better_input_wo_padding['input_ids'][0]
+        return_dict['worse_input_ids'] = worse_input_wo_padding['input_ids'][0]
+        return_dict['better_response_lens'] = len(self.tokenize(raw_better_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0]) + 2 # for the eos token
+        return_dict['worse_response_lens'] = len(self.tokenize(raw_worse_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0]) + 2 # for the eos token
+
+        return_dict['better_feature_attention_mask'] = better_inputs['feature_attention_mask']
+        return_dict['better_input_features'] = better_inputs['input_features']
+
+        return_dict['worse_feature_attention_mask'] = worse_inputs['feature_attention_mask']
+        return_dict['worse_input_features'] = worse_inputs['input_features']
 
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return PreferenceCollator(self.tokenizer.pad_token_id)
+        if self.processor.tokenizer.padding_side == 'left':
+            return LeftPaddingPreferenceCollator(self.processor.tokenizer.pad_token_id)
+        else:
+            return RightPaddingPreferenceCollator(self.processor.tokenizer.pad_token_id)
 
     def tokenize(
         self,
         text: str,
-        audios: list,
+        audios: list[torch.Tensor] | None = None,
         add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
-        truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
-        max_length: int | None = None,
     ) -> torch.LongTensor:  # size = (L,)
         """Tokenize a text string into a tensor representation."""
-        if max_length is None:
-            max_length = self.tokenizer.model_max_length
 
         return self.processor(
             text=text, 
             audios=audios, 
             return_tensors="pt",
-            add_special_tokens=add_special_tokens,
             padding=padding,
-            truncation=truncation,
-            max_length=max_length,
             sampling_rate=self.processor.feature_extractor.sampling_rate,
+            add_special_tokens=add_special_tokens,
         )
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
@@ -161,11 +172,12 @@ class PreferenceDataset(Dataset):
         return len(self.valid_indices)
 
 
-class PreferenceCollator:
+class RightPaddingPreferenceCollator:
 
     def __init__(self, pad_token_id: int) -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
+        self.padding_func = right_padding
 
     def __call__(self, samples: list[PreferenceSample]) -> tuple[PreferenceBatch]:
         return_dict = {}
@@ -173,20 +185,31 @@ class PreferenceCollator:
         input_ids = [sample['better_input_ids'] for sample in samples] + [
             sample['worse_input_ids'] for sample in samples
         ]  # size = (2 * B, L)
-        feature_attention_mask = [sample['feature_attention_mask'] for sample in samples]
-
-        return_dict['input_ids'] = right_padding(input_ids, padding_value=self.pad_token_id).to(
+        input_features = [sample['better_input_features'] for sample in samples] + [
+            sample['worse_input_features'] for sample in samples
+        ]
+        input_attention_mask = [sample['better_feature_attention_mask'] for sample in samples] + [
+            sample['worse_feature_attention_mask'] for sample in samples
+        ]
+        return_dict['better_response_lens'] = [sample['better_response_lens'] for sample in samples]
+        return_dict['worse_response_lens'] = [sample['worse_response_lens'] for sample in samples]
+        return_dict['response_lens'] = return_dict['better_response_lens'] + return_dict['worse_response_lens']
+        return_dict['input_ids'] = self.padding_func(input_ids, padding_value=self.pad_token_id).to(
             current_device
         )  # size = (2 * B, L)
         attention_mask = [
             input_id.new_ones(input_id.size(), dtype=torch.bool) for input_id in input_ids
         ]  # size = (2 * B, L)
-        return_dict['attention_mask'] = right_padding(attention_mask, padding_value=0).to(
+        return_dict['attention_mask'] = self.padding_func(attention_mask, padding_value=0).to(
             current_device
         )  # size = (2 * B, L)
 
-        return_dict['feature_attention_mask'] = right_padding(feature_attention_mask, padding_value=0).to(
-            current_device
-        )  # size = (2 * B, L)
+        return_dict['input_features'] = torch.cat(input_features, dim=0).to(current_device)
+        return_dict['feature_attention_mask'] = torch.cat(input_attention_mask, dim=0).to(current_device)
 
         return return_dict
+
+class LeftPaddingPreferenceCollator(RightPaddingPreferenceCollator):
+    def __init__(self, pad_token_id: int) -> None:
+        super().__init__(pad_token_id)
+        self.padding_func = left_padding

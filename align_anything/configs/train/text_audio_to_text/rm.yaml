@@ -22,15 +22,15 @@ train_cfgs:
   # Seed for random number generator
   seed: 42
   # Batch size per device for training
-  per_device_train_batch_size: 4
+  per_device_train_batch_size: 2
   # Batch size per device for evaluation
   per_device_eval_batch_size: 4
   # The number of gradient accumulation steps
-  gradient_accumulation_steps: 8
+  gradient_accumulation_steps: 1
   # Whether to use gradient checkpointing
   gradient_checkpointing: True
   # Initial learning rate
-  learning_rate: 2.e-5
+  learning_rate: 1.e-6  # Type of learning rate scheduler
   # Type of learning rate scheduler
   lr_scheduler_type: cosine
   # Ratio of warmup steps for learning rate
@@ -49,6 +49,14 @@ train_cfgs:
   eval_interval: 10
   # The reward modeling regularization
   regularization: 0.001
+  # Freeze the multi modal projection layer
+  freeze_mm_proj: False
+  # Freeze the audio projector
+  freeze_audio_proj: False
+  # Freeze the vison tower model
+  freeze_audio_tower: True
+  # Freeze the language model
+  freeze_language_model: False
 # The data configurations
 data_cfgs:
   # Datasets to use for training

@@ -68,25 +68,28 @@ class SupervisedTrainerBase:
 
     def get_dataloaders(self, train_data_dtype, eval_data_dtype) -> None:
         """Get the dataloaders based on data_dtype."""
-        self.train_template = get_template_class(self.cfgs.data_cfgs.train_template)
-        train_dataset = train_data_dtype(
-            path=self.cfgs.data_cfgs.train_datasets,
-            template=self.cfgs.data_cfgs.train_template,
-            tokenizer=self.tokenizer,
-            processor=self.processor,
-            name=self.cfgs.data_cfgs.train_name,
-            size=self.cfgs.data_cfgs.train_size,
-            split=self.cfgs.data_cfgs.train_split,
-            subset=self.cfgs.data_cfgs.train_subset,
-            data_files=self.cfgs.data_cfgs.train_data_files,
-            optional_args=self.cfgs.data_cfgs.train_optional_args,
-        )
-        train_dataloader = DataLoader(
-            train_dataset,
-            collate_fn=train_dataset.get_collator(),
-            sampler=DistributedSampler(train_dataset, shuffle=True),
-            batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
-        )
+        train_dataloader = []
+        eval_dataloader = []
+        if self.cfgs.data_cfgs.train_datasets:
+            self.train_template = get_template_class(self.cfgs.data_cfgs.train_template)
+            train_dataset = train_data_dtype(
+                path=self.cfgs.data_cfgs.train_datasets,
+                template=self.cfgs.data_cfgs.train_template,
+                tokenizer=self.tokenizer,
+                processor=self.processor,
+                name=self.cfgs.data_cfgs.train_name,
+                size=self.cfgs.data_cfgs.train_size,
+                split=self.cfgs.data_cfgs.train_split,
+                subset=self.cfgs.data_cfgs.train_subset,
+                data_files=self.cfgs.data_cfgs.train_data_files,
+                optional_args=self.cfgs.data_cfgs.train_optional_args,
+            )
+            train_dataloader = DataLoader(
+                train_dataset,
+                collate_fn=train_dataset.get_collator(),
+                sampler=DistributedSampler(train_dataset, shuffle=True),
+                batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
+            )
         if self.cfgs.data_cfgs.eval_datasets:
             self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
             eval_dataset = eval_data_dtype(
@@ -107,9 +110,8 @@ class SupervisedTrainerBase:
                 sampler=DistributedSampler(eval_dataset, shuffle=True),
                 batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
             )
-            return train_dataloader, eval_dataloader
 
-        return train_dataloader, None
+        return train_dataloader, eval_dataloader
     
     def get_multi_dataloaders(self, train_data_dtype, eval_data_dtype) -> None:
         """Get the dataloaders based on data_dtype."""
@@ -347,38 +349,40 @@ class SupervisedTrainerBase:
 
         if model is None:
             model = self.model  # pylint: disable=no-member
+        
+        output_dir = os.path.join(self.cfgs.logger_cfgs.output_dir, f'slice_{tag or "end"}')
+        os.makedirs(output_dir, exist_ok=True)
 
-        self.logger.print(f'Saving model to "{self.cfgs.logger_cfgs.output_dir}" ...')
+        self.logger.print(f'Saving model to "{output_dir}" ...')
 
-        output_config_file = os.path.join(self.cfgs.logger_cfgs.output_dir, CONFIG_NAME)
+        output_config_file = os.path.join(output_dir, CONFIG_NAME)
         model_to_save: PreTrainedModel = getattr(model, 'module', model)
 
         if is_main_process():
             model_to_save.config.to_json_file(output_config_file)
-            self.tokenizer.save_pretrained(self.cfgs.logger_cfgs.output_dir)
+            self.tokenizer.save_pretrained(output_dir)
             if self.processor is not None:
-                self.processor.save_pretrained(self.cfgs.logger_cfgs.output_dir)
-                
-        self.logger.print('Saving 16-bit model...')
-        save_file_name = f'pytorch_model_{tag}.bin' if tag else 'pytorch_model.bin'
-        model.save_16bit_model(self.cfgs.logger_cfgs.output_dir, save_filename=save_file_name)
-
-        self.logger.print('Model saved!')
+                self.processor.save_pretrained(output_dir)
 
         if not self.lora_enabled:
             self.logger.print('Saving 16-bit model...')
-            save_file_name = f'pytorch_model_{tag}.bin' if tag else 'pytorch_model.bin'
-            model.save_16bit_model(self.cfgs.logger_cfgs.output_dir, save_filename=save_file_name)
+            zero_stage = self.ds_train_cfgs.get('zero_optimization', {}).get('stage', 0)
+            if zero_stage >= 2:
+                save_file_name = 'pytorch_model.bin'
+                model.save_16bit_model(output_dir, save_filename=save_file_name)
+            else:
+                if is_main_process():
+                    model_to_save.save_pretrained(output_dir, is_main_process=True)   
             self.logger.print('Model saved!')
         if self.lora_enabled and not self.lora_cfgs.save_full_model:
             self.logger.print('LoRA used. Saving model as LoRA adapters...')
-            model.save_pretrained(self.cfgs.logger_cfgs.output_dir)
+            model.save_pretrained(output_dir)
             self.logger.print('Model saved!')
         if self.lora_enabled and self.lora_cfgs.save_full_model:
             self.logger.print('LoRA used. Saving full model...')
             model = model.module
             model_to_be_saved = model.merge_and_unload()
-            model_to_be_saved.save_pretrained(self.cfgs.logger_cfgs.output_dir)
+            model_to_be_saved.save_pretrained(output_dir)
             self.logger.print('Model saved!')
 
     def save_diffusers(

@@ -22,9 +22,9 @@ train_cfgs:
   # Seed for random number generator
   seed: 42
   # Batch size per device for training
-  per_device_prompt_batch_size: 4
+  per_device_prompt_batch_size: 8
   # Batch size per device for training
-  per_device_train_batch_size: 4
+  per_device_train_batch_size: 8
   # Batch size per device for evauation
   per_device_eval_batch_size: 4
   # The number of gradient accumulation steps
@@ -34,15 +34,15 @@ train_cfgs:
   # Whether to use gradient checkpointing for the critic model
   critic_gradient_checkpointing: True
   # Initial learning rate for the actor model
-  actor_lr: 5.e-7
+  actor_lr: 1.e-5
   # Type of learning rate scheduler for the actor model
   actor_lr_scheduler_type: cosine
   # Ratio of warmup steps for learning rate for the actor model
   actor_lr_warmup_ratio: 0.03
   # Weight decay coefficient for the actor model
-  actor_weight_decay: 0.00
+  actor_weight_decay: 0.01
   # Initial learning rate for the critic model
-  critic_lr: 5.e-7
+  critic_lr: 5.e-6
   # Type of learning rate scheduler for the critic model
   critic_lr_scheduler_type: constant
   # Ratio of warmup steps for learning rate for the critic model
@@ -90,7 +90,7 @@ data_cfgs:
   # The format template for training
   train_template: null
   # The total number for training
-  train_size: 5000
+  train_size: null
   # The split of train datasets
   train_split: null
   # The subset of training datasets

@@ -88,7 +88,7 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
         def __init__(self, config: AutoConfig):
             super().__init__(config)
             setattr(self, self.base_model_prefix, base_llm_model(config))
-            self.score_head = nn.Linear(4096, 1, bias=False)
+            self.score_head = nn.Linear(config.hidden_size, 1, bias=False)
 
         def forward(
             self,
@@ -150,7 +150,7 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
         def __init__(self, config: AutoConfig):
             super().__init__(config)
             setattr(self, self.base_model_prefix, base_llm_model(config))
-            self.score_head = nn.Linear(4096, 1, bias=False)
+            self.score_head = nn.Linear(5120, 1, bias=False)
 
         def forward(
             self,
@@ -203,17 +203,12 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
                 output_hidden_states=True,
                 **kwargs,
             )
+            final_attention_mask = outputs.attention_mask
 
             last_hidden_state = outputs.hidden_states[-1]
             scores = self.score_head(last_hidden_state).float()
-            B, L, E = last_hidden_state.size()
 
-            if attention_mask is None:
-                if B > 1:
-                    raise ValueError("'attention_mask' is required when batch size > 1.")
-                attention_mask = last_hidden_state.new_ones(B, L, dtype=torch.bool)  # size = (B, L)
-
-            end_index = torch.cat([m.nonzero()[-1] for m in attention_mask])  # size = (B,)
+            end_index = torch.cat([m.nonzero()[-1] for m in final_attention_mask])  # size = (B,)
             end_last_hidden_state = torch.gather(  # size = (B, 1, E)
                 last_hidden_state,
                 dim=1,
@@ -309,11 +304,11 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
             
     if modality == 'text':
         RewardModel = T2TRewardModel
-    elif modality == 'text_image':
+    elif modality == 'text_image_to_text':
         RewardModel = TI2TRewardModel
-    elif modality == 'text_audio':
+    elif modality == 'text_audio_to_text':
         RewardModel = TA2TRewardModel
-    elif modality == 'text_video':
+    elif modality == 'text_video_to_text':
         RewardModel = TV2TRewardModel
 
     return RewardModel

@@ -26,7 +26,7 @@ train_cfgs:
   # Batch size per device for evaluation
   per_device_eval_batch_size: 4
   # The number of gradient accumulation steps
-  gradient_accumulation_steps: 8
+  gradient_accumulation_steps: 1
   # Whether to use gradient checkpointing
   gradient_checkpointing: True
   # Initial learning rate
@@ -34,7 +34,7 @@ train_cfgs:
   # Type of learning rate scheduler
   lr_scheduler_type: cosine
   # Ratio of warmup steps for learning rate
-  lr_warmup_ratio: 0.01
+  lr_warmup_ratio: 0.03
   # Weight decay coefficient
   weight_decay: 0.00
   # Hyper-parameters for adam optimizer

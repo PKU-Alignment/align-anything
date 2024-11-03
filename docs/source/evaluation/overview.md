@@ -200,21 +200,21 @@ The evaluation module of align-anything supports a variety of multimodal benchma
                 </tr>
                 <tr>
                     <td>
-                        <a href="https://huggingface.co/datasets/qyang1021/AIR-Bench-Dataset" target="_blank">AIR-Bench</a><span class="star">*</span>
+                        <a href="https://huggingface.co/datasets/qyang1021/AIR-Bench-Dataset" target="_blank">AIR-Bench</a><!-- <span class="star">*</span> -->
                     </td>
                     <td>Text+Audio→Text</td>
                     <td>DeepSpeed</td>
                 </tr>
                 <tr>
                     <td>
-                        <a href="https://huggingface.co/datasets/lmms-lab/Video-MME" target="_blank">Video-MME</a><span class="star">*</span>
+                        <a href="https://huggingface.co/datasets/OpenGVLab/MVBench" target="_blank">MVBench</a><!-- <span class="star">*</span> -->
                     </td>
                     <td>Text+Video→Text</td>
                     <td>vLLM</td>
                 </tr>
                 <tr>
                     <td>
-                        <a href="https://huggingface.co/datasets/OpenGVLab/MVBench" target="_blank">MVBench</a><span class="star">*</span>
+                        <a href="https://huggingface.co/datasets/lmms-lab/Video-MME" target="_blank">Video-MME</a><!-- <span class="star">*</span> -->
                     </td>
                     <td>Text+Video→Text</td>
                     <td>vLLM</td>
@@ -253,6 +253,6 @@ The evaluation module of align-anything supports a variety of multimodal benchma
             </table>
         </div>
     </div>
-    <div class="note"><span class="red-star">*</span> Benchmarks with an asterisk are in test.</div>
+    <!-- <div class="note"><span class="red-star">*</span> Benchmarks with an asterisk are in test.</div> -->
 </body>
 </html>

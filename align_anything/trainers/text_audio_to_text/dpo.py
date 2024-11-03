@@ -22,13 +22,12 @@ import sys
 import deepspeed
 import torch
 import torch.distributed
-import torch.nn.functional as F
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from transformers import AutoModelForCausalLM
+import torch.nn.functional as F
 
-from align_anything.datasets.text_to_text.preference import PreferenceBatch
-from align_anything.datasets.text_image_to_text.preference import PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
+from align_anything.datasets.text_audio_to_text.preference import PreferenceDataset, PreferenceBatch
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
 from align_anything.utils.multi_process import get_current_device, is_main_process
 from align_anything.utils.tools import (
@@ -37,7 +36,7 @@ from align_anything.utils.tools import (
     read_cfgs,
     seed_everything,
     update_dict,
-    gather_log_probabilities,
+    gather_log_probabilities
 )
 
 def strip_pad(seq: torch.Tensor, pad_token_id: int):
@@ -60,18 +59,21 @@ class DPOTrainer(DPOtextTrainer):
             self.dsechf_eval = HfDeepSpeedConfig(self.ds_eval_cfgs)
         self.model, self.tokenizer, self.processor = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
-            trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            trust_remote_code=False,
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
-            freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
+            freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
+            freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
         )
         self.reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
             trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
+            freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
+            freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
+            freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
         )
 
     def compute_log_probs(
@@ -89,10 +91,9 @@ class DPOTrainer(DPOtextTrainer):
         batch_size = len(batch['response_lens'])
         logprob_list = []
         for idx in range(batch_size):
-            response_length = batch['response_lens'][idx]
-            raw_input_id = strip_pad(input_ids[idx], self.tokenizer.pad_token_id)
+            response_length = batch['response_lens'][idx] # for the eos token
             logit = logits[idx][-response_length:].unsqueeze(0)
-            input_id = raw_input_id[-response_length:].unsqueeze(0)
+            input_id = input_ids[idx][-response_length:].unsqueeze(0)
             log_p = gather_log_probabilities(logit[:, :-1], input_id[:, 1:])
             logprob_list.append(log_p.squeeze(0))
         return torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(device)
@@ -146,6 +147,7 @@ class DPOTrainer(DPOtextTrainer):
                 self.cfgs.train_cfgs.scale_coeff * better_log_ratio.detach(),
             )
             worse_sample_rewards.append(self.cfgs.train_cfgs.scale_coeff * worse_log_ratio.detach())
+
         loss = torch.stack(losses).mean()  # size = ()
         better_sample_reward = torch.stack(better_sample_rewards)  # size = (B,)
         worse_sample_reward = torch.stack(worse_sample_rewards)  # size = (B,)
@@ -162,6 +164,7 @@ class DPOTrainer(DPOtextTrainer):
             'reward_margin': reward_margin,
         }
 
+
 def main():
     # setup distribution training
     deepspeed.init_distributed()
@@ -169,7 +172,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('text_image_to_text', 'dpo')
+    task = os.path.join('text_audio_to_text', 'dpo')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # get custom configs from command line

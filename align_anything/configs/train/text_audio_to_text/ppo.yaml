@@ -79,8 +79,10 @@ train_cfgs:
   update_iters: 1
   # Freeze the multi modal projection layer
   freeze_mm_proj: False
+  # Freeze the audio projector
+  freeze_audio_proj: False
   # Freeze the vison tower model
-  freeze_vision_tower: True
+  freeze_audio_tower: False
   # Freeze the language model
   freeze_language_model: False
 # The data configurations
@@ -90,7 +92,7 @@ data_cfgs:
   # The format template for training
   train_template: null
   # The total number for training
-  train_size: 5000
+  train_size: null
   # The split of train datasets
   train_split: null
   # The subset of training datasets

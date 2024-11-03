@@ -14,8 +14,6 @@
 # ==============================================================================
 
 
-from io import BytesIO
-from urllib.request import urlopen
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 import librosa
@@ -23,7 +21,7 @@ import torch
 import transformers
 from torch.utils.data import Dataset
 from torchvision import transforms
-from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
+from transformers.tokenization_utils import PaddingStrategy
 
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.template_registry import get_template_class
@@ -89,13 +87,14 @@ class SupervisedDataset(Dataset):
         self.template = get_template_class(template)
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_sample(raw_sample)
+        formatted_sample = self.template.format_supervised_sample(raw_sample)
         return_dict = {}
         raw_text = formatted_sample['conversation']
         raw_prompt = formatted_sample['prompt']
 
-        text = self.processor.apply_chat_template(raw_text, add_generation_prompt=True, tokenize=False)
+        text = self.processor.apply_chat_template(raw_text, add_generation_prompt=False, tokenize=False)
         prompt = self.processor.apply_chat_template(raw_prompt, add_generation_prompt=True, tokenize=False)
+
         audios = []
 
         for message in formatted_sample['conversation']:
@@ -108,13 +107,14 @@ class SupervisedDataset(Dataset):
                                 sr=self.processor.feature_extractor.sampling_rate)[0]
                         )
 
-        inputs = self.tokenize(text=text, audios=audios)
+        inputs = self.tokenize(text=text, audios=audios, padding=True)
         return_dict['input_ids'] = inputs['input_ids'][0]
         labels = return_dict['input_ids'].clone()
         # mask non-assistant input
         labels[: len(self.tokenize(text=prompt, audios=audios)['input_ids'][0])] = IGNORE_INDEX
         return_dict['labels'] = labels
         return_dict['feature_attention_mask'] = inputs['feature_attention_mask']
+        return_dict['input_features'] = inputs['input_features']
 
         return return_dict
 
@@ -125,23 +125,15 @@ class SupervisedDataset(Dataset):
         self,
         text: str,
         audios: list,
-        add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
-        truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
-        max_length: int | None = None,
     ) -> torch.LongTensor:  # size = (L,)
         """Tokenize a text string into a tensor representation."""
-        if max_length is None:
-            max_length = self.tokenizer.model_max_length
 
         return self.processor(
             text=text, 
             audios=audios, 
             return_tensors="pt",
-            add_special_tokens=add_special_tokens,
             padding=padding,
-            truncation=truncation,
-            max_length=max_length,
             sampling_rate=self.processor.feature_extractor.sampling_rate,
         )
 
@@ -170,19 +162,15 @@ class SupervisedCollator:
             [sample['input_ids'] for sample in samples],
             padding_value=self.pad_token_id,
         ).to(current_device)
-
         return_dict['labels'] = right_padding(
             [sample['labels'] for sample in samples],
             padding_value=IGNORE_INDEX,
         ).to(current_device)
-
-        return_dict['feature_attention_mask'] = right_padding(
-            [sample['feature_attention_mask'] for sample in samples],
-            padding_value=0,
-        ).to(current_device)
-
         return_dict['attention_mask'] = (
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
         )
+
+        return_dict['input_features'] = torch.cat([sample['input_features'] for sample in samples], dim=0).to(current_device)
+        return_dict['feature_attention_mask'] = torch.cat([sample['feature_attention_mask'] for sample in samples], dim=0).to(current_device)
 
         return return_dict

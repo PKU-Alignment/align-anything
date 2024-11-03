@@ -14,12 +14,8 @@
 # ==============================================================================
 
 
-import json
-
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
-
-from tqdm import tqdm
 
 import torch
 import transformers
@@ -29,13 +25,14 @@ from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.template_registry import get_template_class
-from align_anything.utils.tools import right_padding
+from align_anything.utils.tools import right_padding, left_padding
 from datasets import load_dataset
 
 
 __all__ = [
     'PreferenceDataset',
-    'PreferenceCollator',
+    'RightPaddingPreferenceCollator',
+    'LeftPaddingPreferenceCollator',
     'PreferenceSample',
     'PreferenceBatch',
 ]
@@ -101,7 +98,7 @@ class PreferenceDataset(Dataset):
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_sample(raw_sample)
+        formatted_sample = self.template.format_preference_sample(raw_sample)
         return_dict = {}
 
         raw_better_text = ''
@@ -120,8 +117,8 @@ class PreferenceDataset(Dataset):
         
         return_dict['better_input_ids'] = self.tokenize(raw_better_text)
         return_dict['worse_input_ids'] = self.tokenize(raw_worse_text)
-        return_dict['better_response_lens'] = len(self.tokenize(raw_better_response))
-        return_dict['worse_response_lens'] = len(self.tokenize(raw_worse_response))
+        return_dict['better_response_lens'] = len(self.tokenize(raw_better_response.split(self.template.split_token)[-1], add_special_tokens=False))
+        return_dict['worse_response_lens'] = len(self.tokenize(raw_worse_response.split(self.template.split_token)[-1], add_special_tokens=False))
         raw_image = formatted_sample['image']
         return_dict['pixel_values'] = self.processor.image_processor(
             raw_image, return_tensors='pt'
@@ -130,7 +127,10 @@ class PreferenceDataset(Dataset):
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return PreferenceCollator(self.tokenizer.pad_token_id)
+        if self.tokenizer.padding_side == 'left':
+            return LeftPaddingPreferenceCollator(self.tokenizer.pad_token_id)
+        else:
+            return RightPaddingPreferenceCollator(self.tokenizer.pad_token_id)
 
     def tokenize(
         self,
@@ -164,11 +164,12 @@ class PreferenceDataset(Dataset):
         return len(self.valid_indices)
 
 
-class PreferenceCollator:
+class RightPaddingPreferenceCollator:
 
     def __init__(self, pad_token_id: int) -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
+        self.padding_func = right_padding
 
     def __call__(self, samples: list[PreferenceSample]) -> tuple[PreferenceBatch]:
         return_dict = {}
@@ -177,14 +178,14 @@ class PreferenceCollator:
         input_ids = [sample['better_input_ids'] for sample in samples] + [
             sample['worse_input_ids'] for sample in samples
         ]  # size = (2 * B, L)
-        return_dict['input_ids'] = right_padding(input_ids, padding_value=self.pad_token_id).to(
+        return_dict['input_ids'] = self.padding_func(input_ids, padding_value=self.pad_token_id).to(
             current_device
         )  # size = (2 * B, L)
 
         attention_mask = [
             input_id.new_ones(input_id.size(), dtype=torch.bool) for input_id in input_ids
         ]  # size = (2 * B, L)
-        return_dict['attention_mask'] = right_padding(attention_mask, padding_value=0).to(
+        return_dict['attention_mask'] = self.padding_func(attention_mask, padding_value=0).to(
             current_device
         )  # size = (2 * B, L)
         return_dict['better_response_lens'] = [sample['better_response_lens'] for sample in samples]
@@ -225,3 +226,10 @@ class PreferenceCollator:
                 return_dict['pixel_values'] = double_stacked.to(current_device)
 
         return return_dict
+    
+class LeftPaddingPreferenceCollator(RightPaddingPreferenceCollator):
+
+    def __init__(self, pad_token_id: int) -> None:
+        """Initialize a collator."""
+        super().__init__(pad_token_id)
+        self.padding_func = left_padding

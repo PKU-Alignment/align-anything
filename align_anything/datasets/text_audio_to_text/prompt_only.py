@@ -118,9 +118,11 @@ class PromptOnlyDataset(Dataset):
                                 ele['audio_url'], 
                                 sr=self.processor.feature_extractor.sampling_rate)[0]
                         )
-        inputs = self.tokenize(text=text, audios=audios)
-        return_dict['input_ids'] = inputs['input_ids'][0]
+        inputs_wo_padding = self.tokenize(text=text, audios=audios, padding=False)
+        inputs = self.tokenize(text=text, audios=audios, padding=True)
+        return_dict['input_ids'] = inputs_wo_padding['input_ids'][0]
         return_dict['feature_attention_mask'] = inputs['feature_attention_mask']
+        return_dict['input_features'] = inputs['input_features']
 
         return return_dict
 
@@ -130,25 +132,19 @@ class PromptOnlyDataset(Dataset):
     def tokenize(
         self,
         text: str,
-        audios: list,
+        audios: list[torch.Tensor] | None = None,
         add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
-        truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
-        max_length: int | None = None,
     ) -> torch.LongTensor:  # size = (L,)
         """Tokenize a text string into a tensor representation."""
-        if max_length is None:
-            max_length = self.tokenizer.model_max_length
 
         return self.processor(
             text=text, 
             audios=audios, 
             return_tensors="pt",
-            add_special_tokens=add_special_tokens,
             padding=padding,
-            truncation=truncation,
-            max_length=max_length,
             sampling_rate=self.processor.feature_extractor.sampling_rate,
+            add_special_tokens=add_special_tokens,
         )
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
@@ -183,6 +179,8 @@ class PromptOnlyCollator:
         return_dict['attention_mask'] = left_padding(attention_mask, padding_value=0).to(
             current_device
         )
-        return_dict['feature_attention_mask'] = left_padding([sample['feature_attention_mask'] for sample in samples], padding_value=0,)
+
+        return_dict['input_features'] = torch.cat([sample['input_features'] for sample in samples], dim=0).to(current_device)
+        return_dict['feature_attention_mask'] = torch.cat([sample['feature_attention_mask'] for sample in samples], dim=0).to(current_device)
 
         return return_dict

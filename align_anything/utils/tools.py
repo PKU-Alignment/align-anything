@@ -725,3 +725,27 @@ def process_vision(conversations: list[dict] | list[list[dict]], task_idx):
         else:
             raise ValueError("video should in content.")
     return video_inputs
+
+def count_right_padding(lst, padding=0):
+    """Counts the number of padding values (default is 0) on the right side of a list.
+
+    This function iterates over the elements of the given list from the end to the start.
+    It stops counting when it encounters the first non-padding element.
+
+    Args:
+        lst (List): The list to be checked.
+        padding (int, optional): The value considered as padding. Defaults to 0.
+
+    Returns:
+        int: The number of padding values on the right side of the list.
+    """
+    count = 0
+    # Iterate over the list in reverse order
+    for i in range(len(lst) - 1, -1, -1):
+        if lst[i] == padding:
+            count += 1
+        else:
+            # Stop counting when a non-padding value is encountered
+            break
+
+    return count

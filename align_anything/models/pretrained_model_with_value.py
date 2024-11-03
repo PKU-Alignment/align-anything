@@ -30,7 +30,10 @@ def load_pretrained_model_with_value_head(
     padding_side: Literal['left', 'right'] = 'right',
     auto_device_mapping: bool = False,
     freeze_vision_tower: bool = True,
+    freeze_audio_tower: bool = True,
     freeze_mm_proj: bool = True,
+    freeze_vision_proj: bool = True,
+    freeze_audio_proj: bool = True,
     freeze_language_model: bool = False,
     dtype: torch.dtype | str | None = 'auto',
     *,
@@ -59,6 +62,7 @@ def load_pretrained_model_with_value_head(
         base_pretrained_class = base_class.__base__
 
     AnyRewardModel = get_score_model(base_pretrained_class, base_class, modality)
+    ignore_mismatched_sizes = modality in ['text_audio_to_text']
     model = AnyRewardModel.from_pretrained(
         model_name_or_path,
         *auto_model_args,
@@ -66,15 +70,21 @@ def load_pretrained_model_with_value_head(
         torch_dtype=dtype,
         device_map=device_map,
         trust_remote_code=trust_remote_code,
-        ignore_mismatched_sizes=True,
+        ignore_mismatched_sizes=ignore_mismatched_sizes,
         **auto_model_kwargs,
     )
 
     forbidden_modules = set()
     if freeze_vision_tower:
         forbidden_modules.add('vision_tower')
+    if freeze_audio_tower:
+        forbidden_modules.add('audio_tower')
     if freeze_mm_proj:
         forbidden_modules.add('multi_modal_projector')
+    if freeze_vision_proj:
+        forbidden_modules.add('image_projector')
+    if freeze_audio_proj:
+        forbidden_modules.add('audio_projector')
     if freeze_language_model:
         forbidden_modules.add('language_model')
     for name, param in model.named_parameters():
@@ -100,15 +110,14 @@ def load_pretrained_model_with_value_head(
         print('[MoE] set output_router_logits as True')
         model.config.output_router_logits = True
 
-    resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
     try:
-        processor = AutoProcessor.from_pretrained(
-            model_name_or_path,
-            cache_dir=cache_dir,
-            trust_remote_code=trust_remote_code,
-        )
-        setattr(processor, 'tokenizer', tokenizer)
-    except Exception as e:
-        processor = None
+        processor = AutoProcessor.from_pretrained(model_name_or_path)
+        processor.tokenizer.padding_side = padding_side
+        resize_tokenizer_embedding(tokenizer=processor.tokenizer, model=model)
 
-    return model, tokenizer, processor
+        return model, processor.tokenizer, processor
+    except Exception:
+        processor = None
+        resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
+        
+        return model, tokenizer, processor

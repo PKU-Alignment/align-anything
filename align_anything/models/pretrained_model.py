@@ -38,8 +38,6 @@ from transformers import (
     CLIPTextModel,
     PreTrainedModel,
     PreTrainedTokenizerBase,
-    AutoModel,
-    AutoImageProcessor,
 )
 
 
@@ -119,12 +117,6 @@ def resize_tokenizer_embedding(tokenizer: PreTrainedTokenizerBase, model: PreTra
     special_tokens_dict = {}
     if tokenizer.pad_token is None:
         special_tokens_dict['pad_token'] = DEFAULT_PAD_TOKEN
-    if tokenizer.eos_token is None:
-        special_tokens_dict['eos_token'] = DEFAULT_EOS_TOKEN
-    if tokenizer.bos_token is None:
-        special_tokens_dict['bos_token'] = DEFAULT_BOS_TOKEN
-    if tokenizer.unk_token is None:
-        special_tokens_dict['unk_token'] = DEFAULT_UNK_TOKEN
 
     num_new_tokens = tokenizer.add_special_tokens(special_tokens_dict)
     new_num_embeddings = len(tokenizer)
@@ -264,7 +256,8 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
             trust_remote_code=trust_remote_code,
             **auto_model_kwargs,
         )
-
+    if hasattr(model, 'audio_tower'):
+        deepspeed.zero.register_external_parameter(model, model.audio_tower.embed_positions.weight)
     forbidden_modules = set()
     if freeze_vision_tower:
         forbidden_modules.add('vision_tower')
@@ -274,9 +267,9 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     if freeze_mm_proj:
         forbidden_modules.add('multi_modal_projector')
     if freeze_vision_proj:
-        forbidden_modules.add('audio_projector')
-    if freeze_audio_proj:
         forbidden_modules.add('image_projector')
+    if freeze_audio_proj:
+        forbidden_modules.add('audio_projector')
     if freeze_language_model:
         forbidden_modules.add('language_model')
     for name, param in model.named_parameters():
@@ -295,38 +288,18 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
         trust_remote_code=trust_remote_code,
         **auto_tokenizer_kwargs,
     )
-    if not "emu" in model_name_or_path.lower():
-        resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
 
     try:
-        if "emu" in model_name_or_path.lower():
-            from align_anything.models.modeling_emu3.tokenizer.modeling_emu3visionvq import Emu3VisionVQModel
-            image_processor = AutoImageProcessor.from_pretrained(processor_name_or_path, trust_remote_code=True)
-            image_tokenizer = Emu3VisionVQModel.from_pretrained(processor_name_or_path)
-            image_tokenizer = deepspeed.init_inference(
-                    image_tokenizer,
-                    dtype=torch.float16,  
-                    replace_with_kernel_inject=True 
-                )
-            image_tokenizer.eval()
-            from align_anything.models.modeling_emu3.mllm.processing_emu3 import Emu3Processor
-            processor = Emu3Processor(
-                image_processor,
-                image_tokenizer,
-                tokenizer,
-            )
-        else:
-            processor = AutoProcessor.from_pretrained(
-                model_name_or_path,
-                cache_dir=cache_dir,
-                trust_remote_code=trust_remote_code,
-            )
-        if not hasattr(processor, 'tokenizer'):
-            setattr(processor, 'tokenizer', tokenizer)
-    except Exception as e:
-        print(f"Warning: Failed to load processor: {e}. This is ok if you are using models without processor.")
+        processor = AutoProcessor.from_pretrained(model_name_or_path)
+        processor.tokenizer.padding_side = padding_side
+        resize_tokenizer_embedding(tokenizer=processor.tokenizer, model=model)
+
+        return model, processor.tokenizer, processor
+    except Exception:
         processor = None
-    return model, tokenizer, processor
+        resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
+        
+        return model, tokenizer, processor
 
 
 def load_pretrained_image_diffusion_models(  # pylint: disable=too-many-arguments
