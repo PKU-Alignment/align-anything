@@ -80,9 +80,9 @@ class RLTrainerBase:
             template=self.cfgs.data_cfgs.train_template,
             tokenizer=self.tokenizer,
             processor=self.processor,
+            name=self.cfgs.data_cfgs.train_name,
             size=self.cfgs.data_cfgs.train_size,
             split=self.cfgs.data_cfgs.train_split,
-            subset=self.cfgs.data_cfgs.train_subset,
             data_files=self.cfgs.data_cfgs.train_data_files,
             optional_args=self.cfgs.data_cfgs.train_optional_args,
         )
@@ -101,9 +101,9 @@ class RLTrainerBase:
                 template=self.cfgs.data_cfgs.ptx_template,
                 tokenizer=self.tokenizer,
                 processor=self.processor,
-                split=self.cfgs.data_cfgs.ptx_split,
+                name=self.cfgs.data_cfgs.ptx_name,
                 size=self.cfgs.data_cfgs.ptx_size,
-                subset=self.cfgs.data_cfgs.ptx_subset,
+                split=self.cfgs.data_cfgs.ptx_split,
                 data_files=self.cfgs.data_cfgs.ptx_data_files,
                 optional_args=self.cfgs.data_cfgs.ptx_optional_args,
             )
@@ -123,9 +123,9 @@ class RLTrainerBase:
                 template=self.cfgs.data_cfgs.eval_template,
                 tokenizer=self.tokenizer,
                 processor=self.processor,
+                name=self.cfgs.data_cfgs.eval_name,
                 split=self.cfgs.data_cfgs.eval_split,
                 size=self.cfgs.data_cfgs.eval_size,
-                subset=self.cfgs.data_cfgs.eval_subset,
                 data_files=self.cfgs.data_cfgs.eval_data_files,
                 optional_args=self.cfgs.data_cfgs.eval_optional_args,
             )

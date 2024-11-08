@@ -23,7 +23,7 @@ train_cfgs:
   # Seed for random number generator
   seed: 42
   # Batch size per device for training
-  per_device_train_batch_size: 4
+  per_device_train_batch_size: 1
   # Batch size per device for evaluation
   per_device_eval_batch_size: 4
   # The number of gradient accumulation steps
@@ -70,8 +70,8 @@ data_cfgs:
   train_size: null
   # The split of train datasets
   train_split: null
-  # The subset of training datasets
-  train_subset: null
+  # The name of training datasets
+  train_name: null
   # The training data files to be used
   train_data_files: null
   # The optional arguments for loading training datasets

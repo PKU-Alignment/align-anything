@@ -80,7 +80,6 @@ class SupervisedTrainerBase:
                 name=self.cfgs.data_cfgs.train_name,
                 size=self.cfgs.data_cfgs.train_size,
                 split=self.cfgs.data_cfgs.train_split,
-                subset=self.cfgs.data_cfgs.train_subset,
                 data_files=self.cfgs.data_cfgs.train_data_files,
                 optional_args=self.cfgs.data_cfgs.train_optional_args,
             )
@@ -100,7 +99,6 @@ class SupervisedTrainerBase:
                 name=self.cfgs.data_cfgs.eval_name,
                 split=self.cfgs.data_cfgs.eval_split,
                 size=self.cfgs.data_cfgs.eval_size,
-                subset=self.cfgs.data_cfgs.eval_subset,
                 data_files=self.cfgs.data_cfgs.eval_data_files,
                 optional_args=self.cfgs.data_cfgs.eval_optional_args,
             )

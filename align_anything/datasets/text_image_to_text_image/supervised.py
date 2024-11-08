@@ -65,7 +65,6 @@ class SupervisedDataset(Dataset):
         name: str | None = None,
         size: int | None = None,
         split: str | None = None,
-        subset: str | None = None,
         data_files: str | None = None,
         optional_args: list | str = [],
     ):
@@ -158,7 +157,6 @@ class SupervisedTokenizedDataset(Dataset):
         size: int | None = None,
         name: str | None = None,
         split: str | None = None,
-        subset: str | None = None,
         data_files: str | None = None,
         optional_args: list | str = [],
     ):
