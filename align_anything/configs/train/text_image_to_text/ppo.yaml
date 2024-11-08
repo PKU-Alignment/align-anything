@@ -130,7 +130,7 @@ data_cfgs:
 # The logging configurations
 logger_cfgs:
   # Type of logging to use, choosing from [wandb, tensorboard]
-  log_type: wandb
+  log_type: tensorboard
   # Project name for logging
   log_project: align-anything
   # Run name for logging
@@ -153,6 +153,8 @@ model_cfgs:
   trust_remote_code: True
   # The max token length
   model_max_length: 2048
+  # The max new tokens
+  max_new_tokens: 512
   # The value used to module the next token probabilities.'
   temperature: 1.0
   # If set to float < 1, only the smallest set of most probable tokens with
