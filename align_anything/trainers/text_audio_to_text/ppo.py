@@ -79,6 +79,40 @@ def move_padding_left(input_tensor, padding_value=0):
     
     return output_tensor
 
+def move_padding_left(input_tensor, padding_value=0):
+    """Moves the padding values in each row of the input_tensor from the right to the left.
+
+    Args:
+        input_tensor (Tensor): A 2D tensor to be processed.
+        padding_value (int): The value used for padding, default is 0.
+
+    Returns:
+        Tensor: The tensor with padding values moved to the left.
+    """
+    # Calculate the number of padding elements at the start of each row
+    start_pad_counts = (input_tensor == padding_value).cumsum(dim=1).eq(torch.arange(1, input_tensor.size(1) + 1, device=input_tensor.device)).sum(dim=1)
+    
+    # Calculate the number of non-padding elements in each row
+    non_pad_counts = (input_tensor != padding_value).sum(dim=1)
+
+    # Create a new tensor of the same size as input_tensor, filled with padding_value
+    output_tensor = torch.full_like(input_tensor, padding_value, device=input_tensor.device)
+    
+    # Get the indices for each row
+    max_len = input_tensor.size(1)
+    indices = torch.arange(max_len, device=input_tensor.device).expand(len(non_pad_counts), max_len)
+    
+    # Calculate the shift for each row
+    shifts = max_len - non_pad_counts.unsqueeze(1) - start_pad_counts.unsqueeze(1)
+    
+    # Compute the new indices
+    new_indices = (indices - shifts) % max_len
+    
+    # Rearrange the tensor using the gather function
+    output_tensor = torch.gather(input_tensor, 1, new_indices)
+    
+    return output_tensor
+
 
 
 class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attributes
@@ -170,6 +204,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             generation_config=self.generation_config,
             synced_gpus=True,
             do_sample=True,
+        sequences = move_padding_left(sequences.contiguous(), self.tokenizer.pad_token_id)
         )
         sequences = move_padding_left(sequences.contiguous(), self.tokenizer.pad_token_id)
         attention_mask = sequences.not_equal(self.tokenizer.pad_token_id)
@@ -181,6 +216,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         for idx in range(batch_size):
             prompt_length = len(remove_pad_tokens(mini_prompt_only_batch['input_ids'][idx].squeeze().tolist(), self.tokenizer.pad_token_id))
             sequence_wo_pad = remove_pad_tokens(sequences[idx].squeeze().tolist(), self.tokenizer.pad_token_id)
+            response = sequence_wo_pad[prompt_length:]
             response = sequence_wo_pad[prompt_length:]
             response_lens.append(len(response))
         return actor_batch, response_lens

@@ -70,12 +70,11 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         response_lens = []
         batch_size = sequences.size(0)
         for idx in range(batch_size):
-            prompt_length = mini_prompt_only_batch['input_ids'][idx].size(-1) -1
-            response = sequences[idx].squeeze()[prompt_length:].tolist()
-            response_wo_pad = remove_pad_tokens(response=response, pad_token_id=self.tokenizer.pad_token_id)
-            # count the padding tokens on the right
+            prompt_length = len(remove_pad_tokens(mini_prompt_only_batch['input_ids'][idx].squeeze().tolist(), self.tokenizer.pad_token_id))
+            sequence_wo_pad = remove_pad_tokens(sequences[idx].squeeze().tolist(), self.tokenizer.pad_token_id)
+            response = sequence_wo_pad[prompt_length:]
             padding_count = count_right_padding(response, padding=self.tokenizer.pad_token_id)
-            response_lens.append(len(response_wo_pad)+padding_count)
+            response_lens.append(len(response))
         
         return actor_batch, response_lens
 
