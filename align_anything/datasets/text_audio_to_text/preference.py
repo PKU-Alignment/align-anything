@@ -17,6 +17,7 @@
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
+import io
 import librosa
 import soundfile as sf
 import torch
@@ -112,7 +113,7 @@ class PreferenceDataset(Dataset):
             if isinstance(message["content"], list):
                 for ele in message["content"]:
                     if ele["type"] == "audio":
-                        raw_audio, raw_sr = sf.read(ele['audio_url'])
+                        raw_audio, raw_sr = ele['audio_url']['array'], ele['audio_url']['sampling_rate']
                         # resample to the target sampling rate
                         audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
                         audios.append(audio)

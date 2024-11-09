@@ -81,7 +81,6 @@ class SupervisedDataset(Dataset):
             name=name,
             split=split,
             data_files=data_files,
-            subset=subset,
             *optional_args,
             trust_remote_code=True,
         )

@@ -1996,8 +1996,7 @@ class AA_TI2T:
         better_response = raw_sample[f'response_{better_id}']
         worse_response = raw_sample[f'response_{worse_id}']
         prompt = raw_sample['question']
-        image_path = raw_sample['image']
-        image = load_image_from_base64(image_path).convert('RGBA')
+        image = raw_sample['image'].convert('RGBA')
 
         formatted_prompt = (
             f'{self.system_prompt}'
@@ -2034,8 +2033,7 @@ class AA_TI2T:
             f'{self.assistant_prompt.format(output="")}'
         )
 
-        image_path = raw_sample['image']
-        image = load_image_from_base64(image_path).convert('RGBA')
+        image = raw_sample['image'].convert('RGBA')
 
         return {
             'text': formatted_prompt,
@@ -2045,8 +2043,7 @@ class AA_TI2T:
     def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['prompt']
         answer = raw_sample['response']
-        image_path = raw_sample['image']
-        image = load_image_from_base64(image_path).convert('RGBA')
+        image = raw_sample['image'].convert('RGBA')
 
         formatted_prompt = (
             f'{self.system_prompt}'
