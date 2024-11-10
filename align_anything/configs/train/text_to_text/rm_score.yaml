@@ -59,8 +59,8 @@ data_cfgs:
   train_size: null
   # The split of train datasets
   train_split: null
-  # The subset of training datasets
-  train_subset: null
+  # The name of training datasets
+  train_name: null
   # The training data files to be used
   train_data_files: null
   # The optional arguments for loading training datasets

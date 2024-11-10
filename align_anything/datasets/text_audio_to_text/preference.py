@@ -17,14 +17,16 @@
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
+import io
 import librosa
+import soundfile as sf
 import torch
 import transformers
 from torch.utils.data import Dataset
 from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy
 
-from align_anything.utils.multi_process import get_current_device, is_main_process
+from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding, left_padding
 from datasets import load_dataset
@@ -61,7 +63,6 @@ class PreferenceDataset(Dataset):
         name: str | None = None,
         size: int | None = None,
         split: str | None = None,
-        subset: str | None = None,
         data_files: str | None = None,
         optional_args: list | str = [],
     ):
@@ -74,13 +75,11 @@ class PreferenceDataset(Dataset):
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        
         self.raw_data = load_dataset(
             path,
             name=name,
             split=split,
             data_files=data_files,
-            subset=subset,
             *optional_args,
             trust_remote_code=True,
         )
@@ -114,11 +113,14 @@ class PreferenceDataset(Dataset):
             if isinstance(message["content"], list):
                 for ele in message["content"]:
                     if ele["type"] == "audio":
-                        audios.append(
-                            librosa.load(
-                                ele['audio_url'], 
-                                sr=self.processor.feature_extractor.sampling_rate)[0]
-                        )
+                        if isinstance(ele['audio_url'], dict):
+                            raw_audio, raw_sr = ele['audio_url']['array'], ele['audio_url']['sampling_rate']
+                            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
+                        else:
+                            audio = librosa.load(ele['audio_url'], sr=self.processor.feature_extractor.sampling_rate)[0]
+
+                        audios.append(audio)
+
         better_inputs = self.tokenize(text=better_text, audios=audios, padding=True)
         worse_inputs = self.tokenize(text=worse_text, audios=audios, padding=True)
         better_input_wo_padding = self.tokenize(text=better_text, audios=audios, padding=PaddingStrategy.DO_NOT_PAD)

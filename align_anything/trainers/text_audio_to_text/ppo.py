@@ -154,9 +154,8 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             )
 
         # training setup
-        self.reward_critic_tokenizer = self.tokenizer
         self.generation_config = GenerationConfig(
-            max_length=self.cfgs.model_cfgs.model_max_length,
+            max_new_tokens=self.cfgs.model_cfgs.max_new_tokens,
             temperature=self.cfgs.model_cfgs.temperature,
             top_p=self.cfgs.model_cfgs.top_p,
             repetition_penalty=self.cfgs.model_cfgs.repetition_penalty,
@@ -165,7 +164,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
 
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> list[dict[str, Any], list[int]]:
         actor_batch = copy.deepcopy(mini_prompt_only_batch)
-        sequences = self.actor_model.generate(
+        sequences = self.actor_model.module.generate(
             **mini_prompt_only_batch,
             generation_config=self.generation_config,
             synced_gpus=True,
@@ -232,15 +231,15 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             log_probs = torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(logits.device)
             ref_log_probs = torch.nn.utils.rnn.pad_sequence(ref_logprob_list, batch_first=True, padding_value=0.).to(logits.device)
             reward_values = torch.nn.utils.rnn.pad_sequence(reward_value_list, batch_first=True, padding_value=0.).to(logits.device)
+            response_mask = (log_probs != 0).bool().to(logits.device)
 
             micro_training_batch = {}
-            micro_training_batch['prompt_idx'] = mini_batch['input_ids'].size(-1) - 1
             micro_training_batch['response_lens'] = response_lens
             micro_training_batch['log_probs'] = log_probs
             micro_training_batch['ref_log_probs'] = ref_log_probs
             micro_training_batch['reward'] = reward_batch['reward']
             micro_training_batch['reward_values'] = reward_values
-            micro_training_batch['response_mask'] = actor_batch['attention_mask'][:, micro_training_batch['prompt_idx']:]
+            micro_training_batch['response_mask'] = response_mask
 
             mini_batch['input_ids'] = reward_batch['input_ids']
             mini_batch['attention_mask'] = actor_batch['attention_mask']
@@ -263,16 +262,10 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         ref_log_probs = training_batch['ref_log_probs']
         reward = training_batch['reward']
         old_reward_values = training_batch['reward_values']
-        response_mask = training_batch['response_mask']
 
         input_ids = inference_batch['input_ids']
-
-        sequence_mask = torch.ones_like(response_mask, dtype=torch.bool)
-        batch_size = sequence_mask.size(0)
-        
-        new_size = min(sequence_mask.size(-1), old_reward_values.size(-1))
-        sequence_mask = sequence_mask[:, :new_size]
-        old_reward_values = old_reward_values[:, :new_size]
+        batch_size = input_ids.size(0)
+        sequence_mask = training_batch['response_mask']
 
         with torch.no_grad():
             old_rewards = self.add_kl_divergence_regularization(
@@ -374,8 +367,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         sequence_mask: torch.BoolTensor,  # size = (B, L)
     ) -> torch.Tensor:  # size = (B, L)
         """Add KL divergence regularization on scalar rewards."""
-        B, L = log_probs.size()
-        end_index = (L-1)*torch.ones((B,), dtype=torch.int64).to(reward.device)  # size = (B,)
+        end_index = torch.cat([m.nonzero()[-1] for m in sequence_mask])  # size = (B,)
 
         # size = (B, L)
         kl_divergence_estimate = log_probs - ref_log_probs

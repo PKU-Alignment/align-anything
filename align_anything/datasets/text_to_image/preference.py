@@ -62,7 +62,6 @@ class PreferenceDataset(Dataset):
         name: str | None = None,
         size: int | None = None,
         split: str | None = None,
-        subset: str | None = None,
         data_files: str | None = None,
         optional_args: list | str = [],
     ):
@@ -80,7 +79,6 @@ class PreferenceDataset(Dataset):
             name=name,
             split=split,
             data_files=data_files,
-            subset=subset,
             *optional_args,
             trust_remote_code=True,
         )

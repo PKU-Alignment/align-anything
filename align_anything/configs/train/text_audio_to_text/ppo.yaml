@@ -34,7 +34,7 @@ train_cfgs:
   # Whether to use gradient checkpointing for the critic model
   critic_gradient_checkpointing: True
   # Initial learning rate for the actor model
-  actor_lr: 5.e-7
+  actor_lr: 1.e-6
   # Type of learning rate scheduler for the actor model
   actor_lr_scheduler_type: cosine
   # Ratio of warmup steps for learning rate for the actor model
@@ -42,7 +42,7 @@ train_cfgs:
   # Weight decay coefficient for the actor model
   actor_weight_decay: 0.00
   # Initial learning rate for the critic model
-  critic_lr: 5.e-7
+  critic_lr: 1.e-6
   # Type of learning rate scheduler for the critic model
   critic_lr_scheduler_type: constant
   # Ratio of warmup steps for learning rate for the critic model
@@ -68,7 +68,7 @@ train_cfgs:
   # The clipping range for the value function.
   clip_range_value: 5.0
   # The coefficient for the ptx loss.
-  ptx_coeff: 16.0
+  ptx_coeff: 0.0
   # The discounted factor for advantage function
   gamma: 1.0
   # The hyperparameters controlling the trade-off between bias and variance of advantage function
@@ -95,8 +95,8 @@ data_cfgs:
   train_size: null
   # The split of train datasets
   train_split: null
-  # The subset of training datasets
-  train_subset: null
+  # The name of training datasets
+  train_name: null
   # The training data files to be used
   train_data_files: null
   # The optional arguments for loading training datasets
@@ -155,6 +155,8 @@ model_cfgs:
   trust_remote_code: True
   # The max token length
   model_max_length: 2048
+  # The max new tokens
+  max_new_tokens: 256
   # The value used to module the next token probabilities.'
   temperature: 1.0
   # If set to float < 1, only the smallest set of most probable tokens with

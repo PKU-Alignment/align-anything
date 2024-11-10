@@ -45,6 +45,42 @@ from align_anything.utils.tools import (
     count_right_padding,
 )
 
+def move_padding_left(input_tensor, padding_value=0):
+    """Moves the padding values in each row of the input_tensor from the right to the left.
+
+    Args:
+        input_tensor (Tensor): A 2D tensor to be processed.
+        padding_value (int): The value used for padding, default is 0.
+
+    Returns:
+        Tensor: The tensor with padding values moved to the left.
+    """
+    # Calculate the number of padding elements at the start of each row
+    start_pad_counts = (input_tensor == padding_value).cumsum(dim=1).eq(torch.arange(1, input_tensor.size(1) + 1, device=input_tensor.device)).sum(dim=1)
+    
+    # Calculate the number of non-padding elements in each row
+    non_pad_counts = (input_tensor != padding_value).sum(dim=1)
+
+    # Create a new tensor of the same size as input_tensor, filled with padding_value
+    output_tensor = torch.full_like(input_tensor, padding_value, device=input_tensor.device)
+    
+    # Get the indices for each row
+    max_len = input_tensor.size(1)
+    indices = torch.arange(max_len, device=input_tensor.device).expand(len(non_pad_counts), max_len)
+    
+    # Calculate the shift for each row
+    shifts = max_len - non_pad_counts.unsqueeze(1) - start_pad_counts.unsqueeze(1)
+    
+    # Compute the new indices
+    new_indices = (indices - shifts) % max_len
+    
+    # Rearrange the tensor using the gather function
+    output_tensor = torch.gather(input_tensor, 1, new_indices)
+    
+    return output_tensor
+
+
+
 class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attributes
     """Trainer base class for PPO training."""
 
@@ -55,6 +91,78 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             self.get_dataloaders(PromptOnlyDataset, PromptOnlyDataset, SupervisedDataset)
         )
 
+    def init_models(self) -> None:
+        """Initialize model and tokenizer."""
+        if self.ds_train_cfgs['zero_optimization']['stage'] == 3:
+            self.dstchf_train = HfDeepSpeedConfig(self.ds_train_cfgs)
+        if self.ds_eval_cfgs['zero_optimization']['stage'] == 3:
+            self.dstchf_eval = HfDeepSpeedConfig(self.ds_eval_cfgs)
+        # loading actor model
+        self.actor_model, self.tokenizer, self.processor = load_pretrained_models(
+            self.cfgs.model_cfgs.actor_model_name_or_path,
+            model_max_length=self.cfgs.model_cfgs.model_max_length,
+            padding_side='left',
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+            freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
+            freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
+            freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
+        )
+        self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
+        # loading actor reference model
+        self.actor_reference_model, _, _ = load_pretrained_models(
+            self.cfgs.model_cfgs.actor_model_name_or_path,
+            model_max_length=self.cfgs.model_cfgs.model_max_length,
+            padding_side='left',
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+        )
+        # loading reward model
+        self.reward_model, self.reward_tokenizer, _ = load_pretrained_model_with_value_head(
+            self.cfgs.model_cfgs.reward_model_name_or_path,
+            model_max_length=self.cfgs.model_cfgs.model_max_length,
+            padding_side='right',
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+            modality='text_image_to_text',
+        )
+        # loading reward critic model
+        self.reward_critic_model, self.reward_critic_tokenizer, _ = (
+            load_pretrained_model_with_value_head(
+                self.cfgs.model_cfgs.reward_critic_model_name_or_path,
+                model_max_length=self.cfgs.model_cfgs.model_max_length,
+                padding_side='left',
+                trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+                modality='text_image_to_text',
+                freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
+                freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
+                freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
+            )
+        )
+        # initial checking
+        if is_same_tokenizer(self.tokenizer, self.reward_tokenizer):
+            self.reward_tokenizer = self.tokenizer
+        if not is_same_tokenizer(self.tokenizer, self.reward_critic_tokenizer):
+            raise ValueError(
+                (
+                    'Reward critic tokenizer must be the same as actor tokenizer. '
+                    'Expected {0.__module__}.{0.__qualname__}(vocab_size={1}), '
+                    'but got {2.__module__}.{2.__qualname__}(vocab_size={3}). '
+                    'Please consider pass `--reward_critic_model_name_or_path` from the command line.'
+                ).format(
+                    type(self.tokenizer),
+                    len(self.tokenizer),
+                    type(self.reward_critic_tokenizer),
+                    len(self.reward_critic_tokenizer),
+                ),
+            )
+
+        # training setup
+        self.generation_config = GenerationConfig(
+            max_new_tokens=self.cfgs.model_cfgs.max_new_tokens,
+            temperature=self.cfgs.model_cfgs.temperature,
+            top_p=self.cfgs.model_cfgs.top_p,
+            repetition_penalty=self.cfgs.model_cfgs.repetition_penalty,
+            do_sample=True,
+        )
+
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> list[dict[str, Any], list[int]]:
         actor_batch = copy.deepcopy(mini_prompt_only_batch)
         sequences = self.actor_model.module.generate(
@@ -63,6 +171,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             synced_gpus=True,
             do_sample=True,
         )
+        sequences = move_padding_left(sequences.contiguous(), self.tokenizer.pad_token_id)
         attention_mask = sequences.not_equal(self.tokenizer.pad_token_id)
         actor_batch['input_ids'] = sequences
         actor_batch['attention_mask'] = attention_mask
@@ -70,13 +179,10 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         response_lens = []
         batch_size = sequences.size(0)
         for idx in range(batch_size):
-            prompt_length = mini_prompt_only_batch['input_ids'][idx].size(-1) -1
-            response = sequences[idx].squeeze()[prompt_length:].tolist()
-            response_wo_pad = remove_pad_tokens(response=response, pad_token_id=self.tokenizer.pad_token_id)
-            # count the padding tokens on the right
-            padding_count = count_right_padding(response, padding=self.tokenizer.pad_token_id)
-            response_lens.append(len(response_wo_pad)+padding_count)
-        
+            prompt_length = len(remove_pad_tokens(mini_prompt_only_batch['input_ids'][idx].squeeze().tolist(), self.tokenizer.pad_token_id))
+            sequence_wo_pad = remove_pad_tokens(sequences[idx].squeeze().tolist(), self.tokenizer.pad_token_id)
+            response = sequence_wo_pad[prompt_length:]
+            response_lens.append(len(response))
         return actor_batch, response_lens
 
     @torch.no_grad()
@@ -137,15 +243,15 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             log_probs = torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(logits.device)
             ref_log_probs = torch.nn.utils.rnn.pad_sequence(ref_logprob_list, batch_first=True, padding_value=0.).to(logits.device)
             reward_values = torch.nn.utils.rnn.pad_sequence(reward_value_list, batch_first=True, padding_value=0.).to(logits.device)
+            response_mask = (log_probs != 0).bool().to(logits.device)
 
             micro_training_batch = {}
-            micro_training_batch['prompt_idx'] = mini_batch['input_ids'].size(-1) - 1
             micro_training_batch['response_lens'] = response_lens
             micro_training_batch['log_probs'] = log_probs
             micro_training_batch['ref_log_probs'] = ref_log_probs
             micro_training_batch['reward'] = reward_batch['reward']
             micro_training_batch['reward_values'] = reward_values
-            micro_training_batch['response_mask'] = actor_batch['attention_mask'][:, micro_training_batch['prompt_idx']:]
+            micro_training_batch['response_mask'] = response_mask
 
             mini_batch['input_ids'] = reward_batch['input_ids']
             mini_batch['attention_mask'] = actor_batch['attention_mask']
@@ -168,16 +274,10 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         ref_log_probs = training_batch['ref_log_probs']
         reward = training_batch['reward']
         old_reward_values = training_batch['reward_values']
-        response_mask = training_batch['response_mask']
 
         input_ids = inference_batch['input_ids']
-
-        sequence_mask = torch.ones_like(response_mask, dtype=torch.bool)
-        batch_size = sequence_mask.size(0)
-        
-        new_size = min(sequence_mask.size(-1), old_reward_values.size(-1))
-        sequence_mask = sequence_mask[:, :new_size]
-        old_reward_values = old_reward_values[:, :new_size]
+        batch_size = input_ids.size(0)
+        sequence_mask = training_batch['response_mask']
 
         with torch.no_grad():
             old_rewards = self.add_kl_divergence_regularization(
@@ -279,8 +379,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         sequence_mask: torch.BoolTensor,  # size = (B, L)
     ) -> torch.Tensor:  # size = (B, L)
         """Add KL divergence regularization on scalar rewards."""
-        B, L = log_probs.size()
-        end_index = (L-1)*torch.ones((B,), dtype=torch.int64).to(reward.device)  # size = (B,)
+        end_index = torch.cat([m.nonzero()[-1] for m in sequence_mask])  # size = (B,)
 
         # size = (B, L)
         kl_divergence_estimate = log_probs - ref_log_probs
@@ -315,76 +414,6 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         advantages = torch.stack(advantages_reversed[::-1], dim=1)
         returns = advantages + values[:, start:]
         return advantages.detach(), returns
-
-    def init_models(self) -> None:
-        """Initialize model and tokenizer."""
-        if self.ds_train_cfgs['zero_optimization']['stage'] == 3:
-            self.dstchf_train = HfDeepSpeedConfig(self.ds_train_cfgs)
-        if self.ds_eval_cfgs['zero_optimization']['stage'] == 3:
-            self.dsechf_eval = HfDeepSpeedConfig(self.ds_eval_cfgs)
-        # loading actor model
-        self.actor_model, self.tokenizer, self.processor = load_pretrained_models(
-            self.cfgs.model_cfgs.actor_model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side='left',
-            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-            freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
-            freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
-            freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
-        )
-        # loading actor reference model
-        self.actor_reference_model, _, _ = load_pretrained_models(
-            self.cfgs.model_cfgs.actor_model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side='left',
-            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-        )
-        # loading reward model
-        self.reward_model, self.reward_tokenizer, _ = load_pretrained_model_with_value_head(
-            self.cfgs.model_cfgs.reward_model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side='right',
-            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-        )
-        # loading reward critic model
-        self.reward_critic_model, self.reward_critic_tokenizer, _ = (
-            load_pretrained_model_with_value_head(
-                self.cfgs.model_cfgs.reward_critic_model_name_or_path,
-                model_max_length=self.cfgs.model_cfgs.model_max_length,
-                padding_side='left',
-                trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-            )
-        )
-        # initial checking
-        if is_same_tokenizer(self.tokenizer, self.reward_tokenizer):
-            self.reward_tokenizer = self.tokenizer
-        if not is_same_tokenizer(self.tokenizer, self.reward_critic_tokenizer):
-            raise ValueError(
-                (
-                    'Reward critic tokenizer must be the same as actor tokenizer. '
-                    'Expected {0.__module__}.{0.__qualname__}(vocab_size={1}), '
-                    'but got {2.__module__}.{2.__qualname__}(vocab_size={3}). '
-                    'Please consider pass `--reward_critic_model_name_or_path` from the command line.'
-                ).format(
-                    type(self.tokenizer),
-                    len(self.tokenizer),
-                    type(self.reward_critic_tokenizer),
-                    len(self.reward_critic_tokenizer),
-                ),
-            )
-
-        # training setup
-        self.reward_critic_tokenizer = self.tokenizer
-        self.generation_config = GenerationConfig(
-            max_length=self.cfgs.model_cfgs.model_max_length,
-            temperature=self.cfgs.model_cfgs.temperature,
-            top_p=self.cfgs.model_cfgs.top_p,
-            repetition_penalty=self.cfgs.model_cfgs.repetition_penalty,
-            do_sample=True,
-            bos_token_id=self.tokenizer.bos_token_id,
-            eos_token_id=self.tokenizer.eos_token_id,
-            pad_token_id=self.tokenizer.pad_token_id,
-        )
 
 
 def main():

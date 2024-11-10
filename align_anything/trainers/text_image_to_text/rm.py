@@ -60,6 +60,7 @@ class RMTrainer(RMtextTrainer):
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
             modality='text_image_to_text',
         )
+        self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
 
     def loss(
         self,

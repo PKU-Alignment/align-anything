@@ -88,7 +88,7 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
         def __init__(self, config: AutoConfig):
             super().__init__(config)
             setattr(self, self.base_model_prefix, base_llm_model(config))
-            self.score_head = nn.Linear(config.hidden_size, 1, bias=False)
+            self.score_head = nn.Linear(self.model.language_model.lm_head.in_features, 1, bias=False)
 
         def forward(
             self,
@@ -150,7 +150,7 @@ def get_score_model(base_pretrained_model, base_llm_model, modality):
         def __init__(self, config: AutoConfig):
             super().__init__(config)
             setattr(self, self.base_model_prefix, base_llm_model(config))
-            self.score_head = nn.Linear(5120, 1, bias=False)
+            self.score_head = nn.Linear(self.model.language_model.lm_head.in_features, 1, bias=False)
 
         def forward(
             self,

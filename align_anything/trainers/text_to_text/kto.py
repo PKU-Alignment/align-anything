@@ -134,7 +134,6 @@ class KTOTrainer(SupervisedTrainerBase):
             processor=self.processor,
             size=self.cfgs.data_cfgs.train_size,
             split=self.cfgs.data_cfgs.train_split,
-            subset=self.cfgs.data_cfgs.train_subset,
             data_files=self.cfgs.data_cfgs.train_data_files,
             optional_args=self.cfgs.data_cfgs.train_optional_args,
         )
