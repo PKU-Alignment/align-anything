@@ -134,14 +134,18 @@ def evaluator(data: dict, task: str, api_key, base_url, file_path, eval_configs=
         system_prompts.append('You are a helpful and precise assistant for checking the quality of the answer.')
         user_prompts.append(content)
 
-    judger = API_Single_Eval(model='gpt-4-preview-0125', num_workers=20, temperature=0.10, template_function=None,
+    judger = API_Single_Eval(model='gpt-4-0125-preview', num_workers=20, temperature=0.10, template_function=None,
                       api_key=api_key, base_url=base_url)
     
     results = judger.evaluate(system_prompts, user_prompts)
 
     eval_case = []
     for id, system_prompt, user_prompt, result in zip(range(len(data['question_id'])), system_prompts, user_prompts, results):
-        output = result.raw_output.choices[0].message.content
+        try:
+            output = result.raw_output.choices[0].message.content
+        except Exception as e:
+            print(result)
+            raise e
         score, comment = get_score(output)
         time = 0
         while score is None:

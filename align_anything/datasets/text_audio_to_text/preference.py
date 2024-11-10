@@ -113,9 +113,12 @@ class PreferenceDataset(Dataset):
             if isinstance(message["content"], list):
                 for ele in message["content"]:
                     if ele["type"] == "audio":
-                        raw_audio, raw_sr = ele['audio_url']['array'], ele['audio_url']['sampling_rate']
-                        # resample to the target sampling rate
-                        audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
+                        if isinstance(ele['audio_url'], dict):
+                            raw_audio, raw_sr = ele['audio_url']['array'], ele['audio_url']['sampling_rate']
+                            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
+                        else:
+                            audio = librosa.load(ele['audio_url'], sr=self.processor.feature_extractor.sampling_rate)[0]
+
                         audios.append(audio)
 
         better_inputs = self.tokenize(text=better_text, audios=audios, padding=True)
