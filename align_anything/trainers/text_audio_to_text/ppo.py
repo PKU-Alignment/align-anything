@@ -29,10 +29,9 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from typing import Any
 from align_anything.datasets.text_image_to_text import PromptOnlyBatch, PromptOnlyDataset, SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.datasets.text_audio_to_text import PromptOnlyDataset, SupervisedDataset
 from align_anything.trainers.text_to_text.ppo import PPOTrainer as PPOTextTrainer
-from align_anything.utils.multi_process import get_current_device, get_all_reduce_mean, get_all_reduce_max, is_main_process
+from align_anything.utils.multi_process import get_current_device, get_all_reduce_mean, get_all_reduce_max
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -115,21 +114,21 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
         )
         # loading reward model
-        self.reward_model, self.reward_tokenizer, _ = load_pretrained_model_with_value_head(
+        self.reward_model, self.reward_tokenizer, _ = load_pretrained_models(
             self.cfgs.model_cfgs.reward_model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-            modality='text_audio_to_text',
+            is_reward_model=True,
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = (
-            load_pretrained_model_with_value_head(
+            load_pretrained_models(
                 self.cfgs.model_cfgs.reward_critic_model_name_or_path,
                 model_max_length=self.cfgs.model_cfgs.model_max_length,
                 padding_side='left',
                 trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-                modality='text_audio_to_text',
+                is_reward_model=True,
                 freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
                 freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
                 freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
@@ -163,9 +162,10 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         )
 
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> list[dict[str, Any], list[int]]:
-        actor_batch = copy.deepcopy(mini_prompt_only_batch)
+        infer_batch = self.infer_batch(mini_prompt_only_batch)
+        actor_batch = copy.deepcopy(infer_batch)
         sequences = self.actor_model.module.generate(
-            **mini_prompt_only_batch,
+            **infer_batch,
             generation_config=self.generation_config,
             synced_gpus=True,
             do_sample=True,

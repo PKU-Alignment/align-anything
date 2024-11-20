@@ -73,7 +73,6 @@ def load_pretrained_model_with_value_head(
         ignore_mismatched_sizes=ignore_mismatched_sizes,
         **auto_model_kwargs,
     )
-
     forbidden_modules = set()
     if freeze_vision_tower:
         forbidden_modules.add('vision_tower')

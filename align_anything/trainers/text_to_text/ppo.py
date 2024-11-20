@@ -35,7 +35,7 @@ from align_anything.datasets.text_to_text import (
     SupervisedDataset,
 )
 from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
+
 from align_anything.trainers.base import RLTrainerBase
 from align_anything.utils.multi_process import (
     get_all_reduce_max,
@@ -71,6 +71,10 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         self.init_check()
         dist.barrier()
         self.init_models()
+        if hasattr(self.actor_model, 'infer_batch'):
+            self.infer_batch = self.actor_model.infer_batch
+        if hasattr(self.actor_model, 'infer_required_keys'):
+            self.infer_required_keys = self.actor_model.infer_required_keys
         dist.barrier()
         self.init_datasets()
         dist.barrier()
@@ -113,19 +117,21 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             lora_cfgs=self.lora_cfgs,
         )
         # loading reward model
-        self.reward_model, self.reward_tokenizer, _ = load_pretrained_model_with_value_head(
+        self.reward_model, self.reward_tokenizer, _ = load_pretrained_models(
             self.cfgs.model_cfgs.reward_model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+            is_reward_model=True,
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = (
-            load_pretrained_model_with_value_head(
+            load_pretrained_models(
                 self.cfgs.model_cfgs.reward_critic_model_name_or_path,
                 model_max_length=self.cfgs.model_cfgs.model_max_length,
                 padding_side='left',
                 trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+                is_reward_model=True,
             )
         )
         # initial checking
@@ -196,9 +202,10 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         return micro_batches
 
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> dict[str, Any]:
-        actor_batch = copy.deepcopy(mini_prompt_only_batch)
+        infer_batch = self.infer_batch(mini_prompt_only_batch)
+        actor_batch = copy.deepcopy(infer_batch)
         sequences = self.actor_model.module.generate(
-            **mini_prompt_only_batch,
+            **infer_batch,
             generation_config=self.generation_config,
             synced_gpus=True,
             do_sample=True,
@@ -389,7 +396,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
 
     def ptx_step(self, ptx_batch: dict[str, torch.Tensor]) -> dict[str, Any]:
         """Perform a single update step with PTX loss."""
-        ptx_loss = self.actor_model(**ptx_batch).loss
+        ptx_loss = self.actor_model(**self.infer_batch(ptx_batch)).loss
         self.actor_model.backward(self.ptx_coeff * ptx_loss)
         self.actor_model.step()
         ptx_loss = get_all_reduce_mean(ptx_loss)

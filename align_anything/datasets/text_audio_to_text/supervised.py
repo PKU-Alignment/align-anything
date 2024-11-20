@@ -99,12 +99,13 @@ class SupervisedDataset(Dataset):
             if isinstance(message["content"], list):
                 for ele in message["content"]:
                     if ele["type"] == "audio":
-                        audios.append(
-                            librosa.load(
-                                ele['audio_url'], 
-                                sr=self.processor.feature_extractor.sampling_rate)[0]
-                        )
+                        if isinstance(ele['audio_url'], dict):
+                            raw_audio, raw_sr = ele['audio_url']['array'], ele['audio_url']['sampling_rate']
+                            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
+                        else:
+                            audio = librosa.load(ele['audio_url'], sr=self.processor.feature_extractor.sampling_rate)[0]
 
+                        audios.append(audio)
         inputs = self.tokenize(text=text, audios=audios, padding=True)
         return_dict['input_ids'] = inputs['input_ids'][0]
         labels = return_dict['input_ids'].clone()

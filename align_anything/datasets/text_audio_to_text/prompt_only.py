@@ -87,8 +87,9 @@ class PromptOnlyDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        raw_data_duplicated = load_dataset(
+        raw_data_duplicated = raw_data_duplicated = load_dataset(
             path,
+            name=name,
             split=split,
             data_files=data_files,
             *optional_args,
@@ -111,11 +112,13 @@ class PromptOnlyDataset(Dataset):
             if isinstance(message["content"], list):
                 for ele in message["content"]:
                     if ele["type"] == "audio":
-                        audios.append(
-                            librosa.load(
-                                ele['audio_url'], 
-                                sr=self.processor.feature_extractor.sampling_rate)[0]
-                        )
+                        if isinstance(ele['audio_url'], dict):
+                            raw_audio, raw_sr = ele['audio_url']['array'], ele['audio_url']['sampling_rate']
+                            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
+                        else:
+                            audio = librosa.load(ele['audio_url'], sr=self.processor.feature_extractor.sampling_rate)[0]
+
+                        audios.append(audio)
         inputs_wo_padding = self.tokenize(text=text, audios=audios, padding=False)
         inputs = self.tokenize(text=text, audios=audios, padding=True)
         return_dict['input_ids'] = inputs_wo_padding['input_ids'][0]

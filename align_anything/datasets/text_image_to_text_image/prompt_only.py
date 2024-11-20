@@ -83,8 +83,9 @@ class PromptOnlyDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        raw_data_duplicated = load_dataset(
+        raw_data_duplicated = raw_data_duplicated = load_dataset(
             path,
+            name=name,
             split=split,
             data_files=data_files,
             *optional_args,

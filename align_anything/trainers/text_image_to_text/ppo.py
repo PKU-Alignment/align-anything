@@ -29,7 +29,6 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from typing import Any
 from align_anything.datasets.text_image_to_text import PromptOnlyBatch, PromptOnlyDataset, SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.trainers.text_to_text.ppo import PPOTrainer as PPOTextTrainer
 from align_anything.utils.multi_process import get_current_device, get_all_reduce_mean, get_all_reduce_max
 from align_anything.utils.tools import (
@@ -57,23 +56,17 @@ def move_padding_left(input_tensor, padding_value=0):
     """
     # Calculate the number of padding elements at the start of each row
     start_pad_counts = (input_tensor == padding_value).cumsum(dim=1).eq(torch.arange(1, input_tensor.size(1) + 1, device=input_tensor.device)).sum(dim=1)
-    
     # Calculate the number of non-padding elements in each row
     non_pad_counts = (input_tensor != padding_value).sum(dim=1)
-
     # Create a new tensor of the same size as input_tensor, filled with padding_value
     output_tensor = torch.full_like(input_tensor, padding_value, device=input_tensor.device)
-    
     # Get the indices for each row
     max_len = input_tensor.size(1)
     indices = torch.arange(max_len, device=input_tensor.device).expand(len(non_pad_counts), max_len)
-    
     # Calculate the shift for each row
     shifts = max_len - non_pad_counts.unsqueeze(1) - start_pad_counts.unsqueeze(1)
-    
     # Compute the new indices
     new_indices = (indices - shifts) % max_len
-    
     # Rearrange the tensor using the gather function
     output_tensor = torch.gather(input_tensor, 1, new_indices)
     
@@ -116,21 +109,21 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
         )
         # loading reward model
-        self.reward_model, self.reward_tokenizer, _ = load_pretrained_model_with_value_head(
+        self.reward_model, self.reward_tokenizer, _ = load_pretrained_models(
             self.cfgs.model_cfgs.reward_model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-            modality='text_image_to_text',
+            is_reward_model=True,
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = (
-            load_pretrained_model_with_value_head(
+            load_pretrained_models(
                 self.cfgs.model_cfgs.reward_critic_model_name_or_path,
                 model_max_length=self.cfgs.model_cfgs.model_max_length,
                 padding_side='left',
                 trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-                modality='text_image_to_text',
+                is_reward_model=True,
                 freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
                 freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
                 freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
@@ -164,9 +157,10 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         )
 
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> list[dict[str, Any], list[int]]:
-        actor_batch = copy.deepcopy(mini_prompt_only_batch)
+        infer_batch = self.infer_batch(mini_prompt_only_batch)
+        actor_batch = copy.deepcopy(infer_batch)
         sequences = self.actor_model.module.generate(
-            **mini_prompt_only_batch,
+            **infer_batch,
             generation_config=self.generation_config,
             synced_gpus=True,
             do_sample=True,
@@ -197,23 +191,10 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         micro_training_batches = []
         mini_batch = {}
         for i in range(0, total_batch_size, micro_batch_size):
-
-            if prompt_only_batch.get('image_sizes'):
-                for key in prompt_only_batch:
-                    if key == 'pixel_values':
-                        mini_batch[key] = prompt_only_batch[key][
-                            i : i + sum(prompt_only_batch['image_sizes'][i : i + micro_batch_size])
-                        ]
-                    elif key == 'image_sizes':
-                        mini_batch[key] = prompt_only_batch[key][i : i + micro_batch_size]
-                    else:
-                        mini_batch[key] = prompt_only_batch[key][i : i + micro_batch_size]
-            else:
-                mini_batch = {
-                    key: prompt_only_batch[key][i : i + micro_batch_size]
-                    for key in prompt_only_batch
-                }
-
+            mini_batch = {
+                key: prompt_only_batch[key][i : i + micro_batch_size]
+                for key in prompt_only_batch
+            }
             # actor generation
             actor_batch, response_lens = self.actor_step(mini_batch)
             # reward model and reward critic model scoring

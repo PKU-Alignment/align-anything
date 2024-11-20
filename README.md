@@ -84,6 +84,7 @@ We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Tex
 
 # News
 
+- 2024-11-20: We release a bunch of scripts for all-modality models [here](./scripts). You can directly run the scripts to fine-tune your models, without any need to modify the code.
 - 2024-10-10: We support SFT for `Any -> Any` modality models Emu3.
 - 2024-09-24: We support SFT, DPO, RM and PPO for `Text + Video -> Text` modality models.
 - 2024-09-13: We support SFT, DPO, RM and PPO for `Text + Audio -> Text` modality models.

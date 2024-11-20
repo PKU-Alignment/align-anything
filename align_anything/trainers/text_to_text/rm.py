@@ -28,7 +28,7 @@ from tqdm import tqdm
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.datasets.text_to_text.preference import PreferenceBatch, PreferenceDataset
-from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
+from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.base import SupervisedTrainerBase
 from align_anything.utils.multi_process import (
     get_all_reduce_mean,
@@ -53,10 +53,16 @@ class RMTrainer(SupervisedTrainerBase):
         self.cfgs = cfgs
         self.ds_train_cfgs = prepare_ds_train_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
         self.global_step = 0
+        self.infer_batch = lambda batch: batch
+        self.infer_required_keys = []
 
         self.init_check()
         dist.barrier()
         self.init_models()
+        if hasattr(self.model, 'infer_batch'):
+            self.infer_batch = self.model.infer_batch
+        if hasattr(self.model, 'infer_required_keys'):
+            self.infer_required_keys = self.model.infer_required_keys
         dist.barrier()
         self.init_datasets()
         dist.barrier()
@@ -72,13 +78,14 @@ class RMTrainer(SupervisedTrainerBase):
         """Initialize model and tokenizer."""
         if self.ds_train_cfgs is not None and self.ds_train_cfgs['zero_optimization']['stage'] == 3:
             self.dstchf = HfDeepSpeedConfig(self.ds_train_cfgs)
-        self.model, self.tokenizer, self.processor = load_pretrained_model_with_value_head(
+        self.model, self.tokenizer, self.processor = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
-            modality='text',
+            is_reward_model=True,
         )
+
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
@@ -102,10 +109,7 @@ class RMTrainer(SupervisedTrainerBase):
             'input_ids'
         ].chunk(chunks=2, dim=0)
         assert better_input_ids.size(0) == worse_input_ids.size(0), 'batch size mismatch!'
-        output = self.model(
-                input_ids=batch['input_ids'],
-                attention_mask=batch['attention_mask'],
-            )
+        output = self.model(**self.infer_batch(batch))
         scores = output.scores
         end_scores = output.end_scores
         higher_rewards, lower_rewards = scores.squeeze(dim=-1).chunk(chunks=2, dim=0)
@@ -175,10 +179,7 @@ class RMTrainer(SupervisedTrainerBase):
         rewards = []
         batch = None
         for batch in eval_dataloader:
-            output = self.model(
-                input_ids=batch['input_ids'],
-                attention_mask=batch['attention_mask'],
-            )
+            output = self.model(**self.infer_batch(batch))
             end_scores = output.end_scores
             higher_end_rewards, lower_end_rewards = end_scores.squeeze(dim=-1).chunk(
                 chunks=2, dim=0
