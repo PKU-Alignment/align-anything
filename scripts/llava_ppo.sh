@@ -31,7 +31,7 @@ PTX_SPLIT="train"
 
 OUTPUT_DIR="../outputs/llava_ppo" # output dir
 # For wandb online logging
-export WANDB_API_KEY="c072b41ab5beb29a43942f29660da87354fd3612"
+export WANDB_API_KEY=""
 
 # Source the setup script
 source ./setup.sh
