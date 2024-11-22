@@ -24,11 +24,12 @@ import torch
 import torch.utils.checkpoint
 from torch.nn import CrossEntropyLoss, LayerNorm
 from torch import nn
-from transformers import Qwen2VLPreTrainedModel
+from transformers import Qwen2VLPreTrainedModel, AutoConfig
 from transformers.models.qwen2_vl.modeling_qwen2_vl import (
     Qwen2VLCausalLMOutputWithPast,
     Qwen2VLForConditionalGeneration,
 )
+from align_anything.models.score_model import ScoreModelOutput
 
 @dataclass
 class AccustomedQwen2VLOutput(Qwen2VLCausalLMOutputWithPast):
@@ -202,4 +203,56 @@ class AccustomedQwen2VLModel(Qwen2VLForConditionalGeneration):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
             rope_deltas=rope_deltas,
+        )
+
+class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
+    
+    supports_gradient_checkpointing = True
+
+    def __init__(self, config: AutoConfig):
+        super().__init__(config)
+        setattr(self, self.base_model_prefix, AccustomedQwen2VLModel(config))
+        self.score_head = nn.Linear(3584, 1, bias=False)
+
+    @property
+    def infer_required_keys(self) -> list[str]:
+        return ['input_ids', 'attention_mask', 'pixel_values', 'pixel_values_videos']
+    
+    def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+        return {
+            'input_ids': batch['input_ids'],
+            'attention_mask': batch['attention_mask'],
+            'pixel_values': batch['pixel_values'],
+            'pixel_values_videos': batch['pixel_values_videos'],
+        }
+    
+    def forward(self, 
+                input_ids: torch.LongTensor, 
+                attention_mask: torch.LongTensor, 
+                pixel_values: torch.FloatTensor,
+                pixel_values_videos: torch.FloatTensor,
+                **kwargs
+        ) -> ScoreModelOutput:
+        outputs = self.model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            pixel_values=pixel_values,
+            pixel_values_videos=pixel_values_videos,
+            **kwargs,
+        )
+        last_hidden_state = outputs.hidden_states[-1]
+        scores = self.score_head(last_hidden_state)
+        B, L, _ = scores.size()
+        end_index = -torch.ones((B,))
+        end_last_hidden_state = last_hidden_state[:, -1, :].unsqueeze(1)
+        end_scores = self.score_head(end_last_hidden_state).float()
+        end_last_hidden_state = end_last_hidden_state.squeeze(dim=1)
+        end_scores = end_scores.squeeze(dim=1)
+        
+        return ScoreModelOutput(
+            scores=scores,
+            end_scores=end_scores,
+            last_hidden_state=last_hidden_state,
+            end_last_hidden_state=end_last_hidden_state,
+            end_index=end_index,
         )

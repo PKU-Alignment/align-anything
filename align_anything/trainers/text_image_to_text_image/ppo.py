@@ -73,6 +73,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
         )
+        self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
         # loading actor reference model
         self.actor_reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.actor_model_name_or_path,
@@ -128,9 +129,10 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         )
         
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> dict[str, Any]:
-        actor_batch = copy.deepcopy(mini_prompt_only_batch)
+        infer_batch = self.infer_batch(mini_prompt_only_batch)
+        actor_batch = copy.deepcopy(infer_batch)
         sequences = self.actor_model.module.generate(
-            **mini_prompt_only_batch,
+            **infer_batch,
             generation_config=self.generation_config,
             synced_gpus=True,
             do_sample=True,

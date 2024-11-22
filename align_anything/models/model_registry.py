@@ -52,7 +52,8 @@ MODEL_FOR_SCORE_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('llama', 'AccustomedLlamaRewardModel'),
         ('llava', 'AccustomedLlavaRewardModel'),
         ('qwen2_audio', 'AccustomedQwen2AudioRewardModel'),
-        # TODO: add chameleon reward model and qwen2_vl reward model
+        ('chameleon', 'AccustomedChameleonRewardModel'),
+        ('qwen2_vl', 'AccustomedQwen2VLRewardModel'),
     ],
 )
 
@@ -64,6 +65,7 @@ MODEL_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('qwen2_audio', 'AccustomedQwen2AudioModel'),
         ('chameleon', 'AccustomedChameleonModel'),
         ('qwen2_vl', 'AccustomedQwen2VLModel'),
+        ('modeling_emu3.mllm.modeling_emu3', 'Emu3ForCausalLM'),
     ],
 )
 

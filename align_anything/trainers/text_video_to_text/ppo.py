@@ -57,11 +57,10 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         )
 
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> list[dict[str, Any], list[int]]:
-        actor_batch = copy.deepcopy(mini_prompt_only_batch)
-        # for key in actor_batch:
-        #     print(f"{key}: {actor_batch[key].shape}")
+        infer_batch = self.infer_batch(mini_prompt_only_batch)
+        actor_batch = copy.deepcopy(infer_batch)
         sequences = self.actor_model.generate(
-            **mini_prompt_only_batch,
+            **infer_batch,
             generation_config=self.generation_config,
             synced_gpus=True,
             do_sample=True,

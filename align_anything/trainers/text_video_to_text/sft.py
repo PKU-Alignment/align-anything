@@ -54,6 +54,7 @@ class SuperviseTrainer(SupervisedtextTrainer):
             padding_side='right',
             trust_remote_code=True,
         )
+        self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
 
 
 def main():
