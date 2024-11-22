@@ -53,7 +53,7 @@ train_cfgs:
   freeze_mm_proj: False
   # Freeze the audio projector
   freeze_audio_proj: False
-  # Freeze the vison tower model
+  # Freeze the audio tower model
   freeze_audio_tower: True
   # Freeze the language model
   freeze_language_model: False
@@ -82,7 +82,7 @@ data_cfgs:
   # The split of evaluation datasets
   eval_split: null
   # The subset of evaluation datasets
-  eval_subset: null
+  eval_name: null
   # The evaluation data files to be used
   eval_data_files: null
   # The optional arguments for loading training evaluation datasets

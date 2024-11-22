@@ -18,7 +18,7 @@
 import os
 from datetime import datetime
 from typing import Any
-
+from abc import abstractmethod
 import deepspeed
 import torch
 import torch.distributed as dist
@@ -30,7 +30,6 @@ from diffusers.utils.torch_utils import is_compiled_module
 from peft.utils import get_peft_model_state_dict
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
-from torch.optim.adamw import AdamW
 from tqdm import tqdm
 from transformers import CONFIG_NAME, PreTrainedModel, get_scheduler
 
@@ -52,6 +51,10 @@ class SupervisedTrainerBase:
         if self.cfgs.lora_cfgs and self.cfgs.lora_cfgs.use_lora:
             self.lora_enabled = True
             self.save_full_model = self.cfgs.lora_cfgs.save_full_model
+
+    @abstractmethod
+    def init_models(self) -> None:
+        """Initialize model and tokenizer."""
 
     def init_logger(self) -> None:
         """Set logger."""

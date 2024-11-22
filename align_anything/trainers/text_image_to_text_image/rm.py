@@ -63,6 +63,11 @@ class RMTrainer(RMtextTrainer):
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
         )
+        self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
+        if hasattr(self.model, 'infer_batch'):
+            self.infer_batch = self.model.infer_batch
+        if hasattr(self.model, 'infer_required_keys'):
+            self.infer_required_keys = self.model.infer_required_keys
         
     @torch.no_grad()
     def eval(self) -> dict[str, Any]:

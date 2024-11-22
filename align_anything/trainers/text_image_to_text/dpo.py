@@ -30,7 +30,7 @@ from align_anything.datasets.text_to_text.preference import PreferenceBatch
 from align_anything.datasets.text_image_to_text.preference import PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
-from align_anything.utils.multi_process import get_current_device, is_main_process
+from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -81,10 +81,7 @@ class DPOTrainer(DPOtextTrainer):
         batch: PreferenceBatch,
     ) -> torch.Tensor:
         """Compute log probabilities of given sequences."""
-        keys_to_remove = ['better_response_lens', 'worse_response_lens', 'response_lens']
-
-        infer_batch = {key: value for key, value in batch.items() if key not in keys_to_remove}
-        logits = model(**infer_batch).logits
+        logits = model(**self.infer_batch(batch)).logits
         device = logits.device
         input_ids = batch['input_ids']
         batch_size = len(batch['response_lens'])

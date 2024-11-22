@@ -19,6 +19,7 @@ import copy
 import os
 from datetime import datetime
 from typing import Any
+from abc import abstractmethod
 
 import deepspeed
 import torch
@@ -65,8 +66,9 @@ class RLTrainerBase:
             config=namedtuple_to_dict(self.cfgs),
         )
 
+    @abstractmethod
     def init_models(self) -> None:
-        """Initialize model."""
+        """Initialize model and tokenizer."""
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""

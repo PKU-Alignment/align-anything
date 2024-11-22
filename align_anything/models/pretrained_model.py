@@ -48,7 +48,7 @@ except ImportError:
 
 from transformers.utils import ContextManagers
 
-from align_anything.models.model_registry import AnyModel
+from align_anything.models.model_registry import AnyModel, AnyModelForScore
 from align_anything.utils.multi_process import get_current_device, is_main_process
 
 
@@ -178,10 +178,11 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     auto_tokenizer_kwargs: dict[str, Any] | None = None,
     bnb_cfgs: dict[str, Any] | None = None,
     lora_cfgs: dict[str, Any] | None = None,
-    processor_name_or_path: str | os.PathLike | None = None,
+    is_reward_model: bool = False,
 ) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
     """Load pre-trained model and tokenizer from a given path."""
     model_name_or_path = os.path.expanduser(model_name_or_path)
+    any_model = AnyModelForScore if is_reward_model else AnyModel
     cache_dir = os.path.expanduser(cache_dir) if cache_dir is not None else None
     device_map = 'auto' if auto_device_mapping else None
     if auto_model_kwargs is None:
@@ -212,7 +213,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
                 'bnb only is not compatible with deepspeeed, try working with peft + bnb + deepspeed by setting lora_cfgs.use_lora = True'
             )
         if lora_cfgs.use_lora and not bnb_cfgs.use_bnb:
-            model = AnyModel.from_pretrained(
+            model = any_model.from_pretrained(
                 model_name_or_path,
                 *auto_model_args,
                 cache_dir=cache_dir,
@@ -224,7 +225,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
         if lora_cfgs.use_lora and bnb_cfgs.use_bnb:
-            model = AnyModel.from_pretrained(
+            model = any_model.from_pretrained(
                 model_name_or_path,
                 *auto_model_args,
                 cache_dir=cache_dir,
@@ -237,7 +238,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
         if not lora_cfgs.use_lora and not bnb_cfgs.use_bnb:
-            model = AnyModel.from_pretrained(
+            model = any_model.from_pretrained(
                 model_name_or_path,
                 *auto_model_args,
                 cache_dir=cache_dir,
@@ -247,7 +248,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
                 **auto_model_kwargs,
             )
     else:
-        model = AnyModel.from_pretrained(
+        model = any_model.from_pretrained(
             model_name_or_path,
             *auto_model_args,
             cache_dir=cache_dir,

@@ -1,5 +1,4 @@
-# coding=utf-8
-# Copyright 2024 Meta Inc. and The HuggingFace Inc. team. All rights reserved.
+# Copyright 2024 PKU-Alignment Team. and Meta Inc. and The HuggingFace Inc. team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,23 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""PyTorch Chameleon model."""
+# ==============================================================================
 
-from dataclasses import dataclass
+
 from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.utils.checkpoint
-from torch import nn
-from transformers.cache_utils import Cache, StaticCache
+from transformers import AutoConfig
+from transformers.cache_utils import Cache
 from transformers.modeling_outputs import (
-    BaseModelOutputWithPast,
     CausalLMOutputWithPast,
 )
 from transformers.models.chameleon.modeling_chameleon import (
     ChameleonForConditionalGeneration,
 )
 from torch.nn import CrossEntropyLoss
+from torch import nn
+
+from align_anything.models.score_model import ScoreModelOutput
 
 class AccustomedChameleonModel(ChameleonForConditionalGeneration):
 
@@ -153,4 +154,38 @@ class AccustomedChameleonModel(ChameleonForConditionalGeneration):
             past_key_values=outputs.past_key_values,
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
+        )
+
+class AccustomedChameleonRewardModel(ChameleonForConditionalGeneration):
+    
+    supports_gradient_checkpointing = True
+
+    def __init__(self, config: AutoConfig):
+        super().__init__(config)
+        setattr(self, self.base_model_prefix, AccustomedChameleonModel(config))
+        self.score_head = nn.Linear(4096, 1, bias=False)
+
+    @property
+    def infer_required_keys(self) -> list[str]:
+        return ['input_ids', 'attention_mask']
+
+    def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+        return {
+            'input_ids': batch['input_ids'],
+            'attention_mask': batch['attention_mask'],
+        }
+
+    def forward(self,
+                input_ids: torch.LongTensor, 
+                attention_mask: torch.LongTensor, 
+                **kwargs
+    ) -> torch.FloatTensor:
+        outputs = super().forward(input_ids, attention_mask, **kwargs)
+        hidden_states = outputs[0]
+        scores = self.score_head(hidden_states)
+        end_scores = scores[:, -1, :]
+        return ScoreModelOutput(
+            scores=scores,
+            end_scores=end_scores,
+            last_hidden_state=hidden_states,
         )

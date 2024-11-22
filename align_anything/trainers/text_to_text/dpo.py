@@ -56,10 +56,16 @@ class DPOTrainer(SupervisedTrainerBase):
         self.ds_train_cfgs = prepare_ds_train_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
         self.ds_eval_cfgs = prepare_ds_eval_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
         self.global_step = 0
+        self.infer_batch = lambda batch: batch
+        self.infer_required_keys = []
 
         self.init_check()
         dist.barrier()
         self.init_models()
+        if hasattr(self.model, 'infer_batch'):
+            self.infer_batch = self.model.infer_batch
+        if hasattr(self.model, 'infer_required_keys'):
+            self.infer_required_keys = self.model.infer_required_keys
         dist.barrier()
         self.init_datasets()
         dist.barrier()
@@ -110,13 +116,13 @@ class DPOTrainer(SupervisedTrainerBase):
             config=self.ds_eval_cfgs,
         )
 
-    @staticmethod
     def compute_log_probs(
+        self,
         model: AutoModelForCausalLM,
         batch: PreferenceBatch,
     ) -> torch.Tensor:
         """Compute log probabilities of given sequences."""
-        logits = model(**batch).logits
+        logits = model(**self.infer_batch(batch)).logits
         input_ids = batch['input_ids']
         return gather_log_probabilities(logits[:, :-1], input_ids[:, 1:])
 

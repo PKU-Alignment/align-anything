@@ -47,10 +47,16 @@ class SupervisedTrainer(SupervisedTrainerBase):
         self.cfgs = cfgs
         self.ds_train_cfgs = prepare_ds_train_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
         self.global_step = 0
+        self.infer_batch = lambda batch: batch
+        self.infer_required_keys = []
 
         self.init_check()
         dist.barrier()
         self.init_models()
+        if hasattr(self.model, 'infer_batch'):
+            self.infer_batch = self.model.infer_batch
+        if hasattr(self.model, 'infer_required_keys'):
+            self.infer_required_keys = self.model.infer_required_keys
         dist.barrier()
         self.init_datasets()
         dist.barrier()
@@ -76,6 +82,10 @@ class SupervisedTrainer(SupervisedTrainerBase):
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
         )
+        if hasattr(self.model, 'infer_batch'):
+            self.infer_batch = self.model.infer_batch
+        if hasattr(self.model, 'infer_required_keys'):
+            self.infer_required_keys = self.model.infer_required_keys
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
@@ -89,7 +99,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
     def loss(self, sft_batch: SupervisedBatch) -> dict[str, torch.Tensor]:
         """Loss function for supervised finetuning."""
-        outputs = self.model(**sft_batch)
+        outputs = self.model(**self.infer_batch(sft_batch))
         return {
             'loss': outputs.loss,
         }

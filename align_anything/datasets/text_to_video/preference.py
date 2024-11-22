@@ -74,8 +74,9 @@ class PreferenceDataset(Dataset):
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        self.raw_data = load_dataset(
+        self.raw_data = raw_data_duplicated = load_dataset(
             path,
+            name=name,
             split=split,
             data_files=data_files,
             *optional_args,
