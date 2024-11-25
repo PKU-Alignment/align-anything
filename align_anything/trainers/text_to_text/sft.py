@@ -99,7 +99,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
     def loss(self, sft_batch: SupervisedBatch) -> dict[str, torch.Tensor]:
         """Loss function for supervised finetuning."""
-        outputs = self.model(**self.infer_batch(sft_batch))
+        outputs = self.model(**self.infer_batch(sft_batch), labels=sft_batch['labels'])
         return {
             'loss': outputs.loss,
         }
