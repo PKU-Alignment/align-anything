@@ -319,18 +319,9 @@ class RMTrainer(SupervisedTrainerBase):
                 ):
                     self.logger.print(f'\n***** Evaluating at step {self.global_step} *****')
                     self.logger.log(self.eval(), step=self.global_step)
-
-                if self.cfgs.data_cfgs.eval_datasets and self.cfgs.train_cfgs.eval_strategy == 'epoch':
-                    self.logger.print(
-                        f'\n***** Evaluating at epoch {epoch + 1}/{self.cfgs.train_cfgs.epochs} *****',
-                    )
-                    self.logger.log(self.eval(), step=self.global_step)
-
-            else:
-                self.logger.print(
-                    f'\n***** Evaluating...*****',
-                )
-                self.logger.log(self.eval(), step=self.global_step)
+                    
+            self.logger.print('\n***** Evaluating...*****')
+            self.logger.log(self.eval(), step=self.global_step)
 
             self.model.tput_timer.update_epoch_count()
 
