@@ -24,7 +24,6 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import left_padding
 from datasets import load_dataset
 
@@ -44,7 +43,7 @@ def remove_duplicate_prompts(dict_list: list[dict[str, Any]], template):
     unique_dict_list = []
     for idx in range(len(dict_list)):
         item = dict_list[idx]
-        prompt = template.format_prompt_only_sample(item)['text']
+        prompt = template.format_prompt_only_sample(item)[0]
         if prompt not in seen_prompts:
             unique_dict_list.append(item)
             seen_prompts.add(prompt)
@@ -91,26 +90,20 @@ class PromptOnlyDataset(Dataset):
             data_files=data_files,
             *optional_args,
             trust_remote_code=True,
+            verification_mode='no_checks',
         )
-        self.template = get_template_class(template)
+        self.template = template
         self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
 
         if size:
             self.raw_data = self.raw_data[:int(size)]
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
-        formatted_sample = self.template.format_prompt_only_sample(raw_sample)
+        formatted_prompt, meta_info = self.template.format_prompt_only_sample(raw_sample)
         return_dict = {}
-        raw_text = ''
-        if isinstance(formatted_sample['text'], list):
-            raw_text = self.tokenizer.eos_token.join(formatted_sample['text'])
-        elif isinstance(formatted_sample['text'], str):
-            raw_text = formatted_sample['text'] + self.tokenizer.eos_token
-        else:
-            raise NotImplementedError
-        return_dict['input_ids'] = self.tokenize(raw_text)
+        return_dict['input_ids'] = self.tokenize(formatted_prompt)
 
-        raw_image = formatted_sample['image']
+        raw_image = meta_info['image']
         return_dict['pixel_values'] = self.processor.image_processor(
             raw_image, return_tensors='pt'
         )['pixel_values'][0]
@@ -174,31 +167,8 @@ class PromptOnlyCollator:
             current_device
         )
 
-
-        if samples[0]['pixel_values'].dim() == 4:
-            # init list for pixel_values
-
-            _pixel_values_list = []
-            for sample in samples:
-                pixel_values = sample['pixel_values']  # size = (P, C, H, W)
-                _pixel_values_list.append(pixel_values)
-
-            return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(
-                current_device
-            )
-            # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W)
-
-            # image_sizes
-            b = samples[0]['pixel_values'].shape[2]
-            c = samples[0]['pixel_values'].shape[3]
-            return_dict['image_sizes'] = [
-                sample['pixel_values'].to(current_device).size(0) for sample in samples
-            ]
-
-        else:
-            # original code for non-patches
-            return_dict['pixel_values'] = torch.stack(
-                [sample['pixel_values'] for sample in samples]
-            ).to(current_device)
+        return_dict['pixel_values'] = torch.stack(
+            [sample['pixel_values'] for sample in samples]
+        ).to(current_device)
 
         return return_dict

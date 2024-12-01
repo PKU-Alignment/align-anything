@@ -29,7 +29,7 @@ from transformers.models.chameleon.modeling_chameleon import (
 from torch.nn import CrossEntropyLoss
 from torch import nn
 
-from align_anything.models.score_model import ScoreModelOutput
+from align_anything.models.reward_model import ScoreModelOutput
 
 class AccustomedChameleonModel(ChameleonForConditionalGeneration):
 
@@ -56,6 +56,10 @@ class AccustomedChameleonModel(ChameleonForConditionalGeneration):
         
         return return_dict
         
+    @property
+    def processor_available(self):
+        return True
+
     def forward(
         self,
         input_ids: torch.LongTensor = None,

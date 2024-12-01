@@ -31,14 +31,19 @@ class AccustomedLlavaModel(LlavaForConditionalGeneration):
 
     @property
     def infer_required_keys(self) -> list[str]:
-        return ['input_ids', 'attention_mask', 'pixel_values']
+        return ['input_ids', 'attention_mask', 'pixel_values', 'labels']
     
+    @property
+    def processor_available(self):
+        return True
+
     def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Return the dict used for model inference"""
         return {
             'input_ids': batch['input_ids'],
             'attention_mask': batch['attention_mask'],
             'pixel_values': batch['pixel_values'],
+            'labels': batch.get('labels'),
         }
     
 class AccustomedLlavaRewardModel(LlavaPreTrainedModel):
@@ -54,6 +59,10 @@ class AccustomedLlavaRewardModel(LlavaPreTrainedModel):
     def infer_required_keys(self) -> list[str]:
         return ['input_ids', 'attention_mask', 'pixel_values']
     
+    @property
+    def processor_available(self):
+        return True
+
     def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Return the dict used for model inference"""
         return {

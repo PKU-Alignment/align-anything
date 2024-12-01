@@ -82,10 +82,6 @@ class SupervisedTrainer(SupervisedTrainerBase):
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
         )
-        if hasattr(self.model, 'infer_batch'):
-            self.infer_batch = self.model.infer_batch
-        if hasattr(self.model, 'infer_required_keys'):
-            self.infer_required_keys = self.model.infer_required_keys
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
@@ -99,10 +95,8 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
     def loss(self, sft_batch: SupervisedBatch) -> dict[str, torch.Tensor]:
         """Loss function for supervised finetuning."""
-        outputs = self.model(**self.infer_batch(sft_batch), labels=sft_batch['labels'])
-        return {
-            'loss': outputs.loss,
-        }
+        outputs = self.model(**self.infer_batch(sft_batch))
+        return {'loss': outputs.loss}
 
     def train_step(self, sft_batch: SupervisedBatch) -> dict[str, Any]:
         """Performs a single training step."""

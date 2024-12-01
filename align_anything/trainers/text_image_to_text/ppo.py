@@ -41,7 +41,6 @@ from align_anything.utils.tools import (
     seed_everything,
     update_dict,
     remove_pad_tokens,
-    count_right_padding,
 )
 
 def move_padding_left(input_tensor, padding_value=0):

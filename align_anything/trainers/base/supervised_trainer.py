@@ -35,7 +35,7 @@ from transformers import CONFIG_NAME, PreTrainedModel, get_scheduler
 
 from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import is_main_process
-from align_anything.utils.template_registry import get_template_class
+from align_anything.configs.template import ChatTemplate
 from align_anything.utils.tools import get_optimizer_grouped_parameters, namedtuple_to_dict
 from align_anything.datasets.any_to_text import CombinedDataset, DistributedCombinedDatasetBatchSampler
 
@@ -74,10 +74,11 @@ class SupervisedTrainerBase:
         train_dataloader = []
         eval_dataloader = []
         if self.cfgs.data_cfgs.train_datasets:
-            self.train_template = get_template_class(self.cfgs.data_cfgs.train_template)
+            formatter = self.processor if self.processor else self.tokenizer
+            self.train_template = ChatTemplate(self.cfgs.data_cfgs.train_template, formatter)
             train_dataset = train_data_dtype(
                 path=self.cfgs.data_cfgs.train_datasets,
-                template=self.cfgs.data_cfgs.train_template,
+                template=self.train_template,
                 tokenizer=self.tokenizer,
                 processor=self.processor,
                 name=self.cfgs.data_cfgs.train_name,
@@ -93,10 +94,11 @@ class SupervisedTrainerBase:
                 batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
             )
         if self.cfgs.data_cfgs.eval_datasets:
-            self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
+            formatter = self.processor if self.processor else self.tokenizer
+            self.eval_template = ChatTemplate(self.cfgs.data_cfgs.eval_template, formatter)
             eval_dataset = eval_data_dtype(
                 path=self.cfgs.data_cfgs.eval_datasets,
-                template=self.cfgs.data_cfgs.eval_template,
+                template=self.eval_template,
                 tokenizer=self.tokenizer,
                 processor=self.processor,
                 name=self.cfgs.data_cfgs.eval_name,
@@ -119,7 +121,8 @@ class SupervisedTrainerBase:
         train_datasets = []
         self.train_template = []
         for i in range(len(self.cfgs.data_cfgs.train_datasets)):
-            self.train_template.append(get_template_class(self.cfgs.data_cfgs.train_template[i]))
+            formatter = self.processor if self.processor else self.tokenizer
+            self.train_template.append(ChatTemplate(self.cfgs.data_cfgs.train_template[i], formatter))
             train_datasets.append(
                 train_data_dtype(
                     path=self.cfgs.data_cfgs.train_datasets[i],
@@ -151,7 +154,8 @@ class SupervisedTrainerBase:
             eval_datasets = []
             self.eval_template = []
             for i in range(len(self.cfgs.data_cfgs.eval_datasets)):
-                self.eval_template.append(get_template_class(self.cfgs.data_cfgs.eval_template[i]))
+                formatter = self.processor if self.processor else self.tokenizer
+                self.eval_template.append(ChatTemplate(self.cfgs.data_cfgs.eval_template[i], formatter))
                 eval_datasets.append(
                     eval_data_dtype(
                         path=self.cfgs.data_cfgs.eval_datasets[i],

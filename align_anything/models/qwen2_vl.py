@@ -29,7 +29,7 @@ from transformers.models.qwen2_vl.modeling_qwen2_vl import (
     Qwen2VLCausalLMOutputWithPast,
     Qwen2VLForConditionalGeneration,
 )
-from align_anything.models.score_model import ScoreModelOutput
+from align_anything.models.reward_model import ScoreModelOutput
 
 @dataclass
 class AccustomedQwen2VLOutput(Qwen2VLCausalLMOutputWithPast):
@@ -80,6 +80,10 @@ class AccustomedQwen2VLModel(Qwen2VLForConditionalGeneration):
     @classmethod
     def pretrain_class(cls) -> Qwen2VLPreTrainedModel:
         return Qwen2VLPreTrainedModel
+
+    @property
+    def processor_available(self):
+        return True
 
     def forward(
         self,
@@ -226,6 +230,10 @@ class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
             'pixel_values_videos': batch['pixel_values_videos'],
         }
     
+    @property
+    def processor_available(self):
+        return True
+
     def forward(self, 
                 input_ids: torch.LongTensor, 
                 attention_mask: torch.LongTensor, 

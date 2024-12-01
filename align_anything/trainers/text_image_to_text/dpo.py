@@ -126,8 +126,6 @@ class DPOTrainer(DPOtextTrainer):
 
         batch_size = better_input_ids.size(0)
         for i in range(batch_size):
-            if torch.all(torch.eq(better_input_ids[i], worse_input_ids[i])).item():
-                continue
             better_log_prob = better_sequence_log_probs[i, :].sum(dim=-1)
             worse_log_prob = worse_sequence_log_probs[i, :].sum(dim=-1)
             ref_better_log_prob = ref_better_sequence_log_probs[i, :].sum(dim=-1)

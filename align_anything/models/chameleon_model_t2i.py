@@ -42,6 +42,10 @@ class ChameleonTextToImagePipeline:
         self.device = device
         self.init_model()
         
+    @property
+    def processor_available(self):
+        return True
+
     def init_model(self) -> None:
         self.model = ChameleonForConditionalGeneration.from_pretrained(
             self.model_name_or_path,

@@ -23,7 +23,6 @@ def register_template(template_name):
 
     return decorator
 
-
 def get_template_class(template_name: str):
     template_class = TEMPLATE_REGISTRY.get(template_name)
     if template_class is None:

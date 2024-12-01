@@ -70,7 +70,7 @@ class PreferenceDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        self.template = get_template_class(template)
+        self.template = template
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
@@ -148,7 +148,7 @@ class PreferenceTokenizedDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        self.template = get_template_class(template)
+        self.template = template
         
         self.raw_data = torch.load(f"{path}/{data_files}", map_location=torch.device('cpu'))
         self.valid_indices = self.filter_indices()

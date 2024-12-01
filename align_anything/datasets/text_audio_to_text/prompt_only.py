@@ -40,14 +40,12 @@ __all__ = [
 ]
 
 
-def remove_duplicate_prompts(dict_list: list[dict[str, Any]], template, processor):
+def remove_duplicate_prompts(dict_list: list[dict[str, Any]], template):
     seen_prompts = set()
     unique_dict_list = []
     for idx in range(len(dict_list)):
         item = dict_list[idx]
-        formatted_sample = template.format_prompt_only_sample(item)
-        raw_text = formatted_sample['conversation']
-        prompt = processor.apply_chat_template(raw_text, add_generation_prompt=True, tokenize=False)
+        prompt = template.format_prompt_only_sample(item)[0]
         if prompt not in seen_prompts:
             unique_dict_list.append(item)
             seen_prompts.add(prompt)
@@ -87,7 +85,7 @@ class PromptOnlyDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        raw_data_duplicated = raw_data_duplicated = load_dataset(
+        raw_data_duplicated = load_dataset(
             path,
             name=name,
             split=split,
@@ -95,32 +93,25 @@ class PromptOnlyDataset(Dataset):
             *optional_args,
             trust_remote_code=True,
         )
-        self.template = get_template_class(template)
-        self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template, self.processor)
+        self.template = template
+        self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
 
         if size:
             self.raw_data = self.raw_data[:int(size)]
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
-        formatted_sample = self.template.format_prompt_only_sample(raw_sample)
+        prompt, meta_info = self.template.format_prompt_only_sample(raw_sample)
         return_dict = {}
-        raw_text = ''
-        raw_text = formatted_sample['conversation']
-        text = self.processor.apply_chat_template(raw_text, add_generation_prompt=True, tokenize=False)
         audios = []
-        for message in formatted_sample['conversation']:
-            if isinstance(message["content"], list):
-                for ele in message["content"]:
-                    if ele["type"] == "audio":
-                        if isinstance(ele['audio_url'], dict):
-                            raw_audio, raw_sr = ele['audio_url']['array'], ele['audio_url']['sampling_rate']
-                            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
-                        else:
-                            audio = librosa.load(ele['audio_url'], sr=self.processor.feature_extractor.sampling_rate)[0]
 
-                        audios.append(audio)
-        inputs_wo_padding = self.tokenize(text=text, audios=audios, padding=False)
-        inputs = self.tokenize(text=text, audios=audios, padding=True)
+        if isinstance(meta_info['audio_path'], dict):
+            raw_audio, raw_sr = meta_info['audio_path']['array'], meta_info['audio_path']['sampling_rate']
+            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
+        else:
+            audio = librosa.load(meta_info['audio_path'], sr=self.processor.feature_extractor.sampling_rate)[0]
+        audios.append(audio)
+        inputs_wo_padding = self.tokenize(text=prompt, audios=audios, padding=False)
+        inputs = self.tokenize(text=prompt, audios=audios, padding=True)
         return_dict['input_ids'] = inputs_wo_padding['input_ids'][0]
         return_dict['feature_attention_mask'] = inputs['feature_attention_mask']
         return_dict['input_features'] = inputs['input_features']

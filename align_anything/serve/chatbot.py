@@ -35,7 +35,6 @@ from transformers import (
 )
 
 from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.utils.multi_process import to_device
 from align_anything.utils.template_registry import get_template_class
 
 
@@ -286,7 +285,7 @@ class Chatbot(AbstractChatbot):
             'input': text,
             'output': '',
         }
-        prompt = self.template.format_sample(raw_sample)['prompt']
+        prompt = self.template.format_supervised_sample(raw_sample)['prompt']
         self.inputs.append(text)
 
         input = self.dialogue + prompt
@@ -310,11 +309,9 @@ class Chatbot(AbstractChatbot):
             )[0]
             response = output.replace(input, '', 1)
             yield response
-        # dialogue = self.dialogue + PROMPT_USER.format(input=text) + PROMPT_ASSISTANT
-        tokenized = to_device(
-            self.tokenizer(input, return_tensors='pt'),
-            device=('cuda' if torch.cuda.is_available() else None),
-        )
+        tokenized = self.tokenizer(input, return_tensors='pt')
+        tokenized['input_ids'] = tokenized['input_ids'].to(self.model.device)
+        tokenized['attention_mask'] = tokenized['attention_mask'].to(self.model.device)
         decoded_text = self.tokenizer.decode(tokenized['input_ids'][0], skip_special_tokens=True)
 
         if stream:
@@ -341,6 +338,7 @@ class Chatbot(AbstractChatbot):
                 yield response
 
             daemon.join()
+            clean_response = response.replace(decoded_text, '', 1)
         else:
 
             output = self.model.generate(
@@ -362,7 +360,7 @@ class Chatbot(AbstractChatbot):
             'input': text,
             'output': response,
         }
-        message = self.template.format_sample(raw_sample)['text']
+        message = self.template.format_supervised_sample(raw_sample)['text']
         self.dialogue += message + self.tokenizer.eos_token
 
         yield clean_response

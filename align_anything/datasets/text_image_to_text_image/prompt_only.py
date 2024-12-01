@@ -91,7 +91,7 @@ class PromptOnlyDataset(Dataset):
             *optional_args,
             trust_remote_code=True,
         )
-        self.template = get_template_class(template)
+        self.template = template
         self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
 
         if size:
@@ -169,7 +169,7 @@ class PromptOnlyTokenizedDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        self.template = get_template_class(template)
+        self.template = template
         
         self.raw_data = torch.load(f"{path}/{data_files}", map_location=torch.device('cpu'))
         if size:
