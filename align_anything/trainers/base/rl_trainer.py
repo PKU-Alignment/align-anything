@@ -77,7 +77,8 @@ class RLTrainerBase:
     def get_dataloaders(self, train_data_dtype, eval_data_dtype, ptx_data_dtype) -> None:
         """Get the dataloaders based on data_dtype."""
         formatter = self.processor if self.processor else self.tokenizer
-        self.train_template = ChatTemplate(self.cfgs.data_cfgs.train_template, formatter)
+        custom_formatter = self.model.apply_chat_template if hasattr(self.model, 'apply_chat_template') else None
+        self.train_template = ChatTemplate(self.cfgs.data_cfgs.train_template, formatter, custom_formatter)
         self.eval_template = None
         train_dataset = train_data_dtype(
             path=self.cfgs.data_cfgs.train_datasets,
@@ -100,7 +101,8 @@ class RLTrainerBase:
         # load ptx datasets
         self.use_ptx = self.cfgs.data_cfgs.ptx_datasets is not None
         if self.use_ptx:
-            self.ptx_template = ChatTemplate(self.cfgs.data_cfgs.ptx_template, formatter)
+            custom_formatter = self.model.apply_chat_template if hasattr(self.model, 'apply_chat_template') else None
+            self.ptx_template = ChatTemplate(self.cfgs.data_cfgs.ptx_template, formatter, custom_formatter)
             ptx_dataset = ptx_data_dtype(
                 path=self.cfgs.data_cfgs.ptx_datasets,
                 template=self.ptx_template,
@@ -122,7 +124,8 @@ class RLTrainerBase:
             ptx_dataloader = DataLoader(DummyDataset(len(train_dataloader)))
 
         if self.cfgs.data_cfgs.eval_datasets:
-            self.eval_template = ChatTemplate(self.cfgs.data_cfgs.eval_template, formatter)
+            custom_formatter = self.model.apply_chat_template if hasattr(self.model, 'apply_chat_template') else None
+            self.eval_template = ChatTemplate(self.cfgs.data_cfgs.eval_template, formatter, custom_formatter)
             eval_dataset = eval_data_dtype(
                 path=self.cfgs.data_cfgs.eval_datasets,
                 template=self.eval_template,

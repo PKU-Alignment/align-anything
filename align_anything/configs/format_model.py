@@ -14,14 +14,16 @@
 # ==============================================================================
 
 
-from typing import Any
+from typing import Any, Callable
 from transformers import AutoTokenizer, AutoProcessor
 
 class ModelFormatter():
 
-    def __init__(self, formatter: AutoTokenizer | AutoProcessor) -> None:
+    def __init__(self, formatter: AutoTokenizer | AutoProcessor, custom_formatter: Callable | None = None) -> None:
         self.formatter: AutoTokenizer | AutoProcessor = formatter
-        if hasattr(formatter, 'apply_chat_template'):
+        if custom_formatter:
+            self.format_sample = custom_formatter
+        elif hasattr(formatter, 'apply_chat_template'):
             self.format_sample = self.format_with_template
         else:
             self.format_sample = self.default_format

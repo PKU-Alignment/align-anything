@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team and HuggingFace Inc. team. All Rights Reserved.
+# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
 #
 # This code is inspired by the HuggingFace's Transformers library.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/llava/modeling_llava.py

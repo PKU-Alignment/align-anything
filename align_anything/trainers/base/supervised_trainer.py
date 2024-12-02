@@ -75,7 +75,8 @@ class SupervisedTrainerBase:
         eval_dataloader = []
         if self.cfgs.data_cfgs.train_datasets:
             formatter = self.processor if self.processor else self.tokenizer
-            self.train_template = ChatTemplate(self.cfgs.data_cfgs.train_template, formatter)
+            custom_formatter = self.model.apply_chat_template if hasattr(self.model, 'apply_chat_template') else None
+            self.train_template = ChatTemplate(self.cfgs.data_cfgs.train_template, formatter, custom_formatter)
             train_dataset = train_data_dtype(
                 path=self.cfgs.data_cfgs.train_datasets,
                 template=self.train_template,
@@ -95,7 +96,8 @@ class SupervisedTrainerBase:
             )
         if self.cfgs.data_cfgs.eval_datasets:
             formatter = self.processor if self.processor else self.tokenizer
-            self.eval_template = ChatTemplate(self.cfgs.data_cfgs.eval_template, formatter)
+            custom_formatter = self.model.apply_chat_template if hasattr(self.model, 'apply_chat_template') else None
+            self.eval_template = ChatTemplate(self.cfgs.data_cfgs.eval_template, formatter, custom_formatter)
             eval_dataset = eval_data_dtype(
                 path=self.cfgs.data_cfgs.eval_datasets,
                 template=self.eval_template,

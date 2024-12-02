@@ -14,7 +14,7 @@
 # ==============================================================================
 
 
-from typing import Any
+from typing import Any, Callable
 from transformers import AutoTokenizer, AutoProcessor
 
 from align_anything.utils import template_registry
@@ -22,9 +22,9 @@ from align_anything.configs.format_model import ModelFormatter
 
 class ChatTemplate():
 
-    def __init__(self, template: str, formatter: AutoTokenizer | AutoProcessor) -> None:
+    def __init__(self, template: str, formatter: AutoTokenizer | AutoProcessor, custom_formatter: Callable | None = None) -> None:
         self.dataset_formatter = template_registry.get_template_class(template)
-        self.model_formatter = ModelFormatter(formatter)
+        self.model_formatter = ModelFormatter(formatter, custom_formatter)
 
     def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[str, str, Any]:
         raw_conversation, multi_modal_info = self.dataset_formatter.format_supervised_sample(raw_sample)

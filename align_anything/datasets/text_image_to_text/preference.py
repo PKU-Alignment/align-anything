@@ -106,9 +106,12 @@ class PreferenceDataset(Dataset):
         return_dict['better_response_lens'] = len(self.tokenize(meta_info['better_response'], add_special_tokens=False))
         return_dict['worse_response_lens'] = len(self.tokenize(meta_info['worse_response'],add_special_tokens=False))
         raw_image = meta_info['image']
-        return_dict['pixel_values'] = self.processor.image_processor(
-            raw_image, return_tensors='pt'
-        )['pixel_values'][0]
+        # llava processor case
+        if self.processor and hasattr(self.processor, 'image_processor'):
+            return_dict['pixel_values'] = self.processor.image_processor(
+                raw_image, return_tensors='pt'
+            )['pixel_values'][0]
+        return_dict['image'] = raw_image
 
         return return_dict
 
@@ -178,11 +181,13 @@ class RightPaddingPreferenceCollator:
         return_dict['worse_response_lens'] = [sample['worse_response_lens'] for sample in samples]
         return_dict['response_lens'] = return_dict['better_response_lens'] + return_dict['worse_response_lens']
 
-        pixel_values_tensor = torch.stack(
-            [sample['pixel_values'] for sample in samples]
+        if 'pixel_values' in samples[0]:
+            pixel_values_tensor = torch.stack(
+                [sample['pixel_values'] for sample in samples]
         ).to(current_device)
-        double_stacked = torch.cat([pixel_values_tensor, pixel_values_tensor], dim=0)
-        return_dict['pixel_values'] = double_stacked.to(current_device)
+            double_stacked = torch.cat([pixel_values_tensor, pixel_values_tensor], dim=0)
+            return_dict['pixel_values'] = double_stacked.to(current_device)
+        return_dict['images'] = [sample['image'] for sample in samples] * 2
 
         return return_dict
     

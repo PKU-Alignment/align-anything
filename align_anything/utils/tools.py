@@ -25,7 +25,7 @@ import random
 import base64
 from collections import namedtuple
 from typing import Any, NamedTuple
-import yt_dlp
+
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -35,7 +35,7 @@ import yaml
 from PIL import Image
 import torch.utils.data
 from scipy.stats import entropy
-from moviepy.editor import AudioFileClip
+
 from torch.nn.utils.rnn import pad_sequence
 from torch.types import Number
 from torch.autograd import Variable
@@ -45,6 +45,16 @@ from torchvision.models.inception import inception_v3
 from transformers import PreTrainedTokenizerBase, ProcessorMixin
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
 import pickle
+from align_anything.utils.multi_process import is_main_process
+
+try:
+    from moviepy.editor import AudioFileClip
+    import yt_dlp
+except ImportError:
+    if is_main_process():
+        print("""The moviepy and yt_dlp are not installed, which are required for evaluation.
+        You can ignore this warning if you are not using the evaluation module.
+        or install them by `pip install -e .[evaluate]`.""")
 
 
 def right_padding(sequences: list[torch.Tensor], padding_value: Number) -> torch.Tensor:
@@ -166,16 +176,18 @@ def read_cfgs(mode: str, task: str) -> list[dict[str, Any], dict[str, Any]]:
     yaml_path = os.path.join(parent_path, 'configs', mode, f'{task}.yaml')
     
     configs = yaml_load(yaml_path)
+    zero_stage_file = os.getenv('ZERO_STAGE_FILE', configs['train_cfgs']['ds_cfgs'])
 
     ds_cfgs_path = os.path.join(
         parent_path,
         'configs',
         'deepspeed',
-        configs['train_cfgs']['ds_cfgs'],
+        zero_stage_file,
     )
     with open(ds_cfgs_path) as f:
         ds_cfgs = json.load(f)
 
+    os.environ['ZERO_STAGE'] = str(ds_cfgs['zero_optimization']['stage'])
     return configs, ds_cfgs
 
 def read_eval_cfgs(task: str, backend: str) -> dict[str, Any]:
