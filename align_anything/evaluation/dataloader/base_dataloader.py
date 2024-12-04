@@ -13,17 +13,16 @@
 # limitations under the License.
 # ==============================================================================
 
+
 import os
-import numpy as np
 from PIL import Image
-from tqdm import tqdm
-from pprint import pprint
 from abc import abstractmethod
 from torch.utils.data import Dataset
 from torchvision import transforms
-from typing import Union, List, Dict, Any, Tuple
+from typing import List, Dict, Any
 from datasets import load_dataset, DatasetDict
 from align_anything.evaluation.data_type import InferenceInput
+from align_anything.configs.format_model import ModelFormatter
 
 from transformers import AutoProcessor, AutoTokenizer, AutoImageProcessor
 
@@ -39,13 +38,13 @@ class BaseDataLoader:
         self.action = self.eval_cfgs.action if self.eval_cfgs.action else 'generation'
         self.num_shot = self.eval_cfgs.n_shot if self.eval_cfgs.n_shot else 0
         self.cot = self.eval_cfgs.cot if self.eval_cfgs.cot else False
-        self.chat_template = self.model_cfgs.chat_template
         self.model_name_or_path = self.model_cfgs.model_name_or_path
         self.split = self.data_cfgs.split
         self.task_dir = self.data_cfgs.task_dir
         self.candidate_labels = self.data_cfgs.candidate_labels
         self.task_names = self.get_task_names()
         self.init_tokenizer()
+        self.formatter = ModelFormatter(self.processor or self.tokenizer)
 
     def init_tokenizer(self):
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, trust_remote_code=True)
