@@ -78,7 +78,7 @@ class RLTrainerBase:
         """Get the dataloaders based on data_dtype."""
         formatter = self.processor if self.processor else self.tokenizer
         custom_formatter = self.model.apply_chat_template if hasattr(self.model, 'apply_chat_template') else None
-        self.train_template = ChatTemplate(self.cfgs.data_cfgs.train_template, formatter, custom_formatter)
+        self.train_template = ChatTemplate(formatter, self.cfgs.data_cfgs.train_template, custom_formatter)
         self.eval_template = None
         train_dataset = train_data_dtype(
             path=self.cfgs.data_cfgs.train_datasets,
@@ -125,7 +125,7 @@ class RLTrainerBase:
 
         if self.cfgs.data_cfgs.eval_datasets:
             custom_formatter = self.model.apply_chat_template if hasattr(self.model, 'apply_chat_template') else None
-            self.eval_template = ChatTemplate(self.cfgs.data_cfgs.eval_template, formatter, custom_formatter)
+            self.eval_template = ChatTemplate(formatter, self.cfgs.data_cfgs.eval_template, custom_formatter)
             eval_dataset = eval_data_dtype(
                 path=self.cfgs.data_cfgs.eval_datasets,
                 template=self.eval_template,

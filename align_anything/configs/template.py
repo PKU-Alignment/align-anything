@@ -22,8 +22,10 @@ from align_anything.configs.format_model import ModelFormatter
 
 class ChatTemplate():
 
-    def __init__(self, template: str, formatter: AutoTokenizer | AutoProcessor, custom_formatter: Callable | None = None) -> None:
-        self.dataset_formatter = template_registry.get_template_class(template)
+    def __init__(self, formatter: AutoTokenizer | AutoProcessor, template: str | None = None, custom_formatter: Callable | None = None) -> None:
+        self.dataset_formatter = None
+        if template:
+            self.dataset_formatter = template_registry.get_template_class(template)
         self.model_formatter = ModelFormatter(formatter, custom_formatter)
 
     def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[str, str, Any]:
@@ -43,6 +45,9 @@ class ChatTemplate():
         raw_conversation, multi_modal_info = self.dataset_formatter.format_unmatched_supervised_sample(raw_sample_for_prompt, raw_sample_for_response)
         return self.model_formatter(raw_conversation), multi_modal_info
 
+    def format_chat_sample(self, raw_conversation: list[dict[str, Any]]) -> tuple[str, Any]:
+        return self.model_formatter(raw_conversation), {}
+
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
         better_conversation, worse_conversation, _ = self.dataset_formatter.format_preference_sample(raw_sample)
         return better_conversation == worse_conversation
@@ -51,3 +56,4 @@ class ChatTemplate():
         if hasattr(self.dataset_formatter, 'check_validation'):
             return self.dataset_formatter.check_validation(raw_sample)
         return True
+        

@@ -260,12 +260,6 @@ def parse_arguments() -> argparse.Namespace:
         help='Whether to use tf32 mix precision.',
     )
     parser.add_argument(
-        '--template',
-        type=str,
-        default='Dialogue',
-        help='Model template',
-    )
-    parser.add_argument(
         '--vlm',
         type=str,
         default=False,
@@ -296,7 +290,6 @@ def main(args: argparse.Namespace | None = None) -> None:
         'top_p': args.top_p,
         'repetition_penalty': args.repetition_penalty,
         'dtype': (torch.bfloat16 if args.bf16 else (torch.float16 if args.fp16 else 'auto')),
-        'template': args.template,
         'vlm': args.vlm,
     }
     cli = CLI(

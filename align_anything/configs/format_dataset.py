@@ -231,6 +231,48 @@ class Aligner(BaseFormatter):
         ], {}
 
 
+@register_template('AA_T2T')
+class AA_T2T(BaseFormatter):
+    system_prompt: str = ""
+
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['prompt']
+        answer = raw_sample['response']
+
+        return [
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {}
+
+@register_template('TLDR')
+class TLDR(BaseFormatter):
+    system_prompt: str = ""
+    summary_prompt: list[str] = [
+        "Please summarize the following text: ",
+        "Please give a concise summary of the following text: ",
+        "Please provide a brief summary of the following text: ",
+        "Please summarize the following text in a few sentences: ",
+        "I need a summary of the following text: ",
+        "Could you please provide a summary of the following text? ",
+        "I'm looking for a summary of the following text: ",
+        "Please give me a summary of the following text: ",
+        "I need a summary of the following text: ",
+        "Could you summarize the following text for me? ",
+        "I'm looking for a summary of the following text: ",
+        "Please provide a summary of the following text: ",
+        "Here's the text I need summarized: ",
+        "Here is the text I need summarized: ",
+    ]
+
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = random.choice(self.summary_prompt) + raw_sample['content']
+        answer = raw_sample['summary']
+
+        return [
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {}
+
 @register_template('AA_TI2T')
 class AA_TI2T(BaseFormatter):
     system_prompt: str = ""
