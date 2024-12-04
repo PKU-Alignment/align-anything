@@ -19,7 +19,7 @@ from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
-from datasets import load_dataset, DatasetDict
+from datasets import load_dataset
 from align_anything.utils.template_registry import get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.eval.base_eval import API_Single_Eval
@@ -38,14 +38,17 @@ class llavawildDataLoader(BaseDataLoader):
             ]
             return task_names
 
-    def build_example_prompt(self, data, with_answer=True):
-        return f"{data['question']}"
+    def build_example_prompt(self, item, with_answer=True):
+        return [
+            {'role': 'user', 'content': [
+                {"type": "image"},
+                {"type": "text", "text": item['question']},
+            ]},
+            {"role": "assistant", "content": ""},
+        ]
 
-    def build_prompt(self, data):
-        template = get_template_class(self.chat_template)
-        question = [template.system_prompt + template.user_prompt.format(input="\n" + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
-        
-        return question
+    def build_prompt(self, data):        
+        return [self.formatter(self.build_example_prompt(item, False)) for item in data]
     
     def load_dataset(self, category_datasets):
         processed_inputs = {}

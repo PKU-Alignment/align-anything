@@ -46,10 +46,8 @@ class llavacocoDataLoader(BaseDataLoader):
             {"role": "assistant", "content": ""},
         ]
 
-    def build_prompt(self, data):
-        question = [self.formatter(self.build_example_prompt(item, False)) for item in data]
-        
-        return question
+    def build_prompt(self, data):        
+        return [self.formatter(self.build_example_prompt(item, False)) for item in data]
     
     def load_dataset(self, category_datasets):
         processed_inputs = {}
