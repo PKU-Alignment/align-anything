@@ -162,6 +162,47 @@ class SupervisedTrainer(SupervisedTrainerBase):
                 self.logger.log(self.eval(), step=self.global_step)
             self.model.tput_timer.update_epoch_count()
 
+    @torch.no_grad()
+    def eval(self) -> dict[str, Any]:
+        """Evaluate the model on the evaluation dataset."""
+        if self.eval_dataloader is None:
+            return {}
+        if not isinstance(self.eval_dataloader, dict):
+            named_eval_dataloader = {self.cfgs.data_cfgs.eval_template: self.eval_dataloader}
+        else:
+            named_eval_dataloader = self.eval_dataloader
+        
+        self.model.eval()
+        if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_enabled:
+            self.model.gradient_checkpointing_disable()
+
+        loss_logger = {}
+
+        for template, raw_eval_dataloader in named_eval_dataloader.items():
+            eval_dataloader = tqdm(
+                raw_eval_dataloader,
+                desc=f'Evaluating {template}',
+                disable=not is_main_process(),
+                position=1,
+                leave=False,
+            )
+            batch = None
+            eval_loss = []
+            for batch in eval_dataloader:
+                loss = self.loss(batch)['loss']
+                eval_loss.append(loss.item())
+
+                if batch is None:
+                    self.logger.print(f'WARNING: `{template}` eval_dataloader is empty.')
+                    return {}
+            if len(eval_loss) > 0:
+                loss_logger[f'eval/loss/{template}'] = sum(eval_loss) / len(eval_loss)
+
+        self.model.train()
+        if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_enabled:
+            self.model.gradient_checkpointing_enable()
+        return loss_logger
+
     def save(
         self,
         model: deepspeed.DeepSpeedEngine | None = None,

@@ -54,7 +54,7 @@ class BaseDataLoader:
             setattr(self.processor, 'tokenizer', self.tokenizer)
         except:
             self.processor = None
-            
+
         try:
             self.image_processor = AutoImageProcessor.from_pretrained(self.model_name_or_path, trust_remote_code=True)
         except:

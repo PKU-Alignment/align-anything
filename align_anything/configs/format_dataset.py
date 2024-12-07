@@ -273,6 +273,18 @@ class TLDR(BaseFormatter):
             {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
         ], {}
 
+@register_template('GSM8K')
+class GSM8K(BaseFormatter):
+    system_prompt: str = ""
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['question']
+        answer = raw_sample['answer']
+
+        return [
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {}
+
 @register_template('AA_TI2T')
 class AA_TI2T(BaseFormatter):
     system_prompt: str = ""
