@@ -25,8 +25,6 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.process_image import get_image_processor
-from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
 
@@ -89,12 +87,12 @@ class SupervisedDataset(Dataset):
         self.template = template
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_supervised_sample(raw_sample)
+        prompt, multi_modal_info = self.template.format_diffusion_supervised_sample(raw_sample)
         return_dict = {}
         return_dict['input_ids'] = self.tokenize(
-            formatted_sample['prompt'], add_special_tokens=False
+            prompt, add_special_tokens=False
         )
-        return_dict['pixel_values'] = self.process_image(formatted_sample['image'])
+        return_dict['pixel_values'] = self.process_image(multi_modal_info['image'])
         return return_dict
 
     def process_image(self, raw_image: Image) -> torch.Tensor:

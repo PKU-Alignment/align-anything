@@ -32,6 +32,14 @@ class ChatTemplate():
         raw_conversation, multi_modal_info = self.dataset_formatter.format_supervised_sample(raw_sample)
         raw_prompt = raw_conversation[:-1]
         return self.model_formatter(raw_prompt), self.model_formatter(raw_conversation), multi_modal_info
+    
+    def format_diffusion_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[str, Any]:
+        raw_prompt, multi_modal_info = self.dataset_formatter.format_diffusion_supervised_sample(raw_sample)
+        return raw_prompt, multi_modal_info
+
+    def format_diffusion_preference_sample(self, raw_sample: dict[str, Any]) -> tuple[str, Any]:
+        raw_prompt, multi_modal_info = self.dataset_formatter.format_diffusion_preference_sample(raw_sample)
+        return raw_prompt, multi_modal_info
 
     def format_preference_sample(self, raw_sample: dict[str, Any]) -> tuple[str, str, Any]:
         better_conversation, worse_conversation, multi_modal_info = self.dataset_formatter.format_preference_sample(raw_sample)
@@ -49,9 +57,11 @@ class ChatTemplate():
         return self.model_formatter(raw_conversation), {}
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        if hasattr(self.dataset_formatter, 'check_equal'):
+            return self.dataset_formatter.check_equal(raw_sample)
         better_conversation, worse_conversation, _ = self.dataset_formatter.format_preference_sample(raw_sample)
         return better_conversation == worse_conversation
-
+    
     def check_validation(self, raw_sample: dict[str, Any]) -> bool:
         if hasattr(self.dataset_formatter, 'check_validation'):
             return self.dataset_formatter.check_validation(raw_sample)

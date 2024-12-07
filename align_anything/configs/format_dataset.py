@@ -244,6 +244,7 @@ class AA_T2T(BaseFormatter):
             {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
         ], {}
 
+
 @register_template('TLDR')
 class TLDR(BaseFormatter):
     system_prompt: str = ""
@@ -284,6 +285,7 @@ class GSM8K(BaseFormatter):
             {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
             {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
         ], {}
+
 
 @register_template('AA_TI2T')
 class AA_TI2T(BaseFormatter):
@@ -356,6 +358,7 @@ class AA_TI2T(BaseFormatter):
         worse_id = 2 if better_id==1 else 1
         return better_id in [1, 2] and worse_id in [1, 2]
 
+
 @register_template('AA_TA2T')
 class AA_TA2T(BaseFormatter):
     system_prompt: str = 'You are a helpful assistant.'
@@ -412,6 +415,7 @@ class AA_TA2T(BaseFormatter):
 
         return conversation, {'audio_path': audio_path}
     
+
 @register_template('AA_TA2T_LLF')
 class AA_TA2T_LLF(BaseFormatter):
     system_prompt: str = 'You are a helpful assistant.'
@@ -466,34 +470,97 @@ class AA_TA2T_LLF(BaseFormatter):
 
         return conversation, {'audio_path': audio}
 
-@register_template('VQAv2')
-class VQAv2:
+
+@register_template('DiffusionDB')
+class DiffusionDB:
     system_prompt: str = ''
-    user_prompt: str = 'USER: \n<image>{input}'
-    assistant_prompt: str = '\nASSISTANT: {output}'
-    split_token: str = 'ASSISTANT:'
 
-    def format_sample(self, raw_sample: dict[str, Any], path: str=None) -> dict[str, Any]:
-        question = raw_sample['question']
-        answer = raw_sample['multiple_choice_answer']
-
-        text = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=question)}'
-            f"{self.assistant_prompt.format(output=answer)}"
-        )
-
-        prompt = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=question)}'
-            f"{self.assistant_prompt.format(output='')}"
-        )
-
-        return {
-            'text': text,
-            'prompt': prompt,
-            'image': raw_sample['image'],
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[str, Any]:
+        multi_modal_info = {
+            'image': raw_sample['image'].convert('RGB')
         }
+        return raw_sample['prompt'], multi_modal_info
+
+
+@register_template('DiffusionDBCanny')
+class DiffusionDBCanny:
+    system_prompt: str = ''
+
+    def format_diffusion_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[str, Any]:
+        multi_modal_info = {
+            'image': raw_sample['image'].convert('RGB')
+        }
+        return raw_sample['text'], multi_modal_info
+
+
+@register_template('Pickapic')
+class Pickapic:
+
+    def format_diffusion_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        prompt = raw_sample['caption']
+        better_id = int(raw_sample['label_1'])
+        worse_id = int(raw_sample['label_0'])
+
+        raw_better_image = raw_sample[f'jpg_{better_id}']
+        raw_worse_image = raw_sample[f'jpg_{worse_id}']
+
+        better_image = Image.open(io.BytesIO(raw_better_image)).convert('RGB')
+        worse_image = Image.open(io.BytesIO(raw_worse_image)).convert('RGB')
+
+        multi_modal_info = {
+            'better_image': better_image,
+            'worse_image': worse_image,
+        }
+
+        return prompt, multi_modal_info
+
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        better_id = float(raw_sample['label_0'])
+        if better_id == 0.5:
+            return True
+        else:
+            return False
+
+
+@register_template('WavCaps')
+class WavCaps:
+
+    def format_diffusion_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[str, Any]:
+        caption = raw_sample['answer']
+        audio = raw_sample['context']['array']
+        sampling_rate = raw_sample['context']['sampling_rate']
+        multi_modal_info = {
+            'audio': audio,
+            'sampling_rate': sampling_rate,
+        }
+        return caption, multi_modal_info
+
+
+@register_template('AA_T2A')
+class AA_T2A(BaseFormatter):
+
+    def format_diffusion_preference_sample(self, raw_sample: dict[str, Any]) -> tuple[str, Any]:
+        better_id = int(raw_sample['overall_audio'])
+        worse_id = 2 if better_id==1 else 1
+        better_audio = raw_sample[f'response_{better_id}']
+        worse_audio = raw_sample[f'response_{worse_id}']
+        prompt = raw_sample['prompt']
+
+        multi_modal_info = {
+            'better_audio': better_audio,
+            'worse_audio': worse_audio,
+        }
+        return prompt, multi_modal_info
+
+    def check_validation(self, raw_sample: dict[str, Any]) -> bool:
+        better_id = int(raw_sample['overall_audio'])
+        worse_id = 2 if better_id==1 else 1
+        return better_id in [1, 2] and worse_id in [1, 2]
+    
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        better_id = int(raw_sample['overall_audio'])
+        worse_id = 2 if better_id==1 else 1
+        return better_id == worse_id
 
 @register_template('ti2ti_preference')
 class TI2TI_PREFERENCE:
@@ -1012,22 +1079,6 @@ class AudioSet:
             'audio': audio.squeeze().tolist(),
             'sampling_rate': sample_rate
         }
-
-@register_template('DiffusionDB')
-class DiffusionDB:
-    system_prompt: str = ''
-    user_prompt: str = 'USER: {input}'
-    assistant_prompt: str = ' ASSISTANT:{output}'
-    split_token: str = ' ASSISTANT:'
-
-    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-
-        text = raw_sample['prompt']
-        return {
-            'text': text,
-            'prompt': text,
-            'image': raw_sample['image'].convert('RGB'),
-        }
         
 @register_template('ti2ti')
 class TI2TI:
@@ -1306,34 +1357,6 @@ class SPA_VL:
         }
 
 
-@register_template('Pickapic')
-class Pickapic:
-
-    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['caption']
-        better_id = int(raw_sample['label_1'])
-        worse_id = int(raw_sample['label_0'])
-
-        raw_better_image = raw_sample[f'jpg_{better_id}']
-        raw_worse_image = raw_sample[f'jpg_{worse_id}']
-
-        better_image = Image.open(io.BytesIO(raw_better_image)).convert('RGB')
-        worse_image = Image.open(io.BytesIO(raw_worse_image)).convert('RGB')
-
-        return {
-            'prompt': prompt,
-            'better_image': better_image,
-            'worse_image': worse_image,
-        }
-
-    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
-        better_id = float(raw_sample['label_0'])
-        if better_id == 0.5:
-            return True
-        else:
-            return False
-
-
 @register_template('Webvid')
 class Webvid:
     def format_sample(self, raw_sample: dict[str, Any], path: str = None) -> dict[str, Any]:
@@ -1372,19 +1395,6 @@ class SafeSora:
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
         return False
-
-
-@register_template('WavCaps')
-class WavCaps:
-    def format_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        caption = raw_sample['answer']
-        audio = raw_sample['context']['array']
-        sampling_rate = raw_sample['context']['sampling_rate']
-        return {
-            'prompt': caption,
-            'audio': audio,
-            'sampling_rate': sampling_rate,
-        }
 
 
 @register_template('SOMOS')
