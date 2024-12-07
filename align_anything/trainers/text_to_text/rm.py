@@ -82,7 +82,7 @@ class RMTrainer(SupervisedTrainerBase):
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
-            trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             is_reward_model=True,
         )
 
@@ -220,7 +220,7 @@ class RMTrainer(SupervisedTrainerBase):
 
         if is_main_process():
             # Print some examples from the last batch
-            max_num_rows = 3
+            max_num_rows = 5
             (
                 better_input_ids,  # size = (B, L)
                 worse_input_ids,  # size = (B, L)
@@ -236,15 +236,6 @@ class RMTrainer(SupervisedTrainerBase):
                 skip_special_tokens=True,
             )
 
-            h_prompts, h_responses = split_prompt_response(
-                higher_reward_texts,
-                split_token=self.eval_template.split_token,
-            )
-            l_prompts, l_responses = split_prompt_response(
-                lower_reward_texts,
-                split_token=self.eval_template.split_token,
-            )
-            assert h_prompts == l_prompts, f'prompts are not the same, {h_prompts}, {l_prompts}'
             h_rewards = [f'{reward:.6f}' for reward in higher_end_rewards.tolist()]
             l_rewards = [f'{reward:.6f}' for reward in lower_end_rewards.tolist()]
 
@@ -254,18 +245,15 @@ class RMTrainer(SupervisedTrainerBase):
             self.logger.print_table(
                 title=f'Evaluation: {title}',
                 columns=[
-                    'prompt',
                     'higher-reward response',
-                    'reward',
                     'lower-reward response',
                     'reward',
                 ],
                 rows=tuple(
                     zip(
-                        h_prompts[:max_num_rows],
-                        h_responses[:max_num_rows],
+                        higher_reward_texts[:max_num_rows],
+                        lower_reward_texts[:max_num_rows],
                         h_rewards[:max_num_rows],
-                        l_responses[:max_num_rows],
                         l_rewards[:max_num_rows],
                     ),
                 ),
@@ -319,7 +307,7 @@ class RMTrainer(SupervisedTrainerBase):
                 ):
                     self.logger.print(f'\n***** Evaluating at step {self.global_step} *****')
                     self.logger.log(self.eval(), step=self.global_step)
-                    
+
             self.logger.print('\n***** Evaluating...*****')
             self.logger.log(self.eval(), step=self.global_step)
 

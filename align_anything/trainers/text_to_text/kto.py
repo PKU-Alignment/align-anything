@@ -22,21 +22,14 @@ from typing import Any
 
 import deepspeed
 import torch
-import torch.distributed as dist
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.text_to_text.preference import (
-    PreferenceBatch,
-    PreferenceDataset,
-    RandomPreferenceDataset,
-)
-from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.trainers.base import SupervisedTrainerBase
+from align_anything.datasets.text_to_text.preference import PreferenceBatch
+from align_anything.datasets.text_to_text.supervised import UnmatchedSupervisedDataset
+from align_anything.trainers.text_to_text.dpo import DPOTrainer
 from align_anything.utils.multi_process import (
     get_all_reduce_mean,
     get_current_device,
@@ -45,97 +38,21 @@ from align_anything.utils.multi_process import (
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
-    gather_log_probabilities,
-    prepare_ds_eval_cfgs,
-    prepare_ds_train_cfgs,
     read_cfgs,
     seed_everything,
     update_dict,
 )
 
 
-class KTOTrainer(SupervisedTrainerBase):
-
-    def __init__(self, cfgs, ds_cfgs) -> None:
-        """Initialize trainer."""
-        self.cfgs = cfgs
-        self.ds_train_cfgs = prepare_ds_train_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
-        self.ds_eval_cfgs = prepare_ds_eval_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
-        self.global_step = 0
-
-        self.init_check()
-        dist.barrier()
-        self.init_models()
-        if hasattr(self.model, 'infer_batch'):
-            self.infer_batch = self.model.infer_batch
-        if hasattr(self.model, 'infer_required_keys'):
-            self.infer_required_keys = self.model.infer_required_keys
-        dist.barrier()
-        self.init_datasets()
-        dist.barrier()
-        self.init_engines()
-        dist.barrier()
-        self.init_logger()
-
-    def init_check(self) -> None:
-        """Initial configuration checking."""
-        super().init_check()
-
-    def init_models(self) -> None:
-        """Initialize model and tokenizer."""
-        if self.ds_train_cfgs['zero_optimization']['stage'] == 3:
-            self.dstchf_train = HfDeepSpeedConfig(self.ds_train_cfgs)
-        if self.ds_eval_cfgs['zero_optimization']['stage'] == 3:
-            self.dsechf_eval = HfDeepSpeedConfig(self.ds_eval_cfgs)
-        self.bnb_cfgs = self.cfgs.bnb_cfgs
-        self.lora_cfgs = self.cfgs.lora_cfgs
-        self.model, self.tokenizer, self.processor = load_pretrained_models(
-            self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side='left',
-            trust_remote_code=True,
-            bnb_cfgs=self.bnb_cfgs,
-            lora_cfgs=self.lora_cfgs,
-        )
-        self.reference_model, _, _ = load_pretrained_models(
-            self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side='left',
-            trust_remote_code=True,
-            bnb_cfgs=self.bnb_cfgs,
-            lora_cfgs=self.lora_cfgs,
-        )
-
-    def init_datasets(self) -> None:
-        """Initialize training and evaluation datasets."""
-        self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
-            PreferenceDataset, PreferenceDataset
-        )
-
-    def init_engines(self) -> None:
-        """Initialize DeepSpeed engines."""
-        self.init_deepspeed_engines()
-        self.reference_model, *_ = deepspeed.initialize(
-            model=self.reference_model,
-            config=self.ds_eval_cfgs,
-        )
-
-    def compute_log_probs(
-        self,
-        model: AutoModelForCausalLM,
-        batch: PreferenceBatch,
-    ) -> torch.Tensor:
-        """Compute log probabilities of given sequences."""
-        logits = model(**self.infer_batch(batch)).logits
-        input_ids = batch['input_ids']
-        return gather_log_probabilities(logits[:, :-1], input_ids[:, 1:])
+class KTOTrainer(DPOTrainer):
 
     def compute_kl(self):
-        random_dataset = RandomPreferenceDataset(
+        random_dataset = UnmatchedSupervisedDataset(
             path=self.cfgs.data_cfgs.train_datasets,
-            template=self.cfgs.data_cfgs.train_template,
+            template=self.train_template,
             tokenizer=self.tokenizer,
             processor=self.processor,
+            name=self.cfgs.data_cfgs.train_name,
             size=self.cfgs.data_cfgs.train_size,
             split=self.cfgs.data_cfgs.train_split,
             data_files=self.cfgs.data_cfgs.train_data_files,
@@ -166,7 +83,7 @@ class KTOTrainer(SupervisedTrainerBase):
         self,
         batch: PreferenceBatch,
     ) -> dict[str, torch.Tensor]:
-        """Loss function for the KTO algorithm."""
+        """Loss function for the DPO algorithm."""
         sequence_log_probs = self.compute_log_probs(
             self.model.module,
             batch,
@@ -215,10 +132,10 @@ class KTOTrainer(SupervisedTrainerBase):
             worse_log_ratio = worse_log_prob - ref_worse_log_prob
 
             losses.append(
-                -self.cfgs.train_cfgs.scale_better
-                * F.sigmoid(self.cfgs.train_cfgs.scale_coeff * (better_log_ratio - self.kl))
+                self.cfgs.train_cfgs.scale_better
+                * (1 - F.sigmoid(self.cfgs.train_cfgs.scale_coeff * (better_log_ratio - self.kl)))
                 - self.cfgs.train_cfgs.scale_worse
-                * F.sigmoid(self.cfgs.train_cfgs.scale_coeff * (self.kl - worse_log_ratio)),
+                * (1 - F.sigmoid(self.cfgs.train_cfgs.scale_coeff * (self.kl - worse_log_ratio))),
             )
             better_sample_rewards.append(
                 self.cfgs.train_cfgs.scale_coeff * better_log_ratio.detach(),
@@ -329,20 +246,6 @@ class KTOTrainer(SupervisedTrainerBase):
                 )
                 self.logger.log(self.eval(), step=self.global_step)
             self.model.tput_timer.update_epoch_count()
-
-    @torch.no_grad()
-    def eval(self) -> dict[str, Any]:
-        """Evaluate the model on the evaluation dataset."""
-        return {}
-
-    def save(
-        self,
-        model: deepspeed.DeepSpeedEngine | None = None,
-        tag: int | None = None,
-    ) -> None:
-        """Save model and tokenizer in Hugging Face format."""
-        self.save_transformers(model=model, tag=tag)
-
 
 def main():
     # setup distribution training

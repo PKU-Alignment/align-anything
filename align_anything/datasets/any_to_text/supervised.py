@@ -86,7 +86,7 @@ class SupervisedDataset(Dataset):
         )
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
-        self.template = get_template_class(template)
+        self.template = template
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         formatted_sample = self.template.format_supervised_sample(raw_sample, self.path)

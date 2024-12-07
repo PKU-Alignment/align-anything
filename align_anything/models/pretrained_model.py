@@ -257,8 +257,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
             trust_remote_code=trust_remote_code,
             **auto_model_kwargs,
         )
-    if hasattr(model, 'audio_tower'):
-        deepspeed.zero.register_external_parameter(model, model.audio_tower.embed_positions.weight)
+
     forbidden_modules = set()
     if freeze_vision_tower:
         forbidden_modules.add('vision_tower')
@@ -274,10 +273,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     if freeze_language_model:
         forbidden_modules.add('language_model')
     for name, param in model.named_parameters():
-        if not any(forbidden_module in name for forbidden_module in forbidden_modules):
-            if dtype == torch.float32:
-                param.data = param.data.to(torch.float32)
-        else:
+        if any(forbidden_module in name for forbidden_module in forbidden_modules):
             param.requires_grad_(False)
 
     tokenizer = AutoTokenizer.from_pretrained(
@@ -290,13 +286,13 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
         **auto_tokenizer_kwargs,
     )
 
-    try:
+    if hasattr(model, 'processor_available') and model.processor_available:
         processor = AutoProcessor.from_pretrained(model_name_or_path)
         processor.tokenizer.padding_side = padding_side
         resize_tokenizer_embedding(tokenizer=processor.tokenizer, model=model)
 
         return model, processor.tokenizer, processor
-    except Exception:
+    else:
         processor = None
         resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
         

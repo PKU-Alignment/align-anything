@@ -45,10 +45,6 @@ while [[ $# -gt 0 ]]; do
       model_name_or_path="$2"
       shift 2
       ;;
-    --chat_template)
-      chat_template="$2"
-      shift 2
-      ;;
     *)
       shift
       ;;
@@ -59,7 +55,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 TARGET_DIR="${SCRIPT_DIR}/benchmarks/${benchmark}"
 cd "$TARGET_DIR" || { echo "Failed to change directory to $TARGET_DIR"; exit 1; }
 
-ARGS="--output_dir $output --uuid $uuid --model_id $model_id --model_name_or_path $model_name_or_path --chat_template $chat_template"
+ARGS="--output_dir $output --uuid $uuid --model_id $model_id --model_name_or_path $model_name_or_path"
 
 if [ "$backend" = "vllm" ]; then
   python vllm_eval.py $ARGS

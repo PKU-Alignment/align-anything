@@ -62,7 +62,7 @@ class DPOTrainer(DPOtextTrainer):
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
-            trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
@@ -72,7 +72,7 @@ class DPOTrainer(DPOtextTrainer):
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
-            trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
         )
 
     def compute_log_probs(
@@ -126,8 +126,6 @@ class DPOTrainer(DPOtextTrainer):
 
         batch_size = better_input_ids.size(0)
         for i in range(batch_size):
-            if torch.all(torch.eq(better_input_ids[i], worse_input_ids[i])).item():
-                continue
             better_log_prob = better_sequence_log_probs[i, :].sum(dim=-1)
             worse_log_prob = worse_sequence_log_probs[i, :].sum(dim=-1)
             ref_better_log_prob = ref_better_sequence_log_probs[i, :].sum(dim=-1)

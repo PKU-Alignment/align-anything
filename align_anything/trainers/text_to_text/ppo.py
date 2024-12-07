@@ -75,6 +75,10 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             self.infer_batch = self.actor_model.infer_batch
         if hasattr(self.actor_model, 'infer_required_keys'):
             self.infer_required_keys = self.actor_model.infer_required_keys
+        if hasattr(self.reward_model, 'infer_batch'):
+            self.reward_infer_batch = self.reward_model.infer_batch
+        if hasattr(self.reward_model, 'infer_required_keys'):
+            self.reward_infer_required_keys = self.reward_model.infer_required_keys
         dist.barrier()
         self.init_datasets()
         dist.barrier()
@@ -228,11 +232,10 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             )
             reward_batch['input_ids'] = reward_tokenize_output['input_ids']
             reward_batch['attention_mask'] = reward_tokenize_output['attention_mask']
-
-        reward_batch['reward'] = self.reward_model(**reward_batch).end_scores.squeeze(dim=-1)
-        scores = self.reward_critic_model(
-            **actor_batch
-        ).scores
+        reward_infer_batch = self.reward_infer_batch(reward_batch)
+        reward_batch['reward'] = self.reward_model(**reward_infer_batch).end_scores.squeeze(dim=-1)
+        critic_infer_batch = self.reward_infer_batch(actor_batch)
+        scores = self.reward_critic_model(**critic_infer_batch).scores
         reward_batch['reward_values'] = scores.squeeze(dim=-1)[:, :-1]
 
         return reward_batch

@@ -69,7 +69,7 @@ class PreferenceDataset(Dataset):
         assert path, f'You must set the valid datasets path! Here is {path}'
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
-        self.template = get_template_class(template)
+        self.template = template
         self.transforms = processor
 
         if isinstance(optional_args, str):
@@ -96,14 +96,14 @@ class PreferenceDataset(Dataset):
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_preference_sample(raw_sample)
+        prompt, multi_modal_info = self.template.format_diffusion_preference_sample(raw_sample)
         return_dict = {}
 
         return_dict['input_ids'] = self.tokenize(
-            formatted_sample['prompt'], add_special_tokens=False
+            prompt, add_special_tokens=False
         )
-        better_pixel_values = self.process_image(formatted_sample['better_image'])
-        worse_pixel_values = self.process_image(formatted_sample['worse_image'])
+        better_pixel_values = self.process_image(multi_modal_info['better_image'])
+        worse_pixel_values = self.process_image(multi_modal_info['worse_image'])
 
         all_pixel_values = torch.cat([better_pixel_values, worse_pixel_values], dim=0)
         return_dict['pixel_values'] = all_pixel_values

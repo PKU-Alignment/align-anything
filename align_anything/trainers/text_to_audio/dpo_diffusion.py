@@ -124,13 +124,13 @@ class DPOTrainer(SupervisedTrainerBase):
 
     def loss(self, batch: PreferenceBatch) -> dict[str, torch.Tensor]:
         """Loss function for DPO finetuning."""
-        pixel_values = batch['pixel_values'].to(dtype=self.dtype)
-        feed_pixel_values = torch.cat(pixel_values.chunk(2, dim=1))
+        audios = batch['audios'].to(dtype=self.dtype)
+        feed_audios = torch.cat(audios.chunk(2, dim=1))
         latents = []
-        for i in range(0, feed_pixel_values.shape[0], self.cfgs.train_cfgs.vae_encode_batch_size):
+        for i in range(0, feed_audios.shape[0], self.cfgs.train_cfgs.vae_encode_batch_size):
             latents.append(
                 self.vae.encode(
-                    feed_pixel_values[i : i + self.cfgs.train_cfgs.vae_encode_batch_size]
+                    feed_audios[i : i + self.cfgs.train_cfgs.vae_encode_batch_size]
                 ).latent_dist.sample()
             )
         latents = torch.cat(latents, dim=0)

@@ -69,7 +69,7 @@ class PreferenceDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.path = path
         self.tokenizer = tokenizer
-        self.template = get_template_class(template)
+        self.template = template
         self.transforms = processor
 
         if isinstance(optional_args, str):

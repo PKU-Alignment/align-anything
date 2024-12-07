@@ -34,7 +34,7 @@ def get_uuid():
 def parse_eval_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--config", default=None, help="Path to a yaml file specifying all eval arguments, will ignore cli arguments if specified")
-    parser.add_argument("--chat_template", default="", help="Chat template id of your model, details can be refered in `align-anything/align_anything/configs/template.py`.")
+    parser.add_argument("--chat_template", default="", help="Chat template id of your model, details can be refered in `align-anything/align_anything/configs/eval_template.py`.")
     parser.add_argument(
         "--benchmark",
         "-b",

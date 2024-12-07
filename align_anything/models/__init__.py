@@ -12,3 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+
+import importlib
+from align_anything.models.model_registry import TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES
+
+# import all model classes in TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES to register them in AutoModel
+for model_type in TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES:
+    importlib.import_module(f'align_anything.models.{model_type}')

@@ -17,9 +17,7 @@
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
-import io
 import librosa
-import soundfile as sf
 import torch
 import transformers
 from torch.utils.data import Dataset
@@ -71,7 +69,7 @@ class PreferenceDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        self.template = get_template_class(template)
+        self.template = template
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
@@ -82,6 +80,7 @@ class PreferenceDataset(Dataset):
             data_files=data_files,
             *optional_args,
             trust_remote_code=True,
+            verification_mode="no_checks"
         )
         self.valid_indices = self.filter_indices()
 
@@ -93,38 +92,30 @@ class PreferenceDataset(Dataset):
         valid_indices = []
         for i, item in enumerate(self.raw_data):
             if not self.template.check_equal(item):
+                if hasattr(self.template, 'check_validation'):
+                    if not self.template.check_validation(item):
+                        continue
                 valid_indices.append(i)
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_preference_sample(raw_sample)
+        better_conversation, worse_conversation, meta_info = self.template.format_preference_sample(raw_sample)
         return_dict = {}
-
-        raw_better_text = formatted_sample['better_conversation']
-        raw_worse_text = formatted_sample['worse_conversation']
-        raw_better_response = formatted_sample['better_conversation'][-1]['content']
-        raw_worse_response = formatted_sample['worse_conversation'][-1]['content']
-
-        better_text = self.processor.apply_chat_template(raw_better_text, add_generation_prompt=False, tokenize=False)
-        worse_text = self.processor.apply_chat_template(raw_worse_text, add_generation_prompt=False, tokenize=False)
+        raw_better_response = meta_info['better_response']
+        raw_worse_response = meta_info['worse_response']
         audios = []
+        
+        if isinstance(meta_info['audio_path'], dict):
+            raw_audio, raw_sr = meta_info['audio_path']['array'], meta_info['audio_path']['sampling_rate']
+            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
+        else:
+            audio = librosa.load(meta_info['audio_path'], sr=self.processor.feature_extractor.sampling_rate)[0]
+        audios.append(audio)
 
-        for message in raw_better_text:
-            if isinstance(message["content"], list):
-                for ele in message["content"]:
-                    if ele["type"] == "audio":
-                        if isinstance(ele['audio_url'], dict):
-                            raw_audio, raw_sr = ele['audio_url']['array'], ele['audio_url']['sampling_rate']
-                            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
-                        else:
-                            audio = librosa.load(ele['audio_url'], sr=self.processor.feature_extractor.sampling_rate)[0]
-
-                        audios.append(audio)
-
-        better_inputs = self.tokenize(text=better_text, audios=audios, padding=True)
-        worse_inputs = self.tokenize(text=worse_text, audios=audios, padding=True)
-        better_input_wo_padding = self.tokenize(text=better_text, audios=audios, padding=PaddingStrategy.DO_NOT_PAD)
-        worse_input_wo_padding = self.tokenize(text=worse_text, audios=audios, padding=PaddingStrategy.DO_NOT_PAD)
+        better_inputs = self.tokenize(text=better_conversation, audios=audios, padding=True)
+        worse_inputs = self.tokenize(text=worse_conversation, audios=audios, padding=True)
+        better_input_wo_padding = self.tokenize(text=better_conversation, audios=audios, padding=PaddingStrategy.DO_NOT_PAD)
+        worse_input_wo_padding = self.tokenize(text=worse_conversation, audios=audios, padding=PaddingStrategy.DO_NOT_PAD)
 
         return_dict['better_input_ids'] = better_input_wo_padding['input_ids'][0]
         return_dict['worse_input_ids'] = worse_input_wo_padding['input_ids'][0]
