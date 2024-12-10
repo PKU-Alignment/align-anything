@@ -86,10 +86,6 @@ train = [
     "torchvision",
 ]
 
-text-to-audio = [
-    "pytorchvideo",
-]
-
 evaluate = [
     "vllm >= 0.6.2",
     "torch >= 1.13",
@@ -161,6 +157,10 @@ all = [
 minicpmv = [
     "timm==1.0.11",
     "transformers==4.40.0",
+]
+
+text-to-audio = [
+    "pytorchvideo",
 ]
 
 [tool.setuptools]
