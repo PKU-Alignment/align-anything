@@ -200,7 +200,7 @@ Besides, you can also use your own model for training, you can refer to the here
 
 **Q (Training Dataset Registration):** What datasets are supported for training? What should I pay attention to if I want to use my own dataset?
 
-We prepare `datasets_formatter` for dataset registration. Its core function is to mapping the dataset key to coversation format.
+*A:* We prepare `datasets_formatter` for dataset registration. Its core function is to mapping the dataset key to coversation format.
 
 Basically, we support 3 types of dataset format:
 
@@ -313,7 +313,7 @@ class AA_TA2T(BaseFormatter):
 
 **Q (Evaluation Model Registration):** What models are supported for evaluation? What should I pay attention to if I want to use my own model?
 
-Register your model to use align-anything for evaluation is easy, you only need to add your model special token to the `./align_anything/configs/eval_template.py` file.
+*A:* Register your model to use align-anything for evaluation is easy, you only need to add your model special token to the `./align_anything/configs/eval_template.py` file.
 
 For example, if you want to use [liuhaotian/llava-v1.5-7b](https://huggingface.co/liuhaotian/llava-v1.5-7b) for evaluation, you need to add the following template for it to the `./align_anything/configs/eval_template.py` file:
 
