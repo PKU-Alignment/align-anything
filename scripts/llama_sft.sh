@@ -16,10 +16,10 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="/data/models/Llama-3.1-8B-Instruct" # model path
+MODEL_NAME_OR_PATH="meta-llama/Llama-3.1-8B-Instruct" # model path
 
 TRAIN_DATASETS="tatsu-lab/alpaca" # sft dataset path
-TRAIN_TEMPLATE="Llama3" # sft dataset template
+TRAIN_TEMPLATE="PKUSafeRLHF" # sft dataset template
 TRAIN_SPLIT="train" # split the sft dataset
 
 OUTPUT_DIR="../outputs/llama_sft" # output dir

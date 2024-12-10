@@ -16,18 +16,26 @@
 # ==============================================================================
 
 
-# Initialize variables
-MODEL_NAME_OR_PATH=""
-TRAIN_DATASETS=""
-OUTPUT_DIR=""
+MODEL_NAME_OR_PATH="CompVis/stable-diffusion-v1-4" # model path
+
+TRAIN_DATASETS="kashif/pickascore" # dataset path
+TRAIN_TEMPLATE="Pickapic" # dataset template
+TRAIN_SPLIT="validation" # split the dataset
+
+OUTPUT_DIR="../output/dpo_diffusion" # output dir
+
+# For wandb online logging
+export WANDB_API_KEY=""
 
 # Source the setup script
 source ./setup.sh
 
-# Execute deepspeed command
-deepspeed \
-	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.text_to_text.simpo \
-	--model_name_or_path ${MODEL_NAME_OR_PATH} \
-	--train_datasets ${TRAIN_DATASETS} \
-	--output_dir ${OUTPUT_DIR}
+ # Execute accelerate command
+ accelerate launch  \
+     --multi_gpu \
+     --module align_anything.trainers.text_to_image.dpo_diffusion \
+     --model_name_or_path ${MODEL_NAME_OR_PATH} \
+     --train_datasets ${TRAIN_DATASETS} \
+     --train_template ${TRAIN_TEMPLATE} \
+     --train_split ${TRAIN_SPLIT} \
+     --output_dir ${OUTPUT_DIR}

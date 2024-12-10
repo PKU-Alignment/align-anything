@@ -22,7 +22,7 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.utils.checkpoint
-from torch.nn import CrossEntropyLoss, LayerNorm
+from torch.nn import CrossEntropyLoss
 from torch import nn
 from transformers import Qwen2VLPreTrainedModel, AutoConfig
 from transformers.models.qwen2_vl.modeling_qwen2_vl import (
