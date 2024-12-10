@@ -14,7 +14,7 @@
 # ==============================================================================
 
 
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Any
 
 import torch
 import torch.utils.checkpoint
@@ -60,6 +60,17 @@ class AccustomedChameleonModel(ChameleonForConditionalGeneration):
     def processor_available(self):
         return True
 
+    def apply_chat_template(self, 
+                            messages: list[dict[str, Any]], 
+                            add_generation_prompt: bool =False) -> dict[str, Any]:
+        # use default format
+        final_text = ''
+        for line in messages:
+            for content in line['content']:
+                if content['type'] == 'text':
+                    final_text += content['text']
+        return final_text
+    
     def forward(
         self,
         input_ids: torch.LongTensor = None,
