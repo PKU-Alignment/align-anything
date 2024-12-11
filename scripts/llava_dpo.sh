@@ -16,11 +16,11 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # model path
+MODEL_NAME_OR_PATH="/data/models/llava-1.5-7b-hf" # model path
 
-TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
-TRAIN_TEMPLATE="AA_TI2T" # dataset template
-TRAIN_NAME="text-image-to-text" # dataset name
+TRAIN_DATASETS="/data/align-anything/jiayi/Align-Anything-LLF/text-image-to-text/llava-7b" # dataset path
+TRAIN_TEMPLATE="AA_TI2T_LLF" # dataset template
+# TRAIN_NAME="text-image-to-text-expert" # dataset name
 TRAIN_SPLIT="train" # split the dataset
 
 OUTPUT_DIR="../outputs/llava_dpo" # output dir
@@ -38,8 +38,8 @@ deepspeed \
      --model_name_or_path ${MODEL_NAME_OR_PATH} \
      --train_datasets ${TRAIN_DATASETS} \
      --train_template ${TRAIN_TEMPLATE} \
-     --train_name ${TRAIN_NAME} \
      --train_split ${TRAIN_SPLIT} \
      --output_dir ${OUTPUT_DIR} \
      --save_interval 1000 \
+     --train_batch_size 1 \
      --epochs 2

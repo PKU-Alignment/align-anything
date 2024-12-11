@@ -471,6 +471,52 @@ class AA_TA2T_LLF(BaseFormatter):
         return conversation, {'audio_path': audio}
 
 
+@register_template('AA_TI2T_LLF')
+class AA_TI2T_LLF(BaseFormatter):
+    system_prompt: str = ""
+
+    def format_preference_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+        raw_better_response = raw_sample['refinement']
+        raw_worse_response = raw_sample['response']
+        prompt = raw_sample['prompt']
+        image = load_image_from_base64(raw_sample['image']).convert('RGBA')
+        better_conversation = [
+            {'role': 'user', 'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ]
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_better_response}]},
+        ]
+        worse_conversation = [
+            {'role': 'user', 'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ]
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_worse_response}]},
+        ]
+
+        meta_info = {
+            'image': image,
+            'better_response': raw_better_response,
+            'worse_response': raw_worse_response,
+        }
+
+        return better_conversation, worse_conversation, meta_info
+
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['prompt']
+        image = load_image_from_base64(raw_sample['image']).convert('RGBA')
+
+        return [
+            {'role': 'user', 'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ]
+            },
+        ], {'image': image}
+
 @register_template('DiffusionDB')
 class DiffusionDB:
     system_prompt: str = ''
@@ -1530,86 +1576,3 @@ class OpenAQA:
             'conversation': conversation,
             'prompt': conversation[:-1],
         }
-    
-@register_template('AA_TI2T_Critique')
-class AA_TI2T_Critique:
-    system_prompt: str = ""
-    user_prompt: str = 'USER: {input}\n<image>'
-    user_prompt_wo_image: str = 'USER: {input}'
-    critique_prompt: str = 'Please provide a critique of the response.'
-    assistant_prompt: str = '\nASSISTANT:{output}'
-    split_token: str = 'ASSISTANT:'
-
-    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['prompt'].replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
-
-        formatted_prompt = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f'{self.assistant_prompt.format(output="")}'
-        )
-
-        image = raw_sample['image'].convert('RGBA')
-
-        return {
-            'text': formatted_prompt,
-            'image': image,
-        }
-    
-
-    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['prompt']
-        answer = raw_sample['response']
-        critique = raw_sample['critique']
-        image = raw_sample['image'].convert('RGBA')
-
-        formatted_prompt = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f'{self.assistant_prompt.format(output=answer)}'
-            f'{self.user_prompt_wo_image.format(input=self.critique_prompt)}'
-            f'{self.assistant_prompt.format(output="")}'
-        )
-        formatted_answer = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f'{self.assistant_prompt.format(output=answer)}'
-            f'{self.user_prompt_wo_image.format(input=self.critique_prompt)}'
-            f'{self.assistant_prompt.format(output=critique)}'
-        )
-
-        return {
-            'text': formatted_answer,
-            'prompt': formatted_prompt,
-            'image': image,
-        }
-
-    def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        better_response = raw_sample['refinement'].replace('<image>', '')
-        worse_response = raw_sample['response'].replace('<image>', '')
-        prompt = raw_sample['prompt'].replace('<image>', '')
-        image = raw_sample['image'].convert('RGBA')
-
-        formatted_prompt = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-        )
-        formatted_better_output = (
-            f'{self.assistant_prompt.format(output=better_response)}'
-        )
-        formatted_worse_output = (
-            f'{self.assistant_prompt.format(output=worse_response)}'
-        )
-
-        return {
-            'prompt': formatted_prompt,
-            'better_text': formatted_better_output,
-            'worse_text': formatted_worse_output,
-            'image': image,
-        }
-
-    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
-        better_response = raw_sample['refinement']
-        worse_response = raw_sample['response']
-
-        return better_response == worse_response

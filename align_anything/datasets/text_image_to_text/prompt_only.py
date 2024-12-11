@@ -101,12 +101,8 @@ class PromptOnlyDataset(Dataset):
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
         formatted_prompt, meta_info = self.template.format_prompt_only_sample(raw_sample)
         return_dict = {}
-        return_dict['input_ids'] = self.tokenize(formatted_prompt)
-
-        raw_image = meta_info['image']
-        return_dict['pixel_values'] = self.processor.image_processor(
-            raw_image, return_tensors='pt'
-        )['pixel_values'][0]
+        return_dict['image'] = meta_info['image']
+        return_dict['prompt'] = formatted_prompt
 
         return return_dict
 

@@ -16,7 +16,7 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="/data/models/llama3-8B-Instruct" # model path
+MODEL_NAME_OR_PATH="meta-llama/Llama-3.1-8B-Instruct" # model path
 
 TRAIN_DATASETS="PKU-Alignment/PKU-SafeRLHF-single-dimension" # dataset path
 TRAIN_TEMPLATE="PKUSafeRLHF" # dataset template

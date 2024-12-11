@@ -19,11 +19,19 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "${SCRIPT_DIR}/../align_anything/evaluation" || exit 1
 
-BENCHMARKS=("POPE" "MM-SafetyBench") # evaluation benchmarks
+# [Need] Your OpenAI API key
+export OPENAI_API_KEY=''
+
+# [Optional] If you want to use your own API, 
+# you can set the following environment variables
+export OPENAI_API_BASE=""
+export OPENAI_API_BASE_URL=""
+
+BENCHMARKS=("llava-bench-coco") # evaluation benchmarks
 OUTPUT_DIR="../output/evaluation" # output dir
 GENERATION_BACKEND="vLLM" # generation backend
-MODEL_ID="llava-1.5-7b-hf" # model's unique id
-MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # model path
+MODEL_ID="llava-1.5-7b-hf" # model's unique id for logging, you can use any name you like
+MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # model name or path
 CHAT_TEMPLATE="Llava" # model template
 
 for BENCHMARK in "${BENCHMARKS[@]}"; do

@@ -61,6 +61,7 @@ MODEL_FOR_SCORE_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         # Score model mapping
         ('llama', 'AccustomedLlamaRewardModel'),
         ('llava', 'AccustomedLlavaRewardModel'),
+        ('llava_next', 'AccustomedLlavaNextRewardModel'),
         ('qwen2_audio', 'AccustomedQwen2AudioRewardModel'),
         ('chameleon', 'AccustomedChameleonRewardModel'),
         ('qwen2_vl', 'AccustomedQwen2VLRewardModel'),
@@ -72,6 +73,7 @@ MODEL_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         # Score model mapping
         ('llama', 'AccustomedLlamaModel'),
         ('llava', 'AccustomedLlavaModel'),
+        ('llava_next', 'AccustomedLlavaNextModel'),
         ('qwen2_audio', 'AccustomedQwen2AudioModel'),
         ('chameleon', 'AccustomedChameleonModel'),
         ('qwen2_vl', 'AccustomedQwen2VLModel'),
