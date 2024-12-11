@@ -102,7 +102,7 @@ pip install -e .[all]
 - `pip install -e .[text-to-audio]`: Install the text-to-audio dependencies.
 - `pip install -e .[minicpmv]`: Install the minicpmv dependencies.
 
-<details>
+</details>
 
 
 ### Training
