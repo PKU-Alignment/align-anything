@@ -66,4 +66,3 @@ class ChatTemplate():
         if hasattr(self.dataset_formatter, 'check_validation'):
             return self.dataset_formatter.check_validation(raw_sample)
         return True
-        
