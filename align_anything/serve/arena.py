@@ -67,7 +67,7 @@ def parse_arguments() -> argparse.Namespace:
         '--stream',
         action='store_true',
         help='Whether to stream the output.',
-        default=False,
+        default=True,
     )
     parser.add_argument(
         '--fp16',
