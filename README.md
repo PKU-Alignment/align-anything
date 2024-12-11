@@ -96,6 +96,15 @@ pip install -e .[evaluate] # install the evaluation dependencies
 pip install -e .[all]
 ```
 
+<details>
+<summary>Other Dependencies</summary>
+
+- `pip install -e .[text-to-audio]`: Install the text-to-audio dependencies.
+- `pip install -e .[minicpmv]`: Install the minicpmv dependencies.
+
+<details>
+
+
 ### Training
 
 We provide some scripts for quick start, you can find them in the `./scripts` directory. These scripts would automatically download the model and dataset, and run the training or evaluation.
