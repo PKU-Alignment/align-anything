@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team and HuggingFace Inc. team. All Rights Reserved.
+# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
 #
 # This code is inspired by the HuggingFace's Transformers library.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/llava/modeling_llava.py
@@ -16,7 +16,7 @@
 # limitations under the License.
 # ==============================================================================
 
-import logging
+
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
@@ -24,13 +24,10 @@ import torch
 import torch.utils.checkpoint
 from torch import nn
 from transformers import LlavaNextPreTrainedModel
-from transformers.models.llava_next.configuration_llava_next import LlavaNextConfig
 from transformers.models.llava_next.modeling_llava_next import (
     LlavaNextCausalLMOutputWithPast,
     LlavaNextForConditionalGeneration,
-    get_anyres_image_grid_shape,
     image_size_to_num_patches,
-    unpad_image,
 )
 
 
@@ -85,6 +82,10 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
     @classmethod
     def pretrain_class(cls) -> LlavaNextPreTrainedModel:
         return LlavaNextPreTrainedModel
+
+    @property
+    def processor_available(self):
+        return True
 
     def _merge_input_ids_with_image_features(
         self,

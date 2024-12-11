@@ -97,7 +97,7 @@ class DPOTrainer(SupervisedTrainerBase):
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
-            trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
         )

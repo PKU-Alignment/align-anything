@@ -324,13 +324,6 @@ Please cite the repo if you use the data or code in this repo.
     training/overview
     training/configs
     training/dataset_custom
-    training/text_to_text
-    training/text_to_image
-    training/text_to_audio
-    training/text_to_video
-    training/text_image_to_text
-    training/text_audio_to_text
-    training/text_video_to_text
     training/any_to_any
 
 .. toctree::

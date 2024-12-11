@@ -106,7 +106,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
     def loss(self, batch: SupervisedBatch) -> dict[str, torch.Tensor]:
         """Loss function for supervised finetuning."""
-        latents = self.vae.encode(batch['pixel_values'].to(self.vae.dtype)).latent_dist.sample()
+        latents = self.vae.encode(batch['audio'].to(self.vae.dtype)).latent_dist.sample()
         latents = latents * self.vae.config.scaling_factor
 
         noise = torch.randn_like(latents)

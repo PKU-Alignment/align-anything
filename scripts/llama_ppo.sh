@@ -16,12 +16,12 @@
 # ==============================================================================
 
 
-ACTOR_MODEL_NAME_OR_PATH="Llama/Llama-3.1-8B-Instruct" # actor model path
+ACTOR_MODEL_NAME_OR_PATH="meta-llama/Llama-3.1-8B-Instruct" # actor model path
 CRITIC_MODEL_NAME_OR_PATH="../outputs/llama_rm" # critic model path
 REWARD_MODEL_NAME_OR_PATH="../outputs/llama_rm" # reward model path
 
 TRAIN_DATASETS="PKU-Alignment/PKU-SafeRLHF-single-dimension" # dataset path
-TRAIN_TEMPLATE="Llama3" # rlhf dataset template
+TRAIN_TEMPLATE="PKUSafeRLHF" # rlhf dataset template
 TRAIN_SPLIT="train" # split the rlhf dataset
 
 PTX_DATASETS="tatsu-lab/alpaca" # sft dataset path

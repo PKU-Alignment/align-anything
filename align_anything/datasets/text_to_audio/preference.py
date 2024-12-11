@@ -17,7 +17,7 @@
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
-import numpy as np
+import librosa
 import torch
 import transformers
 from torch.utils.data import Dataset
@@ -25,7 +25,6 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
 
@@ -41,14 +40,14 @@ __all__ = [
 class PreferenceSample(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (L,)
     labels: torch.LongTensor  # size = (L,)
-    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    audios: torch.LongTensor | None  # size = (B, C, H, W)
 
 
 class PreferenceBatch(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (B, L)
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
-    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    audios: torch.LongTensor | None  # size = (B, C, H, W)
 
 
 class PreferenceDataset(Dataset):
@@ -70,8 +69,8 @@ class PreferenceDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.path = path
         self.tokenizer = tokenizer
-        self.template = get_template_class(template)
-        self.transforms = processor
+        self.template = template
+        self.processor = processor
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
@@ -97,22 +96,27 @@ class PreferenceDataset(Dataset):
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_preference_sample(raw_sample, self.path)
+        prompt, multi_modal_info = self.template.format_diffusion_preference_sample(raw_sample)
         return_dict = {}
 
         return_dict['input_ids'] = self.tokenize(
-            formatted_sample['prompt'], add_special_tokens=False
+            prompt, add_special_tokens=False
         )
-        better_pixel_values = self.process_audio(formatted_sample['better_audio'])
-        worse_pixel_values = self.process_audio(formatted_sample['worse_audio'])
+        better_audios = self.process_audio(multi_modal_info['better_audio'])
+        worse_audios = self.process_audio(multi_modal_info['worse_audio'])
 
-        all_pixel_values = torch.cat([better_pixel_values, worse_pixel_values], dim=0)
-        return_dict['pixel_values'] = all_pixel_values
+
+        # TODO: check the correctness
+        all_audios = torch.cat([better_audios, worse_audios], dim=0)
+        return_dict['audios'] = all_audios
 
         return return_dict
 
-    def process_audio(self, raw_audio: np.array) -> torch.Tensor:
-        return self.transforms(raw_audio)
+    def process_audio(self, raw_audio: Any) -> torch.Tensor:
+        if isinstance(raw_audio, dict):
+            return self.processor(raw_audio['array'])
+        else:
+            return self.processor(raw_audio)
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
         return PreferenceCollator(self.tokenizer.pad_token_id)
@@ -165,8 +169,8 @@ class PreferenceCollator:
             padding_value=self.pad_token_id,
         ).to(current_device)
 
-        return_dict['pixel_values'] = (
-            torch.stack([sample['pixel_values'] for sample in samples])
+        return_dict['audios'] = (
+            torch.stack([sample['audios'] for sample in samples])
             .to(current_device)
             .to(memory_format=torch.contiguous_format)
             .float()

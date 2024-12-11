@@ -20,7 +20,7 @@ ACTOR_MODEL_NAME_OR_PATH="Qwen/Qwen2-Audio-7B-Instruct" # actor model path
 CRITIC_MODEL_NAME_OR_PATH="../outputs/qwen2_audio_rm" # critic model path
 REWARD_MODEL_NAME_OR_PATH="../outputs/qwen2_audio_rm" # reward model path
 
-TRAIN_DATASETS="PKU-Alignment/align-anything-400k" # dataset path
+TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
 TRAIN_TEMPLATE="Qwen2Audio" # dataset template
 TRAIN_NAME="text-audio-to-text" # dataset name
 TRAIN_SPLIT="train" # split the dataset

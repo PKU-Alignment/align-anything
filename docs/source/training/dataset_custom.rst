@@ -1,181 +1,185 @@
 Template and Dataset Custumization
 ==================================
 
-Align-Anything offers a highly scalable dataset registration interface,
+We offer a highly scalable dataset registration interface,
 enabling users to embed customized datasets simply by designing and
-specifying their `template.py <https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/configs/template.py>`__.
+specifying their `dataset_formatter.py <https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/configs/format_dataset.py>`__.
 
-Taking `SPA-VL <https://huggingface.co/datasets/sqrti/SPA-VL>`__ as an
+Taking `Align-Anything-200K (Text+Image -> Text, short as AA_TI2T) <https://huggingface.co/datasets/PKU-Alignment/align-anything>`__ as an
 example, we illustrate here how to design the template and incorporate
 it into a complete RLHF workflow.
 
-The orignal data key-value pairs for SPA-VL are as follows:
+The orignal data key-value pairs for AA_TI2T are as follows:
 
 .. code:: python
 
    {
-     'image': '...',
-     'question': '...',
-     'chosen': '...',
-     'rejected': '...',
+     'image': PIL.Image.Image,
+     'question': str,
+     'response_1': str,
+     'response_2': str,
+     'overall_response': int,
    }
 
-We first need to create a new template named ``SPA_VL`` for this dataset
+We first need to create a new template named ``AA_TI2T`` for this dataset
 (we use ``_`` here because it is more pythonic), and specify the
 required parameters such as system_prompt.
 
 .. code:: python
 
-   @register_template('SPA_VL')
-   class SPA_VL:
-       system_prompt: str = "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. "
-       user_prompt: str = 'USER: \n<image> {input}'
-       assistant_prompt: str = '\nASSISTANT: {output}'
-       split_token: str = 'ASSISTANT:'
+    @register_template('AA_TI2T')
+    class AA_TI2T(BaseFormatter):
+        system_prompt: str = ""
 
-       def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-           better_response = raw_sample['chosen']
-           worse_response = raw_sample['rejected']
-           prompt = raw_sample['question']
-           image = raw_sample['image']
+Then, we can implement following three types of functions to finish the dataset registration:
 
-           formatted_prompt = (
-               f'{self.system_prompt}'
-               f'{self.user_prompt.format(input=prompt)}'
-           )
-           formatted_better_output = (
-               f'{self.assistant_prompt.format(output=better_response)}'
-           )
-           formatted_worse_output = (
-               f'{self.assistant_prompt.format(output=worse_response)}'
-           )
-           image = image.convert('RGBA')
++-----------------------------------+-----------------------------------+
+| Type                              | Description                       |
++===================================+===================================+
+| ``format_supervised_sample``      | Mapping the dataset to the        |
+|                                   | supervised training format (For   |
+|                                   | SFT).                             |
++-----------------------------------+-----------------------------------+
+| ``format_preference_sample``      | Mapping the dataset to the        |
+|                                   | preference training format (For   |
+|                                   | RM, DPO, KTO, *etc.*).            |
++-----------------------------------+-----------------------------------+
+| ``format_prompt_only_sample``     | Mapping the dataset to the unique |
+|                                   | prompt only training format (For  |
+|                                   | PPO).                             |
++-----------------------------------+-----------------------------------+
 
-           return {
-               'prompt': formatted_prompt,
-               'better_text': formatted_better_output,
-               'worse_text': formatted_worse_output,
-               'image': image,
-           }
+General Format
+~~~~~~~~~~~~~~
 
-       def check_equal(self, raw_sample: dict[str, Any]) -> bool:
-           return raw_sample['chosen'] == raw_sample['rejected']
+Our ``dataset_formatter`` is designed to be a ``conversation`` format, because it can be naturally supported by the ``apply_chat_template`` function in ``transformers`` (more details can be found in `this tutorial <https://huggingface.co/docs/transformers/main/chat_templating>`__).
 
-       def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-           prompt = raw_sample['question'].replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
-           image = raw_sample['image']
+.. hint::
 
-           formatted_prompt = (
-               f'{self.system_prompt}'
-               f'{self.user_prompt.format(input=prompt)}'
-               f'{self.assistant_prompt.format(output="")}'
-           )
-           image = image.convert('RGBA')
+    An example of conversation format is as follows:
 
-           return {
-               'text': formatted_prompt,
-               'image': image,
-           }
+    .. code:: python
 
-Reward modeling
-~~~~~~~~~~~~~~~
+       [
+           {'role': 'user', 'content': [
+                   {'type': 'image'},
+                   {'type': 'text', 'text': prompt},
+               ]
+           },
+           {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+       ]
 
-The reward modeling requires the user to provide a dictionary with data
-keys as follows:
+Another important element is the ``multi_modal_info`` field, which is used to store the multi-modal information of the dataset, an example is as follows:
 
 .. code:: python
 
    {
-     'prompt': '...',
-     'image': '...',
-     'better_text': '...',
-     'worse_text': '...',
+     'image': PIL.Image.Image,
    }
 
-Therefore, the user needs to implement a key-value transformation logic
-in ``align-anything/configs/template.py``, for instance, in this case:
+Format Supervised Sample
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``format_supervised_sample`` function is used to convert the dataset to the Q-A format, an example is as follows:
 
 .. code:: python
 
-   @register_template('SPA_VL')
-   class SPA_VL:
-       system_prompt: str = "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. "
-       user_prompt: str = 'USER: \n<image> {input}'
-       assistant_prompt: str = '\nASSISTANT: {output}'
-       split_token: str = 'ASSISTANT:'
+    @register_template('AA_TI2T')
+    class AA_TI2T(BaseFormatter):
+        system_prompt: str = ""
 
-       def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-           better_response = raw_sample['chosen']
-           worse_response = raw_sample['rejected']
-           prompt = raw_sample['question']
-           image = raw_sample['image']
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['prompt']
+        answer = raw_sample['response']
+        image = raw_sample['image'].convert('RGBA')
 
-           formatted_prompt = (
-               f'{self.system_prompt}'
-               f'{self.user_prompt.format(input=prompt)}'
-           )
-           formatted_better_output = (
-               f'{self.assistant_prompt.format(output=better_response)}'
-           )
-           formatted_worse_output = (
-               f'{self.assistant_prompt.format(output=worse_response)}'
-           )
-           image = image.convert('RGBA')
+        return [
+            {'role': 'user', 'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ]
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {'image': image}
 
-           return {
-               'prompt': formatted_prompt,
-               'better_text': formatted_better_output,
-               'worse_text': formatted_worse_output,
-               'image': image,
-           }
 
-Here, ``format_preference_sample`` parses the keys in the SPA-VL dataset,
-determines which response is better based on the ``chosen`` or
-``rejected``, and subsequently invokes previously defined parameters
-such as ``system_prompt`` to implement the transformation of key-value
-pairs.
+Format Preference Sample
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-RL fine-tuning
-~~~~~~~~~~~~~~
-
-During the RL fine-tuning phase, the model requires generation based on
-prompts within the dataset. Consequently, users need to implement
-key-value conversion in ``template.py`` using the following function:
+The ``format_preference_sample`` function is used to convert the dataset to the preference training format, an example is as follows:
 
 .. code:: python
 
-   @register_template('SPA_VL')
-   class SPA_VL:
-       system_prompt: str = "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. "
-       user_prompt: str = 'USER: \n<image> {input}'
-       assistant_prompt: str = '\nASSISTANT: {output}'
-       split_token: str = 'ASSISTANT:'
+    @register_template('AA_TI2T')
+    class AA_TI2T(BaseFormatter):
+        system_prompt: str = ""
 
-       ...  # previous code here
+        def format_preference_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+            better_id = int(raw_sample['overall_response'])
+            worse_id = 2 if better_id==1 else 1
 
-       def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-           prompt = raw_sample['question'].replace('<image>\n', '').replace('\n<image>', '').replace('<image>', '')
-           image = raw_sample['image']
+            if better_id not in [1, 2] or worse_id not in [1, 2]:
+                return [], [], {}
 
-           formatted_prompt = (
-               f'{self.system_prompt}'
-               f'{self.user_prompt.format(input=prompt)}'
-               f'{self.assistant_prompt.format(output="")}'
-           )
-           image = image.convert('RGBA')
+            raw_better_response = raw_sample[f'response_{better_id}']
+            raw_worse_response = raw_sample[f'response_{worse_id}']
+            prompt = raw_sample['question']
+            image = raw_sample['image'].convert('RGBA')
+            better_conversation = [
+                {'role': 'user', 'content': [
+                        {'type': 'image'},
+                        {'type': 'text', 'text': prompt},
+                    ]
+                },
+                {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_better_response}]},
+            ]
+            worse_conversation = [
+                {'role': 'user', 'content': [
+                        {'type': 'image'},
+                        {'type': 'text', 'text': prompt},
+                    ]
+                },
+                {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_worse_response}]},
+            ]
 
-           return {
-               'text': formatted_prompt,
-               'image': image,
-           }
+            meta_info = {
+                'image': image,
+                'better_response': raw_better_response,
+                'worse_response': raw_worse_response,
+            }
 
-After designing the aforementioned template, you just need to specify
-this template by passing the ``train_template SPA_VL`` argument when
-invoking the dataset to complete the corresponding training. Perhaps the
-above example still lacks specificity; therefore, we provide command
-references that encompass various models executing multiple algorithms
-on diverse datasets.
+            return better_conversation, worse_conversation, meta_info
+
 
 .. note::
 
-    You can expedite your training process by directly running or modifying these scripts `here <./examples/>`__. For special task including ``Text Image Interleaved Input and Output`` and ``Any -> Text``, you can refer to `projects <./projects/>`__.
+    The ``format_preference_sample`` function determines which response is better based on the ``chosen`` or ``rejected``, or other preference labels. Then it will return them as dictionaries with key: ``better_response`` and ``worse_response``.
+
+Format Prompt Only Sample
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+During the RL fine-tuning phase, the model requires generation based on
+prompts within the dataset. So the ``format_prompt_only_sample`` function is used to convert the dataset to the prompt only training format, an example is as follows:
+
+.. code:: python
+
+    @register_template('AA_TI2T')
+    class AA_TI2T(BaseFormatter):
+        system_prompt: str = ""
+
+        def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+            prompt = raw_sample['question']
+            image = raw_sample['image'].convert('RGBA')
+
+            return [
+                {'role': 'user', 'content': [
+                        {'type': 'image'},
+                        {'type': 'text', 'text': prompt},
+                    ]
+                },
+            ], {'image': image}
+
+Conclusion
+~~~~~~~~~~
+
+For each modality we have implemented at least one ``dataset_formatter`` as examples at `dataset_formatter.py <https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/configs/format_dataset.py>`__. You can refer to these examples to implement your own dataset formatter.

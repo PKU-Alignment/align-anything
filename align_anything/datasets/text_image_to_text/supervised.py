@@ -25,7 +25,6 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
 
@@ -83,27 +82,17 @@ class SupervisedDataset(Dataset):
         )
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
-        self.template = get_template_class(template)
+        self.template = template
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_supervised_sample(raw_sample)
-        raw_text = ''
-        if isinstance(formatted_sample['text'], list):
-            raw_text = self.tokenizer.eos_token.join(formatted_sample['text'])
-        elif isinstance(formatted_sample['text'], str):
-            raw_text = formatted_sample['text'] + self.tokenizer.eos_token
-        else:
-            raise NotImplementedError
-        
+        prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)      
         inputs = self.tokenize(
-            raw_text,
-            formatted_sample['image']
+            conversation,
+            meta_info['image']
         )
         inputs['input_ids'] = inputs['input_ids'][0].clone()
-        formatted_prompt = formatted_sample['prompt']
         labels = inputs['input_ids'].clone()
-        # mask non-assistant input
-        labels[: len(self.tokenize(formatted_prompt, formatted_sample['image'])['input_ids'][0])] = IGNORE_INDEX
+        labels[: len(self.tokenize(prompt, meta_info['image'])['input_ids'][0])] = IGNORE_INDEX
         inputs['labels'] = labels
 
         return inputs

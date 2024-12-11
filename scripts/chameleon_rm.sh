@@ -15,25 +15,31 @@
 # limitations under the License.
 # ==============================================================================
 
+MODEL_NAME_OR_PATH="PKU-Alignment/AA-chameleon-7b-base" # model path
 
-# Initialize variables
-ACTOR_MODEL_NAME_OR_PATH=""
-CRITIC_MODEL_NAME_OR_PATH=""
-REWARD_MODEL_NAME_OR_PATH=""
-TRAIN_DATASETS=""
-PTX_DATASETS=""
-OUTPUT_DIR=""
+TRAIN_DATASETS="" # dataset path
+TRAIN_DATA_FILES="" # dataset name
+
+EVAL_DATASETS="" # dataset path
+EVAL_DATA_FILES="" # dataset name
+
+OUTPUT_DIR="../outputs/chameleon_rm" # output dir
+
+# For wandb online logging
+export WANDB_API_KEY=""
 
 # Source the setup script
 source ./setup.sh
 
 # Execute deepspeed command
 deepspeed \
-  --master_port ${MASTER_PORT} \
-  --module align_anything.trainers.text_to_text.ppo \
-  --actor_model_name_or_path ${ACTOR_MODEL_NAME_OR_PATH} \
-  --reward_model_name_or_path ${REWARD_MODEL_NAME_OR_PATH} \
-  --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME_OR_PATH} \
-  --train_datasets ${TRAIN_DATASETS} \
-  --ptx_datasets ${PTX_DATASETS} \
-  --output_dir ${OUTPUT_DIR}
+     --master_port ${MASTER_PORT} \
+     --module align_anything.trainers.text_image_to_text_image.rm \
+     --model_name_or_path ${MODEL_NAME_OR_PATH} \
+     --train_datasets ${TRAIN_DATASETS} \
+     --train_data_files ${TRAIN_DATA_FILES} \
+     --eval_datasets ${EVAL_DATASETS} \
+     --eval_data_files ${EVAL_DATA_FILES} \
+     --output_dir ${OUTPUT_DIR} \
+     --save_interval 1000 \
+     --epochs 2

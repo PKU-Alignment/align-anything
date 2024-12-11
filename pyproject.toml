@@ -29,6 +29,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
 dependencies = [
     "vllm >= 0.6.2",
     "torch >= 1.13",
@@ -40,27 +41,75 @@ dependencies = [
     "deepspeed",
     "numpy",
     "scipy",
-    "sentencepiece",
     "wandb",
     "tensorboard",
-    "optree",
-    "matplotlib",
     "tqdm",
     "rich",
-    "pre-commit",
-    "pytest",
-    "shortuuid",
     "diffusers",
     "peft",
     "gradio",
     "uvicorn",
     "fastapi",
-    "pillow",
     "librosa",
     "soundfile",
     "torchaudio",
     "torchvision",
-    "bitsandbytes",
+]
+
+dynamic = ["version"]
+
+[project.optional-dependencies]
+# Update dependencies in `all` if any are added or removed
+
+train = [
+    "torch >= 1.13",
+    "frechet_audio_distance",
+    "transformers",
+    "datasets",
+    "tokenizers >= 0.13.3",
+    "accelerate",
+    "deepspeed",
+    "numpy",
+    "scipy",
+    "wandb",
+    "tensorboard",
+    "tqdm",
+    "rich",
+    "diffusers",
+    "peft",
+    "gradio",
+    "uvicorn",
+    "fastapi",
+    "librosa",
+    "soundfile",
+    "torchaudio",
+    "torchvision",
+]
+
+evaluate = [
+    "vllm >= 0.6.2",
+    "torch >= 1.13",
+    "frechet_audio_distance",
+    "transformers",
+    "datasets",
+    "tokenizers >= 0.13.3",
+    "accelerate",
+    "deepspeed",
+    "numpy",
+    "scipy",
+    "wandb",
+    "tensorboard",
+    "tqdm",
+    "rich",
+    "diffusers",
+    "peft",
+    "gradio",
+    "uvicorn",
+    "fastapi",
+    "librosa",
+    "soundfile",
+    "torchaudio",
+    "torchvision",
     "yt_dlp",
     "opencv-python==4.6.0.66",
     "moviepy",
@@ -71,25 +120,47 @@ dependencies = [
     "av",
 ]
 
-dynamic = ["version"]
+all = [
+    "vllm >= 0.6.2",
+    "torch >= 1.13",
+    "frechet_audio_distance",
+    "transformers",
+    "datasets",
+    "tokenizers >= 0.13.3",
+    "accelerate",
+    "deepspeed",
+    "numpy",
+    "scipy",
+    "wandb",
+    "tensorboard",
+    "tqdm",
+    "rich",
+    "diffusers",
+    "peft",
+    "gradio",
+    "uvicorn",
+    "fastapi",
+    "librosa",
+    "soundfile",
+    "torchaudio",
+    "torchvision",
+    "yt_dlp",
+    "opencv-python==4.6.0.66",
+    "moviepy",
+    "hpsv2",
+    "image-reward",
+    "clip",
+    "pytorch_fid",
+    "av",
+]
 
-[project.optional-dependencies]
-lint = [
-    "isort >= 5.11.0",
-    "black >= 23.1.0",
-    "pylint[spelling] >= 2.15.0",
-    "mypy >= 1.0",
-    "flake8",
-    "flake8-bugbear",
-    "flake8-comprehensions",
-    "flake8-docstrings",
-    "flake8-pyi",
-    "flake8-simplify",
-    "ruff",
-    "doc8",
-    "pydocstyle[toml]",
-    "pyenchant",
-    "pre-commit",
+minicpmv = [
+    "timm==1.0.11",
+    "transformers==4.40.0",
+]
+
+text-to-audio = [
+    "pytorchvideo",
 ]
 
 [tool.setuptools]

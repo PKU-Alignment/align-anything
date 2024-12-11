@@ -15,19 +15,26 @@
 # limitations under the License.
 # ==============================================================================
 
+MODEL_NAME_OR_PATH="PKU-Alignment/AA-chameleon-7b-base" # model path
 
-# Initialize variables
-MODEL_NAME_OR_PATH=""
-TRAIN_DATASETS=""
-OUTPUT_DIR=""
+TRAIN_DATASETS="" # dataset path
+TRAIN_DATA_FILES="" # dataset name
+
+OUTPUT_DIR="../outputs/chameleon_dpo" # output dir
+
+# For wandb online logging
+export WANDB_API_KEY=""
 
 # Source the setup script
 source ./setup.sh
 
 # Execute deepspeed command
 deepspeed \
-	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.text_to_text.sft \
-	--model_name_or_path ${MODEL_NAME_OR_PATH} \
-	--train_datasets ${TRAIN_DATASETS} \
-	--output_dir ${OUTPUT_DIR}
+     --master_port ${MASTER_PORT} \
+     --module align_anything.trainers.text_image_to_text_image.dpo \
+     --model_name_or_path ${MODEL_NAME_OR_PATH} \
+     --train_datasets ${TRAIN_DATASETS} \
+     --train_data_files ${TRAIN_DATA_FILES} \
+     --output_dir ${OUTPUT_DIR} \
+     --save_interval 1000 \
+     --epochs 2

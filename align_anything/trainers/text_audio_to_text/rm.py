@@ -56,7 +56,7 @@ class RMTrainer(RMtextTrainer):
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
-            trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
             freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,

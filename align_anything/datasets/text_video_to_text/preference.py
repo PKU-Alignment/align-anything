@@ -237,7 +237,7 @@ class PreferenceDataset(Dataset):
         self.path = path
         self.tokenizer = tokenizer
         self.processor = processor
-        self.template = get_template_class(template)
+        self.template = template
         self.raw_data = load_dataset(
             path,
             name=name if name and name!="None" else None,

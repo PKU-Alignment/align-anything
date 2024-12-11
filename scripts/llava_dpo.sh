@@ -18,7 +18,7 @@
 
 MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # model path
 
-TRAIN_DATASETS="PKU-Alignment/align-anything-400k" # dataset path
+TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
 TRAIN_TEMPLATE="AA_TI2T" # dataset template
 TRAIN_NAME="text-image-to-text" # dataset name
 TRAIN_SPLIT="train" # split the dataset

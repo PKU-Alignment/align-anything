@@ -18,7 +18,7 @@ from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
-from align_anything.utils.template_registry import get_template_class
+from align_anything.utils.template_registry import get_eval_template_class as get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from datasets import Dataset
 from tqdm import tqdm
