@@ -34,20 +34,18 @@ class llavacocoDataLoader(BaseDataLoader):
             return self.data_cfgs.task
         else:
             task_names = [
+                self.data_cfgs.task
             ]
             return task_names
 
-    def build_example_prompt(self, item, with_answer=True):
-        return [
-            {'role': 'user', 'content': [
-                {"type": "image"},
-                {"type": "text", "text": item['question']},
-            ]},
-            {"role": "assistant", "content": ""},
-        ]
+    def build_example_prompt(self, data, with_answer=True):
+        return f"{data['question']}"
 
-    def build_prompt(self, data):        
-        return [self.formatter(self.build_example_prompt(item, False)) for item in data]
+    def build_prompt(self, data):
+        template = get_template_class(self.chat_template)
+        question = [template.system_prompt + template.user_prompt.format(input="\n" + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
+        
+        return question
     
     def load_dataset(self, category_datasets):
         processed_inputs = {}
@@ -181,14 +179,17 @@ def main():
     unparsed_args = dict(zip(keys, values))
     dict_configs, infer_configs = read_eval_cfgs('llava-bench-coco', 'vllm')
 
-    assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
+    try:
+        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
+    except AssertionError as e:
+        print("Config file is not exist or incomplete.")
+        exit()
 
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
-
 
     dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
     model_config = dict_configs.default.model_cfgs

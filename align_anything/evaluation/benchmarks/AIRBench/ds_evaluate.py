@@ -21,6 +21,7 @@ from align_anything.evaluation.inference.vllm_inference import *
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
 from align_anything.evaluation.eval_logger import EvalLogger
 import requests
+import time
 from tqdm import tqdm
 
 gpt_prompt = """
