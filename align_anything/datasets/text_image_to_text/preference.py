@@ -164,9 +164,10 @@ class PreferenceCollator:
         concated_text = [sample['better_conversation'] for sample in samples] + [sample['worse_conversation'] for sample in samples]
 
         multi_modal_padding = self.processor(images=images, text=concated_text, return_tensors='pt', padding=True, padding_side=self.padding_side)
-        return_dict['pixel_values'] = multi_modal_padding['pixel_values'].to(current_device)
-        return_dict['image_sizes'] = multi_modal_padding['image_sizes'].to(current_device)
-        return_dict['input_ids'] = multi_modal_padding['input_ids'].to(current_device)
+
+        for key, value in multi_modal_padding.items():
+            if isinstance(value, torch.Tensor):
+                return_dict[key] = value.to(current_device)
 
         attention_mask = [
             input_id.new_ones(input_id.size(), dtype=torch.bool) for input_id in return_dict['input_ids']
