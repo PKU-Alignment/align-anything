@@ -329,7 +329,7 @@ class AA_TI2T(BaseFormatter):
 
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         prompt = raw_sample['question']
-        image = raw_sample['image'].convert('RGBA')
+        image = load_image_from_base64(raw_sample['image']).convert('RGBA')
 
         return [
             {'role': 'user', 'content': [

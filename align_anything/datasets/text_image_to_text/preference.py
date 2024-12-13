@@ -30,8 +30,7 @@ from datasets import load_dataset
 
 __all__ = [
     'PreferenceDataset',
-    'RightPaddingPreferenceCollator',
-    'LeftPaddingPreferenceCollator',
+    'PreferenceCollator',
     'PreferenceSample',
     'PreferenceBatch',
 ]
