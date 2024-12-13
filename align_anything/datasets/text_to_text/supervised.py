@@ -79,21 +79,12 @@ class SupervisedDataset(Dataset):
         )
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
-        self.template = get_template_class(template)
+        self.template = template
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_supervised_sample(raw_sample)
         return_dict = {}
-        raw_text = ''
-        if isinstance(formatted_sample['text'], list):
-            raw_text = self.tokenizer.eos_token.join(formatted_sample['text'])
-        elif isinstance(formatted_sample['text'], str):
-            raw_text = formatted_sample['text'] + self.tokenizer.eos_token
-        else:
-            raise NotImplementedError
-        return_dict['input_ids'] = self.tokenize(raw_text)
-
-        formatted_prompt = formatted_sample['prompt']
+        formatted_prompt, formatted_text, _ = self.template.format_supervised_sample(raw_sample)
+        return_dict['input_ids'] = self.tokenize(formatted_text)
         labels = return_dict['input_ids'].clone()
         # mask non-assistant input
         labels[: len(self.tokenize(formatted_prompt))] = IGNORE_INDEX
@@ -115,7 +106,8 @@ class SupervisedDataset(Dataset):
         """Tokenize a text string into a tensor representation."""
         if max_length is None:
             max_length = self.tokenizer.model_max_length
-
+        if self.tokenizer.eos_token not in text:
+            text += self.tokenizer.eos_token
         return self.tokenizer(
             text,
             add_special_tokens=add_special_tokens,
@@ -155,6 +147,51 @@ class SupervisedCollator:
             [sample['labels'] for sample in samples],
             padding_value=IGNORE_INDEX,
         ).to(current_device)
+
+        return_dict['attention_mask'] = (
+            return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
+        )
+
+        return return_dict
+
+class UnmatchedSupervisedDataset(SupervisedDataset):
+
+    def preprocess(self, raw_sample_for_prompt: dict[str, Any], raw_sample_for_response: dict[str, Any]) -> SupervisedSample:
+        return_dict = {}
+        formatted_text, _ = self.template.format_unmatched_supervised_sample(raw_sample_for_prompt, raw_sample_for_response)
+        return_dict['input_ids'] = self.tokenize(formatted_text)
+
+        return return_dict
+
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
+        """Get a tokenized data sample by index."""
+        raw_sample_for_prompt = self.raw_data[index]
+        if index == 0:
+            raw_sample_for_response = self.raw_data[-1]
+        else:
+            raw_sample_for_response = self.raw_data[index - 1]
+        data = self.preprocess(raw_sample_for_prompt, raw_sample_for_response)
+        return data
+
+    def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
+        return UnmatchedSupervisedCollator(self.tokenizer.pad_token_id)
+
+class UnmatchedSupervisedCollator:
+
+    def __init__(self, pad_token_id: int) -> None:
+        """Initialize a collator."""
+        self.pad_token_id = pad_token_id
+
+    def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
+        return_dict = {}
+        current_device = get_current_device()
+
+        return_dict['input_ids'] = right_padding(
+            [sample['input_ids'] for sample in samples],
+            padding_value=self.pad_token_id,
+        ).to(current_device)
+
+        return_dict['labels'] = None
 
         return_dict['attention_mask'] = (
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)

@@ -25,7 +25,6 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
 
@@ -61,6 +60,7 @@ class SupervisedDataset(Dataset):
         template: str,
         tokenizer: transformers.PreTrainedTokenizer,
         processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        padding_side: str = 'right',
         name: str | None = None,
         size: int | None = None,
         split: str | None = None,
@@ -73,6 +73,7 @@ class SupervisedDataset(Dataset):
         self.path = path
         self.tokenizer = tokenizer
         self.processor = processor
+        self.padding_side = padding_side
         self.raw_data = load_dataset(
             path,
             name=name if name and name!="None" else None,
@@ -83,38 +84,32 @@ class SupervisedDataset(Dataset):
         )
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
-        self.template = get_template_class(template)
+        self.template = template
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_supervised_sample(raw_sample)
-        raw_text = ''
-        if isinstance(formatted_sample['text'], list):
-            raw_text = self.tokenizer.eos_token.join(formatted_sample['text'])
-        elif isinstance(formatted_sample['text'], str):
-            raw_text = formatted_sample['text'] + self.tokenizer.eos_token
-        else:
-            raise NotImplementedError
-        
-        inputs = self.tokenize(
-            raw_text,
-            formatted_sample['image']
-        )
-        inputs['input_ids'] = inputs['input_ids'][0].clone()
-        formatted_prompt = formatted_sample['prompt']
-        labels = inputs['input_ids'].clone()
-        # mask non-assistant input
-        labels[: len(self.tokenize(formatted_prompt, formatted_sample['image'])['input_ids'][0])] = IGNORE_INDEX
-        inputs['labels'] = labels
+        return_dict = {}
+        prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)     
 
-        return inputs
+        # return necessary information
+        return_dict['prompt'] = prompt
+        return_dict['conversation'] = conversation
+        return_dict['image'] = meta_info['image']
+
+        # set the labels masked by the prompt
+        inputs = self.tokenize(conversation, meta_info, padding=PaddingStrategy.DO_NOT_PAD)
+        labels = inputs['input_ids'][0].clone()
+        labels[: len(self.tokenize(prompt, meta_info, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0])] = IGNORE_INDEX
+        return_dict['labels'] = labels
+
+        return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return SupervisedCollator(self.tokenizer.pad_token_id)
+        return SupervisedCollator(self.tokenizer.pad_token_id, self.processor, self.padding_side)
 
     def tokenize(
         self,
-        text: str,
-        image: Image.Image,
+        conversation: str,
+        meta_info: dict[str, Any],
         add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
         truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
@@ -125,14 +120,15 @@ class SupervisedDataset(Dataset):
             max_length = self.tokenizer.model_max_length
 
         return self.processor(
-            image,
-            text,
-            return_tensors="pt",
+            text=conversation,
+            images=meta_info['image'],
             add_special_tokens=add_special_tokens,
             padding=padding,
-            truncation=truncation,
             max_length=max_length,
+            truncation=truncation,
+            return_tensors='pt',
         )
+
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
@@ -147,51 +143,29 @@ class SupervisedDataset(Dataset):
 
 class SupervisedCollator:
 
-    def __init__(self, pad_token_id: int) -> None:
+    def __init__(self, pad_token_id: int, processor: transformers.ProcessorMixin | transforms.Compose | None = None, padding_side: str = 'right') -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
+        self.processor = processor
+        self.padding_side = padding_side
 
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
         return_dict = {}
         current_device = get_current_device()
-
-        return_dict['input_ids'] = right_padding(
-            [sample['input_ids'] for sample in samples],
-            padding_value=self.pad_token_id,
-        ).to(current_device)
 
         return_dict['labels'] = right_padding(
             [sample['labels'] for sample in samples],
             padding_value=IGNORE_INDEX,
         ).to(current_device)
 
-        return_dict['attention_mask'] = (
-            return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
-        )
+        images = [sample['image'] for sample in samples]
+        return_dict['images'] = images
+        concated_text = [sample['conversation'] for sample in samples]
 
-        return_dict['pixel_values'] = torch.stack(
-            [sample['pixel_values'] for sample in samples]
-        ).to(current_device).squeeze(1)
+        multi_modal_padding = self.processor(images=images, text=concated_text, return_tensors='pt', padding=True, padding_side=self.padding_side)
 
-        if 'aspect_ratio_ids' in samples[0].keys():
-            return_dict['aspect_ratio_ids'] = torch.stack(
-                [sample['aspect_ratio_ids'] for sample in samples]
-            ).to(current_device).squeeze(1)
-
-        if 'aspect_ratio_mask' in samples[0].keys():
-            return_dict['aspect_ratio_mask'] = torch.stack(
-                [sample['aspect_ratio_mask'] for sample in samples]
-            ).to(current_device).squeeze(1)
-
-        if 'cross_attention_mask' in samples[0].keys():
-            cross_attention_mask = []
-            for sample in samples:
-                if 'cross_attention_mask' in sample.keys():
-                    cross_attention_mask.append(sample['cross_attention_mask'].squeeze(0))
-            
-            return_dict['cross_attention_mask'] = right_padding(
-                cross_attention_mask,
-                padding_value=0,
-            ).to(current_device)
+        for key, value in multi_modal_padding.items():
+            if isinstance(value, torch.Tensor):
+                return_dict[key] = value.to(current_device)
 
         return return_dict

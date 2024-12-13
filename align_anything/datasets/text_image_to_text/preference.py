@@ -24,15 +24,13 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding, left_padding
 from datasets import load_dataset
 
 
 __all__ = [
     'PreferenceDataset',
-    'RightPaddingPreferenceCollator',
-    'LeftPaddingPreferenceCollator',
+    'PreferenceCollator',
     'PreferenceSample',
     'PreferenceBatch',
 ]
@@ -70,7 +68,7 @@ class PreferenceDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        self.template = get_template_class(template)
+        self.template = template
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
@@ -81,6 +79,7 @@ class PreferenceDataset(Dataset):
             data_files=data_files,
             *optional_args,
             trust_remote_code=True,
+            verification_mode="no_checks"
         )
         self.valid_indices = self.filter_indices()
 
@@ -92,47 +91,30 @@ class PreferenceDataset(Dataset):
         valid_indices = []
         for i, item in enumerate(self.raw_data):
             if not self.template.check_equal(item):
+                if hasattr(self.template, 'check_validation'):
+                    if not self.template.check_validation(item):
+                        continue
                 valid_indices.append(i)
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_preference_sample(raw_sample)
+        better_conversation, worse_conversation, meta_info = self.template.format_preference_sample(raw_sample)
         return_dict = {}
-
-        raw_better_text = ''
-        raw_worse_text = ''
-
-        if isinstance(formatted_sample['better_text'], list):
-            raw_better_text = self.tokenizer.eos_token.join(formatted_sample['better_text'])
-            raw_worse_text = self.tokenizer.eos_token.join(formatted_sample['worse_text'])
-        elif isinstance(formatted_sample['better_text'], str):
-            raw_better_text = formatted_sample['prompt'] + formatted_sample['better_text'] + self.tokenizer.eos_token
-            raw_worse_text = formatted_sample['prompt'] + formatted_sample['worse_text'] + self.tokenizer.eos_token
-            raw_better_response = formatted_sample['better_text'] + self.tokenizer.eos_token
-            raw_worse_response = formatted_sample['worse_text'] + self.tokenizer.eos_token
-        else:
-            raise NotImplementedError
-        
-        return_dict['better_input_ids'] = self.tokenize(raw_better_text)
-        return_dict['worse_input_ids'] = self.tokenize(raw_worse_text)
-        return_dict['better_response_lens'] = len(self.tokenize(raw_better_response.split(self.template.split_token)[-1], add_special_tokens=False))
-        return_dict['worse_response_lens'] = len(self.tokenize(raw_worse_response.split(self.template.split_token)[-1], add_special_tokens=False))
-        raw_image = formatted_sample['image']
-        return_dict['pixel_values'] = self.processor.image_processor(
-            raw_image, return_tensors='pt'
-        )['pixel_values'][0]
+        return_dict['better_response_lens'] = len(self.tokenize(meta_info['better_response'], meta_info, add_special_tokens=False)['input_ids'][0])
+        return_dict['worse_response_lens'] = len(self.tokenize(meta_info['worse_response'], meta_info, add_special_tokens=False)['input_ids'][0])
+        return_dict['better_conversation'] = better_conversation
+        return_dict['worse_conversation'] = worse_conversation
+        return_dict['image'] = meta_info['image']
 
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        if self.tokenizer.padding_side == 'left':
-            return LeftPaddingPreferenceCollator(self.tokenizer.pad_token_id)
-        else:
-            return RightPaddingPreferenceCollator(self.tokenizer.pad_token_id)
+        return PreferenceCollator(self.tokenizer.pad_token_id, self.processor, self.tokenizer.padding_side)
 
     def tokenize(
         self,
-        text: str,
+        conversation: str,
+        meta_info: dict[str, Any],
         add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
         truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
@@ -142,14 +124,15 @@ class PreferenceDataset(Dataset):
         if max_length is None:
             max_length = self.tokenizer.model_max_length
 
-        return self.tokenizer(
-            text,
+        return self.processor(
+            text=conversation,
+            images=meta_info['image'],
             add_special_tokens=add_special_tokens,
             padding=padding,
             max_length=max_length,
             truncation=truncation,
             return_tensors='pt',
-        )['input_ids'][0]
+        )
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
@@ -162,26 +145,31 @@ class PreferenceDataset(Dataset):
         return len(self.valid_indices)
 
 
-class RightPaddingPreferenceCollator:
+class PreferenceCollator:
 
-    def __init__(self, pad_token_id: int) -> None:
+    def __init__(self, pad_token_id: int, processor: transformers.ProcessorMixin | transforms.Compose | None = None, padding_side: str = 'right') -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
         self.padding_func = right_padding
+        self.processor = processor
+        self.padding_side = padding_side
 
     def __call__(self, samples: list[PreferenceSample]) -> tuple[PreferenceBatch]:
         return_dict = {}
         current_device = get_current_device()
 
-        input_ids = [sample['better_input_ids'] for sample in samples] + [
-            sample['worse_input_ids'] for sample in samples
-        ]  # size = (2 * B, L)
-        return_dict['input_ids'] = self.padding_func(input_ids, padding_value=self.pad_token_id).to(
-            current_device
-        )  # size = (2 * B, L)
+        images = [sample['image'] for sample in samples] * 2
+        return_dict['images'] = images
+        concated_text = [sample['better_conversation'] for sample in samples] + [sample['worse_conversation'] for sample in samples]
+
+        multi_modal_padding = self.processor(images=images, text=concated_text, return_tensors='pt', padding=True, padding_side=self.padding_side)
+
+        for key, value in multi_modal_padding.items():
+            if isinstance(value, torch.Tensor):
+                return_dict[key] = value.to(current_device)
 
         attention_mask = [
-            input_id.new_ones(input_id.size(), dtype=torch.bool) for input_id in input_ids
+            input_id.new_ones(input_id.size(), dtype=torch.bool) for input_id in return_dict['input_ids']
         ]  # size = (2 * B, L)
         return_dict['attention_mask'] = self.padding_func(attention_mask, padding_value=0).to(
             current_device
@@ -189,45 +177,5 @@ class RightPaddingPreferenceCollator:
         return_dict['better_response_lens'] = [sample['better_response_lens'] for sample in samples]
         return_dict['worse_response_lens'] = [sample['worse_response_lens'] for sample in samples]
         return_dict['response_lens'] = return_dict['better_response_lens'] + return_dict['worse_response_lens']
-        if 'pixel_values' in samples[0].keys():
-
-            a = return_dict['attention_mask'].shape[0]
-
-            if samples[0]['pixel_values'].dim() == 4:
-                # init list for pixel_values
-                ori_patches = [
-                    sample['pixel_values'].to(current_device).size(0) for sample in samples
-                ]
-                ori_patches_tensor = torch.tensor(ori_patches)
-                double_ori_patches_tensor = torch.cat(
-                    [ori_patches_tensor, ori_patches_tensor], dim=0
-                )
-                return_dict['image_sizes'] = double_ori_patches_tensor.to(current_device)
-
-                _pixel_values_list = []
-                for sample in samples:
-                    pixel_values = sample['pixel_values']  # size = (P, C, H, W)
-                    _pixel_values_list.append(pixel_values)
-
-                pixel_values_tensor = torch.cat(_pixel_values_list, dim=0).to(current_device)
-                double_stacked = torch.cat([pixel_values_tensor, pixel_values_tensor], dim=0)
-                return_dict['pixel_values'] = double_stacked.to(current_device)
-
-                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W)
-
-            else:
-                # original code for non-patches
-                pixel_values_tensor = torch.stack(
-                    [sample['pixel_values'] for sample in samples]
-                ).to(current_device)
-                double_stacked = torch.cat([pixel_values_tensor, pixel_values_tensor], dim=0)
-                return_dict['pixel_values'] = double_stacked.to(current_device)
-
         return return_dict
     
-class LeftPaddingPreferenceCollator(RightPaddingPreferenceCollator):
-
-    def __init__(self, pad_token_id: int) -> None:
-        """Initialize a collator."""
-        super().__init__(pad_token_id)
-        self.padding_func = left_padding

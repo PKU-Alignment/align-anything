@@ -24,8 +24,6 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class
-from align_anything.utils.tools import left_padding
 from datasets import load_dataset
 
 
@@ -44,7 +42,7 @@ def remove_duplicate_prompts(dict_list: list[dict[str, Any]], template):
     unique_dict_list = []
     for idx in range(len(dict_list)):
         item = dict_list[idx]
-        prompt = template.format_prompt_only_sample(item)['text']
+        prompt = template.format_prompt_only_sample(item)[0]
         if prompt not in seen_prompts:
             unique_dict_list.append(item)
             seen_prompts.add(prompt)
@@ -73,6 +71,7 @@ class PromptOnlyDataset(Dataset):
         template: str,
         tokenizer: transformers.PreTrainedTokenizer,
         processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        padding_side: str = 'left',
         name: str | None = None,
         size: int | None = None,
         split: str | None = None,
@@ -91,38 +90,32 @@ class PromptOnlyDataset(Dataset):
             data_files=data_files,
             *optional_args,
             trust_remote_code=True,
+            verification_mode='no_checks',
         )
-        self.template = get_template_class(template)
+        self.template = template
         self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
+        self.padding_side = padding_side
 
         if size:
             self.raw_data = self.raw_data[:int(size)]
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
-        formatted_sample = self.template.format_prompt_only_sample(raw_sample)
+        formatted_prompt, meta_info = self.template.format_prompt_only_sample(raw_sample)
         return_dict = {}
-        raw_text = ''
-        if isinstance(formatted_sample['text'], list):
-            raw_text = self.tokenizer.eos_token.join(formatted_sample['text'])
-        elif isinstance(formatted_sample['text'], str):
-            raw_text = formatted_sample['text'] + self.tokenizer.eos_token
-        else:
-            raise NotImplementedError
-        return_dict['input_ids'] = self.tokenize(raw_text)
 
-        raw_image = formatted_sample['image']
-        return_dict['pixel_values'] = self.processor.image_processor(
-            raw_image, return_tensors='pt'
-        )['pixel_values'][0]
+        # return necessary information
+        return_dict['image'] = meta_info['image']
+        return_dict['conversation'] = formatted_prompt
 
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return PromptOnlyCollator(self.tokenizer.pad_token_id)
+        return PromptOnlyCollator(self.tokenizer.pad_token_id, self.processor, self.padding_side)
 
     def tokenize(
         self,
-        text: str,
+        conversation: str,
+        meta_info: dict[str, Any],
         add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
         truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
@@ -132,14 +125,15 @@ class PromptOnlyDataset(Dataset):
         if max_length is None:
             max_length = self.tokenizer.model_max_length
 
-        return self.tokenizer(
-            text,
+        return self.processor(
+            text=conversation,
+            images=meta_info['image'],
             add_special_tokens=add_special_tokens,
             padding=padding,
             max_length=max_length,
             truncation=truncation,
             return_tensors='pt',
-        )['input_ids'][0]
+        )
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
@@ -154,51 +148,24 @@ class PromptOnlyDataset(Dataset):
 
 class PromptOnlyCollator:
 
-    def __init__(self, pad_token_id: int) -> None:
+    def __init__(self, pad_token_id: int, processor: transformers.ProcessorMixin | transforms.Compose | None = None, padding_side: str = 'left') -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
+        self.processor = processor
+        self.padding_side = padding_side
 
     def __call__(self, samples: list[PromptOnlySample]) -> PromptOnlyBatch:
         return_dict = {}
         current_device = get_current_device()
 
-        input_ids = [sample['input_ids'] for sample in samples]
-        attention_mask = [
-            input_id.new_ones(input_id.size(), dtype=torch.bool) for input_id in input_ids
-        ]
+        images = [sample['image'] for sample in samples]
+        return_dict['images'] = images
+        concated_text = [sample['conversation'] for sample in samples]
 
-        return_dict['input_ids'] = left_padding(input_ids, padding_value=self.pad_token_id).to(
-            current_device
-        )
-        return_dict['attention_mask'] = left_padding(attention_mask, padding_value=0).to(
-            current_device
-        )
+        multi_modal_padding = self.processor(images=images, text=concated_text, return_tensors='pt', padding=True, padding_side=self.padding_side)
 
-
-        if samples[0]['pixel_values'].dim() == 4:
-            # init list for pixel_values
-
-            _pixel_values_list = []
-            for sample in samples:
-                pixel_values = sample['pixel_values']  # size = (P, C, H, W)
-                _pixel_values_list.append(pixel_values)
-
-            return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(
-                current_device
-            )
-            # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W)
-
-            # image_sizes
-            b = samples[0]['pixel_values'].shape[2]
-            c = samples[0]['pixel_values'].shape[3]
-            return_dict['image_sizes'] = [
-                sample['pixel_values'].to(current_device).size(0) for sample in samples
-            ]
-
-        else:
-            # original code for non-patches
-            return_dict['pixel_values'] = torch.stack(
-                [sample['pixel_values'] for sample in samples]
-            ).to(current_device)
+        for key, value in multi_modal_padding.items():
+            if isinstance(value, torch.Tensor):
+                return_dict[key] = value.to(current_device)
 
         return return_dict

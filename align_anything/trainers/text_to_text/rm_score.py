@@ -84,7 +84,7 @@ class RMScore(SupervisedTrainerBase):
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
-            trust_remote_code=self.cfgs.train_cfgs.trust_remote_code,
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             modality='text',
         )
 

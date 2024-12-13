@@ -28,15 +28,12 @@ import requests
 import torch
 from PIL import Image
 from transformers import (
-    AutoProcessor,
     GenerationConfig,
-    LlavaForConditionalGeneration,
     TextIteratorStreamer,
 )
 
 from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.utils.multi_process import to_device
-from align_anything.utils.template_registry import get_template_class
+from align_anything.configs.template import ChatTemplate
 
 
 __all__ = [
@@ -188,7 +185,6 @@ class ModelArgs:
     top_p: float = 1.0
     repetition_penalty: float = 1.0
     dtype: torch.dtype | str | None = 'auto'
-    template: str = 'Dialogue'
     vlm: str = 'False'
 
 
@@ -198,50 +194,44 @@ class Chatbot(AbstractChatbot):
     def __init__(
         self,
         model_name_or_path: str | os.PathLike,
-        temperature: float = 1.0,
+        temperature: float = 0.2,
         max_length: int = 4096,
         top_p: float = 1.0,
         repetition_penalty: float = 1.0,
         dtype: torch.dtype | str | None = 'auto',
-        template: str = 'Dialogue',
         image_source: str = '',
         vlm: str = 'False',
     ) -> None:
         """Initialize the chatbot."""
 
         self.name = os.path.basename(os.path.normpath(model_name_or_path))
-        self.template = get_template_class(template)
         if vlm == 'True':
             self.vlm = True
         else:
             self.vlm = False
         self.messages = []
 
-        if not self.vlm:
-            self.model, self.tokenizer, self.processor = load_pretrained_models(
-                model_name_or_path,
-                model_max_length=max_length,
-                auto_device_mapping=torch.cuda.is_available(),
-                dtype=dtype,
-                trust_remote_code=True,
-            )
-            self.max_length = 4096
-            self.tokenizer.model_max_length = self.max_length
-            self.generation_config = GenerationConfig(
-                do_sample=(temperature > 0.0),
-                temperature=temperature,
-                max_new_tokens=max_length,
-                top_p=top_p,
-                repetition_penalty=repetition_penalty,
-                bos_token_id=self.tokenizer.bos_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-                pad_token_id=self.tokenizer.pad_token_id,
-            )
-        else:
-            self.model = LlavaForConditionalGeneration.from_pretrained(model_name_or_path)
-            self.processor = AutoProcessor.from_pretrained(model_name_or_path)
+        self.model, self.tokenizer, self.processor = load_pretrained_models(
+            model_name_or_path,
+            model_max_length=max_length,
+            auto_device_mapping=torch.cuda.is_available(),
+            dtype=dtype,
+            trust_remote_code=True,
+        )
+        self.max_length = 4096
+        self.tokenizer.model_max_length = self.max_length
+        self.generation_config = GenerationConfig(
+            do_sample=(temperature > 0.0),
+            temperature=temperature,
+            max_new_tokens=max_length,
+            top_p=top_p,
+            repetition_penalty=repetition_penalty,
+            bos_token_id=self.tokenizer.bos_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
+            pad_token_id=self.tokenizer.pad_token_id,
+        )
 
-        self.PROMPT_BEGIN = self.template.system_prompt
+        self.template = ChatTemplate(formatter=self.processor or self.tokenizer)
         self.dialogue = ''
         self.last_dialogue = ''
         self.last_input = ''
@@ -257,7 +247,7 @@ class Chatbot(AbstractChatbot):
 
     def reset(self) -> None:
         """Reset the dialogue context."""
-        self.dialogue = self.PROMPT_BEGIN
+        self.dialogue = ''
         self.last_dialogue = ''
         self.last_input = ''
         self.last_response = ''
@@ -281,15 +271,13 @@ class Chatbot(AbstractChatbot):
                 image = Image.open(self.image_source)
         self.last_input = text
         self.last_dialogue = self.dialogue
-        raw_sample = {
-            'instruction': '',
-            'input': text,
-            'output': '',
-        }
-        prompt = self.template.format_sample(raw_sample)['prompt']
+        raw_sample = [
+            {'role': 'user', 'content': [{'type': 'text', 'text': text}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': ''}]},
+        ]
         self.inputs.append(text)
 
-        input = self.dialogue + prompt
+        input = self.template.format_chat_sample(raw_sample)[0]
 
         if self.vlm and self.image_source:
 
@@ -310,11 +298,9 @@ class Chatbot(AbstractChatbot):
             )[0]
             response = output.replace(input, '', 1)
             yield response
-        # dialogue = self.dialogue + PROMPT_USER.format(input=text) + PROMPT_ASSISTANT
-        tokenized = to_device(
-            self.tokenizer(input, return_tensors='pt'),
-            device=('cuda' if torch.cuda.is_available() else None),
-        )
+        tokenized = self.tokenizer(input, return_tensors='pt')
+        tokenized['input_ids'] = tokenized['input_ids'].to(self.model.device)
+        tokenized['attention_mask'] = tokenized['attention_mask'].to(self.model.device)
         decoded_text = self.tokenizer.decode(tokenized['input_ids'][0], skip_special_tokens=True)
 
         if stream:
@@ -341,6 +327,7 @@ class Chatbot(AbstractChatbot):
                 yield response
 
             daemon.join()
+            clean_response = response.replace(decoded_text, '', 1)
         else:
 
             output = self.model.generate(
@@ -357,13 +344,12 @@ class Chatbot(AbstractChatbot):
 
         self.last_response = response
         self.responses.append(response)
-        raw_sample = {
-            'instruction': '',
-            'input': text,
-            'output': response,
-        }
-        message = self.template.format_sample(raw_sample)['text']
-        self.dialogue += message + self.tokenizer.eos_token
+        raw_sample = [
+            {'role': 'user', 'content': [{'type': 'text', 'text': text}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': response}]},
+        ]
+        message = self.template.format_chat_sample(raw_sample)[0]
+        self.dialogue += message
 
         yield clean_response
 

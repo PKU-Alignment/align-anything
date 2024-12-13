@@ -16,19 +16,30 @@
 # ==============================================================================
 
 
-# Initialize variables
-MODEL_NAME_OR_PATH=""
-TRAIN_DATASETS=""
-EVAL_DATASET=""
-OUTPUT_DIR=""
+MODEL_NAME_OR_PATH="Qwen/Qwen2-VL-7B-Instruct" # model path
+
+TRAIN_DATASETS="PKU-Alignment/align-anything-400k" # dataset path
+TRAIN_TEMPLATE="Qwen2-VL" # dataset template
+TRAIN_NAME="text-video-to-text" # dataset name
+TRAIN_SPLIT="train" # split the dataset
+
+OUTPUT_DIR="../outputs/qwen2vl_dpo" # output dir
+
+# For wandb online logging
+export WANDB_API_KEY=""
 
 # Source the setup script
 source ./setup.sh
 
 # Execute deepspeed command
 deepspeed \
-	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.text_to_text.rm \
-	--model_name_or_path ${MODEL_NAME_OR_PATH} \
-	--train_datasets ${TRAIN_DATASETS} \
-	--output_dir ${OUTPUT_DIR}
+     --master_port ${MASTER_PORT} \
+     --module align_anything.trainers.text_video_to_text.dpo \
+     --model_name_or_path ${MODEL_NAME_OR_PATH} \
+     --train_datasets ${TRAIN_DATASETS} \
+     --train_template ${TRAIN_TEMPLATE} \
+     --train_name ${TRAIN_NAME} \
+     --train_split ${TRAIN_SPLIT} \
+     --output_dir ${OUTPUT_DIR} \
+     --save_interval 1000 \
+     --epochs 2

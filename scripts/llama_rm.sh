@@ -16,10 +16,10 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="/data/models/Llama-3.1-8B-Instruct" # model path
+MODEL_NAME_OR_PATH="meta-llama/Llama-3.1-8B-Instruct" # model path
 
 TRAIN_DATASETS="PKU-Alignment/PKU-SafeRLHF-single-dimension" # dataset path
-TRAIN_TEMPLATE="Llama3" # dataset template
+TRAIN_TEMPLATE="PKUSafeRLHF" # dataset template
 TRAIN_SPLIT="train" # split the dataset
 
 OUTPUT_DIR="../outputs/llama_rm" # output dir

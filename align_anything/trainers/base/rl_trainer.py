@@ -31,10 +31,10 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 from transformers import CONFIG_NAME, PreTrainedModel, get_scheduler
 
+from align_anything.configs.template import ChatTemplate
 from align_anything.datasets import DummyDataset
 from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import is_main_process
-from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import get_optimizer_grouped_parameters, namedtuple_to_dict
 
 
@@ -75,11 +75,13 @@ class RLTrainerBase:
 
     def get_dataloaders(self, train_data_dtype, eval_data_dtype, ptx_data_dtype) -> None:
         """Get the dataloaders based on data_dtype."""
-        self.train_template = get_template_class(self.cfgs.data_cfgs.train_template)
+        formatter = self.processor if self.processor else self.tokenizer
+        custom_formatter = self.actor_model.apply_chat_template if hasattr(self.actor_model, 'apply_chat_template') else None
+        self.train_template = ChatTemplate(formatter, self.cfgs.data_cfgs.train_template, custom_formatter)
         self.eval_template = None
         train_dataset = train_data_dtype(
             path=self.cfgs.data_cfgs.train_datasets,
-            template=self.cfgs.data_cfgs.train_template,
+            template=self.train_template,
             tokenizer=self.tokenizer,
             processor=self.processor,
             name=self.cfgs.data_cfgs.train_name,
@@ -98,9 +100,11 @@ class RLTrainerBase:
         # load ptx datasets
         self.use_ptx = self.cfgs.data_cfgs.ptx_datasets is not None
         if self.use_ptx:
+            custom_formatter = self.actor_model.apply_chat_template if hasattr(self.actor_model, 'apply_chat_template') else None
+            self.ptx_template = ChatTemplate(formatter, self.cfgs.data_cfgs.ptx_template, custom_formatter)
             ptx_dataset = ptx_data_dtype(
                 path=self.cfgs.data_cfgs.ptx_datasets,
-                template=self.cfgs.data_cfgs.ptx_template,
+                template=self.ptx_template,
                 tokenizer=self.tokenizer,
                 processor=self.processor,
                 name=self.cfgs.data_cfgs.ptx_name,
@@ -119,10 +123,11 @@ class RLTrainerBase:
             ptx_dataloader = DataLoader(DummyDataset(len(train_dataloader)))
 
         if self.cfgs.data_cfgs.eval_datasets:
-            self.eval_template = get_template_class(self.cfgs.data_cfgs.eval_template)
+            custom_formatter = self.actor_model.apply_chat_template if hasattr(self.actor_model, 'apply_chat_template') else None
+            self.eval_template = ChatTemplate(formatter, self.cfgs.data_cfgs.eval_template, custom_formatter)
             eval_dataset = eval_data_dtype(
                 path=self.cfgs.data_cfgs.eval_datasets,
-                template=self.cfgs.data_cfgs.eval_template,
+                template=self.eval_template,
                 tokenizer=self.tokenizer,
                 processor=self.processor,
                 name=self.cfgs.data_cfgs.eval_name,

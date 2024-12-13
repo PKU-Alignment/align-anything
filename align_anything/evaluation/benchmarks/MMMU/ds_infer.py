@@ -19,7 +19,7 @@ from align_anything.evaluation.inference.ds_inference import BaseInferencer_deep
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from typing import List, Dict, Any
 from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
-from align_anything.utils.template_registry import get_template_class
+from align_anything.utils.template_registry import get_eval_template_class as get_template_class
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.inference.ds_inference import get_rank
 from torch.nn.utils.rnn import pad_sequence

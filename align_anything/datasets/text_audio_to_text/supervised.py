@@ -24,7 +24,6 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
 
@@ -82,30 +81,25 @@ class SupervisedDataset(Dataset):
         )
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
-        self.template = get_template_class(template)
+        self.template = template
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_supervised_sample(raw_sample)
+        prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)
         return_dict = {}
-        raw_text = formatted_sample['conversation']
-        raw_prompt = formatted_sample['prompt']
+        raw_text = conversation
 
         text = self.processor.apply_chat_template(raw_text, add_generation_prompt=False, tokenize=False)
-        prompt = self.processor.apply_chat_template(raw_prompt, add_generation_prompt=True, tokenize=False)
+        prompt = self.processor.apply_chat_template(prompt, add_generation_prompt=True, tokenize=False)
 
         audios = []
 
-        for message in formatted_sample['conversation']:
-            if isinstance(message["content"], list):
-                for ele in message["content"]:
-                    if ele["type"] == "audio":
-                        if isinstance(ele['audio_url'], dict):
-                            raw_audio, raw_sr = ele['audio_url']['array'], ele['audio_url']['sampling_rate']
-                            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
-                        else:
-                            audio = librosa.load(ele['audio_url'], sr=self.processor.feature_extractor.sampling_rate)[0]
+        if isinstance(meta_info['audio_path'], dict):
+            raw_audio, raw_sr = meta_info['audio_path']['array'], meta_info['audio_path']['sampling_rate']
+            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
+        else:
+            audio = librosa.load(meta_info['audio_path'], sr=self.processor.feature_extractor.sampling_rate)[0]
+        audios.append(audio)
 
-                        audios.append(audio)
         inputs = self.tokenize(text=text, audios=audios, padding=True)
         return_dict['input_ids'] = inputs['input_ids'][0]
         labels = return_dict['input_ids'].clone()

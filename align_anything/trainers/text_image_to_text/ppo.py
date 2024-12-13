@@ -41,7 +41,6 @@ from align_anything.utils.tools import (
     seed_everything,
     update_dict,
     remove_pad_tokens,
-    count_right_padding,
 )
 
 def move_padding_left(input_tensor, padding_value=0):
@@ -273,7 +272,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
                 sequence_mask,
                 start=0,
             )
-        logits = self.actor_model(**inference_batch, use_cache=False).logits
+        logits = self.actor_model(**self.infer_batch(inference_batch), use_cache=False).logits
         logprob_list = []
         
         for idx in range(batch_size):
@@ -292,7 +291,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         self.actor_model.backward(actor_loss)
         self.actor_model.step()
 
-        raw_reward_values = self.reward_critic_model(**inference_batch).scores
+        raw_reward_values = self.reward_critic_model(**self.infer_batch(inference_batch)).scores
         raw_reward_values = raw_reward_values.squeeze(dim=-1)[:, :-1]
         
         reward_value_list = []

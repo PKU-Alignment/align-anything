@@ -16,24 +16,29 @@
 # ==============================================================================
 
 
-# Initialize variables
-ACTOR_MODEL_NAME_OR_PATH=""
-CRITIC_MODEL_NAME_OR_PATH=""
-REWARD_MODEL_NAME_OR_PATH=""
-TRAIN_DATASETS=""
-PTX_DATASETS=""
-OUTPUT_DIR=""
+MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # model path
+
+TRAIN_DATASETS="PKU-Alignment/Align-Anything-TI2T-Instruction-100K" # dataset path
+TRAIN_TEMPLATE="AA_TI2T" # dataset template
+TRAIN_SPLIT="train" # split the dataset
+
+OUTPUT_DIR="../outputs/llava_sft" # output dir
+
+# For wandb online logging
+export WANDB_API_KEY=""
 
 # Source the setup script
 source ./setup.sh
 
 # Execute deepspeed command
 deepspeed \
-  --master_port ${MASTER_PORT} \
-  --module align_anything.trainers.text_to_text.ppo \
-  --actor_model_name_or_path ${ACTOR_MODEL_NAME_OR_PATH} \
-  --reward_model_name_or_path ${REWARD_MODEL_NAME_OR_PATH} \
-  --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME_OR_PATH} \
-  --train_datasets ${TRAIN_DATASETS} \
-  --ptx_datasets ${PTX_DATASETS} \
-  --output_dir ${OUTPUT_DIR}
+     --master_port ${MASTER_PORT} \
+     --module align_anything.trainers.text_image_to_text.sft \
+     --model_name_or_path ${MODEL_NAME_OR_PATH} \
+     --train_datasets ${TRAIN_DATASETS} \
+     --train_template ${TRAIN_TEMPLATE} \
+     --train_split ${TRAIN_SPLIT} \
+     --output_dir ${OUTPUT_DIR} \
+     --save_interval 1000 \
+     --train_batch_size 1 \
+     --epochs 2

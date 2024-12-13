@@ -169,7 +169,7 @@ You can add your OpenAI API credentials in one of two ways:
 3. When evaluating `AudioCaps`, the `background_dir` variable, located in the `./align_anything/evaluation/benchmarks/AudioCaps/eval.py` file, should point to the directory containing the standard audio files for the evaluation set. This directory must only contain audio files in MP3 format, and each audio file should be named according to its corresponding `audiocap_id`. For example, if the `audiocap_id` is 103541, the audio file should be named `103541.mp3`.
 
 
-To utilize a custom template, you need to implement and register the template in [here](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/configs/template.py). For example, here is the implementation of `Llava` template:
+To utilize a custom template, you need to implement and register the template in [here](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/configs/eval_template.py). For example, here is the implementation of `Llava` template:
 
 ~~~python
 @register_template('Llava')

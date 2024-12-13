@@ -44,14 +44,14 @@ __all__ = [
 class SupervisedSample(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (L,)
     labels: torch.LongTensor  # size = (L,)
-    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    audio: torch.LongTensor | None  # size = (B, C, H, W)
 
 
 class SupervisedBatch(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (B, L)
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
-    pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    audio: torch.LongTensor | None  # size = (B, C, H, W)
 
 
 class SupervisedDataset(Dataset):
@@ -86,15 +86,15 @@ class SupervisedDataset(Dataset):
         )
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
-        self.template = get_template_class(template)
+        self.template = template
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_supervised_sample(raw_sample)
+        prompt, multi_modal_info = self.template.format_diffusion_supervised_sample(raw_sample)
         return_dict = {}
         return_dict['input_ids'] = self.tokenize(
-            formatted_sample['prompt'], add_special_tokens=False
+            prompt, add_special_tokens=False
         )
-        return_dict['pixel_values'] = self.process_audio(formatted_sample['audio'])
+        return_dict['audio'] = self.process_audio(multi_modal_info['audio'])
         return return_dict
 
     def process_audio(self, raw_audio: np.array) -> torch.Tensor:
@@ -150,8 +150,8 @@ class SupervisedCollator:
             padding_value=self.pad_token_id,
         ).to(current_device)
 
-        return_dict['pixel_values'] = torch.stack(
-            [sample['pixel_values'] for sample in samples]
+        return_dict['audio'] = torch.stack(
+            [sample['audio'] for sample in samples]
         ).to(current_device)
 
         return return_dict

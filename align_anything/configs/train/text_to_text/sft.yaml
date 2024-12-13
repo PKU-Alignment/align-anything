@@ -18,7 +18,7 @@ train_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
   # Number of training epochs
-  epochs: 3
+  epochs: 1
   # Seed for random number generator
   seed: 42
   # Batch size per device for training
@@ -26,13 +26,13 @@ train_cfgs:
   # Batch size per device for evaluation
   per_device_eval_batch_size: 4
   # The number of gradient accumulation steps
-  gradient_accumulation_steps: 16
+  gradient_accumulation_steps: 1
   # Whether to use gradient checkpointing
   gradient_checkpointing: True
   # Initial learning rate
   learning_rate: 2.e-5
   # Type of learning rate scheduler
-  lr_scheduler_type: cosine
+  lr_scheduler_type: constant
   # Ratio of warmup steps for learning rate
   lr_warmup_ratio: 0.03
   # Weight decay coefficient
@@ -46,7 +46,7 @@ train_cfgs:
   # Enable float 16 precision
   fp16: False
   # The strategy of evaluation, choosing form [epoch, steps]
-  eval_strategy: epoch
+  eval_strategy: steps
   # The evaluation interval in step-wise evaluation case
   eval_interval: 10
   # The max norm of gradient
@@ -102,7 +102,7 @@ model_cfgs:
   # Whether to trust remote code
   trust_remote_code: True
   # The max token length
-  model_max_length: 2048
+  model_max_length: 4096
 # The LoRA configurations
 lora_cfgs:
   # Whether to use LoRA

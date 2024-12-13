@@ -85,6 +85,8 @@ data_cfgs:
   train_data_files: null
   # The optional arguments for loading training datasets
   train_optional_args: []
+  # The name of training datasets
+  train_name: null
   # Datasets to use for evaluation
   eval_datasets: null
   # The format template for evaluation

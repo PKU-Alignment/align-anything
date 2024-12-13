@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team and HuggingFace Inc. team. All Rights Reserved.
+# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
 #
 # This code is inspired by the HuggingFace's Transformers library.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/llava/modeling_llava.py
@@ -30,13 +30,14 @@ class AccustomedLlamaModel(LlamaForCausalLM):
 
     @property
     def infer_required_keys(self) -> list[str]:
-        return ['input_ids', 'attention_mask']
+        return ['input_ids', 'attention_mask', 'labels']
     
     def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Return the dict used for model inference"""
         return {
             'input_ids': batch['input_ids'],
             'attention_mask': batch['attention_mask'],
+            'labels': batch.get('labels'),
         }
 
 class AccustomedLlamaRewardModel(LlamaPreTrainedModel):
@@ -52,13 +53,17 @@ class AccustomedLlamaRewardModel(LlamaPreTrainedModel):
     def infer_required_keys(self) -> list[str]:
         return ['input_ids', 'attention_mask']
     
+    @property
+    def processor_available(self):
+        return False
+
     def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Return the dict used for model inference"""
         return {
             'input_ids': batch['input_ids'],
             'attention_mask': batch['attention_mask'],
         }
-
+    
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -74,7 +79,7 @@ class AccustomedLlamaRewardModel(LlamaPreTrainedModel):
 
         last_hidden_state = outputs.hidden_states[-1]
         scores = self.score_head(last_hidden_state).float()
-        B, L, E = last_hidden_state.size()
+        B, L, _ = last_hidden_state.size()
 
         if attention_mask is None:
             if B > 1:

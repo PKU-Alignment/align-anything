@@ -24,7 +24,6 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import left_padding
 from datasets import load_dataset
 
@@ -44,7 +43,7 @@ def remove_duplicate_prompts(dict_list: list[dict[str, Any]], template):
     unique_dict_list = []
     for idx in range(len(dict_list)):
         item = dict_list[idx]
-        prompt = template.format_prompt_only_sample(item)['text']
+        prompt = template.format_prompt_only_sample(item)[0]
         if prompt not in seen_prompts:
             unique_dict_list.append(item)
             seen_prompts.add(prompt)
@@ -89,22 +88,15 @@ class PromptOnlyDataset(Dataset):
             *optional_args,
             trust_remote_code=True,
         )
-        self.template = get_template_class(template)
+        self.template = template
         self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
 
         if size:
             self.raw_data = self.raw_data[:size]
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
-        formatted_sample = self.template.format_prompt_only_sample(raw_sample)
         return_dict = {}
-        raw_text = ''
-        if isinstance(formatted_sample['text'], list):
-            raw_text = self.tokenizer.eos_token.join(formatted_sample['text'])
-        elif isinstance(formatted_sample['text'], str):
-            raw_text = formatted_sample['text'] + self.tokenizer.eos_token
-        else:
-            raise NotImplementedError
+        raw_text, _ = self.template.format_prompt_only_sample(raw_sample)
         return_dict['input_ids'] = self.tokenize(raw_text)
 
         return return_dict

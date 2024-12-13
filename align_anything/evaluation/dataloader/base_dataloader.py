@@ -14,14 +14,11 @@
 # ==============================================================================
 
 import os
-import numpy as np
 from PIL import Image
-from tqdm import tqdm
-from pprint import pprint
 from abc import abstractmethod
 from torch.utils.data import Dataset
 from torchvision import transforms
-from typing import Union, List, Dict, Any, Tuple
+from typing import List, Dict, Any
 from datasets import load_dataset, DatasetDict
 from align_anything.evaluation.data_type import InferenceInput
 
