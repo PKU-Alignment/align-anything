@@ -16,45 +16,48 @@
 from __future__ import annotations
 
 import argparse
-import json
-import os
-import cv2
-import glob
-import math
-import random
 import base64
+import glob
+import json
+import math
+import os
+import pickle
+import random
 from collections import namedtuple
 from typing import Any, NamedTuple
 
+import cv2
 import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.utils.data
 import yaml
 from PIL import Image
-import torch.utils.data
 from scipy.stats import entropy
-
+from torch.autograd import Variable
 from torch.nn.utils.rnn import pad_sequence
 from torch.types import Number
-from torch.autograd import Variable
 from torchvision import transforms
-from torchvision.transforms import InterpolationMode
 from torchvision.models.inception import inception_v3
+from torchvision.transforms import InterpolationMode
 from transformers import PreTrainedTokenizerBase, ProcessorMixin
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
-import pickle
+
 from align_anything.utils.multi_process import is_main_process
 
+
 try:
-    from moviepy.editor import AudioFileClip
     import yt_dlp
+    from moviepy.editor import AudioFileClip
 except ImportError:
     if is_main_process():
-        print("""The moviepy and yt_dlp are not installed, which are required for evaluation.
+        print(
+            """The moviepy and yt_dlp are not installed, which are required for evaluation.
         You can ignore this warning if you are not using the evaluation module.
-        or install them by `pip install -e .[evaluate]`.""")
+        or install them by `pip install -e .[evaluate]`."""
+        )
 
 
 def right_padding(sequences: list[torch.Tensor], padding_value: Number) -> torch.Tensor:
@@ -95,28 +98,27 @@ def namedtuple_to_dict(obj: Any) -> Any:
     else:
         return obj
 
+
 def requestoutput_to_dict(data, mode='brief'):
     if mode == 'brief':
-        info = {
-            "prompt": data.prompt,
-            "outputs": []
-        }
+        info = {'prompt': data.prompt, 'outputs': []}
     else:
         info = {
-            "prompt": data.prompt,
-            "prompt_token_ids": data.prompt_token_ids,
-            "prompt_logprobs": [vllm_logprob_to_dict(token_logprob) for token_logprob in data.prompt_logprobs[1:]],
+            'prompt': data.prompt,
+            'prompt_token_ids': data.prompt_token_ids,
+            'prompt_logprobs': [
+                vllm_logprob_to_dict(token_logprob) for token_logprob in data.prompt_logprobs[1:]
+            ],
             'outputs': [],
             'finished': data.finished,
-            'metrics':
-            {
+            'metrics': {
                 'arrival_time': data.metrics.arrival_time,
                 'last_token_time': data.metrics.last_token_time,
                 'first_scheduled_time': data.metrics.first_scheduled_time,
                 'first_token_time': data.metrics.first_token_time,
                 'time_in_queue': data.metrics.time_in_queue,
                 'finished_time': data.metrics.finished_time,
-            }
+            },
         }
     for output in data.outputs:
         if mode == 'brief':
@@ -130,20 +132,25 @@ def requestoutput_to_dict(data, mode='brief'):
                 'text': output.text,
                 'token_ids': output.token_ids,
                 'cumulative_logprob': output.cumulative_logprob,
-                'logprobs': [vllm_logprob_to_dict(token_logprob) for token_logprob in output.logprobs],
+                'logprobs': [
+                    vllm_logprob_to_dict(token_logprob) for token_logprob in output.logprobs
+                ],
                 'finish_reason': output.finish_reason,
-                'stop_reason': output.stop_reason
+                'stop_reason': output.stop_reason,
             }
         info['outputs'].append(output)
         return info
 
+
 def vllm_logprob_to_dict(data):
     return [{v.decoded_token: v.logprob} for k, v in data.items()]
+
 
 def set_nested_value(dictionary, keys, value):
     for key in keys[:-1]:
         dictionary = dictionary.setdefault(key, {})
     dictionary[keys[-1]] = value
+
 
 def override_nested_value(config, keys, value):
     for key, subconfig in config.items():
@@ -152,14 +159,16 @@ def override_nested_value(config, keys, value):
     if keys[0] in config:
         set_nested_value(config, keys, value)
 
+
 def override_with_env_variables(config, env_prefix):
     for key, value in os.environ.items():
         if key.startswith(env_prefix):
-            keys = key[len(env_prefix):].lower().split('__')
+            keys = key[len(env_prefix) :].lower().split('__')
             override_nested_value(config, keys, value)
 
+
 def yaml_load(yaml_path):
-    
+
     # Use the PREFIX ENV PREFIX to identify the relevant environment variables
     env_prefix = 'ENV_PREFIX__'
     with open(yaml_path, encoding='utf-8') as f:
@@ -170,11 +179,12 @@ def yaml_load(yaml_path):
         except FileNotFoundError as exc:
             raise FileNotFoundError(f'{yaml_path} error: {exc}') from exc
 
+
 def read_cfgs(mode: str, task: str) -> list[dict[str, Any], dict[str, Any]]:
     current_file_path = os.path.abspath(__file__)
     parent_path = os.path.dirname(os.path.dirname(current_file_path))
     yaml_path = os.path.join(parent_path, 'configs', mode, f'{task}.yaml')
-    
+
     configs = yaml_load(yaml_path)
     zero_stage_file = os.getenv('ZERO_STAGE_FILE', configs['train_cfgs']['ds_cfgs'])
 
@@ -189,6 +199,7 @@ def read_cfgs(mode: str, task: str) -> list[dict[str, Any], dict[str, Any]]:
 
     os.environ['ZERO_STAGE'] = str(ds_cfgs['zero_optimization']['stage'])
     return configs, ds_cfgs
+
 
 def read_eval_cfgs(task: str, backend: str) -> dict[str, Any]:
     current_file_path = os.path.abspath(__file__)
@@ -220,34 +231,33 @@ def read_eval_cfgs(task: str, backend: str) -> dict[str, Any]:
 
     return configs, infer_cfgs
 
+
 def get_optimizer_grouped_parameters(
     module: nn.Module,
     weight_decay: float,
-    no_decay_name_set: set[str] | None = None,
+    no_decay_name_list=[
+        'bias',
+        'layer_norm.weight',
+        'layernorm.weight',
+        'norm.weight',
+        'ln_f.weight',
+    ],
 ) -> list[dict[str, list[nn.Parameter] | float]]:
     """Get parameter groups with customized weight decay value."""
-    if no_decay_name_set is None:
-        no_decay_name_set = {'bias', 'LayerNorm.weight'}
-    no_decay_name_set = set(map(str.lower, no_decay_name_set))
-
-    named_parameters = [
-        (name.lower(), param) for name, param in module.named_parameters() if param.requires_grad
-    ]
-
     return [
         {
             'params': [
-                param
-                for name, param in named_parameters
-                if not any(no_decay_name in name for no_decay_name in no_decay_name_set)
+                p
+                for n, p in module.named_parameters()
+                if (not any(nd in n for nd in no_decay_name_list) and p.requires_grad)
             ],
             'weight_decay': weight_decay,
         },
         {
             'params': [
-                param
-                for name, param in named_parameters
-                if any(no_decay_name in name for no_decay_name in no_decay_name_set)
+                p
+                for n, p in module.named_parameters()
+                if (any(nd in n for nd in no_decay_name_list) and p.requires_grad)
             ],
             'weight_decay': 0.0,
         },
@@ -482,8 +492,10 @@ def parse_unknown_args():
 
     return args_dict
 
+
 def remove_pad_tokens(response: list[int], pad_token_id: int) -> list[int]:
     return [token for token in response if token != pad_token_id]
+
 
 def download_video(url, video_path):
     ydl_opts = {
@@ -495,17 +507,20 @@ def download_video(url, video_path):
             ydl.download([url])
         return True
     except yt_dlp.utils.DownloadError as e:
-        print(f"Error downloading {url}: {e}")
+        print(f'Error downloading {url}: {e}')
         return False
-    
+
+
 def save_raw_outputs(raw_outputs, raw_outputs_dir):
     with open(raw_outputs_dir, 'wb') as f:
         pickle.dump(raw_outputs, f)
+
 
 def load_raw_outputs(raw_outputs_dir):
     with open(raw_outputs_dir, 'rb') as f:
         inference_output = pickle.load(f)
     return inference_output
+
 
 def download_audio(youtube_id, start_time, audiocap_id, output_dir):
     ydl_opts = {
@@ -513,34 +528,35 @@ def download_audio(youtube_id, start_time, audiocap_id, output_dir):
         'outtmpl': os.path.join(output_dir, f'{audiocap_id}.webm'),
         'noplaylist': True,
     }
-    
+
     youtube_url = f'https://www.youtube.com/watch?v={youtube_id}'
-    
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([youtube_url])
     except yt_dlp.utils.DownloadError as e:
-        print(f"Download failed for {youtube_url}. Error: {e}")
-        return None, f"Download failed for {youtube_url}. Error: {e}"
-    
+        print(f'Download failed for {youtube_url}. Error: {e}')
+        return None, f'Download failed for {youtube_url}. Error: {e}'
+
     audio_path = os.path.join(output_dir, f'{audiocap_id}.webm')
-    
+
     try:
         audio_clip = AudioFileClip(audio_path)
         end_time = audio_clip.duration
         start_time_sec = float(start_time)
         audio_segment = audio_clip.subclip(start_time_sec, min(end_time, start_time_sec + 10))
-        
+
         output_audio_path = os.path.join(output_dir, f'{audiocap_id}.mp3')
         audio_segment.write_audiofile(output_audio_path)
-        
+
         os.remove(audio_path)
         if output_audio_path.endswith('.mp3') and os.path.isfile(output_audio_path):
-            return output_audio_path, ""
-        return None, ".webm file connot be saved."
+            return output_audio_path, ''
+        return None, '.webm file cannot be saved.'
     except Exception as e:
-        print(f"Error processing audio for {audiocap_id}. Error: {e}")
-        return None, f"Error processing audio for {audiocap_id}. Error: {e}"
+        print(f'Error processing audio for {audiocap_id}. Error: {e}')
+        return None, f'Error processing audio for {audiocap_id}. Error: {e}'
+
 
 def image_crop(input_folder):
     output_folder = f'{input_folder}_crop'
@@ -550,26 +566,28 @@ def image_crop(input_folder):
         if os.path.isfile(img_path):
             try:
                 with Image.open(img_path) as img:
-                    img = img.convert("RGB")
+                    img = img.convert('RGB')
                     img_resized = img.resize((1024, 1024))
                     output_path = os.path.join(output_folder, filename)
                     img_resized.save(output_path)
             except Exception as e:
-                print(f"Error processing {filename}: {e}")
-                
+                print(f'Error processing {filename}: {e}')
+
     return output_folder
+
 
 def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
     N = len(imgs)
     assert batch_size > 0
     assert N > batch_size
 
-    device = torch.device("cuda" if cuda and torch.cuda.is_available() else "cpu")
+    device = torch.device('cuda' if cuda and torch.cuda.is_available() else 'cpu')
 
     dataloader = torch.utils.data.DataLoader(imgs, batch_size=batch_size)
     inception_model = inception_v3(pretrained=True, transform_input=False).to(device)
     inception_model.eval()
     up = nn.Upsample(size=(299, 299), mode='bilinear').to(device)
+
     def get_pred(x):
         if resize:
             x = up(x)
@@ -583,12 +601,12 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
         batchv = Variable(batch)
         batch_size_i = batch.size()[0]
 
-        preds[i*batch_size:i*batch_size + batch_size_i] = get_pred(batchv)
+        preds[i * batch_size : i * batch_size + batch_size_i] = get_pred(batchv)
 
     split_scores = []
 
     for k in range(splits):
-        part = preds[k * (N // splits): (k+1) * (N // splits), :]
+        part = preds[k * (N // splits) : (k + 1) * (N // splits), :]
         py = np.mean(part, axis=0)
         scores = []
         for i in range(part.shape[0]):
@@ -597,6 +615,7 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
         split_scores.append(np.exp(np.mean(scores)))
 
     return np.mean(split_scores), np.std(split_scores)
+
 
 def resize_frame(frame, short_edge=256):
     height, width = frame.shape[:2]
@@ -609,14 +628,15 @@ def resize_frame(frame, short_edge=256):
         resized_frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
         return resized_frame
 
+
 def get_frames(video_path, output_folder, num_frames=8):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        print(f"Error opening video file {video_path}")
+        print(f'Error opening video file {video_path}')
         return
 
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    frames_to_capture = set([0, total_frames - 1])
+    frames_to_capture = {0, total_frames - 1}
     frames_interval = (total_frames - 1) // (num_frames - 1)
     for i in range(1, num_frames - 1):
         frames_to_capture.add(i * frames_interval)
@@ -628,28 +648,31 @@ def get_frames(video_path, output_folder, num_frames=8):
             break
         if count in frames_to_capture:
             resized_frame = resize_frame(frame)
-            frame_name = f"{os.path.splitext(os.path.basename(video_path))[0]}_frame{count}.png"
+            frame_name = f'{os.path.splitext(os.path.basename(video_path))[0]}_frame{count}.png'
             output_path = os.path.join(output_folder, frame_name)
             cv2.imwrite(output_path, resized_frame)
         count += 1
 
     cap.release()
 
+
 def process_videos(video_id, video_path, frames_dir):
-    video_images = glob.glob(os.path.join(frames_dir, f"{video_id}_frame*.png"))
-    
+    video_images = glob.glob(os.path.join(frames_dir, f'{video_id}_frame*.png'))
+
     if len(video_images) == 8:
         return
     for img in video_images:
         os.remove(img)
 
     get_frames(video_path, frames_dir)
-    frames = sorted(glob.glob(os.path.join(frames_dir, f"{video_id}_frame*.png")))
+    frames = sorted(glob.glob(os.path.join(frames_dir, f'{video_id}_frame*.png')))
     return [os.path.basename(frame) for frame in frames]
 
+
 def image_b64(image_path):
-    with open(image_path, "rb") as image_file:
+    with open(image_path, 'rb') as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
+
 
 def read_video_pyav(container, indices):
     frames = []
@@ -661,11 +684,20 @@ def read_video_pyav(container, indices):
             break
         if i >= start_index and i in indices:
             frames.append(frame)
-    return np.stack([x.to_ndarray(format="rgb24") for x in frames])
+    return np.stack([x.to_ndarray(format='rgb24') for x in frames])
 
-def smart_resize(height: int, width: int, factor: int = 28, min_pixels: int = 4 * 28 * 28, max_pixels: int = 16384 * 28 * 28):
+
+def smart_resize(
+    height: int,
+    width: int,
+    factor: int = 28,
+    min_pixels: int = 4 * 28 * 28,
+    max_pixels: int = 16384 * 28 * 28,
+):
     if max(height, width) / min(height, width) > 200:
-        raise ValueError(f"absolute aspect ratio must be smaller than 200, got {max(height, width) / min(height, width)}")
+        raise ValueError(
+            f'absolute aspect ratio must be smaller than 200, got {max(height, width) / min(height, width)}'
+        )
     h_bar = max(factor, round(height / factor) * factor)
     w_bar = max(factor, round(width / factor) * factor)
     if h_bar * w_bar > max_pixels:
@@ -678,20 +710,23 @@ def smart_resize(height: int, width: int, factor: int = 28, min_pixels: int = 4 
         w_bar = math.ceil(width * beta / factor) * factor
     return h_bar, w_bar
 
+
 def smart_nframes(ele: dict, total_frames: int, video_fps: int | float):
-    fps = ele.get("fps", 2.0)
-    min_frames = math.ceil(ele.get("min_frames", 4) / 2) * 2
-    max_frames = math.floor(ele.get("max_frames", min(768, total_frames)) / 2) * 2
+    fps = ele.get('fps', 2.0)
+    min_frames = math.ceil(ele.get('min_frames', 4) / 2) * 2
+    max_frames = math.floor(ele.get('max_frames', min(768, total_frames)) / 2) * 2
     nframes = total_frames / video_fps * fps
     nframes = min(max(nframes, min_frames), max_frames)
     nframes = round(nframes / 2) * 2
     if not (2 <= nframes and nframes <= total_frames):
-        raise ValueError(f"nframes should in interval [2, {total_frames}], but got {nframes}.")
+        raise ValueError(f'nframes should in interval [2, {total_frames}], but got {nframes}.')
     return nframes
+
 
 def read_video(ele: dict, task_idx):
     import decord
-    video_path = ele["video"]
+
+    video_path = ele['video']
     vr = decord.VideoReader(video_path)
     total_frames, video_fps = len(vr), vr.get_avg_fps()
     nframes = smart_nframes(ele, total_frames=total_frames, video_fps=video_fps)
@@ -701,20 +736,31 @@ def read_video(ele: dict, task_idx):
     video = torch.tensor(video).permute(0, 3, 1, 2)
     return video
 
+
 def fetch_video(ele: dict, task_idx, image_factor: int = 28):
     video = read_video(ele, task_idx)
     nframes, _, height, width = video.shape
 
-    min_pixels = ele.get("min_pixels", 128 * 28 * 28)
-    total_pixels = ele.get("total_pixels", 24576 * 28 * 28)
+    min_pixels = ele.get('min_pixels', 128 * 28 * 28)
+    total_pixels = ele.get('total_pixels', 24576 * 28 * 28)
     max_pixels = max(min(768 * 28 * 28, total_pixels / nframes * 2), int(min_pixels * 1.05))
-    max_pixels = ele.get("max_pixels", max_pixels)
-    if "resized_height" in ele and "resized_width" in ele:
-        resized_height, resized_width = smart_resize(ele["resized_height"], ele["resized_width"], factor=image_factor)
+    max_pixels = ele.get('max_pixels', max_pixels)
+    if 'resized_height' in ele and 'resized_width' in ele:
+        resized_height, resized_width = smart_resize(
+            ele['resized_height'], ele['resized_width'], factor=image_factor
+        )
     else:
-        resized_height, resized_width = smart_resize(height, width, factor=image_factor, min_pixels=min_pixels, max_pixels=max_pixels)
-    video = transforms.functional.resize(video, [resized_height, resized_width], interpolation=InterpolationMode.BICUBIC, antialias=True).float()
+        resized_height, resized_width = smart_resize(
+            height, width, factor=image_factor, min_pixels=min_pixels, max_pixels=max_pixels
+        )
+    video = transforms.functional.resize(
+        video,
+        [resized_height, resized_width],
+        interpolation=InterpolationMode.BICUBIC,
+        antialias=True,
+    ).float()
     return video
+
 
 def extract_vision_info(conversations: list[dict] | list[list[dict]]):
     vision_infos = []
@@ -722,21 +768,23 @@ def extract_vision_info(conversations: list[dict] | list[list[dict]]):
         conversations = [conversations]
     for conversation in conversations:
         for message in conversation:
-            if isinstance(message["content"], list):
-                for ele in message["content"]:
-                    if ("video" in ele or ele["type"] in ("video")):
+            if isinstance(message['content'], list):
+                for ele in message['content']:
+                    if 'video' in ele or ele['type'] in ('video'):
                         vision_infos.append(ele)
     return vision_infos
+
 
 def process_vision(conversations: list[dict] | list[list[dict]], task_idx):
     vision_infos = extract_vision_info(conversations)
     video_inputs = []
     for vision_info in vision_infos:
-        if "video" in vision_info:
+        if 'video' in vision_info:
             video_inputs.append(fetch_video(vision_info, task_idx))
         else:
-            raise ValueError("video should in content.")
+            raise ValueError('video should in content.')
     return video_inputs
+
 
 def count_right_padding(lst, padding=0):
     """Counts the number of padding values (default is 0) on the right side of a list.

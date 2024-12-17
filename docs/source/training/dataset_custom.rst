@@ -1,4 +1,4 @@
-Template and Dataset Custumization
+Template and Dataset Customization
 ==================================
 
 We offer a highly scalable dataset registration interface,
@@ -9,7 +9,7 @@ Taking `Align-Anything-200K (Text+Image -> Text, short as AA_TI2T) <https://hugg
 example, we illustrate here how to design the template and incorporate
 it into a complete RLHF workflow.
 
-The orignal data key-value pairs for AA_TI2T are as follows:
+The original data key-value pairs for AA_TI2T are as follows:
 
 .. code:: python
 

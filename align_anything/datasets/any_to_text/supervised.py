@@ -78,9 +78,9 @@ class SupervisedDataset(Dataset):
         self.processor = processor
         self.raw_data = load_dataset(
             path,
-            name=name if name and name!="None" else None,
-            split=split if split and split!="None" else None,
-            data_files=data_files if data_files and data_files!="None" else None,
+            name=name if name and name != 'None' else None,
+            split=split if split and split != 'None' else None,
+            data_files=data_files if data_files and data_files != 'None' else None,
             *optional_args,
             trust_remote_code=True,
         )
@@ -106,30 +106,26 @@ class SupervisedDataset(Dataset):
         labels[: len(self.tokenize(formatted_prompt))] = IGNORE_INDEX
         return_dict['labels'] = labels
 
-
         if 'image' in formatted_sample.keys():
             raw_image = formatted_sample['image']
             try:
                 return_dict['image_pixel_values'] = self.processor.image_processor(
-                    raw_image, 
-                    return_tensors='pt'
+                    raw_image, return_tensors='pt'
                 )['pixel_values'][0]
-            except Exception as e:
+            except Exception:
                 return_dict['image_pixel_values'] = None
         else:
             return_dict['image_pixel_values'] = None
-            
+
         if 'audio' in formatted_sample.keys():
             raw_audio = formatted_sample['audio']
             try:
                 audio = self.processor.audio_processor(
-                    raw_audio, 
-                    sampling_rate = formatted_sample['sampling_rate'],
-                    return_tensors='pt'
+                    raw_audio, sampling_rate=formatted_sample['sampling_rate'], return_tensors='pt'
                 )
                 return_dict['audio_pixel_values'] = audio['input_features'][0]
                 return_dict['is_longer'] = audio['is_longer'][0]
-            except Exception as e:
+            except Exception:
                 return_dict['audio_pixel_values'] = None
                 return_dict['is_longer'] = None
         else:
@@ -199,18 +195,22 @@ class SupervisedCollator:
         if samples[0]['image_pixel_values'] is not None:
             if samples[0]['image_pixel_values'].dim() == 4:
                 # init list for pixel_values
-                return_dict['image_sizes'] = [ sample['image_pixel_values'].to(current_device).size(0) for sample in samples ]
-                
+                return_dict['image_sizes'] = [
+                    sample['image_pixel_values'].to(current_device).size(0) for sample in samples
+                ]
+
                 _pixel_values_list = []
                 for sample in samples:
                     pixel_values = sample['image_pixel_values']  # size = (P, C, H, W)
                     _pixel_values_list.append(pixel_values)
-                
-                return_dict['image_pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
-                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
-                
+
+                return_dict['image_pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(
+                    current_device
+                )
+                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W)
+
             else:
-                # original code for non-patches 
+                # original code for non-patches
                 return_dict['image_pixel_values'] = torch.stack(
                     [sample['image_pixel_values'] for sample in samples]
                 ).to(current_device)
@@ -220,28 +220,32 @@ class SupervisedCollator:
         if samples[0]['audio_pixel_values'] is not None:
             if samples[0]['audio_pixel_values'].dim() == 4:
                 # init list for pixel_values
-                return_dict['audio_sizes'] = [ sample['audio_pixel_values'].to(current_device).size(0) for sample in samples ]
-                
+                return_dict['audio_sizes'] = [
+                    sample['audio_pixel_values'].to(current_device).size(0) for sample in samples
+                ]
+
                 _pixel_values_list = []
                 _is_longer_list = []
                 for sample in samples:
                     pixel_values = sample['audio_pixel_values']  # size = (P, C, H, W)
                     _pixel_values_list.append(pixel_values)
-                    
+
                     is_longer = sample['is_longer']
                     _is_longer_list.append(is_longer)
-                
-                return_dict['audio_pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
-                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W) 
-                
-                return_dict['is_longer'] = torch.cat(_is_longer_list, dim=0).to(current_device) 
-                
+
+                return_dict['audio_pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(
+                    current_device
+                )
+                # size = (P1+P2+...+P_n+P1+P2+...+P_n, C, H, W)
+
+                return_dict['is_longer'] = torch.cat(_is_longer_list, dim=0).to(current_device)
+
             else:
-                # original code for non-patches 
+                # original code for non-patches
                 return_dict['audio_pixel_values'] = torch.stack(
                     [sample['audio_pixel_values'] for sample in samples]
                 ).to(current_device)
-                
+
                 return_dict['is_longer'] = torch.stack(
                     [sample['is_longer'] for sample in samples]
                 ).to(current_device)

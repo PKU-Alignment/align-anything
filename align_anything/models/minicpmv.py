@@ -18,18 +18,20 @@
 
 
 import os
+from typing import Any
+
 import torch
 import torch.utils.checkpoint
-from typing import Any
 from PIL import Image
-
 from transformers import AutoConfig, AutoTokenizer
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
-MODEL_NAME_OR_PATH = os.environ.get("MODEL_NAME_OR_PATH", "openbmb/MiniCPM-V")
+
+MODEL_NAME_OR_PATH = os.environ.get('MODEL_NAME_OR_PATH', 'openbmb/MiniCPM-V')
 CONFIG = AutoConfig.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
-CLASS_REF = CONFIG.auto_map["AutoModelForCausalLM"]
+CLASS_REF = CONFIG.auto_map['AutoModelForCausalLM']
 MiniCPMV = get_class_from_dynamic_module(CLASS_REF, MODEL_NAME_OR_PATH)
+
 
 class AccustomedMiniCPMV(MiniCPMV):
 
@@ -37,13 +39,9 @@ class AccustomedMiniCPMV(MiniCPMV):
         super().__init__(config)
         zero_stage = int(os.environ['ZERO_STAGE'])
         if zero_stage == 3:
-            raise ValueError("MiniCPM-V does not support ZeRO stage 3")
+            raise ValueError('MiniCPM-V does not support ZeRO stage 3')
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
 
-    @property
-    def infer_required_keys(self) -> list[str]:
-        return ['input_ids', 'attention_mask', 'images', 'labels']
-    
     @property
     def processor_available(self):
         return False
@@ -69,15 +67,24 @@ class AccustomedMiniCPMV(MiniCPMV):
     def set_output_embeddings(self, new_embeddings):
         self.llm.set_output_embeddings(new_embeddings)
 
-    def apply_chat_template(self, messages: list[dict[str, Any]], add_generation_prompt: bool = False) -> dict[str, Any]:
+    def apply_chat_template(
+        self, messages: list[dict[str, Any]], add_generation_prompt: bool = False
+    ) -> dict[str, Any]:
         conversation = ''
         for message in messages:
             role = message['role']
             contents = message['content']
             for content in contents:
-                if content['type'] == 'text':   
+                if content['type'] == 'text':
                     if role == 'user':
-                        content = '<用户>' + self.tokenizer.im_start + self.tokenizer.unk_token * self.config.query_num + self.tokenizer.im_end + '\n' + content['text']
+                        content = (
+                            '<用户>'
+                            + self.tokenizer.im_start
+                            + self.tokenizer.unk_token * self.config.query_num
+                            + self.tokenizer.im_end
+                            + '\n'
+                            + content['text']
+                        )
                     else:
                         content = '<AI>' + '\n' + content['text']
                     conversation += content
@@ -86,29 +93,33 @@ class AccustomedMiniCPMV(MiniCPMV):
         return conversation
 
     def forward(
-            self,
-            input_ids: torch.LongTensor | None = None,
-            attention_mask: torch.Tensor | None = None,
-            images: list[Image.Image] | None = None,
-            labels: torch.Tensor | None = None,
-            **kwargs,
-        ):
+        self,
+        input_ids: torch.LongTensor | None = None,
+        attention_mask: torch.Tensor | None = None,
+        images: list[Image.Image] | None = None,
+        labels: torch.Tensor | None = None,
+        **kwargs,
+    ):
         image_bound = []
         for input_id in input_ids:
             image_start_tokens = torch.where(input_id == self.tokenizer.im_start_id)[0] + 1
             image_end_tokens = torch.where(input_id == self.tokenizer.im_end_id)[0]
             valid_image_nums = max(len(image_start_tokens), len(image_end_tokens))
-            image_bound.append(torch.hstack(
-                [image_start_tokens[:valid_image_nums].unsqueeze(-1),
-                image_end_tokens[:valid_image_nums].unsqueeze(-1)]
-            ))
+            image_bound.append(
+                torch.hstack(
+                    [
+                        image_start_tokens[:valid_image_nums].unsqueeze(-1),
+                        image_end_tokens[:valid_image_nums].unsqueeze(-1),
+                    ]
+                )
+            )
 
         batch_size = input_ids.size(0)
         pixel_values_list = []
-        for i in range(batch_size): 
+        for i in range(batch_size):
             pixel_values = [self.transform(images[i].convert('RGB'))]
             pixel_values_list.append(torch.stack(pixel_values).to(self.device))
-        
+
         data = {
             'input_ids': input_ids,
             'attention_mask': attention_mask,
@@ -118,9 +129,4 @@ class AccustomedMiniCPMV(MiniCPMV):
         }
         vllm_embedding, _ = self.get_vllm_embedding(data)
 
-        return self.llm(
-            input_ids=None,
-            inputs_embeds=vllm_embedding,
-            **kwargs
-        )
-
+        return self.llm(input_ids=None, inputs_embeds=vllm_embedding, **kwargs)

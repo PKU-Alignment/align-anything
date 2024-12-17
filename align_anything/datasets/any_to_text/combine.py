@@ -14,23 +14,26 @@
 # ==============================================================================
 
 
-from typing import Any, List, Optional, Callable
-import math
-import random
 import itertools
+import random
+from typing import Callable, List, Optional
 
 import torch
 import torch.distributed as dist
-from torch.utils.data import Dataset, BatchSampler
+from torch.utils.data import BatchSampler, Dataset
+
 
 __all__ = [
     'CombinedDataset',
     'DistributedCombinedDatasetBatchSampler',
 ]
 
+
 class CombinedDataset(Dataset):
     def __init__(self, datasets) -> None:
-        assert all(isinstance(d, type(datasets[0])) for d in datasets), "All datasets must be of the same type"
+        assert all(
+            isinstance(d, type(datasets[0])) for d in datasets
+        ), 'All datasets must be of the same type'
         self.datasets = datasets
         self.cumulative_lengths = [0] + list(itertools.accumulate(len(d) for d in datasets))
 
@@ -40,7 +43,7 @@ class CombinedDataset(Dataset):
     def __len__(self) -> int:
         return self.cumulative_lengths[-1]
 
-    def __getitem__(self, idx: int|List[int]) -> dict[str, torch.Tensor]:
+    def __getitem__(self, idx: int | List[int]) -> dict[str, torch.Tensor]:
         if isinstance(idx, int):
             for i in range(len(self.datasets)):
                 if idx < self.cumulative_lengths[i + 1]:
@@ -48,24 +51,33 @@ class CombinedDataset(Dataset):
         elif isinstance(idx, list):
             return [self.__getitem__(i) for i in idx]
         else:
-            raise TypeError(f"Unsupported index type: {type(idx)}")
-        
+            raise TypeError(f'Unsupported index type: {type(idx)}')
+
+
 class DistributedCombinedDatasetBatchSampler(BatchSampler):
-    def __init__(self, datasets: List[Dataset], batch_size: int, num_replicas: Optional[int] = None,
-                 rank: Optional[int] = None, shuffle: bool = True, seed: int = 0, 
-                 drop_last: bool = False) -> None:
+    def __init__(
+        self,
+        datasets: List[Dataset],
+        batch_size: int,
+        num_replicas: Optional[int] = None,
+        rank: Optional[int] = None,
+        shuffle: bool = True,
+        seed: int = 0,
+        drop_last: bool = False,
+    ) -> None:
         if num_replicas is None:
             if not dist.is_available():
-                raise RuntimeError("Requires distributed package to be available")
+                raise RuntimeError('Requires distributed package to be available')
             num_replicas = dist.get_world_size()
         if rank is None:
             if not dist.is_available():
-                raise RuntimeError("Requires distributed package to be available")
+                raise RuntimeError('Requires distributed package to be available')
             rank = dist.get_rank()
         if rank >= num_replicas or rank < 0:
             raise ValueError(
-                f"Invalid rank {rank}, rank should be in the interval [0, {num_replicas - 1}]")
-        
+                f'Invalid rank {rank}, rank should be in the interval [0, {num_replicas - 1}]'
+            )
+
         self.epoch = 0
         self.rank = rank
         self.seed = seed
@@ -76,15 +88,14 @@ class DistributedCombinedDatasetBatchSampler(BatchSampler):
         self.num_replicas = num_replicas
         self.global_batch_size = batch_size * num_replicas
         self.dataset_lengths = [len(d) for d in datasets]
-        
+
         if self.shuffle:
             random.seed(self.seed + self.epoch)
-            
+
         self.indices = self.combine_indices()
         self.num_samples = len(self.indices)
         self.total_size = len(self.indices) * self.num_replicas
-        
-        
+
     def combine_indices(self) -> List[List[int]]:
         indices_list = []
         start_index = 0
@@ -94,36 +105,48 @@ class DistributedCombinedDatasetBatchSampler(BatchSampler):
             start_index += length
             if self.shuffle:
                 random.shuffle(indices)
-            count = (length + self.global_batch_size - 1) // self.global_batch_size if not self.drop_last else length // self.global_batch_size
-            
+            count = (
+                (length + self.global_batch_size - 1) // self.global_batch_size
+                if not self.drop_last
+                else length // self.global_batch_size
+            )
+
             for i in range(count):
-                global_batch_indices = indices[i * self.global_batch_size: (i + 1) * self.global_batch_size]
+                global_batch_indices = indices[
+                    i * self.global_batch_size : (i + 1) * self.global_batch_size
+                ]
                 if len(global_batch_indices) < self.global_batch_size and not self.drop_last:
-                    global_batch_indices += global_batch_indices[:self.global_batch_size - len(batch_indices)]
+                    global_batch_indices += global_batch_indices[
+                        : self.global_batch_size - len(batch_indices)
+                    ]
                 if len(global_batch_indices) == self.global_batch_size:
                     indices_dataset.append(global_batch_indices)
-                    
+
             if self.shuffle:
                 random.shuffle(indices_dataset)
             indices_list.extend(indices_dataset)
         if self.shuffle:
             random.shuffle(indices_list)
-        
+
         return indices_list
 
-
-    def __iter__(self)-> iter:
+    def __iter__(self) -> iter:
         # subsample
         indices = []
         for _, global_indices in enumerate(self.indices):
-            global_indice = [global_indices[i * self.local_batch_size:(i + 1) * self.local_batch_size] for i in range(self.num_replicas)]
+            global_indice = [
+                global_indices[i * self.local_batch_size : (i + 1) * self.local_batch_size]
+                for i in range(self.num_replicas)
+            ]
             indices.append(global_indice[self.rank])
-        assert len(indices) == self.num_samples, f"rank {self.rank}: the num_sample is {self.num_samples}, but the length of indices is {len(indices)}."
+        assert (
+            len(indices) == self.num_samples
+        ), f'rank {self.rank}: the num_sample is {self.num_samples}, but the length of indices is {len(indices)}.'
         return iter(indices)
 
     def __len__(self) -> int:
         return self.num_samples
-        
+
     def set_epoch(self, epoch: int) -> None:
         r"""
         Set the epoch for this sampler.

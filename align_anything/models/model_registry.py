@@ -15,25 +15,21 @@
 
 
 import importlib
-
+from collections import OrderedDict
 from typing import Any
 
-from collections import OrderedDict
-
 from transformers import AutoConfig
-
 from transformers.models.auto.auto_factory import (
     _BaseAutoModelClass,
     _LazyAutoMapping,
     getattribute_from_module,
 )
-
 from transformers.models.auto.configuration_auto import (
     CONFIG_MAPPING_NAMES,
     model_type_to_module_name,
 )
-
 from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
+
 
 class _LazyAutoMappingInAlignAnything(_LazyAutoMapping):
     def _load_attr_from_module(self, model_type: str, attr: str) -> Any:
@@ -45,16 +41,24 @@ class _LazyAutoMappingInAlignAnything(_LazyAutoMapping):
                     'align_anything.models',
                 )
             except ImportError:
-                self._modules[module_name] = importlib.import_module(f".{module_name}", "transformers.models")
+                self._modules[module_name] = importlib.import_module(
+                    f'.{module_name}', 'transformers.models'
+                )
         return getattribute_from_module(self._modules[module_name], attr)
 
+
 def get_model_class_for_trust_remote_code(model_type, model_mapping_names):
-    model_class_name = model_mapping_names[model_type] 
+    model_class_name = model_mapping_names[model_type]
     try:
-        model_class = getattr(importlib.import_module(f'.{model_type}', 'align_anything.models'), model_class_name)
+        model_class = getattr(
+            importlib.import_module(f'.{model_type}', 'align_anything.models'), model_class_name
+        )
     except ImportError:
-        model_class = getattr(importlib.import_module(f'.{model_type}', 'transformers.models'), model_class_name)
+        model_class = getattr(
+            importlib.import_module(f'.{model_type}', 'transformers.models'), model_class_name
+        )
     return model_class
+
 
 MODEL_FOR_SCORE_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
     [
@@ -104,8 +108,10 @@ TRUST_REMOTE_CODE_MODEL_MAPPING: OrderedDict[str, Any] = _LazyAutoMappingInAlign
     TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES,
 )
 
+
 class AnyModelForScore(_BaseAutoModelClass):
     _model_mapping: OrderedDict[str, Any] = MODEL_FOR_SCORE_MAPPING
+
 
 class AnyModel(_BaseAutoModelClass):
     _model_mapping: OrderedDict[str, Any] = MODEL_MAPPING
@@ -130,15 +136,17 @@ class AnyModel(_BaseAutoModelClass):
         )
         model_type = config.model_type
         if model_type in TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES:
-            return get_model_class_for_trust_remote_code(model_type, TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES).from_pretrained(
-                pretrained_model_name_or_path, 
-                *model_args, 
+            return get_model_class_for_trust_remote_code(
+                model_type, TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES
+            ).from_pretrained(
+                pretrained_model_name_or_path,
+                *model_args,
                 trust_remote_code=trust_remote_code,
-                **kwargs
+                **kwargs,
             )
         return super().from_pretrained(
-            pretrained_model_name_or_path, 
-            *model_args, 
+            pretrained_model_name_or_path,
+            *model_args,
             trust_remote_code=trust_remote_code,
-            **kwargs
+            **kwargs,
         )

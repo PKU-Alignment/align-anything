@@ -30,4 +30,3 @@ deepspeed \
      --output_dir ${OUTPUT_DIR} \
      --save_interval 600 \
      --epochs 5
- 

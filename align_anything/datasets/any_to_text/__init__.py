@@ -15,5 +15,5 @@
 """Dataset classes for any to text training."""
 
 
-from align_anything.datasets.any_to_text.supervised import *
 from align_anything.datasets.any_to_text.combine import *
+from align_anything.datasets.any_to_text.supervised import *

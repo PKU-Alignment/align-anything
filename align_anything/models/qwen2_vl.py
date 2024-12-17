@@ -22,14 +22,16 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.utils.checkpoint
-from torch.nn import CrossEntropyLoss
 from torch import nn
-from transformers import Qwen2VLPreTrainedModel, AutoConfig
+from torch.nn import CrossEntropyLoss
+from transformers import AutoConfig, Qwen2VLPreTrainedModel
 from transformers.models.qwen2_vl.modeling_qwen2_vl import (
     Qwen2VLCausalLMOutputWithPast,
     Qwen2VLForConditionalGeneration,
 )
+
 from align_anything.models.reward_model import ScoreModelOutput
+
 
 @dataclass
 class AccustomedQwen2VLOutput(Qwen2VLCausalLMOutputWithPast):
@@ -143,9 +145,13 @@ class AccustomedQwen2VLModel(Qwen2VLForConditionalGeneration):
         "The image shows a street scene with a red stop sign in the foreground. In the background, there is a large red gate with Chinese characters ..."
         ```"""
 
-        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_attentions = (
+            output_attentions if output_attentions is not None else self.config.output_attentions
+        )
         output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+            output_hidden_states
+            if output_hidden_states is not None
+            else self.config.output_hidden_states
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
@@ -153,19 +159,22 @@ class AccustomedQwen2VLModel(Qwen2VLForConditionalGeneration):
             inputs_embeds = self.model.embed_tokens(input_ids)
             if pixel_values is not None:
                 pixel_values = pixel_values.type(self.visual.get_dtype())
-                image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw).to(inputs_embeds.device)
+                image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw).to(
+                    inputs_embeds.device
+                )
                 image_mask = input_ids == self.config.image_token_id
                 if self.training:
                     inputs_embeds = inputs_embeds.clone()
                 inputs_embeds[image_mask] = image_embeds
             if pixel_values_videos is not None:
                 pixel_values_videos = pixel_values_videos.type(self.visual.get_dtype())
-                video_embeds = self.visual(pixel_values_videos, grid_thw=video_grid_thw).to(inputs_embeds.device)
+                video_embeds = self.visual(pixel_values_videos, grid_thw=video_grid_thw).to(
+                    inputs_embeds.device
+                )
                 video_mask = input_ids == self.config.video_token_id
                 inputs_embeds[video_mask] = video_embeds
             if attention_mask is not None:
                 attention_mask = attention_mask.to(inputs_embeds.device)
-        
 
         outputs = self.model(
             input_ids=None,
@@ -209,8 +218,9 @@ class AccustomedQwen2VLModel(Qwen2VLForConditionalGeneration):
             rope_deltas=rope_deltas,
         )
 
+
 class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
-    
+
     supports_gradient_checkpointing = True
 
     def __init__(self, config: AutoConfig):
@@ -218,10 +228,6 @@ class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
         setattr(self, self.base_model_prefix, AccustomedQwen2VLModel(config))
         self.score_head = nn.Linear(3584, 1, bias=False)
 
-    @property
-    def infer_required_keys(self) -> list[str]:
-        return ['input_ids', 'attention_mask', 'pixel_values', 'pixel_values_videos']
-    
     def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         return {
             'input_ids': batch['input_ids'],
@@ -229,18 +235,19 @@ class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
             'pixel_values': batch['pixel_values'],
             'pixel_values_videos': batch['pixel_values_videos'],
         }
-    
+
     @property
     def processor_available(self):
         return True
 
-    def forward(self, 
-                input_ids: torch.LongTensor, 
-                attention_mask: torch.LongTensor, 
-                pixel_values: torch.FloatTensor,
-                pixel_values_videos: torch.FloatTensor,
-                **kwargs
-        ) -> ScoreModelOutput:
+    def forward(
+        self,
+        input_ids: torch.LongTensor,
+        attention_mask: torch.LongTensor,
+        pixel_values: torch.FloatTensor,
+        pixel_values_videos: torch.FloatTensor,
+        **kwargs,
+    ) -> ScoreModelOutput:
         outputs = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -256,7 +263,7 @@ class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
         end_scores = self.score_head(end_last_hidden_state).float()
         end_last_hidden_state = end_last_hidden_state.squeeze(dim=1)
         end_scores = end_scores.squeeze(dim=1)
-        
+
         return ScoreModelOutput(
             scores=scores,
             end_scores=end_scores,

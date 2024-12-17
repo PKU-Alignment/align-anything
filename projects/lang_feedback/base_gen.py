@@ -13,20 +13,24 @@
 # limitations under the License.
 # ==============================================================================
 
-from __future__  import annotations
+from __future__ import annotations
+
+import argparse
 import json
 import os
-import argparse
-
 import sys
+
 from tqdm.auto import tqdm
-from vllm import SamplingParams,LLM
+from vllm import LLM, SamplingParams
+
+
 PROMPT_USER: str = 'USER: {prompt}'
 PROMPT_ASSISTANT: str = '\nASSISTANT:'  # should not have a space at the end
 PROMPT_INPUT: str = PROMPT_USER + PROMPT_ASSISTANT
-from datasets import load_dataset, concatenate_datasets
-from PIL import Image
 import requests
+from PIL import Image
+
+from datasets import concatenate_datasets, load_dataset
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -36,7 +40,7 @@ def parse_arguments() -> argparse.Namespace:
     )
     # Model
     parser.add_argument(
-       '--model_name_or_path',
+        '--model_name_or_path',
         type=str,
         help='the name or path of the first model (champion) in the arena to load from',
     )
@@ -59,44 +63,44 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def generate_answer_by_vllm(problems: list[str], model_name_or_path:str) ->list[str]:
+def generate_answer_by_vllm(problems: list[str], model_name_or_path: str) -> list[str]:
     samplingparams = SamplingParams(
-        temperature = 1.0,
-        repetition_penalty = 1.1,
-        max_tokens = 2048,
+        temperature=1.0,
+        repetition_penalty=1.1,
+        max_tokens=2048,
         n=1,
     )
-    
-    llm = LLM(model=model_name_or_path, 
-              gpu_memory_utilization=0.95, 
-              swap_space=32, 
-              trust_remote_code=True, 
-              tensor_parallel_size=8)
+
+    llm = LLM(
+        model=model_name_or_path,
+        gpu_memory_utilization=0.95,
+        swap_space=32,
+        trust_remote_code=True,
+        tensor_parallel_size=8,
+    )
     model_name = model_name_or_path.split('/')[-1]
     outputs = llm.generate(problems, samplingparams)
     answers = []
-    
-    for output, entry in tqdm(zip(outputs, problems)) :
+
+    for output, entry in tqdm(zip(outputs, problems)):
         items = []
         for i in range(len(output.outputs)):
-            item = {
-                'from': model_name,
-                'response': output.outputs[i].text.strip()
-            }
+            item = {'from': model_name, 'response': output.outputs[i].text.strip()}
             items.append(item)
         answers.append(items)
-    
+
     return answers
+
 
 def main() -> None:
     args = parse_arguments()
     input_path = args.input_path
-    
-    with open(input_path, 'r', encoding='utf-8') as f:
+
+    with open(input_path, encoding='utf-8') as f:
         data = json.load(f)
-    
-    print(f"input_path: {input_path}")
- 
+
+    print(f'input_path: {input_path}')
+
     problems = []
     for idx in range(len(data)):
         image_file = data[idx]['image']
@@ -106,24 +110,25 @@ def main() -> None:
             'multi_modal_data': {'image': Image.open(image_file)},
         }
         problems.append(problem)
-        
+
     answers = generate_answer_by_vllm(problems, args.model_name_or_path)
     final_answer = []
     for idx in range(len(answers)):
         item = answers[idx]
         final_answer.append(item)
-    
+
     os.makedirs(args.output_dir, exist_ok=True)
-    
+
     for idx, answer in enumerate(answers):
         data[idx]['generated'] = answer
     if args.output_name is None:
         args.output_name = f"generated_base_{args.model_name_or_path.split('/')[-1]}.json"
     else:
-        args.output_name = f"{args.output_name}.json"
+        args.output_name = f'{args.output_name}.json'
     output_file = os.path.join(args.output_dir, args.output_name)
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
-    
-if __name__=='__main__':
+
+
+if __name__ == '__main__':
     sys.exit(main())

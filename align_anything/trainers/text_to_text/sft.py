@@ -48,15 +48,11 @@ class SupervisedTrainer(SupervisedTrainerBase):
         self.ds_train_cfgs = prepare_ds_train_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
         self.global_step = 0
         self.infer_batch = lambda batch: batch
-        self.infer_required_keys = []
-
         self.init_check()
         dist.barrier()
         self.init_models()
         if hasattr(self.model, 'infer_batch'):
             self.infer_batch = self.model.infer_batch
-        if hasattr(self.model, 'infer_required_keys'):
-            self.infer_required_keys = self.model.infer_required_keys
         dist.barrier()
         self.init_datasets()
         dist.barrier()
@@ -171,7 +167,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
             named_eval_dataloader = {self.cfgs.data_cfgs.eval_template: self.eval_dataloader}
         else:
             named_eval_dataloader = self.eval_dataloader
-        
+
         self.model.eval()
         if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_enabled:
             self.model.gradient_checkpointing_disable()

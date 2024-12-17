@@ -442,7 +442,9 @@ class Zephyr:
 @register_template('LLAMA_3_2')
 class LLAMA_3_2:
     system_prompt: str = ''
-    user_prompt: str = '<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n<|image|>{input}<|eot_id|>'
+    user_prompt: str = (
+        '<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n<|image|>{input}<|eot_id|>'
+    )
     assistant_prompt: str = '<|start_header_id|>assistant<|end_header_id|>\n{output}'
     split_token: str = '<|start_header_id|>assistant<|end_header_id|>'
     separator: str = '###'
@@ -451,7 +453,9 @@ class LLAMA_3_2:
 @register_template('Qwen2Audio')
 class Qwen2Audio:
     system_prompt: str = 'You are a helpful assistant.'
-    user_prompt: str = '<|im_start|>user\nAudio 1: <|audio_bos|><|AUDIO|><|audio_eos|>\n{input}<|im_end|>\n'
+    user_prompt: str = (
+        '<|im_start|>user\nAudio 1: <|audio_bos|><|AUDIO|><|audio_eos|>\n{input}<|im_end|>\n'
+    )
     assistant_prompt: str = '<|im_start|>assistant{output}'
     split_token: str = '\nassistant\n'
     separator: str = '\nassistant\n'

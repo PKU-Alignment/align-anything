@@ -13,5 +13,5 @@
 # limitations under the License.
 # ==============================================================================
 
-from align_anything.configs.format_dataset import *
 from align_anything.configs.eval_template import *
+from align_anything.configs.format_dataset import *

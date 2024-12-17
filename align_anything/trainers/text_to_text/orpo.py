@@ -18,7 +18,6 @@
 import argparse
 import os
 import sys
-from typing import Any
 
 import deepspeed
 import torch

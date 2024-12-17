@@ -13,13 +13,12 @@
 # limitations under the License.
 # ==============================================================================
 
-import copy
 from typing import Any, Callable
-from regex import D
 from typing_extensions import TypedDict  # Python 3.10+
 
 import torch
 import transformers
+from regex import D
 from torch.utils.data import Dataset
 from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
@@ -95,14 +94,18 @@ class SupervisedDataset(Dataset):
             raw_text = formatted_sample['text'] + self.tokenizer.eos_token
         else:
             raise NotImplementedError
-        
-        text_dict = self.processor(raw_text, formatted_sample['image'], return_tensors='pt').to(dtype = torch.bfloat16)
-        
+
+        text_dict = self.processor(raw_text, formatted_sample['image'], return_tensors='pt').to(
+            dtype=torch.bfloat16
+        )
+
         return_dict['input_ids'] = text_dict['input_ids'].squeeze()
 
         formatted_prompt = formatted_sample['prompt']
-        prompt_dict = self.processor(formatted_prompt, formatted_sample['input_image'], return_tensors='pt').to(dtype = torch.bfloat16)
-        
+        prompt_dict = self.processor(
+            formatted_prompt, formatted_sample['input_image'], return_tensors='pt'
+        ).to(dtype=torch.bfloat16)
+
         labels = return_dict['input_ids'].clone()
         labels[: len(prompt_dict['input_ids'])] = IGNORE_INDEX
         return_dict['labels'] = labels
@@ -166,7 +169,7 @@ class SupervisedTokenizedDataset(Dataset):
         self.tokenizer = tokenizer
         self.processor = processor
 
-        self.raw_data = torch.load(f"{path}/{data_files}", map_location=torch.device('cpu'))
+        self.raw_data = torch.load(f'{path}/{data_files}', map_location=torch.device('cpu'))
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
         self.template = template
@@ -182,7 +185,8 @@ class SupervisedTokenizedDataset(Dataset):
     def __len__(self) -> int:
         """Get the number of samples in the dataset."""
         return len(self.raw_data)
-    
+
+
 class SupervisedCollator:
 
     def __init__(self, pad_token_id: int) -> None:
@@ -207,7 +211,6 @@ class SupervisedCollator:
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
         )
 
-        
         return_dict['pixel_values'] = None
 
         return return_dict

@@ -59,6 +59,7 @@ class SuperviseTrainer(SupervisedtextTrainer):
         )
         self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
 
+
 def main():
     # setup distribution training
     deepspeed.init_distributed()

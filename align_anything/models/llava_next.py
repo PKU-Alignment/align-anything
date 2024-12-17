@@ -17,26 +17,13 @@
 # ==============================================================================
 
 
-from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
-
 import torch
 import torch.utils.checkpoint
-from torch import nn
-from transformers import LlavaNextPreTrainedModel
-from transformers.models.llava_next.modeling_llava_next import (
-    LlavaNextCausalLMOutputWithPast,
-    LlavaNextForConditionalGeneration,
-    image_size_to_num_patches,
-)
+from transformers.models.llava_next.modeling_llava_next import LlavaNextForConditionalGeneration
 
 
 class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
 
-    @property
-    def infer_required_keys(self) -> list[str]:
-        return ['input_ids', 'attention_mask', 'pixel_values', 'labels', 'image_sizes']
-    
     @property
     def processor_available(self):
         return True
@@ -45,8 +32,8 @@ class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
         """Return the dict used for model inference"""
         return {
             'input_ids': batch['input_ids'],
-            'attention_mask': batch['attention_mask'],
-            'pixel_values': batch['pixel_values'],
+            'attention_mask': batch.get('attention_mask'),
+            'pixel_values': batch.get('pixel_values'),
             'labels': batch.get('labels'),
             'image_sizes': batch.get('image_sizes'),
         }

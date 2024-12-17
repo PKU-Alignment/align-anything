@@ -96,7 +96,7 @@ Installation
 
 .. code:: bash
 
-   # We tested on the H800 computing cluster, and this version of CUDA works well. 
+   # We tested on the H800 computing cluster, and this version of CUDA works well.
    # You can adjust this version according to the actual situation of the computing cluster.
 
    conda install nvidia/label/cuda-12.2.0::cuda
@@ -112,11 +112,11 @@ Installation
 
    export CUDA_HOME="/usr/local/cuda"
 
-Fianlly, install ``align-anything`` by:
+Finally, install ``align-anything`` by:
 
 .. code:: bash
 
-   pip install -e .
+   pip install -e .[all]
 
 Wandb Logger
 ~~~~~~~~~~~~

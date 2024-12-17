@@ -110,14 +110,17 @@ class PreferenceDataset(Dataset):
             raw_worse_text = formatted_sample['worse_text'] + self.tokenizer.eos_token
         else:
             raise NotImplementedError
-        return_dict['better_input_ids'] = self.processor(raw_better_text, formatted_sample['better_images'], return_tensors='pt')
-        return_dict['worse_input_ids'] = self.processor(raw_worse_text, formatted_sample['worse_images'], return_tensors='pt')
+        return_dict['better_input_ids'] = self.processor(
+            raw_better_text, formatted_sample['better_images'], return_tensors='pt'
+        )
+        return_dict['worse_input_ids'] = self.processor(
+            raw_worse_text, formatted_sample['worse_images'], return_tensors='pt'
+        )
 
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
         return PreferenceCollator(self.tokenizer.pad_token_id)
-
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
@@ -128,6 +131,7 @@ class PreferenceDataset(Dataset):
     def __len__(self) -> int:
         """Get the number of samples in the dataset."""
         return len(self.valid_indices)
+
 
 class PreferenceTokenizedDataset(Dataset):
 
@@ -149,8 +153,8 @@ class PreferenceTokenizedDataset(Dataset):
         self.tokenizer = tokenizer
         self.processor = processor
         self.template = template
-        
-        self.raw_data = torch.load(f"{path}/{data_files}", map_location=torch.device('cpu'))
+
+        self.raw_data = torch.load(f'{path}/{data_files}', map_location=torch.device('cpu'))
         self.valid_indices = self.filter_indices()
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
@@ -165,7 +169,6 @@ class PreferenceTokenizedDataset(Dataset):
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
         return PreferenceCollator(self.tokenizer.pad_token_id)
 
-
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
         raw_sample = self.raw_data[index]
@@ -174,7 +177,8 @@ class PreferenceTokenizedDataset(Dataset):
     def __len__(self) -> int:
         """Get the number of samples in the dataset."""
         return len(self.valid_indices)
-    
+
+
 class PreferenceCollator:
 
     def __init__(self, pad_token_id: int) -> None:
@@ -201,7 +205,7 @@ class PreferenceCollator:
 
         if 'pixel_values' in samples[0].keys():
 
-            a = return_dict['attention_mask'].shape[0]
+            return_dict['attention_mask'].shape[0]
 
             if samples[0]['pixel_values'].dim() == 4:
                 # init list for pixel_values

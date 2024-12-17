@@ -150,6 +150,7 @@ class PromptOnlyDataset(Dataset):
         """Get the number of samples in the dataset."""
         return len(self.raw_data)
 
+
 class PromptOnlyTokenizedDataset(Dataset):
 
     def __init__(
@@ -170,11 +171,10 @@ class PromptOnlyTokenizedDataset(Dataset):
         self.tokenizer = tokenizer
         self.processor = processor
         self.template = template
-        
-        self.raw_data = torch.load(f"{path}/{data_files}", map_location=torch.device('cpu'))
+
+        self.raw_data = torch.load(f'{path}/{data_files}', map_location=torch.device('cpu'))
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
-
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
         return PromptOnlyCollator(self.tokenizer.pad_token_id)
@@ -213,7 +213,7 @@ class PromptOnlyCollator:
 
         if 'pixel_values' in samples[0].keys():
 
-            a = return_dict['attention_mask'].shape[0]
+            return_dict['attention_mask'].shape[0]
 
             if samples[0]['pixel_values'].dim() == 4:
                 # init list for pixel_values

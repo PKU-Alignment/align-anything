@@ -23,7 +23,7 @@ from transformers.utils import (
 )
 
 
-_import_structure = {"configuration_emu3visionvq": ["Emu3VisionVQConfig"]}
+_import_structure = {'configuration_emu3visionvq': ['Emu3VisionVQConfig']}
 
 try:
     if not is_torch_available():
@@ -31,9 +31,9 @@ try:
 except OptionalDependencyNotAvailable:
     pass
 else:
-    _import_structure["modeling_emu3visionvq"] = [
-        "Emu3VisionVQModel",
-        "Emu3VisionVQPretrainedModel",
+    _import_structure['modeling_emu3visionvq'] = [
+        'Emu3VisionVQModel',
+        'Emu3VisionVQPretrainedModel',
     ]
 
 try:
@@ -42,7 +42,7 @@ try:
 except OptionalDependencyNotAvailable:
     pass
 else:
-    _import_structure["image_processing_emu3visionvq"] = ["Emu3VisionVQImageProcessor"]
+    _import_structure['image_processing_emu3visionvq'] = ['Emu3VisionVQImageProcessor']
 
 if TYPE_CHECKING:
     from .configuration_emu3visionvq import Emu3VisionVQConfig
@@ -53,10 +53,7 @@ if TYPE_CHECKING:
     except OptionalDependencyNotAvailable:
         pass
     else:
-        from .modeling_emu3visionvq import (
-            Emu3VisionVQModel,
-            Emu3VisionVQPretrainedModel,
-        )
+        from .modeling_emu3visionvq import Emu3VisionVQModel, Emu3VisionVQPretrainedModel
 
     try:
         if not is_vision_available():
@@ -69,4 +66,4 @@ if TYPE_CHECKING:
 else:
     import sys
 
-    sys.modules[__name__] = _LazyModule(__name__, globals()["__file__"], _import_structure)
+    sys.modules[__name__] = _LazyModule(__name__, globals()['__file__'], _import_structure)

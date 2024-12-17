@@ -118,8 +118,8 @@ class Emu3Config(PretrainedConfig):
     >>> configuration = model.config
     ```"""
 
-    model_type = "Emu3"
-    keys_to_ignore_at_inference = ["past_key_values"]
+    model_type = 'Emu3'
+    keys_to_ignore_at_inference = ['past_key_values']
 
     def __init__(
         self,
@@ -129,7 +129,7 @@ class Emu3Config(PretrainedConfig):
         num_hidden_layers: int = 32,
         num_attention_heads: int = 32,
         num_key_value_heads: Optional[int] = 8,
-        hidden_act: str = "silu",
+        hidden_act: str = 'silu',
         max_position_embeddings: int = 9216,
         initializer_range: float = 0.02,
         rms_norm_eps: float = 1e-5,
@@ -142,7 +142,7 @@ class Emu3Config(PretrainedConfig):
         eoi_token_id: int = 151853,
         eol_token_id: int = 151846,
         eof_token_id: int = 151847,
-        image_area: int = 720 * 720, 
+        image_area: int = 720 * 720,
         pretraining_tp: int = 1,
         tie_word_embeddings: bool = False,
         rope_theta: float = 1000000.0,
@@ -196,14 +196,20 @@ class Emu3Config(PretrainedConfig):
 
         if not isinstance(self.rope_scaling, dict) or len(self.rope_scaling) != 2:
             raise ValueError(
-                "`rope_scaling` must be a dictionary with with two fields, `type` and `factor`, "
-                f"got {self.rope_scaling}"
+                '`rope_scaling` must be a dictionary with with two fields, `type` and `factor`, '
+                f'got {self.rope_scaling}'
             )
-        rope_scaling_type = self.rope_scaling.get("type", None)
-        rope_scaling_factor = self.rope_scaling.get("factor", None)
-        if rope_scaling_type is None or rope_scaling_type not in ["linear", "dynamic"]:
+        rope_scaling_type = self.rope_scaling.get('type', None)
+        rope_scaling_factor = self.rope_scaling.get('factor', None)
+        if rope_scaling_type is None or rope_scaling_type not in ['linear', 'dynamic']:
             raise ValueError(
                 f"`rope_scaling`'s type field must be one of ['linear', 'dynamic'], got {rope_scaling_type}"
             )
-        if rope_scaling_factor is None or not isinstance(rope_scaling_factor, float) or rope_scaling_factor <= 1.0:
-            raise ValueError(f"`rope_scaling`'s factor field must be a float > 1, got {rope_scaling_factor}")
+        if (
+            rope_scaling_factor is None
+            or not isinstance(rope_scaling_factor, float)
+            or rope_scaling_factor <= 1.0
+        ):
+            raise ValueError(
+                f"`rope_scaling`'s factor field must be a float > 1, got {rope_scaling_factor}"
+            )

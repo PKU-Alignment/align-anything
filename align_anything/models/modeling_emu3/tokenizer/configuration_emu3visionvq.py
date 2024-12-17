@@ -26,7 +26,7 @@ logger = logging.get_logger(__name__)
 
 class Emu3VisionVQConfig(PretrainedConfig):
     r"""
-    This is the configuration class to store the configuration of a [`Emu3VisionVQ`]. It is used to instantiate an video movq 
+    This is the configuration class to store the configuration of a [`Emu3VisionVQ`]. It is used to instantiate an video movq
     model according to the specified arguments, defining the model architecture. Instantiating a configuration with the
     defaults will yield a configuration to the VQ model presented in Emu3 paper.
 
@@ -73,7 +73,7 @@ class Emu3VisionVQConfig(PretrainedConfig):
     >>> configuration = model.config
     ```"""
 
-    model_type = "Emu3VisionVQ"
+    model_type = 'Emu3VisionVQ'
 
     def __init__(
         self,

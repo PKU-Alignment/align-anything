@@ -16,6 +16,7 @@
 
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
+
 import librosa
 import torch
 import transformers
@@ -73,9 +74,9 @@ class SupervisedDataset(Dataset):
         self.processor = processor
         self.raw_data = load_dataset(
             path,
-            name=name if name and name!="None" else None,
-            split=split if split and split!="None" else None,
-            data_files=data_files if data_files and data_files!="None" else None,
+            name=name if name and name != 'None' else None,
+            split=split if split and split != 'None' else None,
+            data_files=data_files if data_files and data_files != 'None' else None,
             *optional_args,
             trust_remote_code=True,
         )
@@ -88,16 +89,27 @@ class SupervisedDataset(Dataset):
         return_dict = {}
         raw_text = conversation
 
-        text = self.processor.apply_chat_template(raw_text, add_generation_prompt=False, tokenize=False)
-        prompt = self.processor.apply_chat_template(prompt, add_generation_prompt=True, tokenize=False)
+        text = self.processor.apply_chat_template(
+            raw_text, add_generation_prompt=False, tokenize=False
+        )
+        prompt = self.processor.apply_chat_template(
+            prompt, add_generation_prompt=True, tokenize=False
+        )
 
         audios = []
 
         if isinstance(meta_info['audio_path'], dict):
-            raw_audio, raw_sr = meta_info['audio_path']['array'], meta_info['audio_path']['sampling_rate']
-            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
+            raw_audio, raw_sr = (
+                meta_info['audio_path']['array'],
+                meta_info['audio_path']['sampling_rate'],
+            )
+            audio = librosa.resample(
+                raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate
+            )
         else:
-            audio = librosa.load(meta_info['audio_path'], sr=self.processor.feature_extractor.sampling_rate)[0]
+            audio = librosa.load(
+                meta_info['audio_path'], sr=self.processor.feature_extractor.sampling_rate
+            )[0]
         audios.append(audio)
 
         inputs = self.tokenize(text=text, audios=audios, padding=True)
@@ -123,9 +135,9 @@ class SupervisedDataset(Dataset):
         """Tokenize a text string into a tensor representation."""
 
         return self.processor(
-            text=text, 
-            audios=audios, 
-            return_tensors="pt",
+            text=text,
+            audios=audios,
+            return_tensors='pt',
             padding=padding,
             sampling_rate=self.processor.feature_extractor.sampling_rate,
         )
@@ -163,7 +175,11 @@ class SupervisedCollator:
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
         )
 
-        return_dict['input_features'] = torch.cat([sample['input_features'] for sample in samples], dim=0).to(current_device)
-        return_dict['feature_attention_mask'] = torch.cat([sample['feature_attention_mask'] for sample in samples], dim=0).to(current_device)
+        return_dict['input_features'] = torch.cat(
+            [sample['input_features'] for sample in samples], dim=0
+        ).to(current_device)
+        return_dict['feature_attention_mask'] = torch.cat(
+            [sample['feature_attention_mask'] for sample in samples], dim=0
+        ).to(current_device)
 
         return return_dict

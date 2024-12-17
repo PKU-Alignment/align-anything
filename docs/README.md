@@ -6,7 +6,7 @@ This folder contains the source code for building the Align-Anything documentati
 
 You only need two simple steps to deploy and render the Align-Anything documentation on your local webpage.
 
-1. Install the depency
+1. Install the dependency
 
 ```bash
 # suppose you are in the root dir of align-anything
@@ -25,7 +25,7 @@ To build the page locally with Sphinx, you only need to run the following under 
 sphinx-autobuild source source/_build/html
 ```
 
-The default port for deployment is `8000`. If the port has already beed used, you can switch it to another port, *i.e.,* `8080`, by passing the `--port` arguments:
+The default port for deployment is `8000`. If the port has already n used, you can switch it to another port, *i.e.,* `8080`, by passing the `--port` arguments:
 
 ```bash
 sphinx-autobuild --port 8080 source source/_build/html

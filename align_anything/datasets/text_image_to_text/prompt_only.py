@@ -97,7 +97,7 @@ class PromptOnlyDataset(Dataset):
         self.padding_side = padding_side
 
         if size:
-            self.raw_data = self.raw_data[:int(size)]
+            self.raw_data = self.raw_data[: int(size)]
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
         formatted_prompt, meta_info = self.template.format_prompt_only_sample(raw_sample)
@@ -148,7 +148,12 @@ class PromptOnlyDataset(Dataset):
 
 class PromptOnlyCollator:
 
-    def __init__(self, pad_token_id: int, processor: transformers.ProcessorMixin | transforms.Compose | None = None, padding_side: str = 'left') -> None:
+    def __init__(
+        self,
+        pad_token_id: int,
+        processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        padding_side: str = 'left',
+    ) -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
         self.processor = processor
@@ -162,7 +167,13 @@ class PromptOnlyCollator:
         return_dict['images'] = images
         concated_text = [sample['conversation'] for sample in samples]
 
-        multi_modal_padding = self.processor(images=images, text=concated_text, return_tensors='pt', padding=True, padding_side=self.padding_side)
+        multi_modal_padding = self.processor(
+            images=images,
+            text=concated_text,
+            return_tensors='pt',
+            padding=True,
+            padding_side=self.padding_side,
+        )
 
         for key, value in multi_modal_padding.items():
             if isinstance(value, torch.Tensor):

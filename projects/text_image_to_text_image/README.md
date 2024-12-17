@@ -4,7 +4,7 @@
 
 Currently, the official Transformer repo does not support Chameleon model with image output (see [this PR](https://github.com/huggingface/transformers/pull/32013) for more details), so we rely on a certain fork of the repo.
 
-After installing Align-Anything and correctly set up the envrionment, you can install the forked stable version of the repo by running:
+After installing Align-Anything and correctly set up the environment, you can install the forked stable version of the repo by running:
 
 ```bash
 pip install git+https://github.com/htlou/transformers.git@hantao_stable_cham
@@ -34,7 +34,7 @@ If you are dealing with a large dataset, you can use `pre_tokenize_parallel_exam
 python pre_tokenize_parallel_example.py
 ```
 
-If you are dealing with prefernce dataset (for DPO or RM), you can use `preference_tokenize_example.py` to pre-tokenize the dataset:
+If you are dealing with preference dataset (for DPO or RM), you can use `preference_tokenize_example.py` to pre-tokenize the dataset:
 
 ```bash
 python preference_tokenize_example.py
@@ -63,7 +63,7 @@ deepspeed \
 	--module align_anything.trainers.text_image_to_text_image.sft \
 	--model_name_or_path ${MODEL_NAME_OR_PATH} \
 	--train_datasets ${TRAIN_DATASETS} \
-	--train_data_files ${PT_NAME} \ 
+	--train_data_files ${PT_NAME} \
 	--output_dir ${OUTPUT_DIR} \
 	--train_template ANYTHING_TI2TI \
 	--train_split 'train' \
@@ -77,7 +77,7 @@ deepspeed \
 ```
 
 and set up the correct model path and dataset path, then run:
-    
+
 ```bash
 bash scripts/sft_text_image_to_text_image.sh
 ```
@@ -110,7 +110,7 @@ deepspeed \
 	--learning_rate 5e-7 \
 	--epochs 3 \
 	--lr_scheduler_type cosine \
-	--save_interval 2500 
+	--save_interval 2500
 
 ```
 
@@ -127,9 +127,9 @@ Add a script named `rm_text_image_to_text_image.sh` under the `scripts` file lik
 ```bash
 MODEL_NAME_OR_PATH=""
 TRAIN_DATASETS="path/to/dataset"
-TRAIN_PT_NAME="dataset_file_name" 
+TRAIN_PT_NAME="dataset_file_name"
 EVAL_DATASETS="path/to/dataset"
-EVAL_PT_NAME="dataset_file_name" 
+EVAL_PT_NAME="dataset_file_name"
 OUTPUT_DIR="../outputs/rm_text_image_to_text_image"
 export WANDB_API_KEY=""
 source ./setup.sh
@@ -152,7 +152,7 @@ deepspeed \
 	--learning_rate 5e-6 \
 	--epochs 3 \
 	--lr_scheduler_type cosine \
-	--save_interval 2500 
+	--save_interval 2500
 
 ```
 
@@ -171,9 +171,9 @@ ACTOR_MODEL_NAME_OR_PATH=""
 CRITIC_MODEL_NAME_OR_PATH=""
 REWARD_MODEL_NAME_OR_PATH=""
 TRAIN_DATASETS=""
-TRAIN_PT_NAME="dataset_file_name" 
+TRAIN_PT_NAME="dataset_file_name"
 PTX_DATASETS=""
-PTX_PT_NAME="dataset_file_name" 
+PTX_PT_NAME="dataset_file_name"
 OUTPUT_DIR="../outputs/ppo_text_image_to_text_image"
 
 source ./setup.sh
@@ -213,9 +213,9 @@ git clone https://github.com/htlou/mmsg_chameleon.git
 cd mmsg_chameleon
 ```
 
-Then set up the envrionment using 
+Then set up the environment using
 ```bash
-pip install -e . 
+pip install -e .
 ```
 
 After setting up the envrioment, set up the correct paths in `scripts/interleaved_gen.sh` and then run
@@ -234,7 +234,7 @@ git clone https://github.com/htlou/gpt4_eval.git
 cd gpt4_eval
 ```
 You can set the `INPUT_TYPE` in the `script.sh` to `interleaved-compare` and run:
-    
+
 ```bash
 bash script.sh
 ```
@@ -243,14 +243,14 @@ to do the evaluation.
 
 ## Model Performance
 
-We trained the lm_head of Chameleon-7B model using the full data from [laisonart](huggingface.co/datasets/fantasyfish/laion-art), and acquired a AA-Chameleon-7B model (AA refers to Align-Anything) with image generation capabilities. Then, we used our text-image interleaved input & output dataset (20k) to finetune this model, acquiring a AA-Chameleon-7B+, which is much better in text-image interleaved i/o task. The model is trained for 3 epochs with a batch size of 2 and a learning rate of 5e-05 (similar to meta's setting in [their paper](https://ai.meta.com/blog/generative-ai-text-images-cm3leon)). 
+We trained the lm_head of Chameleon-7B model using the full data from [laisonart](huggingface.co/datasets/fantasyfish/laion-art), and acquired a AA-Chameleon-7B model (AA refers to Align-Anything) with image generation capabilities. Then, we used our text-image interleaved input & output dataset (20k) to finetune this model, acquiring a AA-Chameleon-7B+, which is much better in text-image interleaved i/o task. The model is trained for 3 epochs with a batch size of 2 and a learning rate of 5e-05 (similar to meta's setting in [their paper](https://ai.meta.com/blog/generative-ai-text-images-cm3leon)).
 
 ### GPT-4o evaluation
 
 We compared the performance of AA-Chameleon-7B+ with Anole-7b model on a text-image interleaved i/o dataset (with a length of 500). Here's the results:
 
 | win | lose | equal | win rate (not counting equal) |
-|-------|-------|-------|-------| 
+|-------|-------|-------|-------|
 | 240 | 175 | 85 | 57.8% |
 
 ### Generation Examples

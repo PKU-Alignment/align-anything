@@ -23,26 +23,28 @@ import deepspeed
 import torch
 import torch.distributed
 import torch.nn.functional as F
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from transformers import AutoModelForCausalLM
+from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.text_to_text.preference import PreferenceBatch
 from align_anything.datasets.text_image_to_text.preference import PreferenceDataset
+from align_anything.datasets.text_to_text.preference import PreferenceBatch
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
+    gather_log_probabilities,
     read_cfgs,
     seed_everything,
     update_dict,
-    gather_log_probabilities,
 )
+
 
 def strip_pad(seq: torch.Tensor, pad_token_id: int):
     # remove the pad token in the tensor
     return seq[seq != pad_token_id]
+
 
 class DPOTrainer(DPOtextTrainer):
 
@@ -93,7 +95,9 @@ class DPOTrainer(DPOtextTrainer):
             input_id = raw_input_id[-response_length:].unsqueeze(0)
             log_p = gather_log_probabilities(logit[:, :-1], input_id[:, 1:])
             logprob_list.append(log_p.squeeze(0))
-        return torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(device)
+        return torch.nn.utils.rnn.pad_sequence(
+            logprob_list, batch_first=True, padding_value=0.0
+        ).to(device)
 
     def loss(  # pylint: disable=too-many-locals
         self,
@@ -157,6 +161,7 @@ class DPOTrainer(DPOtextTrainer):
             'reward_accuracy': reward_accuracy,
             'reward_margin': reward_margin,
         }
+
 
 def main():
     # setup distribution training

@@ -13,18 +13,20 @@
 # limitations under the License.
 # ==============================================================================
 
-import torch
-from typing import List, Optional, Union, Dict
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Union
+
+import PIL
+import torch
+from openai.types.chat.chat_completion import ChatCompletion
 from vllm.outputs import RequestOutput
 from vllm.sequence import PromptLogprobs
-from openai.types.chat.chat_completion import ChatCompletion
-import PIL
+
 
 @dataclass
 class RewardModelOutput:
-    """The output data of a reward model.
-    """
+    """The output data of a reward model."""
+
 
 @dataclass
 class InferenceInput:
@@ -35,25 +37,28 @@ class InferenceInput:
         image_url: The URL of the input image.
         pixel_values: The pixel values of the input image.
     '''
+
     text: str
     token_ids: torch.LongTensor = None
-    
+
     image_url: Optional[str] = None
     pixel_values: torch.FloatTensor = None
     image_file: PIL.Image = None
     video_name: str = None
     video_url: str = None
-    inputs: dict=None
+    inputs: dict = None
 
-    def __init__(self, 
-                 text: str, 
-                 token_ids: torch.LongTensor = None, 
-                 inputs: dict = None,
-                 image_url: Optional[str] = None, 
-                 pixel_values: torch.FloatTensor = None,
-                 image_file: PIL.Image = None,
-                 video_name: str = None,
-                 video_url: str = None):
+    def __init__(
+        self,
+        text: str,
+        token_ids: torch.LongTensor = None,
+        inputs: dict = None,
+        image_url: Optional[str] = None,
+        pixel_values: torch.FloatTensor = None,
+        image_file: PIL.Image = None,
+        video_name: str = None,
+        video_url: str = None,
+    ):
         self.text = text
         self.token_ids = token_ids
         self.inputs = inputs
@@ -64,10 +69,8 @@ class InferenceInput:
         self.video_url = video_url
 
     def __repr__(self):
-        return (f"InferenceInput("
-                f"text={self.text!r}),"
-                f"token_ids={self.token_ids!r}),"
-            )
+        return f'InferenceInput(' f'text={self.text!r}),' f'token_ids={self.token_ids!r}),'
+
 
 @dataclass
 class InferenceOutput:
@@ -91,22 +94,23 @@ class InferenceOutput:
     prompt_logprobs: Optional[PromptLogprobs]
     response_token_ids: Optional[List[int]]
     response_logprobs: Optional[PromptLogprobs]
-    raw_output : Optional[Union[RequestOutput, None]]
+    raw_output: Optional[Union[RequestOutput, None]]
 
     def __post_init__(self):
         pass
-    
-    def __init__(self, 
-                 prompt: str, 
-                 response: str,
-                 engine: str = "hand",
-                 question_id: str = None,
-                 prompt_token_ids: Optional[List[int]] = None,
-                 prompt_logprobs: Optional[PromptLogprobs] = None,
-                 response_token_ids: Optional[List[int]] = None,
-                 response_logprobs: Optional[PromptLogprobs] = None,
-                 raw_output: Optional[Union[RequestOutput, None]] = None
-                ):
+
+    def __init__(
+        self,
+        prompt: str,
+        response: str,
+        engine: str = 'hand',
+        question_id: str = None,
+        prompt_token_ids: Optional[List[int]] = None,
+        prompt_logprobs: Optional[PromptLogprobs] = None,
+        response_token_ids: Optional[List[int]] = None,
+        response_logprobs: Optional[PromptLogprobs] = None,
+        raw_output: Optional[Union[RequestOutput, None]] = None,
+    ):
         self.engine = engine
         self.prompt = prompt
         self.question_id = question_id
@@ -118,9 +122,11 @@ class InferenceOutput:
         self.raw_output = raw_output
 
     @classmethod
-    def from_vllm_output(cls, vllm_output: RequestOutput, question_id: str = None, store_raw: bool = False):
+    def from_vllm_output(
+        cls, vllm_output: RequestOutput, question_id: str = None, store_raw: bool = False
+    ):
         return cls(
-            engine="vllm",
+            engine='vllm',
             prompt=vllm_output.prompt,
             question_id=question_id,
             prompt_token_ids=vllm_output.prompt_token_ids,
@@ -128,77 +134,76 @@ class InferenceOutput:
             response=[output.text for output in vllm_output.outputs],
             response_token_ids=[output.token_ids for output in vllm_output.outputs],
             response_logprobs=[output.logprobs for output in vllm_output.outputs],
-            raw_output=vllm_output if store_raw else None
+            raw_output=vllm_output if store_raw else None,
         )
 
     @classmethod
     def from_data(cls, data: Dict, store_raw: bool = False):
         return cls(
-            engine="dict",
-            question_id=data.get("question_id"),
-            prompt=data.get("prompt"),
-            response=data.get("response"),
-            raw_output=data if store_raw else None
+            engine='dict',
+            question_id=data.get('question_id'),
+            prompt=data.get('prompt'),
+            response=data.get('response'),
+            raw_output=data if store_raw else None,
         )
-    
+
     @classmethod
     def from_dict(cls, data: Dict, store_raw: bool = False):
         return cls(
-            engine="dict",
-            prompt=data.get("prompt"),
-            response=data.get("response"),
-            question_id=data.get("question_id"),
-            prompt_token_ids=data.get("prompt_token_ids"),
-            prompt_logprobs=data.get("prompt_logprobs"),
-            response_token_ids=data.get("response_token_ids"),
-            response_logprobs=data.get("response_logprobs"),
-            raw_output=data if store_raw else None
+            engine='dict',
+            prompt=data.get('prompt'),
+            response=data.get('response'),
+            question_id=data.get('question_id'),
+            prompt_token_ids=data.get('prompt_token_ids'),
+            prompt_logprobs=data.get('prompt_logprobs'),
+            response_token_ids=data.get('response_token_ids'),
+            response_logprobs=data.get('response_logprobs'),
+            raw_output=data if store_raw else None,
         )
-    
+
     @classmethod
     def from_deepspeed_output(cls, deepspeed_output: Dict, store_raw: bool = False):
         return cls(
-            engine="deepspeed",
-            prompt=deepspeed_output.get("prompt"),
-            question_id=deepspeed_output.get("question_id"),
-            prompt_token_ids=deepspeed_output.get("prompt_token_ids"),
-            prompt_logprobs=deepspeed_output.get("prompt_logprobs"),
-            response=deepspeed_output.get("response"),
-            response_token_ids=deepspeed_output.get("response_token_ids"),
-            response_logprobs=deepspeed_output.get("response_logprobs"),
-            raw_output=deepspeed_output if store_raw else None
+            engine='deepspeed',
+            prompt=deepspeed_output.get('prompt'),
+            question_id=deepspeed_output.get('question_id'),
+            prompt_token_ids=deepspeed_output.get('prompt_token_ids'),
+            prompt_logprobs=deepspeed_output.get('prompt_logprobs'),
+            response=deepspeed_output.get('response'),
+            response_token_ids=deepspeed_output.get('response_token_ids'),
+            response_logprobs=deepspeed_output.get('response_logprobs'),
+            raw_output=deepspeed_output if store_raw else None,
         )
 
     def __repr__(self):
         return (
-            f"InferenceOutput("
-            f"engine={self.engine!r}, "
-            f"prompt={self.prompt!r}, "
-            f"question_id={self.question_id!r}, "
-            f"prompt_token_ids={self.prompt_token_ids!r}, "
-            f"prompt_logprobs={self.prompt_logprobs!r}, "
-            f"response={self.response!r}, "
-            f"response_token_ids={self.response_token_ids!r}, "
-            f"response_logprobs={self.response_logprobs!r})"
+            f'InferenceOutput('
+            f'engine={self.engine!r}, '
+            f'prompt={self.prompt!r}, '
+            f'question_id={self.question_id!r}, '
+            f'prompt_token_ids={self.prompt_token_ids!r}, '
+            f'prompt_logprobs={self.prompt_logprobs!r}, '
+            f'response={self.response!r}, '
+            f'response_token_ids={self.response_token_ids!r}, '
+            f'response_logprobs={self.response_logprobs!r})'
         )
 
 
-
-
-@dataclass 
+@dataclass
 class SingleInput:
     '''
     Args:
         prompt: The prompt string of the request.
         response: The response string of the request.
     '''
+
     prompt: str
     response: str
 
     def __init__(self, prompt: str, response: str):
         self.prompt = prompt
         self.response = response
-    
+
     @classmethod
     def from_InferenceOutput(cls, inference: InferenceOutput):
         return cls(
@@ -208,13 +213,11 @@ class SingleInput:
 
     def build_gpt_input(self, judge_prompt: str, template_function=None):
         prompt = template_function(self)
-        return [
-            {'role': 'system', 'content': judge_prompt},
-            {'role': 'user', 'content': prompt}
-        ]
+        return [{'role': 'system', 'content': judge_prompt}, {'role': 'user', 'content': prompt}]
 
     def __repr__(self):
-        return f"SingleInput(prompt={self.prompt!r}, response={self.response!r})"
+        return f'SingleInput(prompt={self.prompt!r}, response={self.response!r})'
+
 
 '''
 Reward model: [InferenceOutput] -> [EvalOutput]
@@ -222,10 +225,16 @@ Arena GPT eval: [ArenaInput] -> [EvalOutput]
 
 '''
 
-def function1(ArenaInput):
-    return "Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}".format(prompt=ArenaInput.prompt, response1=ArenaInput.response1, response2=ArenaInput.response2)
 
-MMdata = Dict[str,any]
+def function1(ArenaInput):
+    return 'Human: {prompt}\nAssistant 1: {response1}\nAssistant 2: {response2}'.format(
+        prompt=ArenaInput.prompt, response1=ArenaInput.response1, response2=ArenaInput.response2
+    )
+
+
+MMdata = Dict[str, any]
+
+
 @dataclass
 class ArenaInput:
     """The input data of a pairwise evaluation request.
@@ -242,12 +251,13 @@ class ArenaInput:
     response1: Union[str, MMdata]
     response2: Union[str, MMdata]
 
-    def __init__(self, 
-                 prompt: Union[str, MMdata], 
-                 response1: Union[str, MMdata], 
-                 response2: Union[str, MMdata],
-                 engine: str = "hand",
-                ):
+    def __init__(
+        self,
+        prompt: Union[str, MMdata],
+        response1: Union[str, MMdata],
+        response2: Union[str, MMdata],
+        engine: str = 'hand',
+    ):
         self.engine = engine
         self.prompt = prompt
         self.response1 = response1
@@ -257,32 +267,30 @@ class ArenaInput:
     def from_InferenceOutput(cls, inference1: InferenceOutput, inference2: InferenceOutput):
         assert inference1.prompt == inference2.prompt
         return cls(
-            engine="from_InferenceOutput",
+            engine='from_InferenceOutput',
             prompt=inference1.prompt,
             response1=inference1.response,
             response2=inference2.response,
-            
         )
 
     def build_gpt_input(self, judge_prompt: str, template_function=None):
         prompt = template_function(self)
-        return [
-            {'role': 'system', 'content': judge_prompt},
-            {'role': 'user', 'content': prompt}
-        ]
+        return [{'role': 'system', 'content': judge_prompt}, {'role': 'user', 'content': prompt}]
 
     def __repr__(self) -> str:
-        return (f"ArenaInput("
-                f"engine={self.engine!r}, "
-                f"prompt={self.prompt!r}, "
-                f"response1={self.response1!r}, "
-                f"response2={self.response2!r})")
+        return (
+            f'ArenaInput('
+            f'engine={self.engine!r}, '
+            f'prompt={self.prompt!r}, '
+            f'response1={self.response1!r}, '
+            f'response2={self.response2!r})'
+        )
 
 
 @dataclass
 class EvalOutput:
     """
-    Args: 
+    Args:
         evalEngine: The evaluation engine used. \\
         input: The input data of the evaluation request. \\
         raw_output: The raw output data of the evaluation request.
@@ -292,18 +300,18 @@ class EvalOutput:
     """
 
     evalEngine: str
-    input : Union[SingleInput, ArenaInput]
+    input: Union[SingleInput, ArenaInput]
     raw_output: Union[ChatCompletion, Exception, RequestOutput]
 
     def __post_init__(self):
-        assert self.evalEngine in ["gpt_evaluation", "arena"]
+        assert self.evalEngine in ['gpt_evaluation', 'arena']
 
     @classmethod
     def from_dict(cls, data: Dict):
         return cls(
-            evalEngine=data.get("evalEngine"),
-            input=data.get("input"),
-            raw_output=data.get("raw_output")
+            evalEngine=data.get('evalEngine'),
+            input=data.get('input'),
+            raw_output=data.get('raw_output'),
         )
 
     def parse_text(self):
@@ -315,7 +323,9 @@ class EvalOutput:
             return None
 
     def __repr__(self) -> str:
-        return (f"EvalOutput("
-                f"evalEngine={self.evalEngine!r}, "
-                f"input={self.input!r}, "
-                f"raw_output={self.raw_output!r})")
+        return (
+            f'EvalOutput('
+            f'evalEngine={self.evalEngine!r}, '
+            f'input={self.input!r}, '
+            f'raw_output={self.raw_output!r})'
+        )

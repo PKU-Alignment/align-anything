@@ -14,38 +14,40 @@
 # ==============================================================================
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, TypedDict, Union, Any, Callable
+from io import BytesIO
+from typing import Any, Callable, Dict, List, Optional, Sequence, TypedDict, Union
 from typing_extensions import TypedDict  # Python 3.10+
 
+import av
+import numpy as np
 import torch
 import transformers
+from PIL import Image
+from PIL.Image import Image as ImageObject
 from torch.utils.data import Dataset
 from torchvision import transforms
-from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
-from transformers import PreTrainedTokenizer, ProcessorMixin, DataCollatorForSeq2Seq
+from transformers import DataCollatorForSeq2Seq, PreTrainedTokenizer, ProcessorMixin
 from transformers.image_processing_utils import BaseImageProcessor
+from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
-from copy import deepcopy
-from io import BytesIO
-import numpy as np
-import av
-from PIL import Image
-from PIL.Image import Image as ImageObject
+
 
 class EncodedImage(TypedDict):
     path: Optional[str]
     bytes: Optional[bytes]
+
+
 ImageInput = Union[str, EncodedImage, ImageObject]
 VideoInput = str
 
 
 IGNORE_INDEX = -100
-IMAGE_PLACEHOLDER = "<image>"
-VIDEO_PLACEHOLDER = "<video>"
+IMAGE_PLACEHOLDER = '<image>'
+VIDEO_PLACEHOLDER = '<video>'
 
 __all__ = [
     'SupervisedDataset',
@@ -67,36 +69,39 @@ class SupervisedBatch(TypedDict, total=True):
     attention_mask: torch.BoolTensor  # size = (B, L)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
+
 def _regularize_images(
-    images: Sequence["ImageInput"],
-    processor: "ProcessorMixin",
+    images: Sequence['ImageInput'],
+    processor: 'ProcessorMixin',
     max_resolution: Optional[int] = None,
-) -> List["ImageObject"]:
+) -> List['ImageObject']:
     r"""
     Regularizes images to avoid error. Including reading, resizing and converting.
     """
     if max_resolution is None:
-        max_resolution: int = getattr(processor, "image_resolution", 512)
+        max_resolution: int = getattr(processor, 'image_resolution', 512)
 
     results = []
     for image in images:
         if isinstance(image, str):
             image = Image.open(image)
         elif isinstance(image, dict):
-            if image["bytes"] is not None:
-                image = Image.open(BytesIO(image["bytes"]))
+            if image['bytes'] is not None:
+                image = Image.open(BytesIO(image['bytes']))
             else:
-                image = Image.open(image["path"])
+                image = Image.open(image['path'])
 
         if not isinstance(image, ImageObject):
-            raise ValueError("Expect input is a list of Images, but got {}.".format(type(image)))
+            raise ValueError(f'Expect input is a list of Images, but got {type(image)}.')
 
         if max(image.width, image.height) > max_resolution:
             factor = max_resolution / max(image.width, image.height)
-            image = image.resize((int(image.width * factor), int(image.height * factor)), resample=Image.NEAREST)
+            image = image.resize(
+                (int(image.width * factor), int(image.height * factor)), resample=Image.NEAREST
+            )
 
-        if image.mode != "RGB":
-            image = image.convert("RGB")
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
 
         results.append(image)
 
@@ -104,26 +109,26 @@ def _regularize_images(
 
 
 def _regularize_videos(
-    videos: Sequence["VideoInput"],
-    processor: "ProcessorMixin",
-) -> List[List["ImageObject"]]:
+    videos: Sequence['VideoInput'],
+    processor: 'ProcessorMixin',
+) -> List[List['ImageObject']]:
     r"""
     Regularizes videos to avoid error. Including reading, resizing and converting.
     """
-    video_resolution: int = getattr(processor, "video_resolution", 128)
-    video_fps: float = getattr(processor, "video_fps", 1.0)
-    video_maxlen: int = getattr(processor, "video_maxlen", 64)
-    video_factor: int = getattr(processor, "video_factor", 2)
+    video_resolution: int = getattr(processor, 'video_resolution', 128)
+    video_fps: float = getattr(processor, 'video_fps', 1.0)
+    video_maxlen: int = getattr(processor, 'video_maxlen', 64)
+    video_factor: int = getattr(processor, 'video_factor', 2)
     results = []
     for video in videos:
-        container = av.open(video, "r")
-        video_stream = next(stream for stream in container.streams if stream.type == "video")
+        container = av.open(video, 'r')
+        video_stream = next(stream for stream in container.streams if stream.type == 'video')
         total_frames = video_stream.frames
         sample_frames = float(video_stream.duration * video_stream.time_base) * video_fps
         sample_frames = min(video_maxlen, sample_frames)  # reduce length <= maxlen
         sample_frames = round(sample_frames / video_factor) * video_factor  # for qwen2_vl
         sample_indices = np.linspace(0, total_frames - 1, sample_frames).astype(np.int32)
-        frames: List["ImageObject"] = []
+        frames: List['ImageObject'] = []
         container.seek(0)
         for frame_idx, frame in enumerate(container.decode(video_stream)):
             if frame_idx in sample_indices:
@@ -134,11 +139,12 @@ def _regularize_videos(
 
     return results
 
+
 def _get_mm_inputs(
-    images: Sequence["ImageInput"],
-    videos: Sequence["VideoInput"],
-    processor: "ProcessorMixin",
-) -> Dict[str, "torch.Tensor"]:
+    images: Sequence['ImageInput'],
+    videos: Sequence['VideoInput'],
+    processor: 'ProcessorMixin',
+) -> Dict[str, 'torch.Tensor']:
     r"""
     Processes visual inputs.
 
@@ -151,44 +157,47 @@ def _get_mm_inputs(
 
     It holds num_patches == torch.prod(image_grid_thw)
     """
-    image_processor: "BaseImageProcessor" = getattr(processor, "image_processor")
-    input_dict = {"images": None}  # default key
+    image_processor: 'BaseImageProcessor' = getattr(processor, 'image_processor')
+    input_dict = {'images': None}  # default key
     if len(images) != 0:
         images = _regularize_images(images, processor)
-        input_dict["images"] = images
+        input_dict['images'] = images
 
     if len(videos) != 0:
         videos = _regularize_videos(videos, processor)
-        input_dict["videos"] = videos
+        input_dict['videos'] = videos
 
-    if input_dict.get("images", None) is not None or input_dict.get("videos", None) is not None:
-        return image_processor(**input_dict, return_tensors="pt")
+    if input_dict.get('images', None) is not None or input_dict.get('videos', None) is not None:
+        return image_processor(**input_dict, return_tensors='pt')
     else:
         return {}
 
+
 def process_messages(
     message: str,
-    images: Sequence["ImageInput"],
-    videos: Sequence["VideoInput"],
-    processor: Optional["ProcessorMixin"],
+    images: Sequence['ImageInput'],
+    videos: Sequence['VideoInput'],
+    processor: Optional['ProcessorMixin'],
 ) -> List[Dict[str, str]]:
-    image_processor: "BaseImageProcessor" = getattr(processor, "image_processor")
-    merge_length: int = getattr(image_processor, "merge_size") ** 2
+    image_processor: 'BaseImageProcessor' = getattr(processor, 'image_processor')
+    merge_length: int = getattr(image_processor, 'merge_size') ** 2
     mm_inputs = _get_mm_inputs(images, videos, processor)
-    image_grid_thw = mm_inputs.get("image_grid_thw", [])
-    video_grid_thw = mm_inputs.get("video_grid_thw", [])
+    image_grid_thw = mm_inputs.get('image_grid_thw', [])
+    video_grid_thw = mm_inputs.get('video_grid_thw', [])
 
     num_image_tokens, num_video_tokens = 0, 0
-    
+
     content = message
     while IMAGE_PLACEHOLDER in content:
         if num_image_tokens >= len(image_grid_thw):
-            raise ValueError("`len(images)` is less than the number of {} tokens.".format(IMAGE_PLACEHOLDER))
+            raise ValueError(
+                f'`len(images)` is less than the number of {IMAGE_PLACEHOLDER} tokens.'
+            )
 
         content = content.replace(
             IMAGE_PLACEHOLDER,
-            "<|vision_start|>{}<|vision_end|>".format(
-                "<|image_pad|>" * (image_grid_thw[num_image_tokens].prod() // merge_length)
+            '<|vision_start|>{}<|vision_end|>'.format(
+                '<|image_pad|>' * (image_grid_thw[num_image_tokens].prod() // merge_length)
             ),
             1,
         )
@@ -196,12 +205,14 @@ def process_messages(
 
     while VIDEO_PLACEHOLDER in content:
         if num_video_tokens >= len(video_grid_thw):
-            raise ValueError("`len(videos)` is less than the number of {} tokens.".format(VIDEO_PLACEHOLDER))
+            raise ValueError(
+                f'`len(videos)` is less than the number of {VIDEO_PLACEHOLDER} tokens.'
+            )
 
         content = content.replace(
             VIDEO_PLACEHOLDER,
-            "<|vision_start|>{}<|vision_end|>".format(
-                "<|video_pad|>" * (video_grid_thw[num_video_tokens].prod() // merge_length)
+            '<|vision_start|>{}<|vision_end|>'.format(
+                '<|video_pad|>' * (video_grid_thw[num_video_tokens].prod() // merge_length)
             ),
             1,
         )
@@ -210,12 +221,17 @@ def process_messages(
     return_message = content
 
     if len(images) != num_image_tokens:
-        raise ValueError("The number of images does not match the number of {} tokens".format(IMAGE_PLACEHOLDER))
+        raise ValueError(
+            f'The number of images does not match the number of {IMAGE_PLACEHOLDER} tokens'
+        )
 
     if len(videos) != num_video_tokens:
-        raise ValueError("The number of videos does not match the number of {} tokens".format(VIDEO_PLACEHOLDER))
-    
+        raise ValueError(
+            f'The number of videos does not match the number of {VIDEO_PLACEHOLDER} tokens'
+        )
+
     return return_message
+
 
 class SupervisedDataset(Dataset):
 
@@ -239,9 +255,9 @@ class SupervisedDataset(Dataset):
         self.processor = processor
         self.raw_data = load_dataset(
             path,
-            name=name if name and name!="None" else None,
-            split=split if split and split!="None" else None,
-            data_files=data_files if data_files and data_files!="None" else None,
+            name=name if name and name != 'None' else None,
+            split=split if split and split != 'None' else None,
+            data_files=data_files if data_files and data_files != 'None' else None,
             *optional_args,
             trust_remote_code=True,
         )
@@ -249,31 +265,33 @@ class SupervisedDataset(Dataset):
             self.raw_data = self.raw_data.select(range(int(size)))
         self.template = template
 
-
-    
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         formatted_sample = self.template.format_supervised_sample(raw_sample)
         return_dict = {}
-        
+
         text = formatted_sample['text']
         prompt = formatted_sample['prompt']
         image = formatted_sample['image']
         video = formatted_sample['video']
-        
+
         processed_text = process_messages(text, image, video, self.processor)
         processed_prompt = process_messages(prompt, image, video, self.processor)
 
-        input_ids = self.tokenizer(processed_text, add_special_tokens=False, return_tensors='pt')['input_ids'][0]
-        prompt_only_ids = self.tokenizer(processed_prompt, add_special_tokens=False, return_tensors='pt')['input_ids'][0]
-        
+        input_ids = self.tokenizer(processed_text, add_special_tokens=False, return_tensors='pt')[
+            'input_ids'
+        ][0]
+        prompt_only_ids = self.tokenizer(
+            processed_prompt, add_special_tokens=False, return_tensors='pt'
+        )['input_ids'][0]
+
         labels = input_ids.clone()
-        labels[:len(prompt_only_ids)] = IGNORE_INDEX
-        
+        labels[: len(prompt_only_ids)] = IGNORE_INDEX
+
         return_dict['input_ids'] = input_ids
         return_dict['labels'] = labels
         return_dict['images'] = image
         return_dict['videos'] = video
-        
+
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
@@ -310,16 +328,19 @@ class SupervisedDataset(Dataset):
         """Get the number of samples in the dataset."""
         return len(self.raw_data)
 
+
 @dataclass
 class SupervisedCollator(DataCollatorForSeq2Seq):
 
-    processor: Optional["ProcessorMixin"] = None
+    processor: Optional['ProcessorMixin'] = None
 
-    def __init__(self, tokenizer: PreTrainedTokenizer, processor: Optional["ProcessorMixin"] = None):
+    def __init__(
+        self, tokenizer: PreTrainedTokenizer, processor: Optional['ProcessorMixin'] = None
+    ):
         super().__init__(tokenizer)
         self.processor = processor
 
-    def __call__(self, samples: Sequence[Dict[str, Any]])  -> Dict[str, "torch.Tensor"]:
+    def __call__(self, samples: Sequence[Dict[str, Any]]) -> Dict[str, 'torch.Tensor']:
         batch_images, batch_videos = [], []
         current_device = get_current_device()
         for sample in samples:
@@ -329,8 +350,8 @@ class SupervisedCollator(DataCollatorForSeq2Seq):
             batch_videos.extend(videos)
 
         mm_inputs = _get_mm_inputs(batch_images, batch_videos, self.processor)
-        
-        features: Dict[str, "torch.Tensor"] = super().__call__(samples)
+
+        features: Dict[str, 'torch.Tensor'] = super().__call__(samples)
         features.update(mm_inputs)
 
         for k, v in features.items():

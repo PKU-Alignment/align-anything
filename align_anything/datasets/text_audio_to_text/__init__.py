@@ -15,6 +15,6 @@
 """Dataset classes for text image to text training."""
 
 
-from align_anything.datasets.text_audio_to_text.supervised import *
 from align_anything.datasets.text_audio_to_text.preference import *
 from align_anything.datasets.text_audio_to_text.prompt_only import *
+from align_anything.datasets.text_audio_to_text.supervised import *

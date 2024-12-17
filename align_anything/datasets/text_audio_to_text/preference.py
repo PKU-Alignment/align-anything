@@ -26,7 +26,7 @@ from transformers.tokenization_utils import PaddingStrategy
 
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.template_registry import get_template_class
-from align_anything.utils.tools import right_padding, left_padding
+from align_anything.utils.tools import left_padding, right_padding
 from datasets import load_dataset
 
 
@@ -80,7 +80,7 @@ class PreferenceDataset(Dataset):
             data_files=data_files,
             *optional_args,
             trust_remote_code=True,
-            verification_mode="no_checks"
+            verification_mode='no_checks',
         )
         self.valid_indices = self.filter_indices()
 
@@ -99,28 +99,55 @@ class PreferenceDataset(Dataset):
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        better_conversation, worse_conversation, meta_info = self.template.format_preference_sample(raw_sample)
+        better_conversation, worse_conversation, meta_info = self.template.format_preference_sample(
+            raw_sample
+        )
         return_dict = {}
         raw_better_response = meta_info['better_response']
         raw_worse_response = meta_info['worse_response']
         audios = []
-        
+
         if isinstance(meta_info['audio_path'], dict):
-            raw_audio, raw_sr = meta_info['audio_path']['array'], meta_info['audio_path']['sampling_rate']
-            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
+            raw_audio, raw_sr = (
+                meta_info['audio_path']['array'],
+                meta_info['audio_path']['sampling_rate'],
+            )
+            audio = librosa.resample(
+                raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate
+            )
         else:
-            audio = librosa.load(meta_info['audio_path'], sr=self.processor.feature_extractor.sampling_rate)[0]
+            audio = librosa.load(
+                meta_info['audio_path'], sr=self.processor.feature_extractor.sampling_rate
+            )[0]
         audios.append(audio)
 
         better_inputs = self.tokenize(text=better_conversation, audios=audios, padding=True)
         worse_inputs = self.tokenize(text=worse_conversation, audios=audios, padding=True)
-        better_input_wo_padding = self.tokenize(text=better_conversation, audios=audios, padding=PaddingStrategy.DO_NOT_PAD)
-        worse_input_wo_padding = self.tokenize(text=worse_conversation, audios=audios, padding=PaddingStrategy.DO_NOT_PAD)
+        better_input_wo_padding = self.tokenize(
+            text=better_conversation, audios=audios, padding=PaddingStrategy.DO_NOT_PAD
+        )
+        worse_input_wo_padding = self.tokenize(
+            text=worse_conversation, audios=audios, padding=PaddingStrategy.DO_NOT_PAD
+        )
 
         return_dict['better_input_ids'] = better_input_wo_padding['input_ids'][0]
         return_dict['worse_input_ids'] = worse_input_wo_padding['input_ids'][0]
-        return_dict['better_response_lens'] = len(self.tokenize(raw_better_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0]) + 2 # for the eos token
-        return_dict['worse_response_lens'] = len(self.tokenize(raw_worse_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0]) + 2 # for the eos token
+        return_dict['better_response_lens'] = (
+            len(
+                self.tokenize(raw_better_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][
+                    0
+                ]
+            )
+            + 2
+        )  # for the eos token
+        return_dict['worse_response_lens'] = (
+            len(
+                self.tokenize(raw_worse_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][
+                    0
+                ]
+            )
+            + 2
+        )  # for the eos token
 
         return_dict['better_feature_attention_mask'] = better_inputs['feature_attention_mask']
         return_dict['better_input_features'] = better_inputs['input_features']
@@ -146,9 +173,9 @@ class PreferenceDataset(Dataset):
         """Tokenize a text string into a tensor representation."""
 
         return self.processor(
-            text=text, 
-            audios=audios, 
-            return_tensors="pt",
+            text=text,
+            audios=audios,
+            return_tensors='pt',
             padding=padding,
             sampling_rate=self.processor.feature_extractor.sampling_rate,
             add_special_tokens=add_special_tokens,
@@ -186,7 +213,9 @@ class RightPaddingPreferenceCollator:
         ]
         return_dict['better_response_lens'] = [sample['better_response_lens'] for sample in samples]
         return_dict['worse_response_lens'] = [sample['worse_response_lens'] for sample in samples]
-        return_dict['response_lens'] = return_dict['better_response_lens'] + return_dict['worse_response_lens']
+        return_dict['response_lens'] = (
+            return_dict['better_response_lens'] + return_dict['worse_response_lens']
+        )
         return_dict['input_ids'] = self.padding_func(input_ids, padding_value=self.pad_token_id).to(
             current_device
         )  # size = (2 * B, L)
@@ -198,9 +227,12 @@ class RightPaddingPreferenceCollator:
         )  # size = (2 * B, L)
 
         return_dict['input_features'] = torch.cat(input_features, dim=0).to(current_device)
-        return_dict['feature_attention_mask'] = torch.cat(input_attention_mask, dim=0).to(current_device)
+        return_dict['feature_attention_mask'] = torch.cat(input_attention_mask, dim=0).to(
+            current_device
+        )
 
         return return_dict
+
 
 class LeftPaddingPreferenceCollator(RightPaddingPreferenceCollator):
     def __init__(self, pad_token_id: int) -> None:

@@ -17,9 +17,9 @@
 
 import copy
 import os
+from abc import abstractmethod
 from datetime import datetime
 from typing import Any
-from abc import abstractmethod
 
 import deepspeed
 import torch
@@ -76,8 +76,14 @@ class RLTrainerBase:
     def get_dataloaders(self, train_data_dtype, eval_data_dtype, ptx_data_dtype) -> None:
         """Get the dataloaders based on data_dtype."""
         formatter = self.processor if self.processor else self.tokenizer
-        custom_formatter = self.actor_model.apply_chat_template if hasattr(self.actor_model, 'apply_chat_template') else None
-        self.train_template = ChatTemplate(formatter, self.cfgs.data_cfgs.train_template, custom_formatter)
+        custom_formatter = (
+            self.actor_model.apply_chat_template
+            if hasattr(self.actor_model, 'apply_chat_template')
+            else None
+        )
+        self.train_template = ChatTemplate(
+            formatter, self.cfgs.data_cfgs.train_template, custom_formatter
+        )
         self.eval_template = None
         train_dataset = train_data_dtype(
             path=self.cfgs.data_cfgs.train_datasets,
@@ -100,8 +106,14 @@ class RLTrainerBase:
         # load ptx datasets
         self.use_ptx = self.cfgs.data_cfgs.ptx_datasets is not None
         if self.use_ptx:
-            custom_formatter = self.actor_model.apply_chat_template if hasattr(self.actor_model, 'apply_chat_template') else None
-            self.ptx_template = ChatTemplate(formatter, self.cfgs.data_cfgs.ptx_template, custom_formatter)
+            custom_formatter = (
+                self.actor_model.apply_chat_template
+                if hasattr(self.actor_model, 'apply_chat_template')
+                else None
+            )
+            self.ptx_template = ChatTemplate(
+                formatter, self.cfgs.data_cfgs.ptx_template, custom_formatter
+            )
             ptx_dataset = ptx_data_dtype(
                 path=self.cfgs.data_cfgs.ptx_datasets,
                 template=self.ptx_template,
@@ -123,8 +135,14 @@ class RLTrainerBase:
             ptx_dataloader = DataLoader(DummyDataset(len(train_dataloader)))
 
         if self.cfgs.data_cfgs.eval_datasets:
-            custom_formatter = self.actor_model.apply_chat_template if hasattr(self.actor_model, 'apply_chat_template') else None
-            self.eval_template = ChatTemplate(formatter, self.cfgs.data_cfgs.eval_template, custom_formatter)
+            custom_formatter = (
+                self.actor_model.apply_chat_template
+                if hasattr(self.actor_model, 'apply_chat_template')
+                else None
+            )
+            self.eval_template = ChatTemplate(
+                formatter, self.cfgs.data_cfgs.eval_template, custom_formatter
+            )
             eval_dataset = eval_data_dtype(
                 path=self.cfgs.data_cfgs.eval_datasets,
                 template=self.eval_template,
@@ -331,7 +349,7 @@ class RLTrainerBase:
                 model.save_16bit_model(output_dir, save_filename=save_file_name)
             else:
                 if is_main_process():
-                    model_to_save.save_pretrained(output_dir, is_main_process=True)   
+                    model_to_save.save_pretrained(output_dir, is_main_process=True)
         if self.lora_enabled and not self.lora_cfgs.save_full_model:
             self.logger.print('LoRA used. Saving model as LoRA adapters...')
             model.save_pretrained(output_dir)

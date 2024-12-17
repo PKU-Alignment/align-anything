@@ -19,19 +19,29 @@ import argparse
 import copy
 import os
 import sys
+from typing import Any
 
 import deepspeed
+import numpy as np
 import torch
 import torch.distributed as dist
 from transformers import GenerationConfig
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from typing import Any
-from align_anything.datasets.text_video_to_text import PromptOnlyBatch, PromptOnlyDataset, SupervisedDataset
+from align_anything.datasets.text_video_to_text import (
+    PromptOnlyBatch,
+    PromptOnlyDataset,
+    SupervisedDataset,
+)
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.trainers.text_to_text.ppo import PPOTrainer as PPOTextTrainer
-from align_anything.utils.multi_process import get_current_device, get_all_reduce_mean, get_all_reduce_max
+from align_anything.utils.multi_process import (
+    get_all_reduce_max,
+    get_all_reduce_mean,
+    get_current_device,
+    is_main_process,
+)
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -39,12 +49,11 @@ from align_anything.utils.tools import (
     is_same_tokenizer,
     masked_mean,
     read_cfgs,
+    remove_pad_tokens,
     seed_everything,
     update_dict,
-    remove_pad_tokens,
 )
-import numpy as np
-from align_anything.utils.multi_process import is_main_process
+
 
 class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attributes
     """Trainer base class for PPO training."""
@@ -56,7 +65,9 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             self.get_dataloaders(PromptOnlyDataset, PromptOnlyDataset, SupervisedDataset)
         )
 
-    def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> list[dict[str, Any], list[int]]:
+    def actor_step(
+        self, mini_prompt_only_batch: PromptOnlyBatch
+    ) -> list[dict[str, Any], list[int]]:
         infer_batch = self.infer_batch(mini_prompt_only_batch)
         actor_batch = copy.deepcopy(infer_batch)
         sequences = self.actor_model.generate(
@@ -68,15 +79,17 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         attention_mask = sequences.not_equal(self.tokenizer.pad_token_id)
         actor_batch['input_ids'] = sequences
         actor_batch['attention_mask'] = attention_mask
-        
+
         response_lens = []
         batch_size = sequences.size(0)
         for idx in range(batch_size):
-            prompt_length = mini_prompt_only_batch['input_ids'][idx].size(-1) -1
+            prompt_length = mini_prompt_only_batch['input_ids'][idx].size(-1) - 1
             response = sequences[idx].squeeze()[prompt_length:].tolist()
-            response_wo_pad = remove_pad_tokens(response=response, pad_token_id=self.tokenizer.pad_token_id)
+            response_wo_pad = remove_pad_tokens(
+                response=response, pad_token_id=self.tokenizer.pad_token_id
+            )
             response_lens.append(len(response_wo_pad))
-        
+
         return actor_batch, response_lens
 
     def split_ptx_micro_batches(
@@ -97,7 +110,9 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
                 micro_batch['video_grid_thw'] = video_grid_thw
                 # select video_pixel_values according to the video_grid_thw
                 thw_products = torch.prod(original_thw, dim=1)
-                micro_batch['pixel_values_videos'] = original_pixel_values[sum(thw_products[:i]):sum(thw_products[:i+micro_batch_size])]
+                micro_batch['pixel_values_videos'] = original_pixel_values[
+                    sum(thw_products[:i]) : sum(thw_products[: i + micro_batch_size])
+                ]
             if 'image_grid_thw' in tmp_batch:
                 original_thw = tmp_batch.pop('image_grid_thw')
                 original_pixel_values = tmp_batch.pop('pixel_values')
@@ -105,7 +120,9 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
                 micro_batch['image_grid_thw'] = image_grid_thw
                 # select image_pixel_values according to the image_grid_thw
                 thw_products = torch.prod(original_thw, dim=1)
-                micro_batch['pixel_values'] = original_pixel_values[sum(thw_products[:i]):sum(thw_products[:i+micro_batch_size])]
+                micro_batch['pixel_values'] = original_pixel_values[
+                    sum(thw_products[:i]) : sum(thw_products[: i + micro_batch_size])
+                ]
             for key in tmp_batch:
                 micro_batch[key] = tmp_batch[key][i : i + micro_batch_size]
             micro_batches.append(micro_batch)
@@ -136,8 +153,10 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
                 # select video_pixel_values according to the video_grid_thw
                 thw_products = torch.prod(original_thw, dim=1)
 
-                mini_batch['pixel_values_videos'] = original_pixel_values[sum(thw_products[:i]):sum(thw_products[:i+micro_batch_size])]
-            
+                mini_batch['pixel_values_videos'] = original_pixel_values[
+                    sum(thw_products[:i]) : sum(thw_products[: i + micro_batch_size])
+                ]
+
             if 'image_grid_thw' in tmp_batch:
                 original_thw = tmp_batch.pop('image_grid_thw')
                 original_pixel_values = tmp_batch.pop('pixel_values')
@@ -146,50 +165,49 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
                 # select image_pixel_values according to the image_grid_thw
                 thw_products = torch.prod(original_thw, dim=1)
 
-                mini_batch['pixel_values'] = original_pixel_values[sum(thw_products[:i]):sum(thw_products[:i+micro_batch_size])]
-            
+                mini_batch['pixel_values'] = original_pixel_values[
+                    sum(thw_products[:i]) : sum(thw_products[: i + micro_batch_size])
+                ]
+
             for key in tmp_batch:
                 mini_batch[key] = tmp_batch[key][i : i + micro_batch_size]
 
-            # for key in mini_batch:
-            #     print(f"After Merging:{key}: {mini_batch[key].shape}")
-            #     if "thw" in key:
-            #         print(f"THW: {key}: {mini_batch[key]}")
             # actor generation
             actor_batch, response_lens = self.actor_step(mini_batch)
             # reward model and reward critic model scoring
-            # if is_main_process():
-            #     for key in actor_batch:
-            #         print(f"Actor Batch: {key}: shape {actor_batch[key].shape} content {actor_batch[key]}")
-            #         if "thw" in key:
-            #             print(f"{key} has value: {actor_batch[key]}")
             actor_batch['labels'] = actor_batch['input_ids']
             reward_batch = self.reward_model_step(actor_batch)
             # calculate the log probabilities
             logits = self.actor_model(**actor_batch).logits
             ref_logits = self.actor_reference_model(**actor_batch).logits
-            
+
             logprob_list = []
             ref_logprob_list = []
             reward_value_list = []
-            
+
             batch_size = logits.size(0)
-            
+
             for idx in range(batch_size):
                 response_length = response_lens[idx]
                 input_id = actor_batch['input_ids'][idx, 1:][-response_length:].unsqueeze(0)
-                
+
                 logit = logits[idx, :-1][-response_length:].unsqueeze(0)
                 ref_logit = ref_logits[idx, :-1][-response_length:].unsqueeze(0)
                 reward_value = reward_batch['reward_values'][idx][-response_length:].unsqueeze(0)
-                
+
                 logprob_list.append(gather_log_probabilities(logit, input_id).squeeze())
                 ref_logprob_list.append(gather_log_probabilities(ref_logit, input_id).squeeze())
                 reward_value_list.append(reward_value.squeeze())
-                
-            log_probs = torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(logits.device)
-            ref_log_probs = torch.nn.utils.rnn.pad_sequence(ref_logprob_list, batch_first=True, padding_value=0.).to(logits.device)
-            reward_values = torch.nn.utils.rnn.pad_sequence(reward_value_list, batch_first=True, padding_value=0.).to(logits.device)
+
+            log_probs = torch.nn.utils.rnn.pad_sequence(
+                logprob_list, batch_first=True, padding_value=0.0
+            ).to(logits.device)
+            ref_log_probs = torch.nn.utils.rnn.pad_sequence(
+                ref_logprob_list, batch_first=True, padding_value=0.0
+            ).to(logits.device)
+            reward_values = torch.nn.utils.rnn.pad_sequence(
+                reward_value_list, batch_first=True, padding_value=0.0
+            ).to(logits.device)
 
             micro_training_batch = {}
             micro_training_batch['prompt_idx'] = mini_batch['input_ids'].size(-1) - 1
@@ -198,7 +216,9 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             micro_training_batch['ref_log_probs'] = ref_log_probs
             micro_training_batch['reward'] = reward_batch['reward']
             micro_training_batch['reward_values'] = reward_values
-            micro_training_batch['response_mask'] = actor_batch['attention_mask'][:, micro_training_batch['prompt_idx']:]
+            micro_training_batch['response_mask'] = actor_batch['attention_mask'][
+                :, micro_training_batch['prompt_idx'] :
+            ]
 
             mini_batch['input_ids'] = reward_batch['input_ids']
             mini_batch['attention_mask'] = actor_batch['attention_mask']
@@ -210,7 +230,6 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         self.set_train()
 
         return micro_inference_batches, micro_training_batches
-
 
     def rl_step(
         self, inference_batch: dict[str, torch.Tensor], training_batch: dict[str, torch.Tensor]
@@ -250,17 +269,19 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         # if is_main_process():
         #     for key in inference_batch:
         #         print(f"Inference Batch: {key}: shape {inference_batch[key].shape} content {inference_batch[key]}")
-        
+
         logits = self.actor_model(**inference_batch, use_cache=False).logits
         logprob_list = []
-        
+
         for idx in range(batch_size):
             response_length = response_lens[idx]
             input_id = input_ids[idx, 1:][-response_length:].unsqueeze(0)
             logit = logits[idx, :-1][-response_length:].unsqueeze(0)
             logprob_list.append(gather_log_probabilities(logit, input_id).squeeze())
-        
-        log_probs = torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(logits.device)
+
+        log_probs = torch.nn.utils.rnn.pad_sequence(
+            logprob_list, batch_first=True, padding_value=0.0
+        ).to(logits.device)
         actor_loss = self.actor_loss_fn(
             log_probs,
             old_log_probs,
@@ -272,15 +293,17 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
 
         raw_reward_values = self.reward_critic_model(**inference_batch).scores
         raw_reward_values = raw_reward_values.squeeze(dim=-1)[:, :-1]
-        
+
         reward_value_list = []
-        
+
         for idx in range(batch_size):
             response_length = response_lens[idx]
             reward_value = raw_reward_values[idx][-response_length:].unsqueeze(0)
             reward_value_list.append(reward_value.squeeze())
-        reward_values = torch.nn.utils.rnn.pad_sequence(reward_value_list, batch_first=True, padding_value=0.).to(logits.device)
-        
+        reward_values = torch.nn.utils.rnn.pad_sequence(
+            reward_value_list, batch_first=True, padding_value=0.0
+        ).to(logits.device)
+
         reward_critic_loss = self.critic_loss_fn(
             reward_values,
             old_reward_values,
@@ -339,7 +362,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
     ) -> torch.Tensor:  # size = (B, L)
         """Add KL divergence regularization on scalar rewards."""
         B, L = log_probs.size()
-        end_index = (L-1)*torch.ones((B,), dtype=torch.int64).to(reward.device)  # size = (B,)
+        end_index = (L - 1) * torch.ones((B,), dtype=torch.int64).to(reward.device)  # size = (B,)
 
         # size = (B, L)
         kl_divergence_estimate = log_probs - ref_log_probs
@@ -392,7 +415,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
         )
-        
+
         # loading actor reference model
         self.actor_reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.actor_model_name_or_path,
@@ -406,7 +429,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-            modality='text_video_to_text'
+            modality='text_video_to_text',
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = (
@@ -415,7 +438,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
                 model_max_length=self.cfgs.model_cfgs.model_max_length,
                 padding_side='left',
                 trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-                modality='text_video_to_text'
+                modality='text_video_to_text',
             )
         )
         # initial checking
@@ -448,8 +471,6 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id,
         )
-        
-
 
 
 def main():

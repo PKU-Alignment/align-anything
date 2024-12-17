@@ -16,9 +16,10 @@
 
 
 import os
+from abc import abstractmethod
 from datetime import datetime
 from typing import Any
-from abc import abstractmethod
+
 import deepspeed
 import torch
 import torch.distributed as dist
@@ -33,11 +34,15 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 from transformers import CONFIG_NAME, PreTrainedModel, get_scheduler
 
+from align_anything.configs.template import ChatTemplate
+from align_anything.datasets.any_to_text import (
+    CombinedDataset,
+    DistributedCombinedDatasetBatchSampler,
+)
 from align_anything.utils.logger import Logger
 from align_anything.utils.multi_process import is_main_process
-from align_anything.configs.template import ChatTemplate
 from align_anything.utils.tools import get_optimizer_grouped_parameters, namedtuple_to_dict
-from align_anything.datasets.any_to_text import CombinedDataset, DistributedCombinedDatasetBatchSampler
+
 
 class SupervisedTrainerBase:
 
@@ -75,8 +80,14 @@ class SupervisedTrainerBase:
         eval_dataloader = []
         if isinstance(self.cfgs.data_cfgs.train_datasets, str):
             formatter = self.processor if self.processor else self.tokenizer
-            custom_formatter = self.model.apply_chat_template if hasattr(self.model, 'apply_chat_template') else None
-            self.train_template = ChatTemplate(formatter, self.cfgs.data_cfgs.train_template, custom_formatter)
+            custom_formatter = (
+                self.model.apply_chat_template
+                if hasattr(self.model, 'apply_chat_template')
+                else None
+            )
+            self.train_template = ChatTemplate(
+                formatter, self.cfgs.data_cfgs.train_template, custom_formatter
+            )
             train_dataset = train_data_dtype(
                 path=self.cfgs.data_cfgs.train_datasets,
                 template=self.train_template,
@@ -99,18 +110,40 @@ class SupervisedTrainerBase:
             self.train_template = []
             for i in range(len(self.cfgs.data_cfgs.train_datasets)):
                 formatter = self.processor if self.processor else self.tokenizer
-                self.train_template.append(ChatTemplate(formatter, self.cfgs.data_cfgs.train_template[i]))
+                self.train_template.append(
+                    ChatTemplate(formatter, self.cfgs.data_cfgs.train_template[i])
+                )
                 train_datasets.append(
                     train_data_dtype(
                         path=self.cfgs.data_cfgs.train_datasets[i],
                         template=self.train_template[i],
                         tokenizer=self.tokenizer,
                         processor=self.processor,
-                        name=self.cfgs.data_cfgs.train_name[i] if self.cfgs.data_cfgs.train_name else None,
-                        size=self.cfgs.data_cfgs.train_size[i] if self.cfgs.data_cfgs.train_size else None,
-                        split=self.cfgs.data_cfgs.train_split[i] if self.cfgs.data_cfgs.train_split else None,
-                        data_files=self.cfgs.data_cfgs.train_data_files[i] if self.cfgs.data_cfgs.train_data_files else None,
-                        optional_args=self.cfgs.data_cfgs.train_optional_args[i] if len(self.cfgs.data_cfgs.train_optional_args)>0 else [],
+                        name=(
+                            self.cfgs.data_cfgs.train_name[i]
+                            if self.cfgs.data_cfgs.train_name
+                            else None
+                        ),
+                        size=(
+                            self.cfgs.data_cfgs.train_size[i]
+                            if self.cfgs.data_cfgs.train_size
+                            else None
+                        ),
+                        split=(
+                            self.cfgs.data_cfgs.train_split[i]
+                            if self.cfgs.data_cfgs.train_split
+                            else None
+                        ),
+                        data_files=(
+                            self.cfgs.data_cfgs.train_data_files[i]
+                            if self.cfgs.data_cfgs.train_data_files
+                            else None
+                        ),
+                        optional_args=(
+                            self.cfgs.data_cfgs.train_optional_args[i]
+                            if len(self.cfgs.data_cfgs.train_optional_args) > 0
+                            else []
+                        ),
                     )
                 )
             combined_train_dataset = CombinedDataset(train_datasets)
@@ -118,16 +151,22 @@ class SupervisedTrainerBase:
                 combined_train_dataset,
                 collate_fn=combined_train_dataset.get_collator(),
                 batch_sampler=DistributedCombinedDatasetBatchSampler(
-                    train_datasets, 
+                    train_datasets,
                     shuffle=True,
                     drop_last=True,
-                    batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size)
+                    batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
                 ),
             )
         if isinstance(self.cfgs.data_cfgs.eval_datasets, str):
             formatter = self.processor if self.processor else self.tokenizer
-            custom_formatter = self.model.apply_chat_template if hasattr(self.model, 'apply_chat_template') else None
-            self.eval_template = ChatTemplate(formatter, self.cfgs.data_cfgs.eval_template, custom_formatter)
+            custom_formatter = (
+                self.model.apply_chat_template
+                if hasattr(self.model, 'apply_chat_template')
+                else None
+            )
+            self.eval_template = ChatTemplate(
+                formatter, self.cfgs.data_cfgs.eval_template, custom_formatter
+            )
             eval_dataset = eval_data_dtype(
                 path=self.cfgs.data_cfgs.eval_datasets,
                 template=self.eval_template,
@@ -143,30 +182,48 @@ class SupervisedTrainerBase:
                 eval_dataset,
                 collate_fn=eval_dataset.get_collator(),
                 sampler=DistributedSampler(eval_dataset, shuffle=True),
-                batch_size=int(self.cfgs.train_cfgs.per_device_eval_batch_size)
+                batch_size=int(self.cfgs.train_cfgs.per_device_eval_batch_size),
             )
         elif isinstance(self.cfgs.data_cfgs.eval_datasets, list):
             eval_dataloader = {}
             self.eval_template = []
             for i in range(len(self.cfgs.data_cfgs.eval_datasets)):
                 formatter = self.processor if self.processor else self.tokenizer
-                self.eval_template.append(ChatTemplate(formatter, self.cfgs.data_cfgs.eval_template[i]))
+                self.eval_template.append(
+                    ChatTemplate(formatter, self.cfgs.data_cfgs.eval_template[i])
+                )
                 eval_dataset = eval_data_dtype(
-                        path=self.cfgs.data_cfgs.eval_datasets[i],
-                        template=self.eval_template[i],
-                        tokenizer=self.tokenizer,
-                        processor=self.processor,
-                        name=self.cfgs.data_cfgs.eval_name[i] if self.cfgs.data_cfgs.eval_name else None,
-                        split=self.cfgs.data_cfgs.eval_split[i] if self.cfgs.data_cfgs.eval_split else None,
-                        size=self.cfgs.data_cfgs.eval_size[i] if self.cfgs.data_cfgs.eval_size else None,
-                        data_files=self.cfgs.data_cfgs.eval_data_files[i] if self.cfgs.data_cfgs.eval_data_files else None,
-                        optional_args=self.cfgs.data_cfgs.eval_optional_args[i] if len(self.cfgs.data_cfgs.eval_optional_args)>0 else [],
-                    )
+                    path=self.cfgs.data_cfgs.eval_datasets[i],
+                    template=self.eval_template[i],
+                    tokenizer=self.tokenizer,
+                    processor=self.processor,
+                    name=(
+                        self.cfgs.data_cfgs.eval_name[i] if self.cfgs.data_cfgs.eval_name else None
+                    ),
+                    split=(
+                        self.cfgs.data_cfgs.eval_split[i]
+                        if self.cfgs.data_cfgs.eval_split
+                        else None
+                    ),
+                    size=(
+                        self.cfgs.data_cfgs.eval_size[i] if self.cfgs.data_cfgs.eval_size else None
+                    ),
+                    data_files=(
+                        self.cfgs.data_cfgs.eval_data_files[i]
+                        if self.cfgs.data_cfgs.eval_data_files
+                        else None
+                    ),
+                    optional_args=(
+                        self.cfgs.data_cfgs.eval_optional_args[i]
+                        if len(self.cfgs.data_cfgs.eval_optional_args) > 0
+                        else []
+                    ),
+                )
                 raw_eval_dataloader = DataLoader(
                     eval_dataset,
                     collate_fn=eval_dataset.get_collator(),
                     sampler=DistributedSampler(eval_dataset, shuffle=True),
-                    batch_size=int(self.cfgs.train_cfgs.per_device_eval_batch_size)
+                    batch_size=int(self.cfgs.train_cfgs.per_device_eval_batch_size),
                 )
                 eval_dataloader[self.cfgs.data_cfgs.eval_template[i]] = raw_eval_dataloader
 
@@ -188,7 +245,7 @@ class SupervisedTrainerBase:
             lr=self.cfgs.train_cfgs.learning_rate,
             betas=self.cfgs.train_cfgs.adam_betas,
         )
-        
+
         num_warmup_steps = int(self.cfgs.train_cfgs.lr_warmup_ratio * total_training_steps)
         lr_scheduler = get_scheduler(
             name=self.cfgs.train_cfgs.lr_scheduler_type,
@@ -211,7 +268,11 @@ class SupervisedTrainerBase:
         num_update_steps_per_epoch = (
             len(self.train_dataloader) + self.cfgs.train_cfgs.gradient_accumulation_steps - 1
         ) // self.cfgs.train_cfgs.gradient_accumulation_steps
-        total_training_steps = self.cfgs.train_cfgs.epochs * num_update_steps_per_epoch * self.cfgs.train_cfgs.gradient_accumulation_steps
+        total_training_steps = (
+            self.cfgs.train_cfgs.epochs
+            * num_update_steps_per_epoch
+            * self.cfgs.train_cfgs.gradient_accumulation_steps
+        )
         self.params_to_optimize = list(filter(lambda p: p.requires_grad, self.model.parameters()))
         self.optimizer = torch.optim.AdamW(
             self.params_to_optimize,
@@ -232,7 +293,11 @@ class SupervisedTrainerBase:
         if hasattr(self, 'ref_model') and self.ref_model is not None:
             self.model, self.ref_model, self.optimizer, self.train_dataloader, self.lr_scheduler = (
                 self.accelerator.prepare(
-                    self.model, self.ref_model, self.optimizer, self.train_dataloader, self.lr_scheduler
+                    self.model,
+                    self.ref_model,
+                    self.optimizer,
+                    self.train_dataloader,
+                    self.lr_scheduler,
                 )
             )
             self.ref_model.eval()
@@ -311,7 +376,7 @@ class SupervisedTrainerBase:
 
         if model is None:
             model = self.model  # pylint: disable=no-member
-        
+
         output_dir = os.path.join(self.cfgs.logger_cfgs.output_dir, f'slice_{tag or "end"}')
         os.makedirs(output_dir, exist_ok=True)
 
@@ -334,7 +399,7 @@ class SupervisedTrainerBase:
                 model.save_16bit_model(output_dir, save_filename=save_file_name)
             else:
                 if is_main_process():
-                    model_to_save.save_pretrained(output_dir, is_main_process=True)   
+                    model_to_save.save_pretrained(output_dir, is_main_process=True)
             self.logger.print('Model saved!')
         if self.lora_enabled and not self.lora_cfgs.save_full_model:
             self.logger.print('LoRA used. Saving model as LoRA adapters...')

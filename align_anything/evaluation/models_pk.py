@@ -13,56 +13,74 @@
 # limitations under the License.
 # ==============================================================================
 
-import os
-import json
-import csv
 import argparse
-from typing import Union, Dict, List
+import csv
+import json
+import os
+from typing import Dict, List, Union
+
 
 def parse_eval_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(
-        "--benchmark",
-        "-b",
+        '--benchmark',
+        '-b',
         default=None,
-        help="Benchmarks that support pk: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, HPSv2, ImageRewardDB",
+        help='Benchmarks that support pk: ARC, BBH, Belebele, CMMLU, GSM8K, HumanEval, MMLU, MMLUPRO, mt-bench, PAWS-X, RACE, TruthfulQA, MME, MMBench, MMMU, POPE, MMVet, MathVista, MM-SafetyBench, TextVQA, VizWizVQA, SPA-VL, A-OKVQA, llava-bench-in-the-wild, llava-bench-coco, ScienceQA, MMStar, HPSv2, ImageRewardDB',
         choices=[
-            "ARC", "BBH", "Belebele", "CMMLU", "GSM8K", "HumanEval",
-            "MMLU", "MMLUPRO", "mt_bench", "PAWS-X", "RACE", "TruthfulQA",
-            "MME", "MMBench", "MMMU", "POPE", "MMVet", "MathVista",
-            "MM-SafetyBench", "TextVQA", "VizWizVQA", "SPA-VL",
-            "A-OKVQA", "llava-bench-in-the-wild", "llava-bench-coco",
-            "ScienceQA", "MMStar", "HPSv2", "ImageRewardDB"
+            'ARC',
+            'BBH',
+            'Belebele',
+            'CMMLU',
+            'GSM8K',
+            'HumanEval',
+            'MMLU',
+            'MMLUPRO',
+            'mt_bench',
+            'PAWS-X',
+            'RACE',
+            'TruthfulQA',
+            'MME',
+            'MMBench',
+            'MMMU',
+            'POPE',
+            'MMVet',
+            'MathVista',
+            'MM-SafetyBench',
+            'TextVQA',
+            'VizWizVQA',
+            'SPA-VL',
+            'A-OKVQA',
+            'llava-bench-in-the-wild',
+            'llava-bench-coco',
+            'ScienceQA',
+            'MMStar',
+            'HPSv2',
+            'ImageRewardDB',
         ],
     )
-    parser.add_argument(
-        "--model_1",
-        required=True,
-        help="ID of the first model to compare"
-    )
-    parser.add_argument(
-        "--model_2",
-        required=True,
-        help="ID of the second model to compare"
-    )
+    parser.add_argument('--model_1', required=True, help='ID of the first model to compare')
+    parser.add_argument('--model_2', required=True, help='ID of the second model to compare')
     args = parser.parse_args()
     return args
 
+
 def load_results(file_path: str) -> Dict[str, List[int]]:
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with open(file_path, encoding='utf-8') as file:
         data = json.load(file)
     return data
+
 
 def models_pk(model_1: str, model_2: str) -> None:
     model_1_data = load_results(f'{model_1}_result.json')
     model_2_data = load_results(f'{model_2}_result.json')
-    
+
     model_1_results = model_1_data[model_1]
     model_2_results = model_2_data[model_2]
-    
+
     model_1_win, model_1_tie, model_1_lose = 0, 0, 0
     model_2_win, model_2_tie, model_2_lose = 0, 0, 0
-    
+
     for res_1, res_2 in zip(model_1_results, model_2_results):
         if res_1 == res_2:
             model_1_tie += 1
@@ -73,22 +91,23 @@ def models_pk(model_1: str, model_2: str) -> None:
         else:
             model_1_lose += 1
             model_2_win += 1
-            
+
     total_matches_model_1 = model_1_win + model_1_tie + model_1_lose
     model_1_win_rate = model_1_win / total_matches_model_1 if total_matches_model_1 > 0 else 0
 
     results = {
         model_1: [model_1_win, model_1_tie, model_1_lose],
         model_2: [model_2_win, model_2_tie, model_2_lose],
-        model_1 + "_win_rate": [model_1_win_rate],
+        model_1 + '_win_rate': [model_1_win_rate],
     }
-    
+
     output_file = f'{model_1}_vs_{model_2}.csv'
     with open(output_file, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['model', 'win', 'tie', 'lose'])
         for model, counts in results.items():
             writer.writerow([model] + counts)
+
 
 def main(args: Union[argparse.Namespace, None] = None) -> None:
     if not args:
@@ -97,5 +116,6 @@ def main(args: Union[argparse.Namespace, None] = None) -> None:
     os.chdir(folder_path)
     models_pk(args.model_1, args.model_2)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()

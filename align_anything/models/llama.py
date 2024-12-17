@@ -17,28 +17,24 @@
 # ==============================================================================
 
 import torch
-import torch.utils.checkpoint
 import torch.nn as nn
-from transformers import LlamaPreTrainedModel, AutoConfig, LlamaModel
-from transformers.models.llama.modeling_llama import (
-    LlamaForCausalLM,
-)
+import torch.utils.checkpoint
+from transformers import AutoConfig, LlamaModel, LlamaPreTrainedModel
+from transformers.models.llama.modeling_llama import LlamaForCausalLM
 
 from align_anything.models.reward_model import ScoreModelOutput
 
+
 class AccustomedLlamaModel(LlamaForCausalLM):
 
-    @property
-    def infer_required_keys(self) -> list[str]:
-        return ['input_ids', 'attention_mask', 'labels']
-    
     def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Return the dict used for model inference"""
         return {
             'input_ids': batch['input_ids'],
-            'attention_mask': batch['attention_mask'],
+            'attention_mask': batch.get('attention_mask'),
             'labels': batch.get('labels'),
         }
+
 
 class AccustomedLlamaRewardModel(LlamaPreTrainedModel):
 
@@ -50,10 +46,6 @@ class AccustomedLlamaRewardModel(LlamaPreTrainedModel):
         self.score_head = nn.Linear(config.hidden_size, 1, bias=False)
 
     @property
-    def infer_required_keys(self) -> list[str]:
-        return ['input_ids', 'attention_mask']
-    
-    @property
     def processor_available(self):
         return False
 
@@ -63,7 +55,7 @@ class AccustomedLlamaRewardModel(LlamaPreTrainedModel):
             'input_ids': batch['input_ids'],
             'attention_mask': batch['attention_mask'],
         }
-    
+
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,

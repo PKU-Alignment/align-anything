@@ -17,6 +17,7 @@
 
 import torch
 
+
 class Emu3PrefixConstrainedLogitsHelper:
 
     def __init__(
@@ -50,14 +51,14 @@ class Emu3PrefixConstrainedLogitsHelper:
 
         offset = input_ids.shape[0] - self.offset_cache[batch_id]
         if offset % (self.width + 1) == 0:
-            return (self.eol_token, )
+            return (self.eol_token,)
         elif offset == (self.width + 1) * self.height + 1:
-            return (self.eof_token, )
+            return (self.eof_token,)
         elif offset == (self.width + 1) * self.height + 2:
-            return (self.eoi_token, )
+            return (self.eoi_token,)
         elif offset == (self.width + 1) * self.height + 3:
-            return (self.eos_token, )
+            return (self.eos_token,)
         elif offset > (self.width + 1) * self.height + 3:
-            return (self.pad_token, )
+            return (self.pad_token,)
         else:
             return self.visual_tokens

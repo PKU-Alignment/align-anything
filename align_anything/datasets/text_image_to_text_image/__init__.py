@@ -15,6 +15,6 @@
 """Dataset classes for text to text training."""
 
 
-from align_anything.datasets.text_image_to_text_image.supervised import *
 from align_anything.datasets.text_image_to_text_image.preference import *
 from align_anything.datasets.text_image_to_text_image.prompt_only import *
+from align_anything.datasets.text_image_to_text_image.supervised import *
