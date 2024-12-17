@@ -16,9 +16,9 @@
 
 
 import argparse
+import json
 import os
 import sys
-import json
 from typing import Any
 
 import deepspeed
@@ -55,15 +55,12 @@ class RMScore(SupervisedTrainerBase):
         self.ds_train_cfgs = prepare_ds_train_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
         self.global_step = 0
         self.infer_batch = lambda batch: batch
-        self.infer_required_keys = []
-        
+
         self.init_check()
         dist.barrier()
         self.init_models()
         if hasattr(self.model, 'infer_batch'):
             self.infer_batch = self.model.infer_batch
-        if hasattr(self.model, 'infer_required_keys'):
-            self.infer_required_keys = self.model.infer_required_keys
         dist.barrier()
         self.init_datasets()
         dist.barrier()
@@ -73,7 +70,9 @@ class RMScore(SupervisedTrainerBase):
 
     def init_check(self) -> None:
         """Initial configuration checking."""
-        assert self.cfgs.train_cfgs.per_device_train_batch_size==1, 'per_device_train_batch_size must be 1'
+        assert (
+            self.cfgs.train_cfgs.per_device_train_batch_size == 1
+        ), 'per_device_train_batch_size must be 1'
         super().init_check()
 
     def init_models(self) -> None:
@@ -105,7 +104,7 @@ class RMScore(SupervisedTrainerBase):
         self.model.eval()
         if self.cfgs.train_cfgs.gradient_checkpointing:
             self.model.gradient_checkpointing_disable()
-        
+
         eval_dataloader = tqdm(
             self.eval_dataloader,
             desc='Evaluating',
@@ -125,41 +124,57 @@ class RMScore(SupervisedTrainerBase):
             )
             end_scores = output.end_scores
             rewards.append(end_scores)
-        
-            decoded_prompt_and_response = self.tokenizer.batch_decode(batch['input_ids'], skip_special_tokens=True)
 
-            prompt, response = split_prompt_response(decoded_prompt_and_response, split_token=self.eval_template.split_token)
+            decoded_prompt_and_response = self.tokenizer.batch_decode(
+                batch['input_ids'], skip_special_tokens=True
+            )
+
+            prompt, response = split_prompt_response(
+                decoded_prompt_and_response, split_token=self.eval_template.split_token
+            )
             prompts.append(prompt)
             responses.append(response)
 
         data_with_score = []
         for prompt, response, reward in zip(prompts, responses, rewards):
-            data_with_score.append({
-                'prompt': prompt[0].replace(self.eval_template.system_prompt, '').replace(self.eval_template.user_prompt.replace('{input} ', ''), '').strip(),
-                'response': response[0],
-                'score': reward.item(),
-            })
-        
-        output_name = os.path.join(self.cfgs.logger_cfgs.output_dir, 'tmp', f'process_{dist.get_rank()}.json')
+            data_with_score.append(
+                {
+                    'prompt': prompt[0]
+                    .replace(self.eval_template.system_prompt, '')
+                    .replace(self.eval_template.user_prompt.replace('{input} ', ''), '')
+                    .strip(),
+                    'response': response[0],
+                    'score': reward.item(),
+                }
+            )
+
+        output_name = os.path.join(
+            self.cfgs.logger_cfgs.output_dir, 'tmp', f'process_{dist.get_rank()}.json'
+        )
         os.makedirs(os.path.dirname(output_name), exist_ok=True)
         with open(output_name, 'w') as f:
             json.dump(data_with_score, f, indent=4)
             print(f'Saved {len(data_with_score)} samples to {output_name}')
-        
+
         dist.barrier()
 
         if is_main_process():
             final_data_with_score = []
             for rank in range(dist.get_world_size()):
-                output_name = os.path.join(self.cfgs.logger_cfgs.output_dir, 'tmp', f'process_{rank}.json')
-                with open(output_name, 'r') as f:
+                output_name = os.path.join(
+                    self.cfgs.logger_cfgs.output_dir, 'tmp', f'process_{rank}.json'
+                )
+                with open(output_name) as f:
                     final_data_with_score.extend(json.load(f))
                 os.remove(output_name)
             os.rmdir(os.path.join(self.cfgs.logger_cfgs.output_dir, 'tmp'))
-            output_name = os.path.join(self.cfgs.logger_cfgs.output_dir, 'eval_data_with_score.json')
+            output_name = os.path.join(
+                self.cfgs.logger_cfgs.output_dir, 'eval_data_with_score.json'
+            )
             with open(output_name, 'w') as f:
                 json.dump(final_data_with_score, f, indent=4)
             print(f'Saved {len(final_data_with_score)} samples to {output_name}')
+
 
 def main():
     # setup distribution training

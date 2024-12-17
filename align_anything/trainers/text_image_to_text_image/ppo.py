@@ -16,18 +16,25 @@
 
 
 import argparse
+import copy
 import os
 import sys
-import copy
 from typing import Any
-
 
 import deepspeed
 import torch
 from transformers import GenerationConfig
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.text_image_to_text_image import PromptOnlyTokenizedDataset, SupervisedTokenizedDataset
+from align_anything.datasets.text_image_to_text_image import (
+    PromptOnlyTokenizedDataset,
+    SupervisedTokenizedDataset,
+)
+from align_anything.datasets.text_to_text import (
+    PromptOnlyBatch,
+    PromptOnlyDataset,
+    SupervisedDataset,
+)
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.trainers.text_to_text.ppo import PPOTrainer as PPOTextTrainer
@@ -41,11 +48,6 @@ from align_anything.utils.tools import (
     update_dict,
 )
 
-from align_anything.datasets.text_to_text import (
-    PromptOnlyBatch,
-    PromptOnlyDataset,
-    SupervisedDataset,
-)
 
 class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attributes
     """Trainer base class for PPO training."""
@@ -54,7 +56,9 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         """Initialize training and evaluation datasets."""
         # load training datasets
         self.prompt_only_dataloader, self.eval_dataloader, self.ptx_dataloader = (
-            self.get_dataloaders(PromptOnlyTokenizedDataset, PromptOnlyTokenizedDataset, SupervisedTokenizedDataset)
+            self.get_dataloaders(
+                PromptOnlyTokenizedDataset, PromptOnlyTokenizedDataset, SupervisedTokenizedDataset
+            )
         )
 
     def init_models(self) -> None:
@@ -127,7 +131,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id,
         )
-        
+
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> dict[str, Any]:
         infer_batch = self.infer_batch(mini_prompt_only_batch)
         actor_batch = copy.deepcopy(infer_batch)
@@ -136,15 +140,15 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             generation_config=self.generation_config,
             synced_gpus=True,
             do_sample=True,
-            past_key_value = None,
-            multimodal_generation_mode = "interleaved-text-image",
+            past_key_value=None,
+            multimodal_generation_mode='interleaved-text-image',
         )
         attention_mask = sequences.not_equal(self.tokenizer.pad_token_id)
         actor_batch['input_ids'] = sequences
         actor_batch['attention_mask'] = attention_mask
 
         return actor_batch
-                
+
     def split_ptx_micro_batches(
         self,
         ptx_batch: dict[str, torch.Tensor],
@@ -155,9 +159,14 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         total_batch_size = ptx_batch['input_ids'].size(0)
         micro_batch_size = int(self.cfgs.train_cfgs.per_device_train_batch_size)
         for i in range(0, total_batch_size, micro_batch_size):
-            micro_batch = {key: value[i : i + micro_batch_size] for key, value in ptx_batch.items() if value is not None}
+            micro_batch = {
+                key: value[i : i + micro_batch_size]
+                for key, value in ptx_batch.items()
+                if value is not None
+            }
             micro_batches.append(micro_batch)
         return micro_batches
+
 
 def main():
     # setup distribution training

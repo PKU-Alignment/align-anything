@@ -16,10 +16,10 @@
 
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
-from PIL import Image
 
 import torch
 import transformers
+from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
@@ -76,9 +76,9 @@ class SupervisedDataset(Dataset):
         self.padding_side = padding_side
         self.raw_data = load_dataset(
             path,
-            name=name if name and name!="None" else None,
-            split=split if split and split!="None" else None,
-            data_files=data_files if data_files and data_files!="None" else None,
+            name=name if name and name != 'None' else None,
+            split=split if split and split != 'None' else None,
+            data_files=data_files if data_files and data_files != 'None' else None,
             *optional_args,
             trust_remote_code=True,
         )
@@ -88,7 +88,7 @@ class SupervisedDataset(Dataset):
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         return_dict = {}
-        prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)     
+        prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)
 
         # return necessary information
         return_dict['prompt'] = prompt
@@ -98,7 +98,11 @@ class SupervisedDataset(Dataset):
         # set the labels masked by the prompt
         inputs = self.tokenize(conversation, meta_info, padding=PaddingStrategy.DO_NOT_PAD)
         labels = inputs['input_ids'][0].clone()
-        labels[: len(self.tokenize(prompt, meta_info, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0])] = IGNORE_INDEX
+        labels[
+            : len(
+                self.tokenize(prompt, meta_info, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0]
+            )
+        ] = IGNORE_INDEX
         return_dict['labels'] = labels
 
         return return_dict
@@ -129,7 +133,6 @@ class SupervisedDataset(Dataset):
             return_tensors='pt',
         )
 
-
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
         raw_sample = self.raw_data[index]
@@ -143,7 +146,12 @@ class SupervisedDataset(Dataset):
 
 class SupervisedCollator:
 
-    def __init__(self, pad_token_id: int, processor: transformers.ProcessorMixin | transforms.Compose | None = None, padding_side: str = 'right') -> None:
+    def __init__(
+        self,
+        pad_token_id: int,
+        processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        padding_side: str = 'right',
+    ) -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
         self.processor = processor
@@ -162,7 +170,13 @@ class SupervisedCollator:
         return_dict['images'] = images
         concated_text = [sample['conversation'] for sample in samples]
 
-        multi_modal_padding = self.processor(images=images, text=concated_text, return_tensors='pt', padding=True, padding_side=self.padding_side)
+        multi_modal_padding = self.processor(
+            images=images,
+            text=concated_text,
+            return_tensors='pt',
+            padding=True,
+            padding_side=self.padding_side,
+        )
 
         for key, value in multi_modal_padding.items():
             if isinstance(value, torch.Tensor):

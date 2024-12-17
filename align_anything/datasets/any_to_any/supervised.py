@@ -20,13 +20,14 @@ import torch
 import transformers
 from torch.utils.data import Dataset
 from torchvision import transforms
+from transformers import DataCollatorForSeq2Seq, PreTrainedTokenizer, ProcessorMixin
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
-from transformers import DataCollatorForSeq2Seq, PreTrainedTokenizer, ProcessorMixin
+
 
 IGNORE_INDEX = -100
 
@@ -89,48 +90,52 @@ class SupervisedDataset(Dataset):
         if formatted_sample['mode'] == 'TG':
             input_kwargs = dict(
                 mode='G',
-                ratio="1:1",
+                ratio='1:1',
                 image_area=518400,
-                return_tensors="pt",
+                return_tensors='pt',
             )
             inputs = self.processor(text=formatted_sample['input_text'], **input_kwargs)
             output_kwargs = dict(
                 mode='TG',
-                ratio="1:1",
+                ratio='1:1',
                 image_area=518400,
-                return_tensors="pt",
+                return_tensors='pt',
             )
-            outputs = self.processor(text=formatted_sample['input_text'], output_image=formatted_sample['output_image'], **output_kwargs)
+            outputs = self.processor(
+                text=formatted_sample['input_text'],
+                output_image=formatted_sample['output_image'],
+                **output_kwargs,
+            )
             full_input_ids = outputs['input_ids'][0]
             labels = full_input_ids.clone()
             prompt_input_ids = inputs['input_ids'][0]
-            labels[:len(prompt_input_ids)] = IGNORE_INDEX
+            labels[: len(prompt_input_ids)] = IGNORE_INDEX
             return_dict['input_ids'] = full_input_ids
             return_dict['labels'] = labels
             return return_dict
-        
+
         elif formatted_sample['mode'] == 'TU':
             inputs = self.processor(
                 text=formatted_sample['input_text'],
                 image=formatted_sample['input_image'],
                 mode='U',
-                padding_side="left",
-                padding="longest",
-                return_tensors="pt",
+                padding_side='left',
+                padding='longest',
+                return_tensors='pt',
             )
             outputs = self.processor(
                 text=formatted_sample['input_text'],
                 image=formatted_sample['input_image'],
                 output_text=formatted_sample['output_text'],
                 mode='TU',
-                padding_side="left",
-                padding="longest",
-                return_tensors="pt",
+                padding_side='left',
+                padding='longest',
+                return_tensors='pt',
             )
             full_input_ids = outputs['input_ids'][0]
             labels = full_input_ids.clone()
             prompt_input_ids = inputs['input_ids'][0]
-            labels[:len(prompt_input_ids)] = IGNORE_INDEX
+            labels[: len(prompt_input_ids)] = IGNORE_INDEX
             return_dict['input_ids'] = full_input_ids
             return_dict['labels'] = labels
             return return_dict
@@ -193,7 +198,7 @@ class SupervisedTokenizedDataset(Dataset):
         self.tokenizer = tokenizer
         self.processor = processor
 
-        self.raw_data = torch.load(f"{path}/{data_files}", map_location=torch.device('cpu'))
+        self.raw_data = torch.load(f'{path}/{data_files}', map_location=torch.device('cpu'))
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
         self.template = template
@@ -209,17 +214,20 @@ class SupervisedTokenizedDataset(Dataset):
     def __len__(self) -> int:
         """Get the number of samples in the dataset."""
         return len(self.raw_data)
-    
+
+
 class SupervisedCollator(DataCollatorForSeq2Seq):
 
-    def __init__(self, tokenizer: PreTrainedTokenizer, processor: Optional["ProcessorMixin"] = None) -> None:
+    def __init__(
+        self, tokenizer: PreTrainedTokenizer, processor: Optional['ProcessorMixin'] = None
+    ) -> None:
         """Initialize a collator."""
         super().__init__(tokenizer)
         self.processor = processor
 
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
         current_device = get_current_device()
-        features: Dict[str, "torch.Tensor"] = super().__call__(samples)
+        features: Dict[str, 'torch.Tensor'] = super().__call__(samples)
         for k, v in features.items():
             features[k] = v.to(current_device)
         return features

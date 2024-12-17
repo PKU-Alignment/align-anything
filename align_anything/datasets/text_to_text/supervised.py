@@ -154,11 +154,16 @@ class SupervisedCollator:
 
         return return_dict
 
+
 class UnmatchedSupervisedDataset(SupervisedDataset):
 
-    def preprocess(self, raw_sample_for_prompt: dict[str, Any], raw_sample_for_response: dict[str, Any]) -> SupervisedSample:
+    def preprocess(
+        self, raw_sample_for_prompt: dict[str, Any], raw_sample_for_response: dict[str, Any]
+    ) -> SupervisedSample:
         return_dict = {}
-        formatted_text, _ = self.template.format_unmatched_supervised_sample(raw_sample_for_prompt, raw_sample_for_response)
+        formatted_text, _ = self.template.format_unmatched_supervised_sample(
+            raw_sample_for_prompt, raw_sample_for_response
+        )
         return_dict['input_ids'] = self.tokenize(formatted_text)
 
         return return_dict
@@ -175,6 +180,7 @@ class UnmatchedSupervisedDataset(SupervisedDataset):
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
         return UnmatchedSupervisedCollator(self.tokenizer.pad_token_id)
+
 
 class UnmatchedSupervisedCollator:
 

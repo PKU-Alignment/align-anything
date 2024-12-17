@@ -99,12 +99,9 @@ class PreferenceDataset(Dataset):
         prompt, multi_modal_info = self.template.format_diffusion_preference_sample(raw_sample)
         return_dict = {}
 
-        return_dict['input_ids'] = self.tokenize(
-            prompt, add_special_tokens=False
-        )
+        return_dict['input_ids'] = self.tokenize(prompt, add_special_tokens=False)
         better_audios = self.process_audio(multi_modal_info['better_audio'])
         worse_audios = self.process_audio(multi_modal_info['worse_audio'])
-
 
         # TODO: check the correctness
         all_audios = torch.cat([better_audios, worse_audios], dim=0)

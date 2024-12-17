@@ -18,6 +18,7 @@ from dataclasses import dataclass
 import torch
 from transformers.utils.generic import ModelOutput
 
+
 @dataclass
 class ScoreModelOutput(ModelOutput):
     """Output of the score model."""

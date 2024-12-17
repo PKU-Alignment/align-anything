@@ -14,17 +14,13 @@
 # ==============================================================================
 from typing import TYPE_CHECKING
 
-from transformers.utils import (
-    OptionalDependencyNotAvailable,
-    _LazyModule,
-    is_torch_available,
-)
+from transformers.utils import OptionalDependencyNotAvailable, _LazyModule, is_torch_available
 
 
 _import_structure = {
-    "configuration_emu3": ["Emu3Config"],
-    "tokenization_emu3": ["Emu3Tokenizer"],
-    "processing_emu3": ["Emu3Processor"],
+    'configuration_emu3': ['Emu3Config'],
+    'tokenization_emu3': ['Emu3Tokenizer'],
+    'processing_emu3': ['Emu3Processor'],
 }
 
 try:
@@ -33,16 +29,16 @@ try:
 except OptionalDependencyNotAvailable:
     pass
 else:
-    _import_structure["modeling_emu3"] = [
-        "Emu3Model",
-        "Emu3PretrainedModel",
-        "Emu3ForCausalLM",
+    _import_structure['modeling_emu3'] = [
+        'Emu3Model',
+        'Emu3PretrainedModel',
+        'Emu3ForCausalLM',
     ]
 
 if TYPE_CHECKING:
     from .configuration_emu3 import Emu3Config
-    from .tokenization_emu3 import Emu3Tokenizer
     from .processing_emu3 import Emu3Processor
+    from .tokenization_emu3 import Emu3Tokenizer
 
     try:
         if not is_torch_available():
@@ -50,13 +46,9 @@ if TYPE_CHECKING:
     except OptionalDependencyNotAvailable:
         pass
     else:
-        from .modeling_emu3 import (
-            Emu3Model,
-            Emu3PretrainedModel,
-            Emu3ForCausalLM,
-        )
+        from .modeling_emu3 import Emu3ForCausalLM, Emu3Model, Emu3PretrainedModel
 
 else:
     import sys
 
-    sys.modules[__name__] = _LazyModule(__name__, globals()["__file__"], _import_structure)
+    sys.modules[__name__] = _LazyModule(__name__, globals()['__file__'], _import_structure)

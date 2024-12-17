@@ -27,12 +27,12 @@ CHAT_TEMPLATES=("" "")
 
 for BENCHMARK in "${BENCHMARKS[@]}"; do
     echo "Processing benchmark: ${BENCHMARK}"
-    
+
     for i in "${!MODEL_IDS[@]}"; do
         MODEL_ID=${MODEL_IDS[$i]}
         MODEL_NAME_OR_PATH=${MODEL_NAME_OR_PATHS[$i]}
         CHAT_TEMPLATE=${CHAT_TEMPLATES[$i]}
-        
+
         echo "Running model ${MODEL_ID} for benchmark ${BENCHMARK}"
         python __main__.py \
             --benchmark ${BENCHMARK} \

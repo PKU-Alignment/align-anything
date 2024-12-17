@@ -21,11 +21,11 @@ import sys
 
 import deepspeed
 import torch
+from transformers import AutoModelForCausalLM
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from transformers import AutoModelForCausalLM
-from align_anything.datasets.text_to_text.preference import PreferenceBatch, PreferenceDataset
 from align_anything.datasets.text_image_to_text_image.preference import PreferenceTokenizedDataset
+from align_anything.datasets.text_to_text.preference import PreferenceBatch, PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
 from align_anything.utils.multi_process import get_current_device
@@ -69,7 +69,6 @@ class DPOTrainer(DPOtextTrainer):
             padding_side='left',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
         )
-
 
 
 def main():

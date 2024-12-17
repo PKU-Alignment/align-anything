@@ -19,6 +19,7 @@ import argparse
 import copy
 import os
 import sys
+from typing import Any
 
 import deepspeed
 import torch
@@ -26,11 +27,18 @@ import torch.distributed as dist
 from transformers import GenerationConfig
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from typing import Any
-from align_anything.datasets.text_image_to_text import PromptOnlyBatch, PromptOnlyDataset, SupervisedDataset
+from align_anything.datasets.text_image_to_text import (
+    PromptOnlyBatch,
+    PromptOnlyDataset,
+    SupervisedDataset,
+)
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.ppo import PPOTrainer as PPOTextTrainer
-from align_anything.utils.multi_process import get_current_device, get_all_reduce_mean, get_all_reduce_max
+from align_anything.utils.multi_process import (
+    get_all_reduce_max,
+    get_all_reduce_mean,
+    get_current_device,
+)
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -38,10 +46,11 @@ from align_anything.utils.tools import (
     is_same_tokenizer,
     masked_mean,
     read_cfgs,
+    remove_pad_tokens,
     seed_everything,
     update_dict,
-    remove_pad_tokens,
 )
+
 
 def move_padding_left(input_tensor, padding_value=0):
     """Moves the padding values in each row of the input_tensor from the right to the left.
@@ -54,7 +63,12 @@ def move_padding_left(input_tensor, padding_value=0):
         Tensor: The tensor with padding values moved to the left.
     """
     # Calculate the number of padding elements at the start of each row
-    start_pad_counts = (input_tensor == padding_value).cumsum(dim=1).eq(torch.arange(1, input_tensor.size(1) + 1, device=input_tensor.device)).sum(dim=1)
+    start_pad_counts = (
+        (input_tensor == padding_value)
+        .cumsum(dim=1)
+        .eq(torch.arange(1, input_tensor.size(1) + 1, device=input_tensor.device))
+        .sum(dim=1)
+    )
     # Calculate the number of non-padding elements in each row
     non_pad_counts = (input_tensor != padding_value).sum(dim=1)
     # Create a new tensor of the same size as input_tensor, filled with padding_value
@@ -68,9 +82,8 @@ def move_padding_left(input_tensor, padding_value=0):
     new_indices = (indices - shifts) % max_len
     # Rearrange the tensor using the gather function
     output_tensor = torch.gather(input_tensor, 1, new_indices)
-    
-    return output_tensor
 
+    return output_tensor
 
 
 class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attributes
@@ -116,17 +129,15 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             is_reward_model=True,
         )
         # loading reward critic model
-        self.reward_critic_model, self.reward_critic_tokenizer, _ = (
-            load_pretrained_models(
-                self.cfgs.model_cfgs.reward_critic_model_name_or_path,
-                model_max_length=self.cfgs.model_cfgs.model_max_length,
-                padding_side='left',
-                trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-                is_reward_model=True,
-                freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
-                freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
-                freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
-            )
+        self.reward_critic_model, self.reward_critic_tokenizer, _ = load_pretrained_models(
+            self.cfgs.model_cfgs.reward_critic_model_name_or_path,
+            model_max_length=self.cfgs.model_cfgs.model_max_length,
+            padding_side='left',
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+            is_reward_model=True,
+            freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
+            freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
+            freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
         )
         # initial checking
         if is_same_tokenizer(self.tokenizer, self.reward_tokenizer):
@@ -155,7 +166,9 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             do_sample=True,
         )
 
-    def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> list[dict[str, Any], list[int]]:
+    def actor_step(
+        self, mini_prompt_only_batch: PromptOnlyBatch
+    ) -> list[dict[str, Any], list[int]]:
         infer_batch = self.infer_batch(mini_prompt_only_batch)
         actor_batch = copy.deepcopy(infer_batch)
         sequences = self.actor_model.module.generate(
@@ -168,12 +181,19 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         attention_mask = sequences.not_equal(self.tokenizer.pad_token_id)
         actor_batch['input_ids'] = sequences
         actor_batch['attention_mask'] = attention_mask
-        
+
         response_lens = []
         batch_size = sequences.size(0)
         for idx in range(batch_size):
-            prompt_length = len(remove_pad_tokens(mini_prompt_only_batch['input_ids'][idx].squeeze().tolist(), self.tokenizer.pad_token_id))
-            sequence_wo_pad = remove_pad_tokens(sequences[idx].squeeze().tolist(), self.tokenizer.pad_token_id)
+            prompt_length = len(
+                remove_pad_tokens(
+                    mini_prompt_only_batch['input_ids'][idx].squeeze().tolist(),
+                    self.tokenizer.pad_token_id,
+                )
+            )
+            sequence_wo_pad = remove_pad_tokens(
+                sequences[idx].squeeze().tolist(), self.tokenizer.pad_token_id
+            )
             response = sequence_wo_pad[prompt_length:]
             response_lens.append(len(response))
         return actor_batch, response_lens
@@ -191,8 +211,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         mini_batch = {}
         for i in range(0, total_batch_size, micro_batch_size):
             mini_batch = {
-                key: prompt_only_batch[key][i : i + micro_batch_size]
-                for key in prompt_only_batch
+                key: prompt_only_batch[key][i : i + micro_batch_size] for key in prompt_only_batch
             }
             # actor generation
             actor_batch, response_lens = self.actor_step(mini_batch)
@@ -201,28 +220,34 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             # calculate the log probabilities
             logits = self.actor_model(**actor_batch).logits
             ref_logits = self.actor_reference_model(**actor_batch).logits
-            
+
             logprob_list = []
             ref_logprob_list = []
             reward_value_list = []
-            
+
             batch_size = logits.size(0)
-            
+
             for idx in range(batch_size):
                 response_length = response_lens[idx]
                 input_id = actor_batch['input_ids'][idx, 1:][-response_length:].unsqueeze(0)
-                
+
                 logit = logits[idx, :-1][-response_length:].unsqueeze(0)
                 ref_logit = ref_logits[idx, :-1][-response_length:].unsqueeze(0)
                 reward_value = reward_batch['reward_values'][idx][-response_length:].unsqueeze(0)
-                
+
                 logprob_list.append(gather_log_probabilities(logit, input_id).squeeze())
                 ref_logprob_list.append(gather_log_probabilities(ref_logit, input_id).squeeze())
                 reward_value_list.append(reward_value.squeeze())
-                
-            log_probs = torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(logits.device)
-            ref_log_probs = torch.nn.utils.rnn.pad_sequence(ref_logprob_list, batch_first=True, padding_value=0.).to(logits.device)
-            reward_values = torch.nn.utils.rnn.pad_sequence(reward_value_list, batch_first=True, padding_value=0.).to(logits.device)
+
+            log_probs = torch.nn.utils.rnn.pad_sequence(
+                logprob_list, batch_first=True, padding_value=0.0
+            ).to(logits.device)
+            ref_log_probs = torch.nn.utils.rnn.pad_sequence(
+                ref_logprob_list, batch_first=True, padding_value=0.0
+            ).to(logits.device)
+            reward_values = torch.nn.utils.rnn.pad_sequence(
+                reward_value_list, batch_first=True, padding_value=0.0
+            ).to(logits.device)
             response_mask = (log_probs != 0).bool().to(logits.device)
 
             micro_training_batch = {}
@@ -243,7 +268,6 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         self.set_train()
 
         return micro_inference_batches, micro_training_batches
-
 
     def rl_step(
         self, inference_batch: dict[str, torch.Tensor], training_batch: dict[str, torch.Tensor]
@@ -274,14 +298,16 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             )
         logits = self.actor_model(**self.infer_batch(inference_batch), use_cache=False).logits
         logprob_list = []
-        
+
         for idx in range(batch_size):
             response_length = response_lens[idx]
             input_id = input_ids[idx, 1:][-response_length:].unsqueeze(0)
             logit = logits[idx, :-1][-response_length:].unsqueeze(0)
             logprob_list.append(gather_log_probabilities(logit, input_id).squeeze())
-        
-        log_probs = torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(logits.device)
+
+        log_probs = torch.nn.utils.rnn.pad_sequence(
+            logprob_list, batch_first=True, padding_value=0.0
+        ).to(logits.device)
         actor_loss = self.actor_loss_fn(
             log_probs,
             old_log_probs,
@@ -293,15 +319,17 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
 
         raw_reward_values = self.reward_critic_model(**self.infer_batch(inference_batch)).scores
         raw_reward_values = raw_reward_values.squeeze(dim=-1)[:, :-1]
-        
+
         reward_value_list = []
-        
+
         for idx in range(batch_size):
             response_length = response_lens[idx]
             reward_value = raw_reward_values[idx][-response_length:].unsqueeze(0)
             reward_value_list.append(reward_value.squeeze())
-        reward_values = torch.nn.utils.rnn.pad_sequence(reward_value_list, batch_first=True, padding_value=0.).to(logits.device)
-        
+        reward_values = torch.nn.utils.rnn.pad_sequence(
+            reward_value_list, batch_first=True, padding_value=0.0
+        ).to(logits.device)
+
         reward_critic_loss = self.critic_loss_fn(
             reward_values,
             old_reward_values,

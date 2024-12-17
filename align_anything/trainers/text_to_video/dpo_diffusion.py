@@ -98,13 +98,11 @@ class DPOTrainer(SupervisedTrainerBase):
                 dtype=self.dtype,
             )
         )
-        self.ref_model, _, _, _, _ = (
-            load_pretrained_video_diffusion_models(
-                self.cfgs.model_cfgs.model_name_or_path,
-                trust_remote_code=True,
-                freeze_unet=True,
-                dtype=self.dtype,
-            )
+        self.ref_model, _, _, _, _ = load_pretrained_video_diffusion_models(
+            self.cfgs.model_cfgs.model_name_or_path,
+            trust_remote_code=True,
+            freeze_unet=True,
+            dtype=self.dtype,
         )
         self.processor = get_video_processor(
             resolution=int(self.cfgs.train_cfgs.resolution),

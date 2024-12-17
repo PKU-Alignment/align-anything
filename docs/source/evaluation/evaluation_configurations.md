@@ -14,7 +14,7 @@ infer_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
   vllm_cfgs: vllm_basic.json
-  
+
 default:
   # Evaluation configurations
   eval_cfgs:

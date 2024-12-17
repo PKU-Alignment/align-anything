@@ -35,7 +35,6 @@ from align_anything.datasets.text_to_text import (
     SupervisedDataset,
 )
 from align_anything.models.pretrained_model import load_pretrained_models
-
 from align_anything.trainers.base import RLTrainerBase
 from align_anything.utils.multi_process import (
     get_all_reduce_max,
@@ -73,12 +72,8 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         self.init_models()
         if hasattr(self.actor_model, 'infer_batch'):
             self.infer_batch = self.actor_model.infer_batch
-        if hasattr(self.actor_model, 'infer_required_keys'):
-            self.infer_required_keys = self.actor_model.infer_required_keys
         if hasattr(self.reward_model, 'infer_batch'):
             self.reward_infer_batch = self.reward_model.infer_batch
-        if hasattr(self.reward_model, 'infer_required_keys'):
-            self.reward_infer_required_keys = self.reward_model.infer_required_keys
         dist.barrier()
         self.init_datasets()
         dist.barrier()
@@ -129,14 +124,12 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             is_reward_model=True,
         )
         # loading reward critic model
-        self.reward_critic_model, self.reward_critic_tokenizer, _ = (
-            load_pretrained_models(
-                self.cfgs.model_cfgs.reward_critic_model_name_or_path,
-                model_max_length=self.cfgs.model_cfgs.model_max_length,
-                padding_side='left',
-                trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-                is_reward_model=True,
-            )
+        self.reward_critic_model, self.reward_critic_tokenizer, _ = load_pretrained_models(
+            self.cfgs.model_cfgs.reward_critic_model_name_or_path,
+            model_max_length=self.cfgs.model_cfgs.model_max_length,
+            padding_side='left',
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+            is_reward_model=True,
         )
         # initial checking
         if is_same_tokenizer(self.tokenizer, self.reward_tokenizer):
@@ -254,8 +247,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         for i in range(0, total_batch_size, micro_batch_size):
 
             mini_batch = {
-                key: prompt_only_batch[key][i : i + micro_batch_size]
-                for key in prompt_only_batch
+                key: prompt_only_batch[key][i : i + micro_batch_size] for key in prompt_only_batch
             }
 
             # actor generation

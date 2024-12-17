@@ -97,7 +97,7 @@ class PromptOnlyDataset(Dataset):
         self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
 
         if size:
-            self.raw_data = self.raw_data[:int(size)]
+            self.raw_data = self.raw_data[: int(size)]
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
         prompt, meta_info = self.template.format_prompt_only_sample(raw_sample)
@@ -105,10 +105,17 @@ class PromptOnlyDataset(Dataset):
         audios = []
 
         if isinstance(meta_info['audio_path'], dict):
-            raw_audio, raw_sr = meta_info['audio_path']['array'], meta_info['audio_path']['sampling_rate']
-            audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate)
+            raw_audio, raw_sr = (
+                meta_info['audio_path']['array'],
+                meta_info['audio_path']['sampling_rate'],
+            )
+            audio = librosa.resample(
+                raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate
+            )
         else:
-            audio = librosa.load(meta_info['audio_path'], sr=self.processor.feature_extractor.sampling_rate)[0]
+            audio = librosa.load(
+                meta_info['audio_path'], sr=self.processor.feature_extractor.sampling_rate
+            )[0]
         audios.append(audio)
         inputs_wo_padding = self.tokenize(text=prompt, audios=audios, padding=False)
         inputs = self.tokenize(text=prompt, audios=audios, padding=True)
@@ -131,9 +138,9 @@ class PromptOnlyDataset(Dataset):
         """Tokenize a text string into a tensor representation."""
 
         return self.processor(
-            text=text, 
-            audios=audios, 
-            return_tensors="pt",
+            text=text,
+            audios=audios,
+            return_tensors='pt',
             padding=padding,
             sampling_rate=self.processor.feature_extractor.sampling_rate,
             add_special_tokens=add_special_tokens,
@@ -172,7 +179,11 @@ class PromptOnlyCollator:
             current_device
         )
 
-        return_dict['input_features'] = torch.cat([sample['input_features'] for sample in samples], dim=0).to(current_device)
-        return_dict['feature_attention_mask'] = torch.cat([sample['feature_attention_mask'] for sample in samples], dim=0).to(current_device)
+        return_dict['input_features'] = torch.cat(
+            [sample['input_features'] for sample in samples], dim=0
+        ).to(current_device)
+        return_dict['feature_attention_mask'] = torch.cat(
+            [sample['feature_attention_mask'] for sample in samples], dim=0
+        ).to(current_device)
 
         return return_dict

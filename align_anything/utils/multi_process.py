@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 
-import dataclasses
 import os
 import threading
 from typing import Any, Callable, Generator, TypeVar, cast
@@ -81,6 +80,7 @@ def get_all_reduce_max(tensor: torch.Tensor) -> torch.Tensor:
     if dist.is_initialized():
         dist.all_reduce(tensor, op=dist.ReduceOp.MAX)
     return tensor
+
 
 __PYTREE_REGISTRY_LOCK = threading.Lock()
 

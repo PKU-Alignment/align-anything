@@ -89,9 +89,7 @@ class SupervisedDataset(Dataset):
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         prompt, multi_modal_info = self.template.format_diffusion_supervised_sample(raw_sample)
         return_dict = {}
-        return_dict['input_ids'] = self.tokenize(
-            prompt, add_special_tokens=False
-        )
+        return_dict['input_ids'] = self.tokenize(prompt, add_special_tokens=False)
         return_dict['pixel_values'] = self.process_image(multi_modal_info['image'])
         return return_dict
 

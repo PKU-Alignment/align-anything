@@ -30,7 +30,7 @@ import gradio as gr
 import requests
 from PIL import Image
 
-from align_anything.configs.template import *
+from align_anything.configs.template import LLAVA, Dialogue, Template
 from align_anything.utils.logger import Logger
 from align_anything.utils.template_registry import get_template_class
 
@@ -223,7 +223,7 @@ def violates_moderation(text):
         flagged = ret.json()['results'][0]['flagged']
     except requests.exceptions.RequestException as e:
         flagged = False
-    except KeyError as e:
+    except KeyError:
         flagged = False
 
     return flagged
@@ -272,7 +272,7 @@ def load_demo(url_params, request: gr.Request):
 def load_demo_refresh_model_list(request: gr.Request):
     logger.print(f'load_demo. ip: {request.client.host}')
     model_names, model_templates = get_model_list()
-    models = dict(zip(model_names, model_templates))
+    dict(zip(model_names, model_templates))
     state = default_conversation.copy()
     dropdown_update = gr.Dropdown(
         choices=model_names, value=model_names[0] if len(model_names) > 0 else ''

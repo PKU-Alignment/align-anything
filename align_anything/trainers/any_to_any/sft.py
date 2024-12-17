@@ -21,9 +21,12 @@ import sys
 
 import deepspeed
 import torch
+import transformers
+from transformers import AutoImageProcessor, AutoModel, AutoTokenizer
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.datasets.any_to_any import SupervisedDataset
+from align_anything.models.modeling_emu3.mllm.processing_emu3 import Emu3Processor
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.sft import SupervisedTrainer as SupervisedtextTrainer
 from align_anything.utils.multi_process import get_current_device
@@ -35,11 +38,9 @@ from align_anything.utils.tools import (
     update_dict,
 )
 
-import transformers
-from transformers import AutoImageProcessor, AutoTokenizer, AutoModel
-from align_anything.models.modeling_emu3.mllm.processing_emu3 import Emu3Processor
 
 transformers.logging.set_verbosity_info()
+
 
 class SuperviseTrainer(SupervisedtextTrainer):
 
@@ -59,9 +60,15 @@ class SuperviseTrainer(SupervisedtextTrainer):
             trust_remote_code=True,
         )
         processor_name_or_path = self.cfgs.model_cfgs.processor_name_or_path
-        image_processor = AutoImageProcessor.from_pretrained(processor_name_or_path, trust_remote_code=True)
-        image_tokenizer = AutoModel.from_pretrained(processor_name_or_path, trust_remote_code=True).eval()
-        tokenizer = AutoTokenizer.from_pretrained(self.cfgs.model_cfgs.model_name_or_path, trust_remote_code=True)
+        image_processor = AutoImageProcessor.from_pretrained(
+            processor_name_or_path, trust_remote_code=True
+        )
+        image_tokenizer = AutoModel.from_pretrained(
+            processor_name_or_path, trust_remote_code=True
+        ).eval()
+        tokenizer = AutoTokenizer.from_pretrained(
+            self.cfgs.model_cfgs.model_name_or_path, trust_remote_code=True
+        )
         processor = Emu3Processor(
             image_processor,
             image_tokenizer,

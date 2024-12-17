@@ -43,7 +43,7 @@ def load_pretrained_model_with_value_head(
     auto_model_kwargs: dict[str, Any] | None = None,
     auto_tokenizer_args: tuple[Any, ...] = (),
     auto_tokenizer_kwargs: dict[str, Any] | None = None,
-    modality: str = 'text'
+    modality: str = 'text',
 ) -> nn.Module:
     model_name_or_path = os.path.expanduser(model_name_or_path)
     cache_dir = os.path.expanduser(cache_dir) if cache_dir is not None else None
@@ -118,5 +118,5 @@ def load_pretrained_model_with_value_head(
     except Exception:
         processor = None
         resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
-        
+
         return model, tokenizer, processor

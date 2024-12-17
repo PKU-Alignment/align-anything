@@ -15,42 +15,43 @@
 
 import deepspeed
 import torch
-import torch.utils.checkpoint
 import torch.nn as nn
+import torch.utils.checkpoint
 from transformers import AutoConfig
 
 from align_anything.models.reward_model import ScoreModelOutput
 
+
 try:
     from transformers import Qwen2AudioForConditionalGeneration, Qwen2AudioPreTrainedModel
+
     Qwen2Audio_AVALIABLE = True
 
 except ImportError:
     Qwen2Audio_AVALIABLE = False
-    print("Qwen2Audio is currently not available.")
+    print('Qwen2Audio is currently not available.')
 
 if Qwen2Audio_AVALIABLE:
+
     class AccustomedQwen2AudioModel(Qwen2AudioForConditionalGeneration):
-        
+
         def __init__(self, config: AutoConfig):
             super().__init__(config)
-            deepspeed.zero.register_external_parameter(self, self.audio_tower.embed_positions.weight)
+            deepspeed.zero.register_external_parameter(
+                self, self.audio_tower.embed_positions.weight
+            )
 
         @property
         def processor_available(self):
             return True
 
-        @property
-        def infer_required_keys(self) -> list[str]:
-            return ['input_ids', 'attention_mask', 'input_features', 'feature_attention_mask', 'labels']
-        
         def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
             """Return the dict used for model inference"""
             return {
                 'input_ids': batch['input_ids'],
-                'attention_mask': batch['attention_mask'],
-                'input_features': batch['input_features'],
-                'feature_attention_mask': batch['feature_attention_mask'],
+                'attention_mask': batch.get('attention_mask'),
+                'input_features': batch.get('input_features'),
+                'feature_attention_mask': batch.get('feature_attention_mask'),
                 'labels': batch.get('labels'),
             }
 
@@ -60,13 +61,11 @@ if Qwen2Audio_AVALIABLE:
         def __init__(self, config: AutoConfig):
             super().__init__(config)
             setattr(self, self.base_model_prefix, AccustomedQwen2AudioModel(config))
-            deepspeed.zero.register_external_parameter(self.model, self.model.audio_tower.embed_positions.weight)
+            deepspeed.zero.register_external_parameter(
+                self.model, self.model.audio_tower.embed_positions.weight
+            )
             self.score_head = nn.Linear(4096, 1, bias=False)
 
-        @property
-        def infer_required_keys(self) -> list[str]:
-            return ['input_ids', 'attention_mask', 'input_features', 'feature_attention_mask']
-        
         @property
         def processor_available(self):
             return True

@@ -223,7 +223,7 @@ class ModelWorker:
                 attention_mask=inputs['attention_mask'].to(self.device),
                 pixel_values=inputs['pixel_values'].to(self.device),
             )
-        keywords = [stop_str]
+        [stop_str]
         streamer = TextIteratorStreamer(
             tokenizer, skip_prompt=True, skip_special_tokens=True, timeout=15
         )

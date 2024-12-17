@@ -62,12 +62,12 @@ CHAT_TEMPLATES=("" "") # model templates
 
 for BENCHMARK in "${BENCHMARKS[@]}"; do
     echo "Processing benchmark: ${BENCHMARK}"
-    
+
     for i in "${!MODEL_IDS[@]}"; do
         MODEL_ID=${MODEL_IDS[$i]}
         MODEL_NAME_OR_PATH=${MODEL_NAME_OR_PATHS[$i]}
         CHAT_TEMPLATE=${CHAT_TEMPLATES[$i]}
-        
+
         echo "Running model ${MODEL_ID} for benchmark ${BENCHMARK}"
         python __main__.py \
             --benchmark ${BENCHMARK} \
@@ -98,7 +98,7 @@ infer_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
   vllm_cfgs: vllm_basic.json
-  
+
 default:
   # Evaluation configurations
   eval_cfgs:

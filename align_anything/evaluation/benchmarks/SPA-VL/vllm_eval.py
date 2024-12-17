@@ -15,47 +15,60 @@
 
 import argparse
 import json
-from align_anything.evaluation.inference.vllm_inference import *
-from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import List, Dict, Any
-from datasets import load_dataset, DatasetDict
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict, save_raw_outputs, load_raw_outputs
-from align_anything.utils.template_registry import get_eval_template_class as get_template_class
-from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.evaluation.eval_logger import EvalLogger
-from gpt_judger import *
-import numpy as np
-from tqdm import tqdm
 import re
+from typing import Dict, List
+
+import numpy as np
+from gpt_judger import *
+from tqdm import tqdm
+
+from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
+from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
+from align_anything.evaluation.eval_logger import EvalLogger
+from align_anything.evaluation.inference.vllm_inference import *
+from align_anything.utils.template_registry import get_eval_template_class as get_template_class
+from align_anything.utils.tools import (
+    custom_cfgs_to_dict,
+    dict_to_namedtuple,
+    load_raw_outputs,
+    read_eval_cfgs,
+    save_raw_outputs,
+    update_dict,
+)
+from datasets import DatasetDict, load_dataset
+
 
 class SPAVLDataLoader(BaseDataLoader):
     def get_task_names(self):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
         else:
-            task_names = [
-            self.data_cfgs.task
-            ]
+            task_names = [self.data_cfgs.task]
             return task_names
 
     def get_answer(self, data):
         return data['answer']
-        
+
     def build_example_prompt(self, data, with_answer=True):
         answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
         return f"{data['question']}\n{answer}"
 
     def build_prompt(self, data):
-        assert self.num_shot == 0, "SPAVL does not support few-shot learning."
-        prompt = ""
+        assert self.num_shot == 0, 'SPAVL does not support few-shot learning.'
+        prompt = ''
         template = get_template_class(self.chat_template)
-        question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
+        question = [
+            template.system_prompt
+            + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False))
+            + template.assistant_prompt.format(output='')
+            for item in data
+        ]
 
         return question
-    
+
     def preprocess(self, data):
         return self.build_prompt(data)
-    
+
     def load_dataset(self) -> DatasetDict:
         processed_inputs = {}
         for task in self.task_names:
@@ -67,83 +80,129 @@ class SPAVLDataLoader(BaseDataLoader):
                 processed_input.question_id = question_id + np.array2string(np.array(image))
                 processed_inputs[task].append(processed_input)
         return processed_inputs
-    
+
+
 class SPAVLGeneratorVLLM(BaseInferencer_vllm):
-    def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
+    def eval(
+        self, data: Dict[str, List[InferenceInput]], eval_configs
+    ) -> Dict[str, List[InferenceOutput]]:
         task2details = {}
         for task, input in data.items():
             raw_output = self.generation(input)
             for item in raw_output:
-                item.prompt = re.sub(r"<image>", "", item.prompt)
-                item.raw_output.prompt = re.sub(r"<image>", "", item.raw_output.prompt)
+                item.prompt = re.sub(r'<image>', '', item.prompt)
+                item.raw_output.prompt = re.sub(r'<image>', '', item.raw_output.prompt)
             task2details[task] = raw_output
-        
+
         return task2details
-    
+
     def _generation(self, inputs: List[InferenceInput]) -> List[InferenceOutput]:
         assert isinstance(inputs, list)
         InferenceOutputs = []
-        outputs = self.model.generate([{"prompt": input.text, "multi_modal_data": {"image": input.image_file},} for input in inputs], sampling_params=self.samplingparams)
-        InferenceOutputs = [InferenceOutput.from_vllm_output(question_id=input.question_id, vllm_output=output, store_raw=True) for output, input in zip(outputs, inputs)]
+        outputs = self.model.generate(
+            [
+                {
+                    'prompt': input.text,
+                    'multi_modal_data': {'image': input.image_file},
+                }
+                for input in inputs
+            ],
+            sampling_params=self.samplingparams,
+        )
+        InferenceOutputs = [
+            InferenceOutput.from_vllm_output(
+                question_id=input.question_id, vllm_output=output, store_raw=True
+            )
+            for output, input in zip(outputs, inputs)
+        ]
         return InferenceOutputs
 
-def evaluator_harm(test_dataset, output_data, base_model_QA, gpt_data, gpt_data_file, api_key, base_url, file_path):
+
+def evaluator_harm(
+    test_dataset, output_data, base_model_QA, gpt_data, gpt_data_file, api_key, base_url, file_path
+):
     num_sum = 0
     results = []
-    for test_item in tqdm(test_dataset, desc="Evaluating"):
+    for test_item in tqdm(test_dataset, desc='Evaluating'):
         for output_item in output_data:
             qid = test_item['question'] + np.array2string(np.array(test_item['image']))
             if qid == output_item.question_id:
                 num_sum += 1
                 gpt_id = qid + output_item.response[0]
                 if gpt_id in gpt_data:
-                    result, gpt_response = gpt_data[gpt_id]['result'], gpt_data[gpt_id]['gpt_response']
+                    result, gpt_response = (
+                        gpt_data[gpt_id]['result'],
+                        gpt_data[gpt_id]['gpt_response'],
+                    )
                 else:
-                    result, gpt_response = judger_harm(test_item['question'], output_item.response[0], base_model_QA[test_item['question']], api_key, base_url)
-                    gpt_data[gpt_id] = {
-                        'result': result,
-                        'gpt_response': gpt_response
-                    }
-                results.append({
-                    'question_id': output_item.question_id,
-                    'result': result
-                })
-                save_detail(test_item['question'], output_item.prompt, '', output_item.response[0], 0, file_path, gpt_response)
+                    result, gpt_response = judger_harm(
+                        test_item['question'],
+                        output_item.response[0],
+                        base_model_QA[test_item['question']],
+                        api_key,
+                        base_url,
+                    )
+                    gpt_data[gpt_id] = {'result': result, 'gpt_response': gpt_response}
+                results.append({'question_id': output_item.question_id, 'result': result})
+                save_detail(
+                    test_item['question'],
+                    output_item.prompt,
+                    '',
+                    output_item.response[0],
+                    0,
+                    file_path,
+                    gpt_response,
+                )
 
     with open(gpt_data_file, 'w', encoding='utf-8') as f:
         json.dump(gpt_data, f, ensure_ascii=False, indent=4)
 
     harm_score = get_harm_score(results)
     return harm_score, num_sum
-    
-def evaluator_help(test_dataset, output_data, base_model_QA, gpt_data, gpt_data_file, api_key, base_url, file_path):
+
+
+def evaluator_help(
+    test_dataset, output_data, base_model_QA, gpt_data, gpt_data_file, api_key, base_url, file_path
+):
     num_sum = 0
     results = []
-    for test_item in tqdm(test_dataset, desc="Evaluating"):
+    for test_item in tqdm(test_dataset, desc='Evaluating'):
         for output_item in output_data:
             qid = test_item['question'] + np.array2string(np.array(test_item['image']))
             if qid == output_item.question_id:
                 num_sum += 1
                 gpt_id = qid + output_item.response[0]
                 if gpt_id in gpt_data:
-                    result, gpt_response = gpt_data[gpt_id]['result'], gpt_data[gpt_id]['gpt_response']
+                    result, gpt_response = (
+                        gpt_data[gpt_id]['result'],
+                        gpt_data[gpt_id]['gpt_response'],
+                    )
                 else:
-                    result, gpt_response= judger_help(test_item['question'], output_item.response[0], base_model_QA[qid], api_key, base_url)
-                    gpt_data[gpt_id] = {
-                        'result': result,
-                        'gpt_response': gpt_response
-                    }
-                results.append({
-                    'question_id': output_item.question_id,
-                    'result': result
-                })
-                save_detail(test_item['question'], output_item.prompt, '', output_item.response[0], 0, file_path, gpt_response)
+                    result, gpt_response = judger_help(
+                        test_item['question'],
+                        output_item.response[0],
+                        base_model_QA[qid],
+                        api_key,
+                        base_url,
+                    )
+                    gpt_data[gpt_id] = {'result': result, 'gpt_response': gpt_response}
+                results.append({'question_id': output_item.question_id, 'result': result})
+                save_detail(
+                    test_item['question'],
+                    output_item.prompt,
+                    '',
+                    output_item.response[0],
+                    0,
+                    file_path,
+                    gpt_response,
+                )
 
     with open(gpt_data_file, 'w', encoding='utf-8') as f:
         json.dump(gpt_data, f, ensure_ascii=False, indent=4)
 
     win_rate = get_win_rate(results)
     return win_rate, num_sum
+
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -155,91 +214,119 @@ def main():
     dict_configs, infer_configs = read_eval_cfgs('spa-vl', 'vLLM')
 
     try:
-        assert dict_configs or infer_configs, "Config file does not exist or is incomplete."
-    except AssertionError as e:
-        print("Config file is not exist or incomplete.")
+        assert dict_configs or infer_configs, 'Config file does not exist or is incomplete.'
+    except AssertionError:
+        print('Config file is not exist or incomplete.')
         exit()
-    
+
     for k, v in unparsed_args.items():
         if v == '' or v is None:
             continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
-    
-    dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(infer_configs)
+
+    dict_configs, infer_configs = dict_to_namedtuple(dict_configs), dict_to_namedtuple(
+        infer_configs
+    )
     model_config = dict_configs.default.model_cfgs
     data_cfgs = dict_configs.default.data_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     logger = EvalLogger('Evaluation', log_dir=eval_configs.output_dir)
     dataloader = SPAVLDataLoader(dict_configs)
-    assert not (dataloader.num_shot > 0 or dataloader.cot), "Few-shot or chain-of-thought cannot be used for this benchmark."
+    assert not (
+        dataloader.num_shot > 0 or dataloader.cot
+    ), 'Few-shot or chain-of-thought cannot be used for this benchmark.'
     eval_module = SPAVLGeneratorVLLM(model_config, infer_configs)
-    raw_outputs_dir = os.path.join(eval_configs.output_dir, f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl")
+    raw_outputs_dir = os.path.join(
+        eval_configs.output_dir,
+        f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl",
+    )
     if os.path.exists(raw_outputs_dir):
         raw_outputs = load_raw_outputs(raw_outputs_dir)
     else:
         test_data = dataloader.load_dataset()
         raw_outputs = eval_module.eval(test_data, eval_configs)
         save_raw_outputs(raw_outputs, raw_outputs_dir)
- 
-    api_key = eval_configs.openai_api_key or os.getenv("OPENAI_API_KEY")
-    base_url = eval_configs.openai_api_base_url or os.getenv("OPENAI_API_BASE_URL")
-    
+
+    api_key = eval_configs.openai_api_key or os.getenv('OPENAI_API_KEY')
+    base_url = eval_configs.openai_api_base_url or os.getenv('OPENAI_API_BASE_URL')
+
     if not api_key:
-        raise ValueError("OpenAI API key is not provided in eval_configs or environment variables.")
+        raise ValueError('OpenAI API key is not provided in eval_configs or environment variables.')
     if not base_url:
-        raise ValueError("OpenAI API base URL is not provided in eval_configs or environment variables.")
+        raise ValueError(
+            'OpenAI API base URL is not provided in eval_configs or environment variables.'
+        )
 
     os.makedirs(logger.log_dir, exist_ok=True)
-    uuid_path = f"{logger.log_dir}/{eval_configs.uuid}"
+    uuid_path = f'{logger.log_dir}/{eval_configs.uuid}'
     os.makedirs(uuid_path, exist_ok=True)
 
-    gpt_data_file = os.path.join(eval_configs.output_dir, f"gpt_data.json")
+    gpt_data_file = os.path.join(eval_configs.output_dir, f'gpt_data.json')
     gpt_data = {}
     if os.path.exists(gpt_data_file):
-        with open(gpt_data_file, 'r', encoding='utf-8') as file:
+        with open(gpt_data_file, encoding='utf-8') as file:
             gpt_data = json.load(file)
 
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, data_cfgs.split)[task]
-        file_path = f"{uuid_path}/{task}.json"
+        file_path = f'{uuid_path}/{task}.json'
 
         if task == 'harm':
-            with open(f'./base_model_harm_QA.json', 'r') as file:
+            with open(f'./base_model_harm_QA.json') as file:
                 base_model_QA = json.load(file)
-                
-            harm_score, num_sum = evaluator_harm(test_data, raw_outputs[task], base_model_QA, gpt_data, gpt_data_file, api_key, base_url, file_path)
-            
+
+            harm_score, num_sum = evaluator_harm(
+                test_data,
+                raw_outputs[task],
+                base_model_QA,
+                gpt_data,
+                gpt_data_file,
+                api_key,
+                base_url,
+                file_path,
+            )
+
             output_dict = {
                 'model_id': [dict_configs.default.model_cfgs.model_id],
                 'num_sum': [num_sum],
-                'harm_score': [harm_score]
+                'harm_score': [harm_score],
             }
             logger.print_table(title=f'SPAVL/{task} Benchmark', data=output_dict)
             logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-            logger.log('info', f"task: {task}")
+            logger.log('info', f'task: {task}')
             logger.log('info', f"model_id: {output_dict['model_id'][0]},")
             logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
             logger.log('info', f"harm_score: {output_dict['harm_score'][0]},")
             logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
         elif task == 'help':
-            with open(f'./base_model_help_QA.json', 'r', encoding='utf-8') as file:
+            with open(f'./base_model_help_QA.json', encoding='utf-8') as file:
                 base_model_QA = json.load(file)
-            win_rate, num_sum = evaluator_help(test_data, raw_outputs[task], base_model_QA, gpt_data, gpt_data_file, api_key, base_url, file_path)
-            
+            win_rate, num_sum = evaluator_help(
+                test_data,
+                raw_outputs[task],
+                base_model_QA,
+                gpt_data,
+                gpt_data_file,
+                api_key,
+                base_url,
+                file_path,
+            )
+
             output_dict = {
                 'model_id': [dict_configs.default.model_cfgs.model_id],
                 'num_sum': [num_sum],
-                'win_rate': [win_rate]
+                'win_rate': [win_rate],
             }
             logger.print_table(title=f'SPAVL/{task} Benchmark', data=output_dict)
             logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-            logger.log('info', f"task: {task}")
+            logger.log('info', f'task: {task}')
             logger.log('info', f"model_id: {output_dict['model_id'][0]},")
             logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
             logger.log('info', f"win_rate: {output_dict['win_rate'][0]},")
             logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
 
 if __name__ == '__main__':
     main()

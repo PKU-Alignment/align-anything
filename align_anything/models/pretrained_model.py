@@ -189,7 +189,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
         auto_model_kwargs = {}
     if auto_tokenizer_kwargs is None:
         auto_tokenizer_kwargs = {}
-        
+
     if bnb_cfgs and lora_cfgs:
         if bnb_cfgs.use_bnb:
             quantization_config = BitsAndBytesConfig(
@@ -295,7 +295,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     else:
         processor = None
         resize_tokenizer_embedding(tokenizer=tokenizer, model=model)
-        
+
         return model, tokenizer, processor
 
 

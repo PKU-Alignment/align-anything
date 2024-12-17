@@ -14,17 +14,20 @@
 # ==============================================================================
 
 import os
-from PIL import Image
 from abc import abstractmethod
+from typing import Any, Dict, List
+
+from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
-from typing import List, Dict, Any
-from datasets import load_dataset, DatasetDict
-from align_anything.evaluation.data_type import InferenceInput
+from transformers import AutoImageProcessor, AutoProcessor, AutoTokenizer
 
-from transformers import AutoProcessor, AutoTokenizer, AutoImageProcessor
+from align_anything.evaluation.data_type import InferenceInput
+from datasets import DatasetDict, load_dataset
+
 
 ACTION_GENERATION = 'generation'
+
 
 class BaseDataLoader:
     action_map = {
@@ -32,7 +35,11 @@ class BaseDataLoader:
     }
 
     def __init__(self, cfgs):
-        self.eval_cfgs, self.data_cfgs, self.model_cfgs = cfgs.default.eval_cfgs, cfgs.default.data_cfgs, cfgs.default.model_cfgs
+        self.eval_cfgs, self.data_cfgs, self.model_cfgs = (
+            cfgs.default.eval_cfgs,
+            cfgs.default.data_cfgs,
+            cfgs.default.model_cfgs,
+        )
         self.action = self.eval_cfgs.action if self.eval_cfgs.action else 'generation'
         self.num_shot = self.eval_cfgs.n_shot if self.eval_cfgs.n_shot else 0
         self.cot = self.eval_cfgs.cot if self.eval_cfgs.cot else False
@@ -45,16 +52,22 @@ class BaseDataLoader:
         self.init_tokenizer()
 
     def init_tokenizer(self):
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.model_name_or_path, trust_remote_code=True
+        )
 
         try:
-            self.processor = AutoProcessor.from_pretrained(self.model_name_or_path, trust_remote_code=True)
+            self.processor = AutoProcessor.from_pretrained(
+                self.model_name_or_path, trust_remote_code=True
+            )
             setattr(self.processor, 'tokenizer', self.tokenizer)
         except:
             self.processor = None
-            
+
         try:
-            self.image_processor = AutoImageProcessor.from_pretrained(self.model_name_or_path, trust_remote_code=True)
+            self.image_processor = AutoImageProcessor.from_pretrained(
+                self.model_name_or_path, trust_remote_code=True
+            )
         except:
             self.image_processor = None
 
@@ -64,7 +77,10 @@ class BaseDataLoader:
             dataset = load_dataset(self.task_dir, task)
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, token_ids = self.preprocess(dataset)
-            processed_inputs[task] = [InferenceInput(text=prompt, token_ids=token_id) for prompt, token_id in zip(prompts, token_ids['input_ids'])]
+            processed_inputs[task] = [
+                InferenceInput(text=prompt, token_ids=token_id)
+                for prompt, token_id in zip(prompts, token_ids['input_ids'])
+            ]
         return processed_inputs
 
     def preprocess(self, data):
@@ -72,35 +88,42 @@ class BaseDataLoader:
         token_ids = self.tokenizer(prompts)
         return prompts, token_ids
 
-    def set_fewshot_dataset(self, dataset, task: str=None):
+    def set_fewshot_dataset(self, dataset, task: str = None):
         return None
-    
+
     @abstractmethod
-    def get_task_names(self)-> List[str]:
+    def get_task_names(self) -> List[str]:
         raise NotImplementedError
 
     @abstractmethod
-    def build_example_prompt(self, data, with_answer: bool=False):
+    def build_example_prompt(self, data, with_answer: bool = False):
         raise NotImplementedError
 
     @abstractmethod
-    def build_prompt(self, data: Dict[str, Any])-> str:
+    def build_prompt(self, data: Dict[str, Any]) -> str:
         raise NotImplementedError
 
     @abstractmethod
     def get_answer(self, data):
         raise NotImplementedError
 
+
 class CustomImageDataset(Dataset):
     def __init__(self, image_folder):
         self.image_folder = image_folder
-        self.image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.endswith(('png', 'jpg', 'jpeg'))]
-        
-        self.transform = transforms.Compose([
-            transforms.Resize((299, 299)),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+        self.image_files = [
+            os.path.join(image_folder, f)
+            for f in os.listdir(image_folder)
+            if f.endswith(('png', 'jpg', 'jpeg'))
+        ]
+
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize((299, 299)),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ]
+        )
 
     def __len__(self):
         return len(self.image_files)

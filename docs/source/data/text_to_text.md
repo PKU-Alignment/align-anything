@@ -7,16 +7,16 @@
 
 ##  Highlights
 
-<div class="col-md-12"> 
+<div class="col-md-12">
       <ul>
-          <li><b>Data sources:</b> 
-              <a href="https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF-QA" target="_blank">PKU-SafeRLHF QA</a> , 
-              <a href="https://huggingface.co/datasets/knkarthick/dialogsum" target="_blank">DialogSum</a>, 
-              <a href="https://ai.meta.com/research/publications/towards-empathetic-open-domain-conversation-models-a-new-benchmark-and-dataset" target="_blank">Empathetic</a>, 
-              <a href="https://github.com/XueFuzhao/InstructionWild" target="_blank">Instruction-Wild</a>, 
+          <li><b>Data sources:</b>
+              <a href="https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF-QA" target="_blank">PKU-SafeRLHF QA</a> ,
+              <a href="https://huggingface.co/datasets/knkarthick/dialogsum" target="_blank">DialogSum</a>,
+              <a href="https://ai.meta.com/research/publications/towards-empathetic-open-domain-conversation-models-a-new-benchmark-and-dataset" target="_blank">Empathetic</a>,
+              <a href="https://github.com/XueFuzhao/InstructionWild" target="_blank">Instruction-Wild</a>,
               and <a href="https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json" target="_blank">Alpaca</a>. </li>
-          <li><b>100K QA pairs:</b> By leveraging GPT-4 to annotate meticulously refined instructions, we obtain 105,333 QA pairs. </li>   
-      </ul>  
+          <li><b>100K QA pairs:</b> By leveraging GPT-4 to annotate meticulously refined instructions, we obtain 105,333 QA pairs. </li>
+      </ul>
 </div>
 
 ## Dataset Summary
@@ -44,23 +44,23 @@ We train several base models using both Align-Anything-Instruction-100K (sampled
 ## Evaluation Details
 ### Just-Eval Overview
 
-[Just-Eval](https://huggingface.co/datasets/re-align/just-eval-instruct) covers multiple prompts that fully assess the model's instruction-following capabilities, such as [AlpacaEval](https://huggingface.co/datasets/tatsu-lab/alpaca_eval), [LIMA-test](https://huggingface.co/datasets/GAIR/lima/viewer/plain_text/test), [MT-bench](https://huggingface.co/datasets/HuggingFaceH4/mt_bench_prompts), [Anthropic red-teaming](https://huggingface.co/datasets/Anthropic/hh-rlhf/tree/main/red-team-attempts), and [MaliciousInstruct](https://github.com/Princeton-SysML/Jailbreak_LLM/blob/main/data/MaliciousInstruct.txt). 
+[Just-Eval](https://huggingface.co/datasets/re-align/just-eval-instruct) covers multiple prompts that fully assess the model's instruction-following capabilities, such as [AlpacaEval](https://huggingface.co/datasets/tatsu-lab/alpaca_eval), [LIMA-test](https://huggingface.co/datasets/GAIR/lima/viewer/plain_text/test), [MT-bench](https://huggingface.co/datasets/HuggingFaceH4/mt_bench_prompts), [Anthropic red-teaming](https://huggingface.co/datasets/Anthropic/hh-rlhf/tree/main/red-team-attempts), and [MaliciousInstruct](https://github.com/Princeton-SysML/Jailbreak_LLM/blob/main/data/MaliciousInstruct.txt).
 
 We utilize the 800 instructions that focus on problem-solving tests without considering the safety of responses, following the benchmark guidelines outlined [here](https://allenai.github.io/re-align/just_eval.html).
 
 
-### Evaluation Criterias
+### Evaluation Criteria
 
 We adopt the same evaluation criteria as the [JustEval Benchmark](https://allenai.github.io/re-align/index.html), detailed as follows:
 
-<div class="col-md-12"> 
+<div class="col-md-12">
     <ul>
         <li><b>Helpfulness:</b> Evaluates how well the response addresses the given query or question and assists the user. A good response is highly relevant and helpful.</li>
         <li><b>Clarity:</b> Assesses the logical flow and coherence of the response. A good response is well-structured, with ideas presented clearly and coherently.</li>
         <li><b>Factuality:</b> Assesses the accuracy of the information presented in the response. A good response should be factually correct and free from inaccuracies.</li>
         <li><b>Depth:</b> Evaluates the thoroughness and detail of the response. A good response should be comprehensive and in-depth.</li>
         <li><b>Engagement:</b> Assesses how engaging and natural the response sounds in a conversational context. A good response should feel engaging and have a human-like tone.</li>
-    </ul>  
+    </ul>
 </div>
 
 

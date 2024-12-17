@@ -161,7 +161,7 @@ class CLI:
                 self.console.print()
             self.console.print('Bye!', style='bold yellow')
 
-    def render(self, response_generator: Generator[str, None, None], name: str, style: str) -> None:
+    def render(self, response_generator: Generator[str], name: str, style: str) -> None:
         response = ''
         if self.stream:
             with Live(console=self.console, refresh_per_second=25, transient=True) as live:

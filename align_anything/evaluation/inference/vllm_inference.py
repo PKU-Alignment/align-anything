@@ -13,70 +13,76 @@
 # limitations under the License.
 # ==============================================================================
 
+import json
 import os
 import re
-import json
+from typing import Any, Dict, List
+
 from tqdm import tqdm
-from typing import List, Dict, Any
-from vllm.utils import cuda_device_count_stateless
-from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from vllm import LLM, SamplingParams
+from vllm.utils import cuda_device_count_stateless
+
+from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.utils.tools import requestoutput_to_dict
 
-def update_results(output_dir:str,
-                     brief_filename:str,
-                        detailed_filename:str,
-                    task2details:Dict[str, Dict[str, Any]]
-                )->None:
+
+def update_results(
+    output_dir: str,
+    brief_filename: str,
+    detailed_filename: str,
+    task2details: Dict[str, Dict[str, Any]],
+) -> None:
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
     brief_file_path = os.path.join(output_dir, brief_filename)
     detailed_file_path = os.path.join(output_dir, detailed_filename)
-    
+
     for task, value in task2details.items():
         output_brief = []
         output_detailed = []
-        
+
         for item in value:
             output_brief.append(requestoutput_to_dict(item.raw_output, mode='brief'))
             output_detailed.append(requestoutput_to_dict(item.raw_output, mode='detailed'))
-            
-        with open(brief_file_path + '_' + task + ".jsonl", 'w', encoding='utf-8') as file:
+
+        with open(brief_file_path + '_' + task + '.jsonl', 'w', encoding='utf-8') as file:
             for item in output_brief:
                 json_record = json.dumps(item, ensure_ascii=False)
                 file.write(json_record + '\n')
 
-        with open(detailed_file_path + '_' + task + ".jsonl", 'w', encoding='utf-8') as file:
+        with open(detailed_file_path + '_' + task + '.jsonl', 'w', encoding='utf-8') as file:
             for item in output_detailed:
                 json_record = json.dumps(item, ensure_ascii=False)
                 file.write(json_record + '\n')
 
+
 def extract_choices(prompt):
     count_pattern = r'\n\([A-Z]|[0-9]\)\s'
     num_choices = len(re.findall(count_pattern, prompt))
-    
+
     choice_pattern = r'\(([A-Z]|[0-9])\)\s(.*?)(?=\n|$)'
     matches = re.findall(choice_pattern, prompt, re.DOTALL)
-    
-    choices = {f"({match[0]})": match[1].strip() for match in matches[:num_choices]}
+
+    choices = {f'({match[0]})': match[1].strip() for match in matches[:num_choices]}
     return choices
+
 
 def save_detail(question, prompt, correct_answer, response, score, file_path, gpt_response=None):
     choices = extract_choices(prompt)
     if choices:
         record = {
-            "question": question,
-            "choices": choices,
-            "correct_answer": correct_answer,
-            "response": response,
-            "score": score
+            'question': question,
+            'choices': choices,
+            'correct_answer': correct_answer,
+            'response': response,
+            'score': score,
         }
     else:
         record = {
-            "question": question,
-            "correct_answer": correct_answer,
-            "response": response,
-            "score": score
+            'question': question,
+            'correct_answer': correct_answer,
+            'response': response,
+            'score': score,
         }
     if gpt_response:
         record['gpt_response'] = gpt_response
@@ -89,12 +95,10 @@ def save_detail(question, prompt, correct_answer, response, score, file_path, gp
             data.append(record)
             file.seek(0)
             json.dump(data, file, ensure_ascii=False, indent=4)
-            
+
+
 class BaseInferencer_vllm:
-    def __init__(self, 
-                 model_cfgs: Dict[str, Any],
-                 vllm_cfgs,
-                 **kwargs):
+    def __init__(self, model_cfgs: Dict[str, Any], vllm_cfgs, **kwargs):
         self.vllm_cfgs_sp, self.vllm_cfgs_llm = vllm_cfgs.SamplingParams, vllm_cfgs.LLM
         self.model_cfgs = model_cfgs
         self.sp_n = self.vllm_cfgs_sp.n
@@ -130,7 +134,7 @@ class BaseInferencer_vllm:
             temperature=self.sp_temperature,
             max_tokens=self.sp_max_tokens,
             prompt_logprobs=self.sp_prompt_logprobs,
-            logprobs=self.sp_logprobs
+            logprobs=self.sp_logprobs,
         )
 
         self.model = LLM(
@@ -140,22 +144,27 @@ class BaseInferencer_vllm:
             trust_remote_code=self.llm_trust_remote_code,
             tensor_parallel_size=self.llm_tensor_parallel_size,
             gpu_memory_utilization=self.llm_gpu_memory_utilization,
-            max_num_seqs = self.llm_max_num_seqs
+            max_num_seqs=self.llm_max_num_seqs,
         )
 
-    def generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
+    def generation(self, inputs: List[InferenceInput]) -> List[InferenceOutput]:
         return self._generation(inputs)
 
-    def _generation(self, inputs: List[InferenceInput])-> List[InferenceOutput]:
+    def _generation(self, inputs: List[InferenceInput]) -> List[InferenceOutput]:
         assert isinstance(inputs, list)
         if inputs[0].token_ids:
-            outputs = self.model.generate(prompt_token_ids=[input.token_ids for input in inputs], sampling_params=self.samplingparams)
+            outputs = self.model.generate(
+                prompt_token_ids=[input.token_ids for input in inputs],
+                sampling_params=self.samplingparams,
+            )
             for input, output in zip(inputs, outputs):
                 output.prompt = input.text
         else:
-            outputs = self.model.generate(prompts=[input.text for input in inputs], sampling_params=self.samplingparams)
+            outputs = self.model.generate(
+                prompts=[input.text for input in inputs], sampling_params=self.samplingparams
+            )
         InferenceOutputs = [
             InferenceOutput.from_vllm_output(vllm_output=output, store_raw=True)
-                for output in outputs
+            for output in outputs
         ]
         return InferenceOutputs

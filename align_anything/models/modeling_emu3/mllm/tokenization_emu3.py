@@ -22,30 +22,31 @@ import unicodedata
 from typing import Collection, Dict, List, Optional, Set, Tuple, Union
 
 import tiktoken
-from transformers import PreTrainedTokenizer, AddedToken
+from transformers import AddedToken, PreTrainedTokenizer
+
 
 logger = logging.getLogger(__name__)
 
 
 VOCAB_FILES_NAMES = {
-    "vocab_file": "emu3.tiktoken",
-    "special_tokens_file": "emu3_vision_tokens.txt",
+    'vocab_file': 'emu3.tiktoken',
+    'special_tokens_file': 'emu3_vision_tokens.txt',
 }
 
 PAT_STR = r"""(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"""
-ENDOFTEXT = "<|endoftext|>"
-IMSTART = "<|im_start|>"
-IMEND = "<|im_end|>"
+ENDOFTEXT = '<|endoftext|>'
+IMSTART = '<|im_start|>'
+IMEND = '<|im_end|>'
 # as the default behavior is changed to allow special tokens in
 # regular texts, the surface forms of special tokens need to be
 # as different as possible to minimize the impact
-EXTRAS = tuple((f"<|extra_{i}|>" for i in range(205)))
+EXTRAS = tuple(f'<|extra_{i}|>' for i in range(205))
 # changed to use actual index to avoid misconfiguration with vocabulary expansion
 SPECIAL_START_ID = 151643
 
 
 def _load_tiktoken_bpe(tiktoken_bpe_file: str) -> Dict[bytes, int]:
-    with open(tiktoken_bpe_file, "rb") as f:
+    with open(tiktoken_bpe_file, 'rb') as f:
         contents = f.read()
     return {
         base64.b64decode(token): int(rank)
@@ -62,26 +63,28 @@ class Emu3Tokenizer(PreTrainedTokenizer):
         self,
         vocab_file,
         special_tokens_file,
-        errors="replace",
-        bos_token = "<|extra_203|>",
-        eos_token = "<|extra_204|>",
-        pad_token = "<|endoftext|>",
-        img_token = "<|image token|>",
-        boi_token = "<|image start|>",
-        eoi_token = "<|image end|>",
-        eol_token = "<|extra_200|>",
-        eof_token = "<|extra_201|>",
+        errors='replace',
+        bos_token='<|extra_203|>',
+        eos_token='<|extra_204|>',
+        pad_token='<|endoftext|>',
+        img_token='<|image token|>',
+        boi_token='<|image start|>',
+        eoi_token='<|image end|>',
+        eol_token='<|extra_200|>',
+        eof_token='<|extra_201|>',
         **kwargs,
     ):
         super().__init__(**kwargs)
 
         # how to handle errors in decoding UTF-8 byte sequences
         # use ignore if you are in streaming inference
-        self.errors = errors  
+        self.errors = errors
 
         self.mergeable_ranks = _load_tiktoken_bpe(vocab_file)
 
-        vision_tokens = [t.strip() for t in open(special_tokens_file).readlines() if len(t.strip()) > 0]
+        vision_tokens = [
+            t.strip() for t in open(special_tokens_file).readlines() if len(t.strip()) > 0
+        ]
         SPECIAL_TOKENS = tuple(
             enumerate(
                 (
@@ -97,10 +100,10 @@ class Emu3Tokenizer(PreTrainedTokenizer):
             )
         )
         self.special_tokens = {token: index for index, token in SPECIAL_TOKENS}
-        self.special_tokens_set = set(t for _, t in SPECIAL_TOKENS)
+        self.special_tokens_set = {t for _, t in SPECIAL_TOKENS}
 
         enc = tiktoken.Encoding(
-            "Emu3",
+            'Emu3',
             pat_str=PAT_STR,
             mergeable_ranks=self.mergeable_ranks,
             special_tokens=self.special_tokens,
@@ -108,11 +111,9 @@ class Emu3Tokenizer(PreTrainedTokenizer):
 
         assert (
             len(self.mergeable_ranks) + len(self.special_tokens) == enc.n_vocab
-        ), f"{len(self.mergeable_ranks) + len(self.special_tokens)} != {enc.n_vocab} in encoding"
+        ), f'{len(self.mergeable_ranks) + len(self.special_tokens)} != {enc.n_vocab} in encoding'
 
-        self.decoder = {
-            v: k for k, v in self.mergeable_ranks.items()
-        }
+        self.decoder = {v: k for k, v in self.mergeable_ranks.items()}
         self.decoder.update({v: k for k, v in self.special_tokens.items()})
 
         self.tokenizer = enc
@@ -130,14 +131,14 @@ class Emu3Tokenizer(PreTrainedTokenizer):
     def __getstate__(self):
         # for pickle lovers
         state = self.__dict__.copy()
-        del state["tokenizer"]
+        del state['tokenizer']
         return state
 
     def __setstate__(self, state):
         # tokenizer is not python native; don't pass it; rebuild it
         self.__dict__.update(state)
         enc = tiktoken.Encoding(
-            "Emu3",
+            'Emu3',
             pat_str=PAT_STR,
             mergeable_ranks=self.mergeable_ranks,
             special_tokens=self.special_tokens,
@@ -173,12 +174,12 @@ class Emu3Tokenizer(PreTrainedTokenizer):
         special_tokens: bool = False,
     ) -> int:
         if not special_tokens and new_tokens:
-            raise ValueError("Adding regular tokens is not supported")
+            raise ValueError('Adding regular tokens is not supported')
 
         for token in new_tokens:
             surface_form = token.content if isinstance(token, AddedToken) else token
             if surface_form not in self.special_tokens_set:
-                raise ValueError("Adding unknown special tokens is not supported")
+                raise ValueError('Adding unknown special tokens is not supported')
 
         return 0
 
@@ -189,15 +190,24 @@ class Emu3Tokenizer(PreTrainedTokenizer):
         Returns:
             `Tuple(str)`: Paths to the files saved.
         """
-        regular_file_path = os.path.join(save_directory, self.vocab_files_names["vocab_file"])
-        with open(regular_file_path,'w', encoding="utf8") as w:
+        regular_file_path = os.path.join(save_directory, self.vocab_files_names['vocab_file'])
+        with open(regular_file_path, 'w', encoding='utf8') as w:
             for k, v in self.mergeable_ranks.items():
-                line = base64.b64encode(k).decode("utf8") + " " + str(v) + "\n"
+                line = base64.b64encode(k).decode('utf8') + ' ' + str(v) + '\n'
                 w.write(line)
 
-        excluded_special_tokens = set((ENDOFTEXT, IMSTART, IMEND,) + EXTRAS)
-        special_file_path = os.path.join(save_directory, self.vocab_files_names["special_tokens_file"])
-        with open(special_file_path, 'w', encoding="utf8") as w:
+        excluded_special_tokens = set(
+            (
+                ENDOFTEXT,
+                IMSTART,
+                IMEND,
+            )
+            + EXTRAS
+        )
+        special_file_path = os.path.join(
+            save_directory, self.vocab_files_names['special_tokens_file']
+        )
+        with open(special_file_path, 'w', encoding='utf8') as w:
             for k in self.special_tokens:
                 if k not in excluded_special_tokens:
                     print(k, file=w)
@@ -207,7 +217,7 @@ class Emu3Tokenizer(PreTrainedTokenizer):
     def tokenize(
         self,
         text: str,
-        allowed_special: Union[Set, str] = "all",
+        allowed_special: Union[Set, str] = 'all',
         disallowed_special: Union[Collection, str] = (),
         **kwargs,
     ) -> List[Union[bytes, str]]:
@@ -231,7 +241,7 @@ class Emu3Tokenizer(PreTrainedTokenizer):
             `List[bytes|str]`: The list of tokens.
         """
         tokens = []
-        text = unicodedata.normalize("NFC", text)
+        text = unicodedata.normalize('NFC', text)
 
         # this implementation takes a detour: text -> token id -> token surface forms
         for t in self.tokenizer.encode(
@@ -245,20 +255,20 @@ class Emu3Tokenizer(PreTrainedTokenizer):
         """
         Converts a sequence of tokens in a single string.
         """
-        text = ""
-        temp = b""
+        text = ''
+        temp = b''
         for t in tokens:
             if isinstance(t, str):
                 if temp:
-                    text += temp.decode("utf-8", errors=self.errors)
-                    temp = b""
+                    text += temp.decode('utf-8', errors=self.errors)
+                    temp = b''
                 text += t
             elif isinstance(t, bytes):
                 temp += t
             else:
-                raise TypeError("token should only be of type types or str")
+                raise TypeError('token should only be of type types or str')
         if temp:
-            text += temp.decode("utf-8", errors=self.errors)
+            text += temp.decode('utf-8', errors=self.errors)
         return text
 
     @property
@@ -269,7 +279,7 @@ class Emu3Tokenizer(PreTrainedTokenizer):
         """Converts an id to a token, special tokens included"""
         if index in self.decoder:
             return self.decoder[index]
-        raise ValueError("unknown ids")
+        raise ValueError('unknown ids')
 
     def _convert_token_to_id(self, token: Union[bytes, str]) -> int:
         """Converts a token to an id using the vocab, special tokens included"""
@@ -277,7 +287,7 @@ class Emu3Tokenizer(PreTrainedTokenizer):
             return self.special_tokens[token]
         if token in self.mergeable_ranks:
             return self.mergeable_ranks[token]
-        raise ValueError("unknown token")
+        raise ValueError('unknown token')
 
     def _decode(
         self,

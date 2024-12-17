@@ -14,7 +14,7 @@ Supervised Fine-Tuning
 Example training data:
 
 .. code-block:: JSON
-    
+
     [
         {
             "mode": "TU",

@@ -17,7 +17,7 @@ infer_cfgs:
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
   vllm_cfgs: vllm_basic.json
-  
+
 default:
   # Evaluation configurations
   eval_cfgs:
@@ -39,7 +39,7 @@ default:
     split: test
     # Candidate labels
     candidate_labels: ["A", "B", "C", "D"]
-    
+
   # The model configurations
   model_cfgs:
     model_id: null

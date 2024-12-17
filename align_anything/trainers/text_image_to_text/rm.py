@@ -21,11 +21,11 @@ import sys
 
 import deepspeed
 import torch
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
 import torch.nn.functional as F
+from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.text_to_text.preference import PreferenceBatch
 from align_anything.datasets.text_image_to_text.preference import PreferenceDataset
+from align_anything.datasets.text_to_text.preference import PreferenceBatch
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.rm import RMTrainer as RMtextTrainer
 from align_anything.utils.multi_process import get_current_device
@@ -63,8 +63,7 @@ class RMTrainer(RMtextTrainer):
         self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
         if hasattr(self.model, 'infer_batch'):
             self.infer_batch = self.model.infer_batch
-        if hasattr(self.model, 'infer_required_keys'):
-            self.infer_required_keys = self.model.infer_required_keys
+
 
 def main():
     # setup distribution training

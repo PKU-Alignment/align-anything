@@ -26,9 +26,17 @@ import torch.distributed as dist
 from tqdm import tqdm
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.text_image_to_text_image.preference import PreferenceDataset, PreferenceTokenizedDataset
+from align_anything.datasets.text_image_to_text_image.preference import (
+    PreferenceDataset,
+    PreferenceTokenizedDataset,
+)
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.trainers.text_to_text.rm import RMTrainer as RMtextTrainer
+from align_anything.utils.multi_process import (
+    get_all_reduce_mean,
+    get_current_device,
+    is_main_process,
+)
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -36,11 +44,7 @@ from align_anything.utils.tools import (
     seed_everything,
     update_dict,
 )
-from align_anything.utils.multi_process import (
-    get_all_reduce_mean,
-    get_current_device,
-    is_main_process,
-)
+
 
 class RMTrainer(RMtextTrainer):
 
@@ -66,9 +70,7 @@ class RMTrainer(RMtextTrainer):
         self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
         if hasattr(self.model, 'infer_batch'):
             self.infer_batch = self.model.infer_batch
-        if hasattr(self.model, 'infer_required_keys'):
-            self.infer_required_keys = self.model.infer_required_keys
-        
+
     @torch.no_grad()
     def eval(self) -> dict[str, Any]:
         """Evaluate the model on the evaluation dataset."""

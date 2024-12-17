@@ -70,7 +70,7 @@ conda activate align-anything
 - **`[Optional]`** We recommend installing [CUDA](https://anaconda.org/nvidia/cuda) in the conda environment and set the environment variable.
 
 ```bash
-# We tested on the H800 computing cluster, and this version of CUDA works well. 
+# We tested on the H800 computing cluster, and this version of CUDA works well.
 # You can adjust this version according to the actual situation of the computing cluster.
 
 conda install nvidia/label/cuda-12.2.0::cuda
@@ -83,11 +83,11 @@ export CUDA_HOME=$CONDA_PREFIX
 export CUDA_HOME="/usr/local/cuda"
 ```
 
-Fianlly, install `align-anything` by:
+Finally, install `align-anything` by:
 
 ```bash
-# We prepare quick installation for training and evaluation. 
-# If you only need to use the training or evaluation module, 
+# We prepare quick installation for training and evaluation.
+# If you only need to use the training or evaluation module,
 # you can install the corresponding dependencies.
 pip install -e .[train] # install the training dependencies
 pip install -e .[evaluate] # install the evaluation dependencies
@@ -209,7 +209,7 @@ Besides, you can also use your own model for training, you can refer to the here
 
 **Q (Training Dataset Registration):** What datasets are supported for training? What should I pay attention to if I want to use my own dataset?
 
-*A:* We prepare `datasets_formatter` for dataset registration. Its core function is to mapping the dataset key to coversation format.
+*A:* We prepare `datasets_formatter` for dataset registration. Its core function is to mapping the dataset key to conversation format.
 
 Basically, we support 3 types of dataset format:
 

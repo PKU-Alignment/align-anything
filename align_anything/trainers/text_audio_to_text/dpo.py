@@ -22,26 +22,28 @@ import sys
 import deepspeed
 import torch
 import torch.distributed
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
-from transformers import AutoModelForCausalLM
 import torch.nn.functional as F
+from transformers import AutoModelForCausalLM
+from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
+from align_anything.datasets.text_audio_to_text.preference import PreferenceBatch, PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.datasets.text_audio_to_text.preference import PreferenceDataset, PreferenceBatch
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
 from align_anything.utils.multi_process import get_current_device, is_main_process
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
+    gather_log_probabilities,
     read_cfgs,
     seed_everything,
     update_dict,
-    gather_log_probabilities
 )
+
 
 def strip_pad(seq: torch.Tensor, pad_token_id: int):
     # remove the pad token in the tensor
     return seq[seq != pad_token_id]
+
 
 class DPOTrainer(DPOtextTrainer):
 
@@ -88,12 +90,14 @@ class DPOTrainer(DPOtextTrainer):
         batch_size = len(batch['response_lens'])
         logprob_list = []
         for idx in range(batch_size):
-            response_length = batch['response_lens'][idx] # for the eos token
+            response_length = batch['response_lens'][idx]  # for the eos token
             logit = logits[idx][-response_length:].unsqueeze(0)
             input_id = input_ids[idx][-response_length:].unsqueeze(0)
             log_p = gather_log_probabilities(logit[:, :-1], input_id[:, 1:])
             logprob_list.append(log_p.squeeze(0))
-        return torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(device)
+        return torch.nn.utils.rnn.pad_sequence(
+            logprob_list, batch_first=True, padding_value=0.0
+        ).to(device)
 
     def loss(  # pylint: disable=too-many-locals
         self,

@@ -14,9 +14,12 @@
 # ==============================================================================
 
 import os
+
 import requests
 from tqdm import tqdm
+
 from align_anything.utils.tools import image_b64
+
 
 system_prompt = '''
 Suppose you are a data rater, specialized in generating scores for time-lapse videos. You will be supplied with eight key frames extracted from a video, each with a filename labeled with its position in the video sequence. Your task is to rate the variation of this time-lapse video on a scale of 5. The scoring criteria are as follows:
@@ -26,7 +29,7 @@ Suppose you are a data rater, specialized in generating scores for time-lapse vi
 4: Significant change. The elements in the scene show obvious dynamic changes with a higher speed and frequency of variation. This includes noticeable changes in city traffic, crowd activities, or significant weather transitions. The scene displays a mix of quantitative and qualitative changes.
 5: Dramatic change. Elements in the scene undergo continuous and rapid significant changes, creating a very rich visual effect. This includes events like sunrise and sunset, construction of buildings, and seasonal changes, making the variation process vivid and impactful. The scene exhibits clear qualitative change.
 
-For guidance on the expected format, refer to the provided examples: 
+For guidance on the expected format, refer to the provided examples:
 
 Brief Reasoning Statement: The changes in the frames are quite significant as we see the progression of the 3D print from start to finish. The variation in the video includes the build-up of the print layer by layer, showing dynamic changes and detailed progress. The scene exhibits both quantitative changes (incremental addition of the print layers) and qualitative changes (completed print and human interaction).
 "Score":{4}
@@ -40,43 +43,44 @@ Brief Reasoning Statement: The changes in the frames show moderate to significan
 Attention: Do not reply outside the example template! Below are the video title and input frames:
 '''
 
-def build_gpt_prompt(datas, image_dir):
+
+def build_gpt_prompt(data, image_dir):
     prompts = {}
-    for video_id, data in tqdm(datas.items(), desc="Creating prompts"):
-        prompt = [{"type": "text", "text": system_prompt}]
+    for video_id, data in tqdm(data.items(), desc='Creating prompts'):
+        prompt = [{'type': 'text', 'text': system_prompt}]
         for image_name in data['frames']:
-            prompt.append({"type": "text", "text": image_name.strip()})
-            prompt.append({"type": "image_url", "image_url":{"url": f"data:image/png;base64,{image_b64(os.path.join(image_dir, image_name.strip()))}"}})
-        
+            prompt.append({'type': 'text', 'text': image_name.strip()})
+            prompt.append(
+                {
+                    'type': 'image_url',
+                    'image_url': {
+                        'url': f'data:image/png;base64,{image_b64(os.path.join(image_dir, image_name.strip()))}'
+                    },
+                }
+            )
+
         prompts[video_id] = {
             'prompt': data['prompt'],
             'video_path': data['video_path'],
-            'gpt_prompt': prompt
+            'gpt_prompt': prompt,
         }
 
     return prompts
 
-def gpt_judger(answer, api_key, base_url, judge_model="gpt-4o-2024-05-13"):
+
+def gpt_judger(answer, api_key, base_url, judge_model='gpt-4o-2024-05-13'):
     def get_response(prompt):
-        data = {
-            "model": judge_model,
-            "messages": [
-                {"role": "user", "content": prompt}
-            ]
-        }
+        data = {'model': judge_model, 'messages': [{'role': 'user', 'content': prompt}]}
         response = requests.post(
             base_url,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json=data
+            headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+            json=data,
         )
         if response.status_code == 200:
             result = response.json()
             return result['choices'][0]['message']['content']
         else:
-            raise Exception(f"Request failed: {response.status_code}, {response.text}")
+            raise Exception(f'Request failed: {response.status_code}, {response.text}')
 
     result = get_response(answer)
     return result

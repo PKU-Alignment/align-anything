@@ -14,55 +14,52 @@
 # ==============================================================================
 
 
-from typing import List, Optional, Tuple, Union, Any
+from typing import Any, Optional, Tuple, Union
 
 import torch
 import torch.utils.checkpoint
+from torch import nn
+from torch.nn import CrossEntropyLoss
 from transformers import AutoConfig
 from transformers.cache_utils import Cache
-from transformers.modeling_outputs import (
-    CausalLMOutputWithPast,
-)
-from transformers.models.chameleon.modeling_chameleon import (
-    ChameleonForConditionalGeneration,
-)
-from torch.nn import CrossEntropyLoss
-from torch import nn
+from transformers.modeling_outputs import CausalLMOutputWithPast
+from transformers.models.chameleon.modeling_chameleon import ChameleonForConditionalGeneration
 
 from align_anything.models.reward_model import ScoreModelOutput
+
 
 class AccustomedChameleonModel(ChameleonForConditionalGeneration):
 
     def pre_tokenization(
-        self, 
+        self,
         input_ids: torch.LongTensor = None,
         pixel_values: torch.FloatTensor = None,
     ):
         if pixel_values is None:
-            
+
             return_dict = {
-                "input_ids": input_ids,
+                'input_ids': input_ids,
             }
             return return_dict
         image_tokens = self.model.get_image_tokens(pixel_values)
         special_image_mask = input_ids == self.model.vocabulary_mapping.image_token_id
         image_tokens = image_tokens.to(input_ids.device, input_ids.dtype)
         input_ids = input_ids.masked_scatter(special_image_mask, image_tokens)
-        
-        return_dict =  {
-            "input_ids": input_ids.to("cpu"),
-            "pixel_values": pixel_values.to("cpu"),
+
+        return_dict = {
+            'input_ids': input_ids.to('cpu'),
+            'pixel_values': pixel_values.to('cpu'),
         }
-        
+
         return return_dict
-        
+
     @property
     def processor_available(self):
         return True
 
-    def apply_chat_template(self, 
-                            messages: list[dict[str, Any]], 
-                            add_generation_prompt: bool =False) -> dict[str, Any]:
+    def apply_chat_template(
+        self, messages: list[dict[str, Any]], add_generation_prompt: bool = False
+    ) -> dict[str, Any]:
         # use default format
         final_text = ''
         for line in messages:
@@ -70,7 +67,7 @@ class AccustomedChameleonModel(ChameleonForConditionalGeneration):
                 if content['type'] == 'text':
                     final_text += content['text']
         return final_text
-    
+
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -115,12 +112,16 @@ class AccustomedChameleonModel(ChameleonForConditionalGeneration):
         >>> generated_ids = model.generate(**inputs, max_new_tokens=100, do_sample=False)
         >>> processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
         ```"""
-        
+
         # print(f"pixel value dtype: {pixel_values.dtype}")
         # pixel_values = pixel_values.to(dtype = torch.bfloat16)
-        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_attentions = (
+            output_attentions if output_attentions is not None else self.config.output_attentions
+        )
         output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+            output_hidden_states
+            if output_hidden_states is not None
+            else self.config.output_hidden_states
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
@@ -171,8 +172,9 @@ class AccustomedChameleonModel(ChameleonForConditionalGeneration):
             attentions=outputs.attentions,
         )
 
+
 class AccustomedChameleonRewardModel(ChameleonForConditionalGeneration):
-    
+
     supports_gradient_checkpointing = True
 
     def __init__(self, config: AutoConfig):
@@ -180,20 +182,14 @@ class AccustomedChameleonRewardModel(ChameleonForConditionalGeneration):
         setattr(self, self.base_model_prefix, AccustomedChameleonModel(config))
         self.score_head = nn.Linear(4096, 1, bias=False)
 
-    @property
-    def infer_required_keys(self) -> list[str]:
-        return ['input_ids', 'attention_mask']
-
     def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         return {
             'input_ids': batch['input_ids'],
             'attention_mask': batch['attention_mask'],
         }
 
-    def forward(self,
-                input_ids: torch.LongTensor, 
-                attention_mask: torch.LongTensor, 
-                **kwargs
+    def forward(
+        self, input_ids: torch.LongTensor, attention_mask: torch.LongTensor, **kwargs
     ) -> torch.FloatTensor:
         outputs = super().forward(input_ids, attention_mask, **kwargs)
         hidden_states = outputs[0]

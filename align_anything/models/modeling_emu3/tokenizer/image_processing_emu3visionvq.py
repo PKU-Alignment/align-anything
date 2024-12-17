@@ -17,16 +17,11 @@
 
 
 import math
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 
 import numpy as np
-
 from transformers.image_processing_utils import BaseImageProcessor, BatchFeature
-from transformers.image_transforms import (
-    convert_to_rgb,
-    resize,
-    to_channel_dimension_format,
-)
+from transformers.image_transforms import convert_to_rgb, resize, to_channel_dimension_format
 from transformers.image_utils import (
     IMAGENET_STANDARD_MEAN,
     IMAGENET_STANDARD_STD,
@@ -52,7 +47,11 @@ if is_vision_available():
 
 
 def smart_resize(
-    height: int, width: int, factor: int = 8, min_pixels: int = 512 * 512, max_pixels: int = 1024 * 1024
+    height: int,
+    width: int,
+    factor: int = 8,
+    min_pixels: int = 512 * 512,
+    max_pixels: int = 1024 * 1024,
 ):
     """Rescales the image so that the following conditions are met:
 
@@ -64,10 +63,10 @@ def smart_resize(
 
     """
     if height < factor or width < factor:
-        raise ValueError(f"height:{height} or width:{width} must be larger than factor:{factor}")
+        raise ValueError(f'height:{height} or width:{width} must be larger than factor:{factor}')
     elif max(height, width) / min(height, width) > 5:
         raise ValueError(
-            f"absolute aspect ratio must be smaller than 5, got {max(height, width) / min(height, width)}"
+            f'absolute aspect ratio must be smaller than 5, got {max(height, width) / min(height, width)}'
         )
 
     h_bar = round(height / factor) * factor
@@ -109,11 +108,11 @@ class Emu3VisionVQImageProcessor(BaseImageProcessor):
             The min pixels of the image to resize the image.
         max_pixels (`int`, *optional*, defaults to `1024 * 1024`):
             The max pixels of the image to resize the image.
-        spatial_factor (`int`, *optional*, defautls to 8):
+        spatial_factor (`int`, *optional*, defaults to 8):
             The spatial downsample factor the image will be downsampled in feature extracting phase
     """
 
-    model_input_names = ["pixel_values"]
+    model_input_names = ['pixel_values']
 
     def __init__(
         self,
@@ -140,7 +139,7 @@ class Emu3VisionVQImageProcessor(BaseImageProcessor):
         self.image_std = image_std if image_std is not None else IMAGENET_STANDARD_STD
         self.min_pixels = min_pixels
         self.max_pixels = max_pixels
-        self.size = {"min_pixels": min_pixels, "max_pixels": max_pixels}
+        self.size = {'min_pixels': min_pixels, 'max_pixels': max_pixels}
         self.do_convert_rgb = do_convert_rgb
         self.spatial_factor = spatial_factor
 
@@ -205,8 +204,8 @@ class Emu3VisionVQImageProcessor(BaseImageProcessor):
 
         if is_scaled_image(images[0]) and do_rescale:
             logger.warning_once(
-                "It looks like you are trying to rescale already rescaled images. If the input"
-                "pixel_values.append()images have pixel values between 0 and 1, set `do_rescale=False` to avoid rescaling them again."
+                'It looks like you are trying to rescale already rescaled images. If the input'
+                'pixel_values.append()images have pixel values between 0 and 1, set `do_rescale=False` to avoid rescaling them again.'
             )
 
         if input_data_format is None:
@@ -226,18 +225,25 @@ class Emu3VisionVQImageProcessor(BaseImageProcessor):
                     max_pixels=self.max_pixels,
                 )
                 image = resize(
-                    image, size=(resized_height, resized_width), resample=resample, input_data_format=input_data_format
+                    image,
+                    size=(resized_height, resized_width),
+                    resample=resample,
+                    input_data_format=input_data_format,
                 )
 
             if do_rescale:
-                image = self.rescale(image, scale=rescale_factor, input_data_format=input_data_format)
+                image = self.rescale(
+                    image, scale=rescale_factor, input_data_format=input_data_format
+                )
 
             if do_normalize:
                 image = self.normalize(
                     image=image, mean=image_mean, std=image_std, input_data_format=input_data_format
                 )
 
-            image = to_channel_dimension_format(image, output_data_format, input_channel_dim=input_data_format)
+            image = to_channel_dimension_format(
+                image, output_data_format, input_channel_dim=input_data_format
+            )
             processed_images.append(image)
 
         image = np.array(processed_images)
@@ -313,8 +319,8 @@ class Emu3VisionVQImageProcessor(BaseImageProcessor):
         images = make_list_of_images(images)
         if images is None or not valid_images(images):
             raise ValueError(
-                "Invalid image type. Must be of type PIL.Image.Image, numpy.ndarray, "
-                "torch.Tensor, tf.Tensor or jax.ndarray."
+                'Invalid image type. Must be of type PIL.Image.Image, numpy.ndarray, '
+                'torch.Tensor, tf.Tensor or jax.ndarray.'
             )
 
         validate_preprocess_arguments(
@@ -345,7 +351,7 @@ class Emu3VisionVQImageProcessor(BaseImageProcessor):
             )
             pixel_values.extend(norm_image)
         pixel_values = np.array(pixel_values)
-        data = {"pixel_values": pixel_values}
+        data = {'pixel_values': pixel_values}
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 
@@ -357,7 +363,7 @@ class Emu3VisionVQImageProcessor(BaseImageProcessor):
         do_normalize: Optional[bool] = None,
         image_mean: Optional[Union[float, List[float]]] = None,
         image_std: Optional[Union[float, List[float]]] = None,
-        return_tensors: str | TensorType = "PIL.Image.Image",
+        return_tensors: str | TensorType = 'PIL.Image.Image',
         input_data_format: Optional[Union[str, ChannelDimension]] = None,
     ):
         """
@@ -410,20 +416,26 @@ class Emu3VisionVQImageProcessor(BaseImageProcessor):
         for image in images:
             image = to_numpy_array(image)
             if do_normalize:
-                image = self.normalize(image=image, mean=image_mean, std=image_std, input_data_format=input_data_format)
+                image = self.normalize(
+                    image=image, mean=image_mean, std=image_std, input_data_format=input_data_format
+                )
 
             if do_rescale:
-                image = self.rescale(image, scale=rescale_factor, input_data_format=input_data_format)
+                image = self.rescale(
+                    image, scale=rescale_factor, input_data_format=input_data_format
+                )
                 image = image.clip(0, 255).astype(np.uint8)
 
-            if do_normalize and do_rescale and return_tensors == "PIL.Image.Image":
-                image = to_channel_dimension_format(image, ChannelDimension.LAST, input_channel_dim=input_data_format)
+            if do_normalize and do_rescale and return_tensors == 'PIL.Image.Image':
+                image = to_channel_dimension_format(
+                    image, ChannelDimension.LAST, input_channel_dim=input_data_format
+                )
                 pixel_values.append(Image.fromarray(image))
             else:
                 pixel_values.extend(image)
 
-        data = {"pixel_values": pixel_values}
-        return_tensors = return_tensors if return_tensors != "PIL.Image.Image" else None
+        data = {'pixel_values': pixel_values}
+        return_tensors = return_tensors if return_tensors != 'PIL.Image.Image' else None
 
         return BatchFeature(data=data, tensor_type=return_tensors)
 

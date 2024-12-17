@@ -91,9 +91,7 @@ class SupervisedDataset(Dataset):
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         prompt, multi_modal_info = self.template.format_diffusion_supervised_sample(raw_sample)
         return_dict = {}
-        return_dict['input_ids'] = self.tokenize(
-            prompt, add_special_tokens=False
-        )
+        return_dict['input_ids'] = self.tokenize(prompt, add_special_tokens=False)
         return_dict['audio'] = self.process_audio(multi_modal_info['audio'])
         return return_dict
 
@@ -150,8 +148,8 @@ class SupervisedCollator:
             padding_value=self.pad_token_id,
         ).to(current_device)
 
-        return_dict['audio'] = torch.stack(
-            [sample['audio'] for sample in samples]
-        ).to(current_device)
+        return_dict['audio'] = torch.stack([sample['audio'] for sample in samples]).to(
+            current_device
+        )
 
         return return_dict

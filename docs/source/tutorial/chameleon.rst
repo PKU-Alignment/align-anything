@@ -35,7 +35,7 @@ model with image output (see `this
 PR <https://github.com/huggingface/transformers/pull/32013>`__ for more
 details), so we rely on a certain fork of the repo.
 
-After installing Align-Anything and correctly set up the envrionment,
+After installing Align-Anything and correctly set up the environment,
 you can install the forked stable version of the repo by running:
 
 .. code:: bash
@@ -68,7 +68,7 @@ As chameleon expands the <image> in the input into image placeholders
                 python pre_tokenize_example.py --model_path $MODEL_PATH --input_path $INPUT_PATH --output_path $OUTPUT_PATH
 
             Replace ``$MODEL_PATH``, ``$INPUT_PATH`` and ``$OUTPUT_PATH`` with the correct paths.
-    
+
     .. tab-item:: Supervised, Parallel
 
         .. card::
@@ -107,7 +107,7 @@ As chameleon expands the <image> in the input into image placeholders
             Pretokenization for DPO or RM
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-            If you are dealing with prefernce dataset (for DPO or RM), set the template, the input key name, and the number of processes and GPUs correctly in
+            If you are dealing with preference dataset (for DPO or RM), set the template, the input key name, and the number of processes and GPUs correctly in
             `preference_tokenize_example.py <https://github.com/PKU-Alignment/align-anything/blob/main/projects/text_image_to_text_image/preference_tokenize_example.py>`__
             and run:
 
@@ -180,7 +180,7 @@ After pre-tokenizing the dataset, you can start training the model using the fol
                     --module align_anything.trainers.text_image_to_text_image.sft \
                     --model_name_or_path ${MODEL_NAME_OR_PATH} \
                     --train_datasets ${TRAIN_DATASETS} \
-                    --train_data_files ${PT_NAME} \ 
+                    --train_data_files ${PT_NAME} \
                     --output_dir ${OUTPUT_DIR} \
                     --train_template ANYTHING_TI2TI \
                     --train_split 'train' \
@@ -191,7 +191,7 @@ After pre-tokenizing the dataset, you can start training the model using the fol
                     --learning_rate 5e-5 \
                     --epochs 3 \
                     --lr_scheduler_type constant
-            
+
             and set up the correct model path and dataset path, then run:
 
             .. code:: bash
@@ -239,7 +239,7 @@ After pre-tokenizing the dataset, you can start training the model using the fol
                     --save_interval 2500 \
                     --learning_rate 5e-7 \
                     --epochs 3 \
-                    --lr_scheduler_type cosine 
+                    --lr_scheduler_type cosine
 
             and set up the correct model path and dataset path, then run:
 
@@ -268,9 +268,9 @@ After pre-tokenizing the dataset, you can start training the model using the fol
 
                 MODEL_NAME_OR_PATH="PKU-Alignment/AA-chameleon-7b-base"
                 TRAIN_DATASETS=""
-                TRAIN_PT_NAME="" 
+                TRAIN_PT_NAME=""
                 EVAL_DATASETS=""
-                EVAL_PT_NAME="" 
+                EVAL_PT_NAME=""
                 OUTPUT_DIR="../outputs/rm_text_image_to_text_image"
                 export WANDB_API_KEY=""
                 source ./setup.sh
@@ -293,8 +293,8 @@ After pre-tokenizing the dataset, you can start training the model using the fol
                     --learning_rate 5e-6 \
                     --epochs 3 \
                     --lr_scheduler_type cosine \
-                    --save_interval 2500 
-                
+                    --save_interval 2500
+
             and set up the correct model path and dataset path, then run:
 
             .. code:: bash
@@ -324,9 +324,9 @@ After pre-tokenizing the dataset, you can start training the model using the fol
                 CRITIC_MODEL_NAME_OR_PATH=""
                 REWARD_MODEL_NAME_OR_PATH=""
                 TRAIN_DATASETS=""
-                TRAIN_PT_NAME="" 
+                TRAIN_PT_NAME=""
                 PTX_DATASETS=""
-                PTX_PT_NAME="" 
+                PTX_PT_NAME=""
                 OUTPUT_DIR="../outputs/ppo_text_image_to_text_image"
 
                 source ./setup.sh
@@ -373,11 +373,11 @@ forked (and revised to make it stable) version:
    git clone https://github.com/htlou/mmsg_chameleon.git
    cd mmsg_chameleon
 
-Then set up the envrionment using
+Then set up the environment using
 
 .. code:: bash
 
-   pip install -e . 
+   pip install -e .
 
 After setting up the envrioment, set up the correct paths in
 ``scripts/interleaved_gen.sh`` and then run
@@ -448,11 +448,11 @@ Generation Examples
 
             .. toggle:: Click here for more information about the input
 
-                **Input text:**  
+                **Input text:**
 
                 Add a vintage filter to this bathroom image to give it a retro look and describe the steps involved in applying the filter.
 
-                **Input image:**  
+                **Input image:**
 
                 |image|
 
@@ -461,11 +461,11 @@ Generation Examples
 
             .. toggle:: Click to see the output before alignment
 
-               **Output text (before alignment):**  
+               **Output text (before alignment):**
 
                Vintage look. Filters like this are designed to give old, vintage items a new life by giving them a distressed, nostalgic look. This process involves removing small particles from the material to create a rough, textured effect.
 
-               **Output image (before alignment):**  
+               **Output image (before alignment):**
 
                None
 
@@ -474,11 +474,11 @@ Generation Examples
 
             .. toggle:: Click to see the output after alignment
 
-               **Output text (after alignment):**  
+               **Output text (after alignment):**
 
                I have applied a vintage filter to the bathroom image to give it a retro look. The process involved adjusting the color temperature to add a slight cool tone, reducing the saturation to give it a more muted appearance, and increasing the contrast to enhance the vintage feel.
 
-               **Output image (after alignment):**  
+               **Output image (after alignment):**
 
                |image1|
 
@@ -496,23 +496,23 @@ Generation Examples
 
             .. toggle:: Click here for more information about the input
 
-                **Input text:**  
+                **Input text:**
 
                 Create a detailed recipe for making the pastry shown in the image, including ingredients, preparation steps, and baking instructions.
 
-                **Input image:**  
+                **Input image:**
 
                 |image2|
-            
+
             Output (before alignment):
 
             .. toggle:: Click to see the output before alignment
 
-               **Output text (before alignment):**  
+               **Output text (before alignment):**
 
                Absolutely! Here is a detailed recipe for making the pastry in the image:\\n\\nIngredients:\\n\\n* 1 cup all-purpose flour\\n* 1/2 cup cold unsalted butter, cut into small pieces\\n* 1/4 cup ice-cold water\\n* 1 egg, lightly beaten\\n* 1 tablespoon honey\\n* 1/4 teaspoon salt\\n
 
-               **Output image (before alignment):**  
+               **Output image (before alignment):**
 
                None
 
@@ -520,11 +520,11 @@ Generation Examples
 
             .. toggle:: Click to see the output after alignment
 
-               **Output text (after alignment):**  
+               **Output text (after alignment):**
 
                <image>\\n\\nCooking Instructions:\\n1. Preheat Oven: Preheat your oven to 350\\u00b0F (175\\u00b0C).\\n2. Prepare Filling: In a small bowl, mix well the flour, sugar, eggs, and any other desired ingredients. To make it easier to handle, you can place the bowl of the mixture on a baking tray lined with parchment paper.\\n3. Bake Donut: Place the prepared donut on the preheated baking tray. Bake for 8-10 minutes until the donut is golden brown and crispy on top.\\n4. Cool and Serve: Allow the donut to cool slightly before serving. You can garnish it with a drizzle of chocolate sauce or caramel sauce if desired.\\n\\nEnjoy your homemade chocolate-filled donut!
 
-               **Output image (after alignment):**  
+               **Output image (after alignment):**
                |image3|
 
     .. tab-item:: #3
@@ -541,34 +541,34 @@ Generation Examples
 
             .. toggle:: Click here for more information about the input
 
-                **Input text:**  
+                **Input text:**
 
                 Enhance the presentation of these pizzas with gourmet toppings and plating, and describe the steps involved.
 
-                **Input image:**  
+                **Input image:**
                 |image4|
 
             Output (before alignment):
 
             .. toggle:: Click to see the output before alignment
 
-               **Output text (before alignment):**  
+               **Output text (before alignment):**
 
                The steps involved in presenting these homemade pizzas with gourmet toppings and plating them are as follows:\n\n1. **Gather Ingredients:**\n   - Use high-quality, fresh ingredients: chees, vegetables, fruits, and meats.\n   - Avoid using pre-concealed toppings: Instead, let your creations shine.\n\n2. **Mix Ingredients:**\n   - Mix all ingredients thoroughly but avoid mishandling them.\n   - Cover the mixing bowl with cling wrap to prevent cross-contamination.\n\n3. **Set Up the Presentation:**\n   - Transfer the mixture to a clean, oven-proof dish and preheat the oven to 400\u00b0F (200\u00b0C).\n   - Cut the pizza into appropriate portions and allow them to cool a few minutes.\n   - Plate the pizzas on a clean, clear surface to showcase their presentation.\n\n4. **Garnish and Presentation:**\n   - Add desired garnishes and toppings to add visual appeal and flavor.\n   - Secure the plating board with a clear, decorative overlay to protect the food from elements like moisture.\n\n5. **Serve and Enjoy:**\n   - Ensure the pizzas are hot and fresh to avoid any bacterial risks.\n   - Smooth any uneven edges and serve with a complementary dipping sauce or condiments.\n\nI've described the steps involved in preparing these homemade pizzas and their plating process.<image>
 
-               **Output image (before alignment):**  
+               **Output image (before alignment):**
                |image6|
 
             Output (after alignment):
 
             .. toggle:: Click to see the output after alignment
 
-                **Output text (after alignment):**  
-                
+                **Output text (after alignment):**
+
                 I have enhanced the presentation of the pizzas by adding gourmet toppings. The pizzas now feature fresh basil leaves, prosciutto, cherry tomatoes, shaved Parmesan cheese, and a drizzle of balsamic glaze. The toppings are arranged artistically on each pizza to create a visually appealing and gourmet presentation.
 
-                
-                **Output image (after alignment):**  
+
+                **Output image (after alignment):**
 
                 |image5|
 

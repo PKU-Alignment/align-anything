@@ -247,6 +247,7 @@ class KTOTrainer(DPOTrainer):
                 self.logger.log(self.eval(), step=self.global_step)
             self.model.tput_timer.update_epoch_count()
 
+
 def main():
     # setup distribution training
     deepspeed.init_distributed()

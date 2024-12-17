@@ -43,4 +43,3 @@ deepspeed \
      --output_dir ${OUTPUT_DIR} \
      --save_interval 1000 \
      --epochs 2
- 

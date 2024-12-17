@@ -27,13 +27,10 @@ from typing import Generator, Iterable, Iterator, NoReturn, overload
 import requests
 import torch
 from PIL import Image
-from transformers import (
-    GenerationConfig,
-    TextIteratorStreamer,
-)
+from transformers import GenerationConfig, TextIteratorStreamer
 
-from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.configs.template import ChatTemplate
+from align_anything.models.pretrained_model import load_pretrained_models
 
 
 __all__ = [
@@ -150,14 +147,14 @@ class AbstractChatbot:
         self,
         text: str,
         stream: bool = False,
-    ) -> Generator[str, None, None] | Iterable[Generator[str, None, None]]:
+    ) -> Generator[str] | Iterable[Generator[str]]:
         """Generate the response to the given text."""
 
     @abc.abstractmethod
     def regenerator(
         self,
         stream: bool = False,
-    ) -> Generator[str, None, None] | Iterable[Generator[str, None, None]]:
+    ) -> Generator[str] | Iterable[Generator[str]]:
         """Regenerate the last response."""
 
     @abc.abstractmethod
@@ -261,7 +258,7 @@ class Chatbot(AbstractChatbot):
 
         return self.generator(text, stream=stream)
 
-    def generator(self, text: str, stream: bool = False) -> Generator[str, None, None]:
+    def generator(self, text: str, stream: bool = False) -> Generator[str]:
         """Generate the response to the given text."""
         if self.vlm and self.image_source:
             text = '<image>\n' + text
@@ -353,7 +350,7 @@ class Chatbot(AbstractChatbot):
 
         yield clean_response
 
-    def regenerator(self, stream: bool = False) -> Generator[str, None, None]:
+    def regenerator(self, stream: bool = False) -> Generator[str]:
         """Regenerate the last response."""
         if len(self.inputs) == 0:
             return ['WRONG COMMAND: Empty dialogue history. No input to regenerate.']
@@ -411,12 +408,12 @@ class ChatbotList(AbstractChatbot):
         for chatbot in self.chatbots:
             yield chatbot(text, stream=stream, image_source=image_source)
 
-    def generator(self, text: str, stream: bool = False) -> Iterable[Generator[str, None, None]]:
+    def generator(self, text: str, stream: bool = False) -> Iterable[Generator[str]]:
         """Generate the response to the given text."""
         for chatbot in self.chatbots:
             yield chatbot.generator(text, stream=stream)
 
-    def regenerator(self, stream: bool = False) -> Iterable[Generator[str, None, None]]:
+    def regenerator(self, stream: bool = False) -> Iterable[Generator[str]]:
         """Regenerate the last response."""
         for chatbot in self.chatbots:
             yield chatbot.regenerator(stream=stream)

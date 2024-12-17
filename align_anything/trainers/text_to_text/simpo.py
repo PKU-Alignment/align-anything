@@ -25,9 +25,7 @@ import torch.nn.functional as F
 
 from align_anything.datasets.text_to_text.preference import PreferenceBatch
 from align_anything.trainers.text_to_text.dpo import DPOTrainer
-from align_anything.utils.multi_process import (
-    get_current_device,
-)
+from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -38,7 +36,6 @@ from align_anything.utils.tools import (
 
 
 class SimPOTrainer(DPOTrainer):
-
 
     def loss(  # pylint: disable=too-many-locals
         self,
@@ -107,6 +104,7 @@ class SimPOTrainer(DPOTrainer):
             'reward_accuracy': reward_accuracy,
             'reward_margin': reward_margin,
         }
+
 
 def main():
     # setup distribution training

@@ -22,7 +22,7 @@ cd "${SCRIPT_DIR}/../align_anything/evaluation" || exit 1
 # [Need] Your OpenAI API key
 export OPENAI_API_KEY=''
 
-# [Optional] If you want to use your own API, 
+# [Optional] If you want to use your own API,
 # you can set the following environment variables
 export OPENAI_API_BASE=""
 export OPENAI_API_BASE_URL=""

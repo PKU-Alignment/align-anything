@@ -21,8 +21,8 @@ import sys
 
 import deepspeed
 import torch
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
 import torch.nn.functional as F
+from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.datasets.text_to_text.preference import PreferenceBatch
 from align_anything.datasets.text_video_to_text.preference import PreferenceDataset
@@ -102,7 +102,6 @@ class RMTrainer(RMtextTrainer):
             'lower_rewards': lower_rewards,  # size = (B, L)
             'accuracy': accuracy,  # size = ()
         }
-
 
 
 def main():

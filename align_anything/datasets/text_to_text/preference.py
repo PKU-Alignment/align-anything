@@ -96,7 +96,9 @@ class PreferenceDataset(Dataset):
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
         return_dict = {}
-        formatted_better_text, formatted_worse_text, _ = self.template.format_preference_sample(raw_sample)
+        formatted_better_text, formatted_worse_text, _ = self.template.format_preference_sample(
+            raw_sample
+        )
         return_dict['better_input_ids'] = self.tokenize(formatted_better_text)
         return_dict['worse_input_ids'] = self.tokenize(formatted_worse_text)
 

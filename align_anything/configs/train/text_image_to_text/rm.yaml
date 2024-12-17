@@ -61,8 +61,6 @@ data_cfgs:
   train_datasets: null
   # The format template for training
   train_template: null
-  # The name of training datasets
-  train_name: null
   # The total number for training
   train_size: null
   # The split of train datasets

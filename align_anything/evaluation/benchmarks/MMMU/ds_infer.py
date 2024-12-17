@@ -13,23 +13,34 @@
 # limitations under the License.
 # ==============================================================================
 
-import os
 import argparse
-from align_anything.evaluation.inference.ds_inference import BaseInferencer_deepspeed, ListDataset
-from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
-from typing import List, Dict, Any
-from align_anything.utils.tools import read_eval_cfgs, dict_to_namedtuple, update_dict, custom_cfgs_to_dict
-from align_anything.utils.template_registry import get_eval_template_class as get_template_class
-from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.evaluation.inference.ds_inference import get_rank
-from torch.nn.utils.rnn import pad_sequence
-import torch.distributed as dist
-from torch.utils.data import DataLoader, DistributedSampler
-from datasets import load_dataset, DatasetDict
+import os
 import pickle
-import torch
 import re
+from typing import Any, Dict, List
+
+import torch
+import torch.distributed as dist
+from torch.nn.utils.rnn import pad_sequence
+from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
+
+from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
+from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
+from align_anything.evaluation.inference.ds_inference import (
+    BaseInferencer_deepspeed,
+    ListDataset,
+    get_rank,
+)
+from align_anything.utils.template_registry import get_eval_template_class as get_template_class
+from align_anything.utils.tools import (
+    custom_cfgs_to_dict,
+    dict_to_namedtuple,
+    read_eval_cfgs,
+    update_dict,
+)
+from datasets import DatasetDict, load_dataset
+
 
 class MMMUDataLoader(BaseDataLoader):
 
@@ -37,32 +48,37 @@ class MMMUDataLoader(BaseDataLoader):
         if isinstance(self.data_cfgs.task, list):
             return self.data_cfgs.task
         else:
-            task_names = [
-            self.data_cfgs.task
-            ]
+            task_names = [self.data_cfgs.task]
             return task_names
-    
+
     def get_answer(self, data):
         return data['answer']
 
-    def set_fewshot_dataset(self, dataset, task: str=None):
+    def set_fewshot_dataset(self, dataset, task: str = None):
         return dataset['dev']
 
     def build_example_prompt(self, data, with_answer=True):
         choices = ''
         if data['question_type'] == 'multiple-choice':
-            choices = 'Please choose the correct answer from the following options:\n' + data["options"]
+            choices = (
+                'Please choose the correct answer from the following options:\n' + data['options']
+            )
         answer = f'Answer: ({self.get_answer(data)})' if with_answer else 'Answer: '
         return f"Question_type: {data['question_type']}\n{data['question']}{choices}\n{answer}"
 
     def build_prompt(self, data: Dict[str, Any]) -> str:
-        assert self.num_shot == 0, "MMMU does not support few-shot learning."
-        prompt = f""
+        assert self.num_shot == 0, 'MMMU does not support few-shot learning.'
+        prompt = f''
         cot_prompt = f" Let's think step by step. "
-        few_shot_examples = self.few_shot_data[:self.num_shot] if self.num_shot else []
+        few_shot_examples = self.few_shot_data[: self.num_shot] if self.num_shot else []
         template = get_template_class(self.chat_template)
         if len(few_shot_examples) == 0:
-            question = [template.system_prompt + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False)) + template.assistant_prompt.format(output="") for item in data]
+            question = [
+                template.system_prompt
+                + template.user_prompt.format(input=prompt + self.build_example_prompt(item, False))
+                + template.assistant_prompt.format(output='')
+                for item in data
+            ]
         else:
             if not self.cot:
                 few_shots = [
@@ -73,7 +89,8 @@ class MMMUDataLoader(BaseDataLoader):
                 ]
             else:
                 few_shots = [
-                    f"{example['question']}\n'Answer: '{example['answer']}" for example in few_shot_examples
+                    f"{example['question']}\n'Answer: '{example['answer']}"
+                    for example in few_shot_examples
                 ]
             question = []
             for item in data:
@@ -83,13 +100,21 @@ class MMMUDataLoader(BaseDataLoader):
                     request[key] = value
                 examples = few_shots + [self.build_example_prompt(request, False)]
                 if self.cot:
-                    base_prompt = template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output=cot_prompt)
+                    base_prompt = (
+                        template.system_prompt
+                        + template.user_prompt.format(input=prompt + '\n\n'.join(examples))
+                        + template.assistant_prompt.format(output=cot_prompt)
+                    )
                 else:
-                    base_prompt = template.system_prompt + template.user_prompt.format(input=prompt + '\n\n'.join(examples)) + template.assistant_prompt.format(output="")
+                    base_prompt = (
+                        template.system_prompt
+                        + template.user_prompt.format(input=prompt + '\n\n'.join(examples))
+                        + template.assistant_prompt.format(output='')
+                    )
                 question.append([base_prompt] * num_images)
 
         return question
-    
+
     def preprocess(self, data):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         raw_images = []
@@ -97,9 +122,11 @@ class MMMUDataLoader(BaseDataLoader):
             images = [item[key] for key in get_image_keys(item)]
             raw_images.append(images)
         prompts = self.build_prompt(data[self.split])
-        
+
         flat_images = [img for sublist in raw_images for img in sublist]
-        flat_prompts = [prompt for prompt, sublist in zip(prompts, raw_images) for _ in range(len(sublist))]
+        flat_prompts = [
+            prompt for prompt, sublist in zip(prompts, raw_images) for _ in range(len(sublist))
+        ]
 
         inputs = self.processor(flat_prompts, flat_images, return_tensors='pt', padding=True)
 
@@ -112,41 +139,54 @@ class MMMUDataLoader(BaseDataLoader):
             self.few_shot_data = self.set_fewshot_dataset(dataset, task)
             prompts, inputs = self.preprocess(dataset)
             processed_inputs[task] = []
-            for prompt, input_ids, pixel_values, question_id in zip(prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['id']):
-                processed_input = InferenceInput(text=prompt, token_ids=input_ids, pixel_values=pixel_values)
+            for prompt, input_ids, pixel_values, question_id in zip(
+                prompts, inputs['input_ids'], inputs['pixel_values'], dataset[self.split]['id']
+            ):
+                processed_input = InferenceInput(
+                    text=prompt, token_ids=input_ids, pixel_values=pixel_values
+                )
                 processed_input.question_id = question_id
                 processed_inputs[task].append(processed_input)
         return processed_inputs
 
+
 class MMMUGeneratorDS(BaseInferencer_deepspeed):
-    def eval(self, data:Dict[str, List[InferenceInput]], eval_configs) -> Dict[str, List[InferenceOutput]]:
-        os.makedirs(".cache", exist_ok=True)
-        uuid_path = f".cache/{eval_configs.uuid}"
+    def eval(
+        self, data: Dict[str, List[InferenceInput]], eval_configs
+    ) -> Dict[str, List[InferenceOutput]]:
+        os.makedirs('.cache', exist_ok=True)
+        uuid_path = f'.cache/{eval_configs.uuid}'
         os.makedirs(uuid_path, exist_ok=True)
 
         for task, input in data.items():
-            task_dir = f"{uuid_path}/{task}"
+            task_dir = f'{uuid_path}/{task}'
             os.makedirs(task_dir, exist_ok=True)
             raw_output = self.generation(input)
             for item in raw_output:
                 for i in range(len(item.response)):
-                    item.response[i] = item.response[i][len(re.sub('<image>', ' ', item.prompt, count=1)):]
+                    item.response[i] = item.response[i][
+                        len(re.sub('<image>', ' ', item.prompt, count=1)) :
+                    ]
             self.save_pickle(raw_output, task_dir)
 
     def load_data_distributed(self, inputs: List[InferenceInput]) -> List[InferenceInput]:
         dataset = ListDataset(inputs)
-        
+
         sampler = DistributedSampler(dataset) if torch.distributed.is_initialized() else None
-        
+
         def collate_fn(batch):
             return {
-                "pad_token_ids": pad_sequence([torch.tensor(b.token_ids) for b in batch], batch_first=True, padding_value=self.tokenizer.pad_token_id),
+                'pad_token_ids': pad_sequence(
+                    [torch.tensor(b.token_ids) for b in batch],
+                    batch_first=True,
+                    padding_value=self.tokenizer.pad_token_id,
+                ),
                 'pixel_values': torch.stack([b.pixel_values for b in batch]),
-                "token_ids": [b.token_ids for b in batch],
-                "text": [b.text for b in batch],
-                "question_id": [b.question_id for b in batch]
+                'token_ids': [b.token_ids for b in batch],
+                'text': [b.text for b in batch],
+                'question_id': [b.question_id for b in batch],
             }
-        
+
         dataloader = DataLoader(
             dataset, sampler=sampler, batch_size=self.batch_size, collate_fn=collate_fn
         )
@@ -154,76 +194,84 @@ class MMMUGeneratorDS(BaseInferencer_deepspeed):
 
     def _generation(self, inputs: List[InferenceInput]) -> List[InferenceOutput]:
         assert isinstance(inputs, list)
-        
+
         num_sequences = 4
         dataloader = self.load_data_distributed(inputs)
 
         InferenceOutputs = []
-        
+
         for batch in tqdm(dataloader):
             local_rank = int(os.environ['LOCAL_RANK'])
 
             outputs = self.model.generate(
-                inputs=batch["pad_token_ids"].to(f"cuda:{local_rank}"),
-                pixel_values=batch['pixel_values'].to(f"cuda:{local_rank}"),
-                return_dict_in_generate=True, 
+                inputs=batch['pad_token_ids'].to(f'cuda:{local_rank}'),
+                pixel_values=batch['pixel_values'].to(f'cuda:{local_rank}'),
+                return_dict_in_generate=True,
                 num_return_sequences=num_sequences,
                 early_stopping=True,
                 output_scores=True,
-                num_beams=num_sequences, 
+                num_beams=num_sequences,
                 do_sample=True,
                 max_new_tokens=1024,
             )
             transition_scores = self.model.compute_transition_scores(
-                outputs['sequences'], outputs['scores'], normalize_logits=True, beam_indices=outputs['beam_indices']
+                outputs['sequences'],
+                outputs['scores'],
+                normalize_logits=True,
+                beam_indices=outputs['beam_indices'],
             )
             responses = self.processor.batch_decode(outputs['sequences'], skip_special_tokens=True)
-            
+
             for i in range(self.batch_size):
-                token_ids = batch["token_ids"][i]
-                text = batch["text"][i]
+                token_ids = batch['token_ids'][i]
+                text = batch['text'][i]
                 input_length = len(token_ids)
-                response = responses[i*num_sequences:(i+1)*num_sequences]
-                output = outputs['sequences'][i*num_sequences:(i+1)*num_sequences, :]
-                transition_score = transition_scores[i*num_sequences:(i+1)*num_sequences, :]
-                inference_output = InferenceOutput.from_deepspeed_output(deepspeed_output={
-                        "prompt": text,
-                        "prompt_token_ids": token_ids,
-                        "prompt_logprobs": transition_score[:, :input_length],
-                        "response": response,
-                        "response_token_ids": output[:, input_length:],
-                        "response_logprobs": transition_score[:, input_length:],
-                        "raw_output":  outputs[i*num_sequences:(i+1)*num_sequences]
-                    }, store_raw=True)
-                inference_output.question_id = batch["question_id"][i]
+                response = responses[i * num_sequences : (i + 1) * num_sequences]
+                output = outputs['sequences'][i * num_sequences : (i + 1) * num_sequences, :]
+                transition_score = transition_scores[i * num_sequences : (i + 1) * num_sequences, :]
+                inference_output = InferenceOutput.from_deepspeed_output(
+                    deepspeed_output={
+                        'prompt': text,
+                        'prompt_token_ids': token_ids,
+                        'prompt_logprobs': transition_score[:, :input_length],
+                        'response': response,
+                        'response_token_ids': output[:, input_length:],
+                        'response_logprobs': transition_score[:, input_length:],
+                        'raw_output': outputs[i * num_sequences : (i + 1) * num_sequences],
+                    },
+                    store_raw=True,
+                )
+                inference_output.question_id = batch['question_id'][i]
                 InferenceOutputs.append(inference_output)
         return InferenceOutputs
 
-    def save_pickle(self, output_data: List[InferenceOutput], task_dir: str=None):
+    def save_pickle(self, output_data: List[InferenceOutput], task_dir: str = None):
         cache_data = []
         for item in output_data:
             cache_data.append(
                 {
                     'question_id': item.question_id,
                     'prompt_text': item.prompt,
-                    'response': item.response
+                    'response': item.response,
                 }
             )
             if dist.is_initialized():
-                file_path = f"{task_dir}/outputs_{get_rank()}.pkl"
+                file_path = f'{task_dir}/outputs_{get_rank()}.pkl'
             else:
-                file_path = f"{task_dir}/outputs.pkl"
-            
+                file_path = f'{task_dir}/outputs.pkl'
+
             with open(file_path, 'wb') as f:
                 pickle.dump(cache_data, f, protocol=4)
+
 
 def get_image_keys(data):
     image_labels = []
     for i in range(1, 8):
-        key = f"image_{i}"
+        key = f'image_{i}'
         if data[key]:
             image_labels.append(key)
     return image_labels
+
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -237,15 +285,16 @@ def main():
             continue
         dict_configs = update_dict(dict_configs, custom_cfgs_to_dict(k, v))
         infer_configs = update_dict(infer_configs, custom_cfgs_to_dict(k, v))
-    
+
     dict_configs = dict_to_namedtuple(dict_configs)
     model_config = dict_configs.default.model_cfgs
     eval_configs = dict_configs.default.eval_cfgs
     dataloader = MMMUDataLoader(dict_configs)
-    assert not dataloader.cot, "chain-of-thought cannot be used for this benchmark."
+    assert not dataloader.cot, 'chain-of-thought cannot be used for this benchmark.'
     test_data = dataloader.load_dataset()
     eval_module = MMMUGeneratorDS(model_config, infer_configs)
     eval_module.eval(test_data, eval_configs)
+
 
 if __name__ == '__main__':
     main()
