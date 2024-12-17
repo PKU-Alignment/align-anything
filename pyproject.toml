@@ -84,6 +84,7 @@ train = [
     "soundfile",
     "torchaudio",
     "torchvision",
+    "timm",
 ]
 
 evaluate = [
