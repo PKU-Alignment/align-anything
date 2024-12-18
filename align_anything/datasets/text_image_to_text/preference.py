@@ -113,12 +113,12 @@ class PreferenceDataset(Dataset):
         )
         return_dict = {}
         return_dict['better_response_lens'] = len(
-            self.tokenize(meta_info['better_response'], meta_info, add_special_tokens=False)[
+            self.tokenize(meta_info['better_response'], {}, add_special_tokens=False)[
                 'input_ids'
             ][0]
         )
         return_dict['worse_response_lens'] = len(
-            self.tokenize(meta_info['worse_response'], meta_info, add_special_tokens=False)[
+            self.tokenize(meta_info['worse_response'], {}, add_special_tokens=False)[
                 'input_ids'
             ][0]
         )
@@ -148,7 +148,7 @@ class PreferenceDataset(Dataset):
 
         return self.processor(
             text=conversation,
-            images=meta_info['image'],
+            images=meta_info.get('image', None),
             add_special_tokens=add_special_tokens,
             padding=padding,
             max_length=max_length,
