@@ -17,7 +17,6 @@ import argparse
 import re
 from typing import Dict, List
 
-import torch
 from tqdm import tqdm
 
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput

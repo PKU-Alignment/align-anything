@@ -19,7 +19,6 @@ from typing_extensions import TypedDict  # Python 3.10+
 
 import torch
 import transformers
-from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
@@ -89,6 +88,8 @@ class SupervisedDataset(Dataset):
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         return_dict = {}
         prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)
+        if conversation[-1] != self.tokenizer.eos_token:
+            conversation += self.tokenizer.eos_token
 
         # return necessary information
         return_dict['prompt'] = prompt
@@ -176,6 +177,7 @@ class SupervisedCollator:
             return_tensors='pt',
             padding=True,
             padding_side=self.padding_side,
+            return_attention_mask=True,
         )
 
         for key, value in multi_modal_padding.items():

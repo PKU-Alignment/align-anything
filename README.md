@@ -196,8 +196,8 @@ export WANDB_API_KEY="..."  # your W&B API key here
 
 | Modality | Models |
 | --- | --- |
-| `Text -> Text` | [meta-llama/Llama-3.1-8B-Instruct](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct) |
-| `Text+Image -> Text` | [liuhaotian/llava-v1.5-7b](https://huggingface.co/liuhaotian/llava-v1.5-7b) |
+| `Text -> Text` | [meta-llama/Llama-3.1-8B-Instruct series](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct) (Llama3, Llama2 is also supported) |
+| `Text+Image -> Text` | [LLaVA series](https://huggingface.co/collections/llava-hf/llava-15-65f762d5b6941db5c2ba07e0), [LLaVA-Next series](https://huggingface.co/collections/llava-hf/llava-next-65f75c4afac77fd37dbbe6cf), [openbmb/MiniCPM-V](https://huggingface.co/openbmb/MiniCPM-V/tree/main) and [LLaMA-3.2-Vision-Instruct](https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct) |
 | `Text+Image -> Text+Image` | [facebook/chameleon-7b](https://huggingface.co/facebook/chameleon-7b) |
 | `Text+Audio -> Text` | [Qwen/Qwen2-Audio-7B-Instruct](https://huggingface.co/Qwen/Qwen2-Audio-7B-Instruct) |
 | `Text+Video -> Text` | [Qwen/Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct) |

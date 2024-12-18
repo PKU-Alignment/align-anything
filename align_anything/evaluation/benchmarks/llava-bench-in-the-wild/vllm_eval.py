@@ -38,7 +38,7 @@ from align_anything.utils.tools import (
     save_raw_outputs,
     update_dict,
 )
-from datasets import DatasetDict, load_dataset
+from datasets import load_dataset
 
 
 class llavawildDataLoader(BaseDataLoader):

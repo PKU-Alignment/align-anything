@@ -23,12 +23,9 @@ import soundfile as sf
 import torch
 from diffusers import DiffusionPipeline, StableDiffusionPipeline
 from diffusers.utils import export_to_video
-from tqdm import tqdm
-from transformers import pipeline
 
 from align_anything.models.chameleon_model_t2i import ChameleonTextToImagePipeline
 from align_anything.utils.tools import requestoutput_to_dict
-from datasets import load_dataset
 
 
 def update_results(

@@ -22,10 +22,9 @@ import torch
 import transformers
 from torch.utils.data import Dataset
 from torchvision import transforms
-from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
+from transformers.tokenization_utils import PaddingStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import left_padding
 from datasets import load_dataset
 

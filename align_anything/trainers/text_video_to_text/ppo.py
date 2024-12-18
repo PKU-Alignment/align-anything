@@ -22,7 +22,6 @@ import sys
 from typing import Any
 
 import deepspeed
-import numpy as np
 import torch
 import torch.distributed as dist
 from transformers import GenerationConfig
@@ -40,7 +39,6 @@ from align_anything.utils.multi_process import (
     get_all_reduce_max,
     get_all_reduce_mean,
     get_current_device,
-    is_main_process,
 )
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,

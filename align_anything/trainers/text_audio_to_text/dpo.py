@@ -29,7 +29,7 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from align_anything.datasets.text_audio_to_text.preference import PreferenceBatch, PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
-from align_anything.utils.multi_process import get_current_device, is_main_process
+from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,

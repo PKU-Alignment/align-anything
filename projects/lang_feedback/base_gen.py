@@ -27,10 +27,7 @@ from vllm import LLM, SamplingParams
 PROMPT_USER: str = 'USER: {prompt}'
 PROMPT_ASSISTANT: str = '\nASSISTANT:'  # should not have a space at the end
 PROMPT_INPUT: str = PROMPT_USER + PROMPT_ASSISTANT
-import requests
 from PIL import Image
-
-from datasets import concatenate_datasets, load_dataset
 
 
 def parse_arguments() -> argparse.Namespace:

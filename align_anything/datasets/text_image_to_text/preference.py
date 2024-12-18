@@ -101,14 +101,24 @@ class PreferenceDataset(Dataset):
         better_conversation, worse_conversation, meta_info = self.template.format_preference_sample(
             raw_sample
         )
+        better_conversation = (
+            better_conversation + self.tokenizer.eos_token
+            if better_conversation[-1] != self.tokenizer.eos_token
+            else better_conversation
+        )
+        worse_conversation = (
+            worse_conversation + self.tokenizer.eos_token
+            if worse_conversation[-1] != self.tokenizer.eos_token
+            else worse_conversation
+        )
         return_dict = {}
         return_dict['better_response_lens'] = len(
-            self.tokenize(meta_info['better_response'], meta_info, add_special_tokens=False)[
+            self.tokenize(meta_info['better_response'], {}, add_special_tokens=False)[
                 'input_ids'
             ][0]
         )
         return_dict['worse_response_lens'] = len(
-            self.tokenize(meta_info['worse_response'], meta_info, add_special_tokens=False)[
+            self.tokenize(meta_info['worse_response'], {}, add_special_tokens=False)[
                 'input_ids'
             ][0]
         )
@@ -138,7 +148,7 @@ class PreferenceDataset(Dataset):
 
         return self.processor(
             text=conversation,
-            images=meta_info['image'],
+            images=meta_info.get('image', None),
             add_special_tokens=add_special_tokens,
             padding=padding,
             max_length=max_length,
@@ -167,7 +177,7 @@ class PreferenceCollator:
     ) -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
-        self.padding_func = right_padding
+        self.padding_func = right_padding if padding_side == 'right' else left_padding
         self.processor = processor
         self.padding_side = padding_side
 
@@ -187,19 +197,13 @@ class PreferenceCollator:
             return_tensors='pt',
             padding=True,
             padding_side=self.padding_side,
+            return_attention_mask=True,
         )
 
         for key, value in multi_modal_padding.items():
             if isinstance(value, torch.Tensor):
                 return_dict[key] = value.to(current_device)
 
-        attention_mask = [
-            input_id.new_ones(input_id.size(), dtype=torch.bool)
-            for input_id in return_dict['input_ids']
-        ]  # size = (2 * B, L)
-        return_dict['attention_mask'] = self.padding_func(attention_mask, padding_value=0).to(
-            current_device
-        )  # size = (2 * B, L)
         return_dict['better_response_lens'] = [sample['better_response_lens'] for sample in samples]
         return_dict['worse_response_lens'] = [sample['worse_response_lens'] for sample in samples]
         return_dict['response_lens'] = (

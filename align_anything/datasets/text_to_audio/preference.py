@@ -17,7 +17,6 @@
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
-import librosa
 import torch
 import transformers
 from torch.utils.data import Dataset

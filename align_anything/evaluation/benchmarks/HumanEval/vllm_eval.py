@@ -18,8 +18,6 @@ import json
 import signal
 from typing import Dict, List
 
-import torch
-
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from align_anything.evaluation.eval_logger import EvalLogger

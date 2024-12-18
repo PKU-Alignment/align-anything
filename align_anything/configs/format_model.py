@@ -53,5 +53,8 @@ class ModelFormatter:
         self, raw_sample: list[dict[str, Any]], add_generation_prompt: bool = False
     ) -> str:
         return self.formatter.apply_chat_template(
-            raw_sample, tokenize=False, add_generation_prompt=add_generation_prompt
+            raw_sample,
+            tokenize=False,
+            add_generation_prompt=add_generation_prompt,
+            add_special_tokens=True,
         )

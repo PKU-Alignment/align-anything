@@ -22,7 +22,6 @@ from typing import Dict, List
 
 import requests
 from gpt_prompt import get_system_prompt
-from PIL import Image
 from tqdm import tqdm
 
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
@@ -38,7 +37,7 @@ from align_anything.utils.tools import (
     save_raw_outputs,
     update_dict,
 )
-from datasets import Dataset, DatasetDict, load_dataset
+from datasets import DatasetDict, load_dataset
 
 
 class MMSafetyBenchDataLoader(BaseDataLoader):

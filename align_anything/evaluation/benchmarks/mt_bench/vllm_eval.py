@@ -28,9 +28,7 @@ from align_anything.utils.template_registry import get_eval_template_class as ge
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
-    load_raw_outputs,
     read_eval_cfgs,
-    save_raw_outputs,
     update_dict,
 )
 from datasets import DatasetDict, load_dataset
