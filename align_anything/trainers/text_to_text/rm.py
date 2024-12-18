@@ -41,7 +41,6 @@ from align_anything.utils.tools import (
     prepare_ds_train_cfgs,
     read_cfgs,
     seed_everything,
-    split_prompt_response,
     update_dict,
 )
 

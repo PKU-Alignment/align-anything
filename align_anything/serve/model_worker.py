@@ -38,9 +38,7 @@ from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.utils.constants import (
     DEFAULT_IM_END_TOKEN,
     DEFAULT_IM_START_TOKEN,
-    DEFAULT_IMAGE_PATCH_TOKEN,
     DEFAULT_IMAGE_TOKEN,
-    IMAGE_TOKEN_INDEX,
     WORKER_HEART_BEAT_INTERVAL,
 )
 from align_anything.utils.logger import Logger

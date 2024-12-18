@@ -16,12 +16,9 @@
 import os
 import threading
 from typing import Any, Callable, Generator, TypeVar, cast
-from typing_extensions import TypeAlias
 
 import torch
 import torch.distributed as dist
-from transformers.modeling_outputs import ModelOutput
-from transformers.tokenization_utils import BatchEncoding
 from transformers.utils import (
     is_torch_cuda_available,
     is_torch_mps_available,

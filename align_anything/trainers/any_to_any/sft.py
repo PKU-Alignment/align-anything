@@ -23,7 +23,6 @@ import deepspeed
 import torch
 import transformers
 from transformers import AutoImageProcessor, AutoModel, AutoTokenizer
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.datasets.any_to_any import SupervisedDataset
 from align_anything.models.modeling_emu3.mllm.processing_emu3 import Emu3Processor

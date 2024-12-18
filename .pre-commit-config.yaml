@@ -39,6 +39,7 @@ repos:
     rev: v2.3.1
     hooks:
       - id: autoflake
+        args: [--remove-all-unused-imports, --in-place, --ignore-init-module-imports, --remove-duplicate-keys, --remove-unused-variables]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:

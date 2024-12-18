@@ -19,14 +19,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from hashlib import sha256
 from typing import List
 
-import openai
 from openai import OpenAI
-from openai.types.chat.chat_completion import (
-    ChatCompletion,
-    ChatCompletionMessage,
-    Choice,
-    CompletionUsage,
-)
+from openai.types.chat.chat_completion import ChatCompletion
 
 from align_anything.evaluation.outputs import EvalOutput
 

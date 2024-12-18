@@ -30,11 +30,7 @@ from align_anything.datasets.text_image_to_text_image import (
     PromptOnlyTokenizedDataset,
     SupervisedTokenizedDataset,
 )
-from align_anything.datasets.text_to_text import (
-    PromptOnlyBatch,
-    PromptOnlyDataset,
-    SupervisedDataset,
-)
+from align_anything.datasets.text_to_text import PromptOnlyBatch
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.trainers.text_to_text.ppo import PPOTrainer as PPOTextTrainer

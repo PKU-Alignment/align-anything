@@ -23,7 +23,6 @@ import deepspeed
 import torch
 import torch.distributed
 import torch.nn.functional as F
-from transformers import AutoModelForCausalLM
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.datasets.text_video_to_text.preference import PreferenceBatch, PreferenceDataset
@@ -33,7 +32,6 @@ from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
-    gather_log_probabilities,
     read_cfgs,
     seed_everything,
     update_dict,

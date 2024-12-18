@@ -17,7 +17,6 @@ import argparse
 import os
 
 import ImageReward as RM
-import torch.multiprocessing as mp
 
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from align_anything.evaluation.eval_logger import EvalLogger
@@ -32,9 +31,7 @@ from align_anything.evaluation.inference.base_inference import (
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
-    load_raw_outputs,
     read_eval_cfgs,
-    save_raw_outputs,
     update_dict,
 )
 

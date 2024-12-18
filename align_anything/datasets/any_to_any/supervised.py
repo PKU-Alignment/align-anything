@@ -24,8 +24,6 @@ from transformers import DataCollatorForSeq2Seq, PreTrainedTokenizer, ProcessorM
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class
-from align_anything.utils.tools import right_padding
 from datasets import load_dataset
 
 

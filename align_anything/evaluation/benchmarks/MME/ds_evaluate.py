@@ -28,7 +28,6 @@ from align_anything.utils.tools import (
     read_eval_cfgs,
     update_dict,
 )
-from datasets import load_dataset
 
 
 def load_pickle(file_path):

@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
 from openai.types.chat.chat_completion import ChatCompletion
-from vllm.outputs import CompletionOutput, RequestOutput
+from vllm.outputs import RequestOutput
 from vllm.sequence import PromptLogprobs
 
 

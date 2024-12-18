@@ -19,7 +19,6 @@ import os
 import sys
 from typing import Any
 
-import deepspeed
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F

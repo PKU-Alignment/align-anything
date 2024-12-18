@@ -21,24 +21,14 @@ import uuid
 from typing import Any
 from typing_extensions import TypedDict  # Python 3.10+
 
-import librosa
 import requests
 import torch
 import torch.multiprocessing as mp
-import transformers
 from PIL import Image
-from torch.utils.data import Dataset
-from torchvision import transforms
-from torchvision.io import read_video
 from tqdm import tqdm
 from transformers import AutoTokenizer, ChameleonProcessor
-from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.models.chameleon_model import AccustomedChameleonModel
-from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class, register_template
-from align_anything.utils.tools import right_padding
-from datasets import load_dataset
 
 
 ALLOWED_ATTRIBUTES = ['split_token']

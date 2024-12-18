@@ -24,18 +24,13 @@ from typing import Any
 import deepspeed
 import torch
 import torch.distributed as dist
-import torch.nn.functional as F
 from tqdm import tqdm
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.datasets.text_to_text.supervised import SupervisedDataset
 from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
 from align_anything.trainers.base import SupervisedTrainerBase
-from align_anything.utils.multi_process import (
-    get_all_reduce_mean,
-    get_current_device,
-    is_main_process,
-)
+from align_anything.utils.multi_process import get_current_device, is_main_process
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,

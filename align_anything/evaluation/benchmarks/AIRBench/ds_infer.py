@@ -22,11 +22,9 @@ import deepspeed
 import librosa
 import torch
 import torch.distributed as dist
-from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 from transformers import AutoProcessor, Qwen2AudioForConditionalGeneration
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
