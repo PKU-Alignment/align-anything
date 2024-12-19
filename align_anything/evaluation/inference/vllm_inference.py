@@ -17,7 +17,6 @@ import json
 import os
 import re
 from typing import Any, Dict, List
-
 from vllm import LLM, SamplingParams
 from vllm.utils import cuda_device_count_stateless
 

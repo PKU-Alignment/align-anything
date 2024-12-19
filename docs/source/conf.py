@@ -38,8 +38,8 @@ extensions = [
     'sphinx_togglebutton',
 ]
 
-if not os.getenv('READTHEDOCS', None):
-    extensions.append('sphinxcontrib.spelling')
+# if not os.getenv('READTHEDOCS', None):
+#     extensions.append('sphinxcontrib.spelling')
 
 source_suffix = {'.rst': 'restructuredtext', '.md': 'markdown'}
 templates_path = ['_templates']
