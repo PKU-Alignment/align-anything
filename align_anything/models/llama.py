@@ -26,14 +26,11 @@ from align_anything.models.reward_model import ScoreModelOutput
 
 
 class AccustomedLlamaModel(LlamaForCausalLM):
+    """Accustomed Interface for Llama model"""
 
-    def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        """Return the dict used for model inference"""
-        return {
-            'input_ids': batch['input_ids'],
-            'attention_mask': batch.get('attention_mask'),
-            'labels': batch.get('labels'),
-        }
+    @property
+    def processor_available(self):
+        return False
 
 
 class AccustomedLlamaRewardModel(LlamaPreTrainedModel):
@@ -48,13 +45,6 @@ class AccustomedLlamaRewardModel(LlamaPreTrainedModel):
     @property
     def processor_available(self):
         return False
-
-    def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        """Return the dict used for model inference"""
-        return {
-            'input_ids': batch['input_ids'],
-            'attention_mask': batch['attention_mask'],
-        }
 
     def forward(
         self,

@@ -181,12 +181,12 @@ class PreferenceCollator:
         self.processor = processor
         self.padding_side = padding_side
 
-    def __call__(self, samples: list[PreferenceSample]) -> tuple[PreferenceBatch]:
-        return_dict = {}
+    def __call__(self, samples: list[PreferenceSample]) -> PreferenceBatch:
+        return_dict = {'meta_info': {}}
         current_device = get_current_device()
 
         images = [sample['image'] for sample in samples] * 2
-        return_dict['images'] = images
+        return_dict['meta_info']['images'] = images
         concated_text = [sample['better_conversation'] for sample in samples] + [
             sample['worse_conversation'] for sample in samples
         ]
@@ -204,9 +204,9 @@ class PreferenceCollator:
             if isinstance(value, torch.Tensor):
                 return_dict[key] = value.to(current_device)
 
-        return_dict['better_response_lens'] = [sample['better_response_lens'] for sample in samples]
-        return_dict['worse_response_lens'] = [sample['worse_response_lens'] for sample in samples]
-        return_dict['response_lens'] = (
-            return_dict['better_response_lens'] + return_dict['worse_response_lens']
+        better_response_lens = [sample['better_response_lens'] for sample in samples]
+        worse_response_lens = [sample['worse_response_lens'] for sample in samples]
+        return_dict['meta_info']['response_lens'] = (
+            better_response_lens + worse_response_lens
         )
         return return_dict

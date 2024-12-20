@@ -52,7 +52,7 @@ class RMTrainer(SupervisedTrainerBase):
         self.cfgs = cfgs
         self.ds_train_cfgs = prepare_ds_train_cfgs(custom_cfgs=cfgs.train_cfgs, raw_ds_cfgs=ds_cfgs)
         self.global_step = 0
-        self.infer_batch = lambda batch: batch
+        self.infer_batch = lambda batch: {k: v for k, v in batch.items() if k != 'meta_info'}
 
         self.init_check()
         dist.barrier()

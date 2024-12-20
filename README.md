@@ -231,7 +231,7 @@ We introduce the following example below, and you can refer to [here](./align_an
 @register_template('Alpaca')
 class Alpaca(BaseFormatter):
 
-    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], dict]:
         prompt = ' '.join((raw_sample['instruction'], raw_sample['input']))
         response = raw_sample['output']
         return [

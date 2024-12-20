@@ -27,22 +27,11 @@ from align_anything.models.reward_model import ScoreModelOutput
 
 
 class AccustomedLlavaModel(LlavaForConditionalGeneration):
-
-    @property
-    def processor_available(self):
-        return True
-
-    def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        """Return the dict used for model inference"""
-        return {
-            'input_ids': batch['input_ids'],
-            'attention_mask': batch.get('attention_mask'),
-            'pixel_values': batch.get('pixel_values'),
-            'labels': batch.get('labels'),
-        }
+    """Accustomed Interface for LLaVA model"""
 
 
 class AccustomedLlavaRewardModel(LlavaPreTrainedModel):
+    """Accustomed Interface for LLaVA reward model"""
 
     supports_gradient_checkpointing = True
 
@@ -54,14 +43,6 @@ class AccustomedLlavaRewardModel(LlavaPreTrainedModel):
     @property
     def processor_available(self):
         return True
-
-    def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        """Return the dict used for model inference"""
-        return {
-            'input_ids': batch['input_ids'],
-            'attention_mask': batch['attention_mask'],
-            'pixel_values': batch['pixel_values'],
-        }
 
     def forward(
         self,

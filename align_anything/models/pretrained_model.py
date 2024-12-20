@@ -286,8 +286,12 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
         **auto_tokenizer_kwargs,
     )
 
-    if hasattr(model, 'processor_available') and model.processor_available:
+    try:
         processor = AutoProcessor.from_pretrained(model_name_or_path)
+    except Exception:
+        processor = None
+
+    if processor:
         processor.tokenizer.padding_side = padding_side
         resize_tokenizer_embedding(tokenizer=processor.tokenizer, model=model)
 

@@ -124,7 +124,7 @@ class BaseFormatter:
 
     def format_supervised_sample(
         self, raw_sample: dict[str, Any]
-    ) -> tuple[list[dict[str, Any]], str]:
+    ) -> tuple[list[dict[str, Any]], dict]:
         """Format the sample for supervised training.
 
         Args:
@@ -135,39 +135,39 @@ class BaseFormatter:
             ([{'role': 'user', 'content': 'Write a story'}, {'role': 'assistant', 'content': 'Once upon a time, there was a cat.'}], '')
 
         Returns:
-            tuple[list[dict[str, Any]], str]: The formatted sample.
+            tuple[list[dict[str, Any]], dict]: The formatted sample.
         """
-        return [], ''
+        return [], {}
 
     def format_preference_sample(
         self, raw_sample: dict[str, Any]
-    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], str]:
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict]:
         """Format the sample for preference training.
 
         Args:
             raw_sample (dict[str, Any]): The raw sample from the dataset.
 
         Returns:
-            tuple[list[dict[str, Any]], list[dict[str, Any]], str]: The formatted sample.
+            tuple[list[dict[str, Any]], list[dict[str, Any]], dict]: The formatted sample.
         """
-        return [], [], ''
+        return [], [], {}
 
     def format_prompt_only_sample(
         self, raw_sample: dict[str, Any]
-    ) -> tuple[list[dict[str, Any]], str]:
+    ) -> tuple[list[dict[str, Any]], dict]:
         """Format the sample for prompt-only training, e.g., PPO.
 
         Args:
             raw_sample (dict[str, Any]): The raw sample from the dataset.
 
         Returns:
-            tuple[list[dict[str, Any]], str]: The formatted sample.
+            tuple[list[dict[str, Any]], dict]: The formatted sample.
         """
-        return [], ''
+        return [], {}
 
     def format_unmatched_supervised_sample(
         self, raw_sample_for_prompt: dict[str, Any], raw_sample_for_response: dict[str, Any]
-    ) -> tuple[list[dict[str, Any]], str]:
+    ) -> tuple[list[dict[str, Any]], dict]:
         """Format the sample for unmatched supervised training, e.g., KTO.
 
         Args:
@@ -175,9 +175,9 @@ class BaseFormatter:
             raw_sample_for_response (dict[str, Any]): The raw sample for response from the dataset.
 
         Returns:
-            tuple[list[dict[str, Any]], str]: The formatted sample.
+            tuple[list[dict[str, Any]], dict]: The formatted sample.
         """
-        return [], ''
+        return [], {}
 
 
 @register_template('Alpaca')
