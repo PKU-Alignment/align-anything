@@ -3,11 +3,11 @@ Welcome to align-anything
 
 Welcome to `align-anything <https://github.com/PKU-Alignment/align-anything>`_ in AI alignment! align-anything aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for Large Models can be found in `AI Alignment <https://alignmentsurvey.com>`_.
 
-.. raw:: html
+.. .. raw:: html
 
-   <div style="text-align: center;">
-     <img src="https://github.com/Gaiejj/align-anything-images/blob/main/docs/framework.png?raw=true" alt="Framework" style="width:100%; max-width:100%;">
-   </div>
+..    <div style="text-align: center;">
+..      <img src="https://github.com/Gaiejj/align-anything-images/blob/main/docs/framework.png?raw=true" alt="Framework" style="width:100%; max-width:100%;">
+..    </div>
 
 Quick Start and Example
 -----------------------
@@ -484,7 +484,7 @@ Advanced Features and Framework Design
 
 
 Report Issues
-~~~~~~~~~~~~~
+-------------
 
 If you have any questions in the process of using align-anything, don’t
 hesitate to ask your questions on `the GitHub issue
