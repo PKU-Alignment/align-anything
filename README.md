@@ -24,8 +24,7 @@
 [![PyPI](https://img.shields.io/pypi/v/align-anything?logo=pypi)](https://pypi.org/project/align-anything)
 [![License](https://img.shields.io/github/license/PKU-Alignment/align-anything?label=license)](#license)
 
-[📘Documentation](https://pku-alignment.notion.site/Align-Anything-37a300fb5f774bb08e5b21fdeb476c64) |
-[🆕Update News](#news) |
+[📘Documentation](https://align-anything.readthedocs.io/) |
 [🛠️Quick Start](#quick-start) |
 [🚀Algorithms](#algorithms) |
 [👀Evaluation](#evaluation) |
@@ -45,6 +44,7 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 - **Support Fine-Tuning across Any Modality.** It supports fine-tuning alignments for different modality model, including LLMs, VLMs, and other modalities (see [Development Roadmap](#development-roadmap)).
 - **Support Different Alignment Methods.** The framework supports different alignment algorithms, including SFT, DPO, PPO, and others.
 
+**Note:** We provide a [quick start guide](https://align-anything.readthedocs.io/) for users to quickly get the code structure and development details.
 
 || <details><summary>prompt</summary>Small white toilet sitting in a small corner next to a wall.</details> | <details><summary>prompt</summary>A close up of a neatly made bed with two night stands</details>  | <details><summary>prompt</summary>A pizza is sitting on a plate at a restaurant.</details> |<details><summary>prompt</summary>A girl in a dress next to a piece of luggage and flowers.</details>|
 |---| ---------------------------------- | --- | --- | --- |
@@ -231,7 +231,7 @@ We introduce the following example below, and you can refer to [here](./align_an
 @register_template('Alpaca')
 class Alpaca(BaseFormatter):
 
-    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], dict]:
         prompt = ' '.join((raw_sample['instruction'], raw_sample['input']))
         response = raw_sample['output']
         return [

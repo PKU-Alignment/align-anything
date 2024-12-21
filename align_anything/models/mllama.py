@@ -26,25 +26,11 @@ from align_anything.models.reward_model import ScoreModelOutput
 
 
 class AccustomedMllamaModel(MllamaForConditionalGeneration):
-
-    @property
-    def processor_available(self):
-        return True
-
-    @property
-    def forbidden_keys(self) -> list[str]:
-        return ['images', 'response_lens', 'better_response_lens', 'worse_response_lens']
-
-    def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        """Return the dict used for model inference"""
-        new_batch = {}
-        for key, value in batch.items():
-            if key not in self.forbidden_keys:
-                new_batch[key] = value
-        return new_batch
+    """Accustomed Interface for MLLama model"""
 
 
 class AccustomedMllamaRewardModel(MllamaPreTrainedModel):
+    """Accustomed Interface for MLLama reward model"""
 
     supports_gradient_checkpointing = True
 

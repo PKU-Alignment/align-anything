@@ -23,17 +23,8 @@ from transformers.models.llava_next.modeling_llava_next import LlavaNextForCondi
 
 
 class AccustomedLlavaNextModel(LlavaNextForConditionalGeneration):
+    """Accustomed Interface for LlavaNext model"""
 
     @property
     def processor_available(self):
         return True
-
-    def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        """Return the dict used for model inference"""
-        return {
-            'input_ids': batch['input_ids'],
-            'attention_mask': batch.get('attention_mask'),
-            'pixel_values': batch.get('pixel_values'),
-            'labels': batch.get('labels'),
-            'image_sizes': batch.get('image_sizes'),
-        }

@@ -86,10 +86,10 @@ class DPOTrainer(DPOtextTrainer):
         logits = model(**self.infer_batch(batch)).logits
         device = logits.device
         input_ids = batch['input_ids']
-        batch_size = len(batch['response_lens'])
+        batch_size = len(batch['meta_info']['response_lens'])
         logprob_list = []
         for idx in range(batch_size):
-            response_length = batch['response_lens'][idx]
+            response_length = batch['meta_info']['response_lens'][idx]
             raw_input_id = strip_pad(input_ids[idx], self.tokenizer.pad_token_id)
             logit = logits[idx][-response_length:].unsqueeze(0)
             input_id = raw_input_id[-response_length:].unsqueeze(0)
@@ -126,9 +126,7 @@ class DPOTrainer(DPOtextTrainer):
         better_sample_rewards = []
         worse_sample_rewards = []
 
-        better_input_ids, worse_input_ids = batch['input_ids'].chunk(chunks=2, dim=0)
-
-        batch_size = better_input_ids.size(0)
+        batch_size = better_sequence_log_probs.size(0)
         for i in range(batch_size):
             better_log_prob = better_sequence_log_probs[i, :].sum(dim=-1)
             worse_log_prob = worse_sequence_log_probs[i, :].sum(dim=-1)
