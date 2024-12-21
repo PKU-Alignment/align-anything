@@ -126,7 +126,7 @@ class DPOTrainer(DPOtextTrainer):
         better_sample_rewards = []
         worse_sample_rewards = []
 
-        batch_size = len(batch['meta_info']['response_lens'])
+        batch_size = better_sequence_log_probs.size(0)
         for i in range(batch_size):
             better_log_prob = better_sequence_log_probs[i, :].sum(dim=-1)
             worse_log_prob = worse_sequence_log_probs[i, :].sum(dim=-1)

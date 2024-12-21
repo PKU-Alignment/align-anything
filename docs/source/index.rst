@@ -53,7 +53,6 @@ We will introduce the usage of align-anything with a very simple example. Below 
    # Data preparation
    conversation = [
       {
-
          "role": "user",
          "content": [
             {"type": "text", "text": "What are these?"},
