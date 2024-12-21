@@ -3,11 +3,9 @@ Welcome to align-anything
 
 Welcome to `align-anything <https://github.com/PKU-Alignment/align-anything>`_ in AI alignment! align-anything aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for Large Models can be found in `AI Alignment <https://alignmentsurvey.com>`_.
 
-.. .. raw:: html
-
-..    <div style="text-align: center;">
-..      <img src="https://github.com/Gaiejj/align-anything-images/blob/main/docs/framework.png?raw=true" alt="Framework" style="width:100%; max-width:100%;">
-..    </div>
+.. image:: ./image/framework.png
+   :width: 100%
+   :alt: align-anything framework
 
 Quick Start and Example
 -----------------------
@@ -92,6 +90,10 @@ We will introduce the usage of align-anything with a very simple example. Below 
 
 
 What align-anything does is to use a framework to scale up the simple process above to any modality model. The underlying logic of this framework is precisely the four steps mentioned above. We will provide the align-anything implementation of LLaVA's SFT code here, and implementations for other modalities are similar. After reading this example, you should fully understand the usage and underlying logic of align-anything.
+
+.. image:: ./image/example.png
+   :width: 100%
+   :alt: align-anything example
 
 Advanced Features and Framework Design
 --------------------------------------
