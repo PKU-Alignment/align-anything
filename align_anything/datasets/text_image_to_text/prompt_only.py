@@ -90,7 +90,6 @@ class PromptOnlyDataset(Dataset):
             data_files=data_files,
             *optional_args,
             trust_remote_code=True,
-            verification_mode='no_checks',
         )
         self.template = template
         self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
@@ -165,7 +164,7 @@ class PromptOnlyCollator:
 
         images = [sample['image'] for sample in samples]
         return_dict['meta_info']['images'] = images
-        
+
         concated_text = [sample['conversation'] for sample in samples]
 
         multi_modal_padding = self.processor(

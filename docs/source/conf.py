@@ -5,7 +5,6 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-import os
 
 
 # -- Project information -----------------------------------------------------
@@ -110,5 +109,5 @@ numfig_secnum_depth = 3
 # As a special character, %s will be replaced to figure number.
 # Default is to use 'Fig. %s' for 'figure', 'Table %s' for 'table', 'Listing %s' for 'code-block' and 'Section' for 'section'.
 
-togglebutton_hint = "Example"
-togglebutton_hint_hide = "Code"
+togglebutton_hint = 'Example'
+togglebutton_hint_hide = 'Code'

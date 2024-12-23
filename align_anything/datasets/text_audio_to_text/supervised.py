@@ -17,12 +17,11 @@
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
-import librosa
 import torch
 import transformers
 from torch.utils.data import Dataset
 from torchvision import transforms
-from transformers.tokenization_utils import PaddingStrategy
+from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import right_padding
@@ -60,6 +59,7 @@ class SupervisedDataset(Dataset):
         template: str,
         tokenizer: transformers.PreTrainedTokenizer,
         processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        padding_side: str = 'right',
         name: str | None = None,
         size: int | None = None,
         split: str | None = None,
@@ -72,6 +72,7 @@ class SupervisedDataset(Dataset):
         self.path = path
         self.tokenizer = tokenizer
         self.processor = processor
+        self.padding_side = padding_side
         self.raw_data = load_dataset(
             path,
             name=name if name and name != 'None' else None,
@@ -85,60 +86,50 @@ class SupervisedDataset(Dataset):
         self.template = template
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)
         return_dict = {}
-        raw_text = conversation
+        prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)
+        if conversation[-1] != self.tokenizer.eos_token:
+            conversation += self.tokenizer.eos_token
 
-        text = self.processor.apply_chat_template(
-            raw_text, add_generation_prompt=False, tokenize=False
-        )
-        prompt = self.processor.apply_chat_template(
-            prompt, add_generation_prompt=True, tokenize=False
-        )
+        # return necessary information
+        return_dict['prompt'] = prompt
+        return_dict['conversation'] = conversation
+        return_dict['audios'] = meta_info['audios']
 
-        audios = []
-
-        if isinstance(meta_info['audio_path'], dict):
-            raw_audio, raw_sr = (
-                meta_info['audio_path']['array'],
-                meta_info['audio_path']['sampling_rate'],
+        # set the labels masked by the prompt
+        inputs = self.tokenize(conversation, meta_info, padding=PaddingStrategy.DO_NOT_PAD)
+        labels = inputs['input_ids'][0].clone()
+        labels[
+            : len(
+                self.tokenize(prompt, meta_info, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0]
             )
-            audio = librosa.resample(
-                raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate
-            )
-        else:
-            audio = librosa.load(
-                meta_info['audio_path'], sr=self.processor.feature_extractor.sampling_rate
-            )[0]
-        audios.append(audio)
-
-        inputs = self.tokenize(text=text, audios=audios, padding=True)
-        return_dict['input_ids'] = inputs['input_ids'][0]
-        labels = return_dict['input_ids'].clone()
-        # mask non-assistant input
-        labels[: len(self.tokenize(text=prompt, audios=audios)['input_ids'][0])] = IGNORE_INDEX
+        ] = IGNORE_INDEX
         return_dict['labels'] = labels
-        return_dict['feature_attention_mask'] = inputs['feature_attention_mask']
-        return_dict['input_features'] = inputs['input_features']
 
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return SupervisedCollator(self.tokenizer.pad_token_id)
+        return SupervisedCollator(self.tokenizer.pad_token_id, self.processor, self.padding_side)
 
     def tokenize(
         self,
-        text: str,
-        audios: list,
+        conversation: str,
+        meta_info: dict[str, Any],
+        add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
+        truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
+        max_length: int | None = None,
     ) -> torch.LongTensor:  # size = (L,)
         """Tokenize a text string into a tensor representation."""
 
         return self.processor(
-            text=text,
-            audios=audios,
-            return_tensors='pt',
+            text=conversation,
+            audios=meta_info['audios'],
+            add_special_tokens=add_special_tokens,
             padding=padding,
+            max_length=max_length,
+            truncation=truncation,
+            return_tensors='pt',
             sampling_rate=self.processor.feature_extractor.sampling_rate,
         )
 
@@ -155,31 +146,42 @@ class SupervisedDataset(Dataset):
 
 class SupervisedCollator:
 
-    def __init__(self, pad_token_id: int) -> None:
+    def __init__(
+        self,
+        pad_token_id: int,
+        processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        padding_side: str = 'right',
+    ) -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
+        self.processor = processor
+        self.padding_side = padding_side
 
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
         return_dict = {}
         current_device = get_current_device()
 
-        return_dict['input_ids'] = right_padding(
-            [sample['input_ids'] for sample in samples],
-            padding_value=self.pad_token_id,
-        ).to(current_device)
         return_dict['labels'] = right_padding(
             [sample['labels'] for sample in samples],
             padding_value=IGNORE_INDEX,
         ).to(current_device)
-        return_dict['attention_mask'] = (
-            return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
+
+        audios = [sample['audios'] for sample in samples]
+        return_dict['meta_info']['audios'] = audios
+
+        concated_text = [sample['conversation'] for sample in samples]
+
+        multi_modal_padding = self.processor(
+            audios=audios,
+            text=concated_text,
+            return_tensors='pt',
+            padding=True,
+            padding_side=self.padding_side,
+            return_attention_mask=True,
         )
 
-        return_dict['input_features'] = torch.cat(
-            [sample['input_features'] for sample in samples], dim=0
-        ).to(current_device)
-        return_dict['feature_attention_mask'] = torch.cat(
-            [sample['feature_attention_mask'] for sample in samples], dim=0
-        ).to(current_device)
+        for key, value in multi_modal_padding.items():
+            if isinstance(value, torch.Tensor):
+                return_dict[key] = value.to(current_device)
 
         return return_dict

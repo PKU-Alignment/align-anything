@@ -53,6 +53,17 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 > Alignment fine-tuning can significantly enhance the instruction-following capabilities of large multimodal models. After fine-tuning, Chameleon 7B Plus generates images that are more relevant to the prompt.
 
+Please cite the repo if you find the data or code in this repo useful 😊
+
+```bibtex
+@inproceedings{ji2024align,
+  title={Align Anything: Training All-Modality Models to Follow Instructions with Language Feedback},
+  author={Jiaming Ji and Jiayi Zhou and Hantao Lou and Boyuan Chen and Donghai Hong and Xuyao Wang and Wenqi Chen and Kaile Wang and Rui Pan and Jiahao Li and Mohan Wang and Josef Dai and Tianyi Qiu and Hua Xu and Dong Li and Weipeng Chen and Jun Song and Bo Zheng and Yaodong Yang},
+  year={2024},
+  url={https://arxiv.org/abs/2412.15838}
+}
+```
+
 ## Quick Start
 
 ### Easy Installation
@@ -366,22 +377,6 @@ python3 -m align_anything.serve.arena \
 ## Report Issues
 
 If you have any questions in the process of using align-anything, don't hesitate to ask your questions on [the GitHub issue page](https://github.com/PKU-Alignment/align-anything/issues/new/choose), we will reply to you in 2-3 working days.
-
-
-# Citation
-
-Please cite the repo if you use the data or code in this repo.
-
-```bibtex
-@misc{align_anything,
-  author = {PKU-Alignment Team},
-  title = {Align Anything: training all modality models to follow instructions with unified language feedback},
-  year = {2024},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/PKU-Alignment/align-anything}},
-}
-```
 
 # License
 

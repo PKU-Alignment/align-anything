@@ -113,14 +113,12 @@ class PreferenceDataset(Dataset):
         )
         return_dict = {}
         return_dict['better_response_lens'] = len(
-            self.tokenize(meta_info['better_response'], {}, add_special_tokens=False)[
-                'input_ids'
-            ][0]
+            self.tokenize(meta_info['better_response'], {}, add_special_tokens=False)['input_ids'][
+                0
+            ]
         )
         return_dict['worse_response_lens'] = len(
-            self.tokenize(meta_info['worse_response'], {}, add_special_tokens=False)[
-                'input_ids'
-            ][0]
+            self.tokenize(meta_info['worse_response'], {}, add_special_tokens=False)['input_ids'][0]
         )
         return_dict['better_conversation'] = better_conversation
         return_dict['worse_conversation'] = worse_conversation
@@ -206,7 +204,5 @@ class PreferenceCollator:
 
         better_response_lens = [sample['better_response_lens'] for sample in samples]
         worse_response_lens = [sample['worse_response_lens'] for sample in samples]
-        return_dict['meta_info']['response_lens'] = (
-            better_response_lens + worse_response_lens
-        )
+        return_dict['meta_info']['response_lens'] = better_response_lens + worse_response_lens
         return return_dict
