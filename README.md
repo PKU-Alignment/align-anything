@@ -53,6 +53,8 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 > Alignment fine-tuning can significantly enhance the instruction-following capabilities of large multimodal models. After fine-tuning, Chameleon 7B Plus generates images that are more relevant to the prompt.
 
+Please cite the repo if you find the data or code in this repo useful 😊!
+
 ```bibtex
 @inproceedings{ji2024align,
   title={Align Anything: Training All-Modality Models to Follow Instructions with Language Feedback},
