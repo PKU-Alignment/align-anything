@@ -17,12 +17,11 @@
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
-import librosa
 import torch
 import transformers
 from torch.utils.data import Dataset
 from torchvision import transforms
-from transformers.tokenization_utils import PaddingStrategy
+from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import left_padding, right_padding
@@ -31,8 +30,7 @@ from datasets import load_dataset
 
 __all__ = [
     'PreferenceDataset',
-    'RightPaddingPreferenceCollator',
-    'LeftPaddingPreferenceCollator',
+    'PreferenceCollator',
     'PreferenceSample',
     'PreferenceBatch',
 ]
@@ -41,12 +39,14 @@ __all__ = [
 class PreferenceSample(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (L,)
     labels: torch.LongTensor  # size = (L,)
+    audios: list[torch.Tensor] | None  # size = (B, C, H, W)
 
 
 class PreferenceBatch(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (B, L)
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
+    audios: list[torch.Tensor] | None  # size = (B, C, H, W)
 
 
 class PreferenceDataset(Dataset):
@@ -101,83 +101,58 @@ class PreferenceDataset(Dataset):
         better_conversation, worse_conversation, meta_info = self.template.format_preference_sample(
             raw_sample
         )
+        better_conversation = (
+            better_conversation + self.tokenizer.eos_token
+            if better_conversation[-1] != self.tokenizer.eos_token
+            else better_conversation
+        )
+        worse_conversation = (
+            worse_conversation + self.tokenizer.eos_token
+            if worse_conversation[-1] != self.tokenizer.eos_token
+            else worse_conversation
+        )
         return_dict = {}
-        raw_better_response = meta_info['better_response']
-        raw_worse_response = meta_info['worse_response']
-        audios = []
-
-        if isinstance(meta_info['audio_path'], dict):
-            raw_audio, raw_sr = (
-                meta_info['audio_path']['array'],
-                meta_info['audio_path']['sampling_rate'],
-            )
-            audio = librosa.resample(
-                raw_audio, orig_sr=raw_sr, target_sr=self.processor.feature_extractor.sampling_rate
-            )
-        else:
-            audio = librosa.load(
-                meta_info['audio_path'], sr=self.processor.feature_extractor.sampling_rate
-            )[0]
-        audios.append(audio)
-
-        better_inputs = self.tokenize(text=better_conversation, audios=audios, padding=True)
-        worse_inputs = self.tokenize(text=worse_conversation, audios=audios, padding=True)
-        better_input_wo_padding = self.tokenize(
-            text=better_conversation, audios=audios, padding=PaddingStrategy.DO_NOT_PAD
+        return_dict['better_response_lens'] = len(
+            self.tokenize(meta_info['better_response'], {}, add_special_tokens=False)['input_ids'][
+                0
+            ]
         )
-        worse_input_wo_padding = self.tokenize(
-            text=worse_conversation, audios=audios, padding=PaddingStrategy.DO_NOT_PAD
+        return_dict['worse_response_lens'] = len(
+            self.tokenize(meta_info['worse_response'], {}, add_special_tokens=False)['input_ids'][0]
         )
-
-        return_dict['better_input_ids'] = better_input_wo_padding['input_ids'][0]
-        return_dict['worse_input_ids'] = worse_input_wo_padding['input_ids'][0]
-        return_dict['better_response_lens'] = (
-            len(
-                self.tokenize(raw_better_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][
-                    0
-                ]
-            )
-            + 2
-        )  # for the eos token
-        return_dict['worse_response_lens'] = (
-            len(
-                self.tokenize(raw_worse_response, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][
-                    0
-                ]
-            )
-            + 2
-        )  # for the eos token
-
-        return_dict['better_feature_attention_mask'] = better_inputs['feature_attention_mask']
-        return_dict['better_input_features'] = better_inputs['input_features']
-
-        return_dict['worse_feature_attention_mask'] = worse_inputs['feature_attention_mask']
-        return_dict['worse_input_features'] = worse_inputs['input_features']
+        return_dict['better_conversation'] = better_conversation
+        return_dict['worse_conversation'] = worse_conversation
+        return_dict['audios'] = meta_info['audios']
 
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        if self.processor.tokenizer.padding_side == 'left':
-            return LeftPaddingPreferenceCollator(self.processor.tokenizer.pad_token_id)
-        else:
-            return RightPaddingPreferenceCollator(self.processor.tokenizer.pad_token_id)
+        return PreferenceCollator(
+            self.tokenizer.pad_token_id, self.processor, self.tokenizer.padding_side
+        )
 
     def tokenize(
         self,
-        text: str,
-        audios: list[torch.Tensor] | None = None,
+        conversation: str,
+        meta_info: dict[str, Any],
         add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
+        truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
+        max_length: int | None = None,
     ) -> torch.LongTensor:  # size = (L,)
         """Tokenize a text string into a tensor representation."""
+        if max_length is None:
+            max_length = self.tokenizer.model_max_length
 
         return self.processor(
-            text=text,
-            audios=audios,
-            return_tensors='pt',
-            padding=padding,
-            sampling_rate=self.processor.feature_extractor.sampling_rate,
+            text=conversation,
+            audios=meta_info.get('audios', None),
             add_special_tokens=add_special_tokens,
+            padding=padding,
+            max_length=max_length,
+            truncation=truncation,
+            return_tensors='pt',
+            sampling_rate=self.processor.feature_extractor.sampling_rate,
         )
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
@@ -191,49 +166,48 @@ class PreferenceDataset(Dataset):
         return len(self.valid_indices)
 
 
-class RightPaddingPreferenceCollator:
+class PreferenceCollator:
 
-    def __init__(self, pad_token_id: int) -> None:
+    def __init__(
+        self,
+        pad_token_id: int,
+        processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        padding_side: str = 'right',
+    ) -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
-        self.padding_func = right_padding
+        self.padding_func = right_padding if padding_side == 'right' else left_padding
+        self.processor = processor
+        self.padding_side = padding_side
 
-    def __call__(self, samples: list[PreferenceSample]) -> tuple[PreferenceBatch]:
-        return_dict = {}
+    def __call__(self, samples: list[PreferenceSample]) -> PreferenceBatch:
+        return_dict = {'meta_info': {}}
         current_device = get_current_device()
-        input_ids = [sample['better_input_ids'] for sample in samples] + [
-            sample['worse_input_ids'] for sample in samples
-        ]  # size = (2 * B, L)
-        input_features = [sample['better_input_features'] for sample in samples] + [
-            sample['worse_input_features'] for sample in samples
+        audios = []
+        for sample in samples:
+            audios.extend(sample['audios'])
+        # repeat audios for better and worse conversations
+        audios = audios * 2
+        return_dict['meta_info']['audios'] = audios
+        # concate better and worse conversations
+        concated_text = [sample['better_conversation'] for sample in samples] + [
+            sample['worse_conversation'] for sample in samples
         ]
-        input_attention_mask = [sample['better_feature_attention_mask'] for sample in samples] + [
-            sample['worse_feature_attention_mask'] for sample in samples
-        ]
-        return_dict['better_response_lens'] = [sample['better_response_lens'] for sample in samples]
-        return_dict['worse_response_lens'] = [sample['worse_response_lens'] for sample in samples]
-        return_dict['response_lens'] = (
-            return_dict['better_response_lens'] + return_dict['worse_response_lens']
-        )
-        return_dict['input_ids'] = self.padding_func(input_ids, padding_value=self.pad_token_id).to(
-            current_device
-        )  # size = (2 * B, L)
-        attention_mask = [
-            input_id.new_ones(input_id.size(), dtype=torch.bool) for input_id in input_ids
-        ]  # size = (2 * B, L)
-        return_dict['attention_mask'] = self.padding_func(attention_mask, padding_value=0).to(
-            current_device
-        )  # size = (2 * B, L)
 
-        return_dict['input_features'] = torch.cat(input_features, dim=0).to(current_device)
-        return_dict['feature_attention_mask'] = torch.cat(input_attention_mask, dim=0).to(
-            current_device
+        multi_modal_padding = self.processor(
+            audios=audios,
+            text=concated_text,
+            return_tensors='pt',
+            padding=True,
+            padding_side=self.padding_side,
+            sampling_rate=self.processor.feature_extractor.sampling_rate,
         )
 
+        for key, value in multi_modal_padding.items():
+            if isinstance(value, torch.Tensor):
+                return_dict[key] = value.to(current_device)
+
+        better_response_lens = [sample['better_response_lens'] for sample in samples]
+        worse_response_lens = [sample['worse_response_lens'] for sample in samples]
+        return_dict['meta_info']['response_lens'] = better_response_lens + worse_response_lens
         return return_dict
-
-
-class LeftPaddingPreferenceCollator(RightPaddingPreferenceCollator):
-    def __init__(self, pad_token_id: int) -> None:
-        super().__init__(pad_token_id)
-        self.padding_func = left_padding

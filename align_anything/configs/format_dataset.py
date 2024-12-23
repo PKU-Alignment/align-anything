@@ -413,14 +413,13 @@ class AA_TA2T(BaseFormatter):
         better_response = raw_sample[f'response_{better_id}']
         worse_response = raw_sample[f'response_{worse_id}']
         prompt = raw_sample['prompt']
-        audio_path = raw_sample['audio_path']
 
         better_conversation = [
             {'role': 'system', 'content': [{'type': 'text', 'text': self.system_prompt}]},
             {
                 'role': 'user',
                 'content': [
-                    {'type': 'audio', 'audio_url': audio_path},
+                    {'type': 'audio', 'audio_url': 'placeholder'},
                     {'type': 'text', 'text': prompt},
                 ],
             },
@@ -432,15 +431,20 @@ class AA_TA2T(BaseFormatter):
             {
                 'role': 'user',
                 'content': [
-                    {'type': 'audio', 'audio_url': audio_path},
+                    {'type': 'audio', 'audio_url': 'placeholder'},
                     {'type': 'text', 'text': prompt},
                 ],
             },
             {'role': 'assistant', 'content': [{'type': 'text', 'text': worse_response}]},
         ]
+        raw_audio, raw_sr = (
+            raw_sample['audio_path']['array'],
+            raw_sample['audio_path']['sampling_rate'],
+        )
+        audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=16000)
 
         meta_info = {
-            'audio_path': audio_path,
+            'audios': [audio],
             'better_response': better_response,
             'worse_response': worse_response,
         }
@@ -449,20 +453,25 @@ class AA_TA2T(BaseFormatter):
 
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['prompt']
-        audio_path = raw_sample['audio_path']
 
         conversation = [
             {'role': 'system', 'content': [{'type': 'text', 'text': self.system_prompt}]},
             {
                 'role': 'user',
                 'content': [
-                    {'type': 'audio', 'audio_url': audio_path},
+                    {'type': 'audio', 'audio_url': 'placeholder'},
                     {'type': 'text', 'text': prompt},
                 ],
             },
         ]
 
-        return conversation, {'audio_path': audio_path}
+        raw_audio, raw_sr = (
+            raw_sample['audio_path']['array'],
+            raw_sample['audio_path']['sampling_rate'],
+        )
+        audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=16000)
+
+        return conversation, {'audios': [audio]}
 
 
 @register_template('AA_TA2T_LLF')

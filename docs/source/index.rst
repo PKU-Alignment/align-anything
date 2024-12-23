@@ -30,9 +30,9 @@ We will introduce the usage of align-anything with a very simple example. Below 
    # Model and Processor initialization
    model_id = "llava-hf/llava-1.5-7b-hf"
    model = LlavaForConditionalGeneration.from_pretrained(
-      model_id, 
-      torch_dtype=torch.float16, 
-      low_cpu_mem_usage=True, 
+      model_id,
+      torch_dtype=torch.float16,
+      low_cpu_mem_usage=True,
    ).to(0)
    processor = AutoProcessor.from_pretrained(model_id)
 
@@ -78,7 +78,7 @@ We will introduce the usage of align-anything with a very simple example. Below 
    print(processor.decode(output[0][2:], skip_special_tokens=True))
 
 
-.. hint::  
+.. hint::
 
    The above example shows us the full process of input and output for LLaVA. In fact, it is also the implementation approach for most current multimodal models. On this basis, training various algorithms only requires designing the corresponding ``loss function``. Therefore, the complete process is as follows:
 
@@ -123,8 +123,8 @@ Advanced Features and Framework Design
 
             model_id = "llava-hf/llava-1.5-7b-hf"
             model = LlavaForConditionalGeneration.from_pretrained(
-               model_id, 
-               torch_dtype=torch.float16, 
+               model_id,
+               torch_dtype=torch.float16,
             ).to(0)
 
          But for LLaMA, we use ``LlamaForCausalLM`` to load the model.
@@ -133,10 +133,10 @@ Advanced Features and Framework Design
 
             model_id = "meta-llama/Llama-3.1-8B-Instruct"
             model = LlamaForCausalLM.from_pretrained(
-               model_id, 
-               torch_dtype=torch.float16, 
+               model_id,
+               torch_dtype=torch.float16,
             ).to(0)
-      
+
       Therefore, align-anything refers to the model registration implementation in transformers and uses a class named ``AnyModel`` to uniformly load models of all modalities. It supports the following types of model loading:
 
       1. Models manually supported in align-anything
@@ -166,7 +166,7 @@ Advanced Features and Framework Design
             MODEL_FOR_CAUSAL_LM_MAPPING_NAMES | MODEL_MAPPING_NAMES,
          )
 
-      You must have noticed that the class names registered in align-anything contain the ``Accustomed`` prefix. This is an interface provided by the align-anything framework for users to customize the ``forward`` function. 
+      You must have noticed that the class names registered in align-anything contain the ``Accustomed`` prefix. This is an interface provided by the align-anything framework for users to customize the ``forward`` function.
 
       .. warning::
 
@@ -214,8 +214,8 @@ Advanced Features and Framework Design
 
       1. **Key-value parsing**
 
-      The motivation for key-value parsing is to assemble different key-value pairs from diverse open-source datasets into the corresponding ``conversation`` list for algorithm training. 
-      
+      The motivation for key-value parsing is to assemble different key-value pairs from diverse open-source datasets into the corresponding ``conversation`` list for algorithm training.
+
       .. hint::
 
          For Alpaca dataset, the key-value parsing is:
@@ -228,7 +228,7 @@ Advanced Features and Framework Design
                   {'role': 'user', 'content': prompt},
                   {'role': 'assistant', 'content': response},
             ], {}
-      
+
          But for other datasets, it maybe:
 
          .. code:: python
@@ -241,7 +241,7 @@ Advanced Features and Framework Design
                   {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
             ], {}
 
-      
+
       Below are the data format requirements for different algorithms:
 
       .. note::
@@ -440,7 +440,7 @@ Advanced Features and Framework Design
       1. Initialization: Call ``init_models()`` to load the model and processor, call ``init_datasets()`` to load the dataset, call ``init_engines()`` to set up the DeepSpeed acceleration framework, and call ``init_logger()`` to set up the logger.
 
       Among them, the underlying logic of ``init_models()`` and ``init_datasets()`` has been introduced in the previous text. The ``init_engines()`` and ``init_logger()`` parts do not require user modification, so we will not introduce them in detail here.
-      
+
       2. Main Training Loop: Call ``train()`` to train.
 
       .. toggle::

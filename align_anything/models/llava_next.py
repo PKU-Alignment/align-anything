@@ -17,8 +17,6 @@
 # ==============================================================================
 
 
-import torch
-import torch.utils.checkpoint
 from transformers.models.llava_next.modeling_llava_next import LlavaNextForConditionalGeneration
 
 

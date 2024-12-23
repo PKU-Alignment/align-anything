@@ -27,8 +27,7 @@ import torch.distributed as dist
 from transformers import GenerationConfig
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.text_audio_to_text import PromptOnlyDataset, SupervisedDataset
-from align_anything.datasets.text_image_to_text import (
+from align_anything.datasets.text_audio_to_text import (
     PromptOnlyBatch,
     PromptOnlyDataset,
     SupervisedDataset,

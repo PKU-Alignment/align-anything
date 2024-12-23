@@ -169,7 +169,7 @@ class SupervisedCollator:
 
         images = [sample['image'] for sample in samples]
         return_dict['meta_info']['images'] = images
-        
+
         concated_text = [sample['conversation'] for sample in samples]
 
         multi_modal_padding = self.processor(

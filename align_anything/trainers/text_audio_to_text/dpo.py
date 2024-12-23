@@ -87,10 +87,10 @@ class DPOTrainer(DPOtextTrainer):
         logits = model(**self.infer_batch(batch)).logits
         device = logits.device
         input_ids = batch['input_ids']
-        batch_size = len(batch['response_lens'])
+        batch_size = len(batch['meta_info']['response_lens'])
         logprob_list = []
         for idx in range(batch_size):
-            response_length = batch['response_lens'][idx]  # for the eos token
+            response_length = batch['meta_info']['response_lens'][idx]  # for the eos token
             logit = logits[idx][-response_length:].unsqueeze(0)
             input_id = input_ids[idx][-response_length:].unsqueeze(0)
             log_p = gather_log_probabilities(logit[:, :-1], input_id[:, 1:])

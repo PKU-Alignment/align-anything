@@ -45,16 +45,6 @@ if Qwen2Audio_AVALIABLE:
         def processor_available(self):
             return True
 
-        def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-            """Return the dict used for model inference"""
-            return {
-                'input_ids': batch['input_ids'],
-                'attention_mask': batch.get('attention_mask'),
-                'input_features': batch.get('input_features'),
-                'feature_attention_mask': batch.get('feature_attention_mask'),
-                'labels': batch.get('labels'),
-            }
-
     class AccustomedQwen2AudioRewardModel(Qwen2AudioPreTrainedModel):
         supports_gradient_checkpointing = True
 
@@ -69,15 +59,6 @@ if Qwen2Audio_AVALIABLE:
         @property
         def processor_available(self):
             return True
-
-        def infer_batch(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-            """Return the dict used for model inference"""
-            return {
-                'input_ids': batch['input_ids'],
-                'attention_mask': batch['attention_mask'],
-                'input_features': batch['input_features'],
-                'feature_attention_mask': batch['feature_attention_mask'],
-            }
 
         def forward(
             self,
