@@ -374,7 +374,7 @@ Please cite the repo if you use the data or code in this repo.
 
 ```bibtex
 @misc{align_anything,
-  author = {PKU-Alignment Team},
+  author = {Align-Anything Team},
   title = {Align Anything: training all modality models to follow instructions with unified language feedback},
   year = {2024},
   publisher = {GitHub},
