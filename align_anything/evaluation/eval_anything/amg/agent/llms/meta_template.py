@@ -1,0 +1,23 @@
+LLAMA31_META = [
+    dict(
+        role='system',
+        begin='<|start_header_id|>system<|end_header_id|>\n\n',
+        end_of_turn='<|eot_id|>\n',
+    ),
+    dict(
+        role='user',
+        begin='<|start_header_id|>user<|end_header_id|>\n\n',
+        end_of_turn='<|eot_id|>\n',
+    ),
+    dict(
+        role='assistant',
+        begin='<|start_header_id|>assistant<|end_header_id|>\n\n',
+        end_of_turn='<|eot_id|>\n',
+        end_of_message='<|eom_id|>\n',
+    ),
+    dict(
+        role='ipython',
+        begin='<|start_header_id|>ipython<|end_header_id|>\n\n',
+        end_of_turn='<|eot_id|>\n',
+    ),
+]
