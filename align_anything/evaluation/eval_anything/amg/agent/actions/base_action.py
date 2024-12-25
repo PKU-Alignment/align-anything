@@ -6,6 +6,7 @@ from copy import deepcopy
 from functools import wraps
 from typing import Callable, Optional, Type, get_args, get_origin
 
+
 try:
     from typing import Annotated
 except ImportError:
@@ -13,6 +14,7 @@ except ImportError:
 
 from class_registry import AutoRegister, ClassRegistry
 from griffe import Docstring
+
 
 try:
     from griffe import DocstringSectionKind
@@ -22,16 +24,19 @@ except ImportError:
 from ..schema import ActionReturn, ActionStatusCode
 from .parser import BaseParser, JsonParser, ParseError
 
+
 logging.getLogger('griffe').setLevel(logging.ERROR)
 
 TOOL_REGISTRY = ClassRegistry('__tool_name__', unique=True)
 
 
-def tool_api(func: Optional[Callable] = None,
-             *,
-             explode_return: bool = False,
-             returns_named_value: bool = False,
-             **kwargs):
+def tool_api(
+    func: Optional[Callable] = None,
+    *,
+    explode_return: bool = False,
+    returns_named_value: bool = False,
+    **kwargs,
+):
     """Turn functions into tools. It will parse typehints as well as docstrings
     to build the tool description and attach it to functions via an attribute
     ``api_description``.
@@ -109,10 +114,9 @@ def tool_api(func: Optional[Callable] = None,
 
     def _explode(desc):
         kvs = []
-        desc = '\nArgs:\n' + '\n'.join([
-            '    ' + item.lstrip(' -+*#.')
-            for item in desc.split('\n')[1:] if item.strip()
-        ])
+        desc = '\nArgs:\n' + '\n'.join(
+            ['    ' + item.lstrip(' -+*#.') for item in desc.split('\n')[1:] if item.strip()]
+        )
         docs = Docstring(desc).parse('google')
         if not docs:
             return kvs
@@ -128,13 +132,12 @@ def tool_api(func: Optional[Callable] = None,
 
     def _parse_tool(function):
         # remove rst syntax
-        docs = Docstring(
-            re.sub(':(.+?):`(.+?)`', '\\2', function.__doc__ or '')
-        ).parse('google', returns_named_value=returns_named_value, **kwargs)
+        docs = Docstring(re.sub(':(.+?):`(.+?)`', '\\2', function.__doc__ or '')).parse(
+            'google', returns_named_value=returns_named_value, **kwargs
+        )
         desc = dict(
             name=function.__name__,
-            description=docs[0].value
-            if docs[0].kind is DocstringSectionKind.text else '',
+            description=docs[0].value if docs[0].kind is DocstringSectionKind.text else '',
             parameters=[],
             required=[],
         )
@@ -163,15 +166,11 @@ def tool_api(func: Optional[Callable] = None,
             parameter = dict(
                 name=param.name,
                 type='STRING',
-                description=args_doc.get(
-                    param.name, {}
-                ).get('description', '')
+                description=args_doc.get(param.name, {}).get('description', ''),
             )
             annotation = param.annotation
             if annotation is inspect.Signature.empty:
-                parameter['type'] = args_doc.get(
-                    param.name, {}
-                ).get('type', 'STRING')
+                parameter['type'] = args_doc.get(param.name, {}).get('type', 'STRING')
             else:
                 if get_origin(annotation) is Annotated:
                     annotation, info = get_args(annotation)
@@ -220,8 +219,8 @@ class ToolMeta(ABCMeta):
     def __new__(mcs, name, base, attrs):
         is_toolkit, tool_desc = True, dict(
             name=attrs.setdefault('__tool_name__', name),
-            description=Docstring(attrs.get('__doc__',
-                                            '')).parse('google')[0].value)
+            description=Docstring(attrs.get('__doc__', '')).parse('google')[0].value,
+        )
         for key, value in attrs.items():
             if callable(value) and hasattr(value, 'api_description'):
                 api_desc = getattr(value, 'api_description')
@@ -236,8 +235,7 @@ class ToolMeta(ABCMeta):
                 else:
                     tool_desc.setdefault('api_list', []).append(api_desc)
         if not is_toolkit and 'api_list' in tool_desc:
-            raise KeyError('`run` and other tool APIs can not be implemented '
-                           'at the same time')
+            raise KeyError('`run` and other tool APIs can not be implemented ' 'at the same time')
         if is_toolkit and 'api_list' not in tool_desc:
             is_toolkit = False
             if callable(attrs.get('run')):
@@ -325,10 +323,12 @@ class BaseAction(metaclass=AutoRegister(TOOL_REGISTRY, ToolMeta)):
             action = Calculator()
     """
 
-    def __init__(self,
-                 description: Optional[dict] = None,
-                 parser: Type[BaseParser] = JsonParser,
-                 enable: bool = True):
+    def __init__(
+        self,
+        description: Optional[dict] = None,
+        parser: Type[BaseParser] = JsonParser,
+        enable: bool = True,
+    ):
         self._description = deepcopy(description or self.__tool_description__)
         self._name = self._description['name']
         self._parser = parser(self)
@@ -341,23 +341,20 @@ class BaseAction(metaclass=AutoRegister(TOOL_REGISTRY, ToolMeta)):
                 fallback_args,
                 type=self.name,
                 errmsg=f'invalid API: {name}',
-                state=ActionStatusCode.API_ERROR)
+                state=ActionStatusCode.API_ERROR,
+            )
         try:
             inputs = self._parser.parse_inputs(inputs, name)
         except ParseError as exc:
             return ActionReturn(
-                fallback_args,
-                type=self.name,
-                errmsg=exc.err_msg,
-                state=ActionStatusCode.ARGS_ERROR)
+                fallback_args, type=self.name, errmsg=exc.err_msg, state=ActionStatusCode.ARGS_ERROR
+            )
         try:
             outputs = getattr(self, name)(**inputs)
         except Exception as exc:
             return ActionReturn(
-                inputs,
-                type=self.name,
-                errmsg=str(exc),
-                state=ActionStatusCode.API_ERROR)
+                inputs, type=self.name, errmsg=str(exc), state=ActionStatusCode.API_ERROR
+            )
         if isinstance(outputs, ActionReturn):
             action_return = outputs
             if not action_return.args:

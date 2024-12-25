@@ -21,8 +21,7 @@ class APITemplateParser:
             self.roles: Dict[str, dict] = dict()  # maps role name to config
             for item in meta_template:
                 assert isinstance(item, dict)
-                assert item['role'] not in self.roles, \
-                    'role in meta prompt must be unique!'
+                assert item['role'] not in self.roles, 'role in meta prompt must be unique!'
                 self.roles[item['role']] = item.copy()
 
     def __call__(self, dialog: List[Union[str, List]]):
@@ -56,8 +55,9 @@ class APITemplateParser:
                 if isinstance(item, str):
                     if item.strip():
                         # TODO: logger
-                        warnings.warn('Non-empty string in prompt template '
-                                      'will be ignored in API models.')
+                        warnings.warn(
+                            'Non-empty string in prompt template ' 'will be ignored in API models.'
+                        )
                 else:
                     api_prompts = self._prompt2api(item)
                     prompt.append(api_prompts)
@@ -110,8 +110,7 @@ class APITemplateParser:
         res = []
         for prompt in prompts:
             if isinstance(prompt, str):
-                raise TypeError('Mixing str without explicit role is not '
-                                'allowed in API models!')
+                raise TypeError('Mixing str without explicit role is not ' 'allowed in API models!')
             else:
                 api_role = self._role2api_role(prompt)
                 res.append(api_role)
@@ -120,8 +119,7 @@ class APITemplateParser:
     def _role2api_role(self, role_prompt: Dict) -> Tuple[str, bool]:
         merged_prompt = self.roles[role_prompt['role']]
         if merged_prompt.get('fallback_role'):
-            merged_prompt = self.roles[self.roles[
-                merged_prompt['fallback_role']]]
+            merged_prompt = self.roles[self.roles[merged_prompt['fallback_role']]]
         res = role_prompt.copy()
         res['role'] = merged_prompt['api_role']
         res['content'] = merged_prompt.get('begin', '')
@@ -145,19 +143,21 @@ class BaseAPIModel(BaseModel):
 
     is_api: bool = True
 
-    def __init__(self,
-                 model_type: str,
-                 query_per_second: int = 1,
-                 retry: int = 2,
-                 template_parser: 'APITemplateParser' = APITemplateParser,
-                 meta_template: Optional[Dict] = None,
-                 *,
-                 max_new_tokens: int = 512,
-                 top_p: float = 0.8,
-                 top_k: int = 40,
-                 temperature: float = 0.8,
-                 repetition_penalty: float = 0.0,
-                 stop_words: Union[List[str], str] = None):
+    def __init__(
+        self,
+        model_type: str,
+        query_per_second: int = 1,
+        retry: int = 2,
+        template_parser: 'APITemplateParser' = APITemplateParser,
+        meta_template: Optional[Dict] = None,
+        *,
+        max_new_tokens: int = 512,
+        top_p: float = 0.8,
+        top_k: int = 40,
+        temperature: float = 0.8,
+        repetition_penalty: float = 0.0,
+        stop_words: Union[List[str], str] = None,
+    ):
         self.model_type = model_type
         self.meta_template = meta_template
         self.retry = retry
@@ -175,7 +175,8 @@ class BaseAPIModel(BaseModel):
             temperature=temperature,
             repetition_penalty=repetition_penalty,
             stop_words=stop_words,
-            skip_special_tokens=False)
+            skip_special_tokens=False,
+        )
 
     def _wait(self):
         """Wait till the next query can be sent.

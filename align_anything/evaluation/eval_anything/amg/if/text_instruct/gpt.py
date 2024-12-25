@@ -14,31 +14,30 @@
 # ==============================================================================
 
 from __future__ import annotations
-import os
-from packaging import version
-import pkg_resources
-import hashlib
 
+import hashlib
+import json
 import logging
 import os
-import re
 import time
 from typing import Any, Callable
-import json
 
-from openai import OpenAI
+import pkg_resources
+from packaging import version
+
+
 openai_version = pkg_resources.get_distribution('openai').version
-new_openai_flag = version.parse(openai_version) >= version.parse("1.0.0")
+new_openai_flag = version.parse(openai_version) >= version.parse('1.0.0')
 if not new_openai_flag:
-    import openai
-    
-API_KEY = ""
+    pass
+
+API_KEY = ''
 
 import ray
-
 import urllib3
-from urllib3.util.retry import Retry
 from tqdm import tqdm
+from urllib3.util.retry import Retry
+
 
 @ray.remote(num_cpus=1)
 def bean_gpt_api(
@@ -64,8 +63,8 @@ def bean_gpt_api(
     headers = {
         'Content-Type': 'application/json',
         'Authorization': API_KEY,
-        'Connection':'close',
-        }
+        'Connection': 'close',
+    }
 
     retry_strategy = Retry(
         total=5,  # Maximum retry count
@@ -84,9 +83,11 @@ def bean_gpt_api(
         try:
             response = http.request('POST', url, body=encoded_data, headers=headers)
             if response.status == 200:
-                    response = json.loads(response.data.decode('utf-8'))['choices'][0]['message']['content']
-                    logging.info(response)
-                    break
+                response = json.loads(response.data.decode('utf-8'))['choices'][0]['message'][
+                    'content'
+                ]
+                logging.info(response)
+                break
             else:
                 err_msg = f'Access openai error, status code: {response.status} response: {response.data.decode("utf-8")}'
                 logging.error(err_msg)
@@ -146,7 +147,7 @@ def api(
             uid = uids[index]
             cache_path = os.path.join(cache_dir, f'{uid}.json')
             if os.path.exists(cache_path):
-                with open(cache_path, 'r', encoding='utf-8') as f:
+                with open(cache_path, encoding='utf-8') as f:
                     try:
                         result = json.load(f)
                     except:

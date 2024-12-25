@@ -1,10 +1,10 @@
-from typing import Dict, List, Optional, Tuple, Union
-
 from copy import copy
-from warnings import warn
 from datetime import datetime
+from typing import Dict, List, Optional, Tuple, Union
+from warnings import warn
 
 import torch
+
 
 class LMTemplateParser:
     """Intermidate prompt template parser, specifically for language models.
@@ -21,8 +21,7 @@ class LMTemplateParser:
             self.roles: Dict[str, dict] = dict()  # maps role name to config
             for item in meta_template:
                 assert isinstance(item, dict)
-                assert item['role'] not in self.roles, \
-                    'role in meta prompt must be unique!'
+                assert item['role'] not in self.roles, 'role in meta prompt must be unique!'
                 self.roles[item['role']] = item.copy()
 
     def __call__(self, dialog) -> str:
@@ -60,9 +59,7 @@ class LMTemplateParser:
                 last_sep = '\n'
         return prompt
 
-    def _prompt2str(self,
-                    prompt: Union[str, Dict],
-                    last: bool = False) -> Tuple[str, bool]:
+    def _prompt2str(self, prompt: Union[str, Dict], last: bool = False) -> Tuple[str, bool]:
         if isinstance(prompt, str):
             return prompt
         role_cfg = self.roles.get(prompt['role'])
@@ -73,7 +70,7 @@ class LMTemplateParser:
         # A tool call is used in this turn
         if prompt.get('role') == 'assistant' and prompt.get('name', None):
             res += prompt.get('content', '') + role_cfg.get('end_of_message', '')
-        
+
         res += prompt.get('content', '') + role_cfg.get('end_of_turn', '')
         if last:
             pass
@@ -99,18 +96,20 @@ class BaseModel:
 
     is_api: bool = False
 
-    def __init__(self,
-                 path: str,
-                 tokenizer_only: bool = False,
-                 template_parser: 'LMTemplateParser' = LMTemplateParser,
-                 meta_template: Optional[List[Dict]] = None,
-                 *,
-                 max_new_tokens: int = 512,
-                 top_p: float = 0.8,
-                 top_k: float = 40,
-                 temperature: float = 0.8,
-                 repetition_penalty: float = 1.0,
-                 stop_words: Union[List[str], str] = None):
+    def __init__(
+        self,
+        path: str,
+        tokenizer_only: bool = False,
+        template_parser: 'LMTemplateParser' = LMTemplateParser,
+        meta_template: Optional[List[Dict]] = None,
+        *,
+        max_new_tokens: int = 512,
+        top_p: float = 0.8,
+        top_k: float = 40,
+        temperature: float = 0.8,
+        repetition_penalty: float = 1.0,
+        stop_words: Union[List[str], str] = None,
+    ):
         self.path = path
         self.tokenizer_only = tokenizer_only
         # meta template
@@ -127,7 +126,8 @@ class BaseModel:
             top_k=top_k,
             temperature=temperature,
             repetition_penalty=repetition_penalty,
-            stop_words=stop_words)
+            stop_words=stop_words,
+        )
 
     def generate(self, inputs: Union[str, List[str]], **gen_params) -> str:
         """Generate results given a str (or list of) inputs.
@@ -179,13 +179,13 @@ class BaseModel:
             _inputs = self.template_parser(inputs)
         return self.generate(_inputs, **gen_params)
 
-    def generate_from_template(self, inputs: Union[List[dict],
-                                                   List[List[dict]]],
-                               **gen_params):
+    def generate_from_template(self, inputs: Union[List[dict], List[List[dict]]], **gen_params):
         warn(
             'This function will be deprecated after three months'
-            'and will be replaced. Please use `.chat()`', DeprecationWarning,
-            2)
+            'and will be replaced. Please use `.chat()`',
+            DeprecationWarning,
+            2,
+        )
         return self.chat(inputs, **gen_params)
 
     def stream_chat(self, inputs: List[dict], **gen_params):
@@ -198,8 +198,7 @@ class BaseModel:
         """
         raise NotImplementedError
 
-    def tokenize(self, prompts: Union[str, List[str], List[dict],
-                                      List[List[dict]]]):
+    def tokenize(self, prompts: Union[str, List[str], List[dict], List[List[dict]]]):
         """Tokenize the input prompts.
 
         Args:
@@ -215,7 +214,8 @@ class BaseModel:
         gen_params = copy(self.gen_params)
         gen_params.update(kwargs)
         return gen_params
-    
+
+
 class BaseDiffusionModelPipeline:
     """Base class for diffusion model wrapper.
 
@@ -223,23 +223,25 @@ class BaseDiffusionModelPipeline:
         path (str): The path to the model.
         dtype (torch.dtype): The data type for computation (default is torch.bfloat16).
     """
-    
-    def __init__(self,
-                 model_path: str,
-                 output_path: str,
-                 dtype: torch.dtype = torch.bfloat16,
-                 gen_params: Optional[Dict] = None) -> None:
+
+    def __init__(
+        self,
+        model_path: str,
+        output_path: str,
+        dtype: torch.dtype = torch.bfloat16,
+        gen_params: Optional[Dict] = None,
+    ) -> None:
         self.model_path = model_path
         self.output_path = output_path
         self.dtype = dtype
         self.gen_params = gen_params or dict()
-        
+
         self.pipe = self._load_pipe()
         # self.pipe.set_progress_bar_config(disable=None)
-        
+
     def _load_pipe(self):
         raise NotImplementedError
-        
+
     def generate(self, prompts: Union[str, List[str]]) -> str:
         """Generate results given a str (or list of) inputs.
 
@@ -251,11 +253,11 @@ class BaseDiffusionModelPipeline:
 
         """
         raise NotImplementedError
-    
+
     def update_gen_params(self, **kwargs):
         gen_params = copy(self.gen_params)
         gen_params.update(kwargs)
         return gen_params
-    
+
     def get_timestamp(self):
-        return datetime.now().strftime("%Y%m%d-%H%M%S")
+        return datetime.now().strftime('%Y%m%d-%H%M%S')

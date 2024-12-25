@@ -30,16 +30,15 @@ class BaseParser:
         self._api2required = {}
         # perform basic argument validation
         if action.description:
-            for api in action.description.get('api_list',
-                                              [action.description]):
-                name = (f'{action.name}.{api["name"]}'
-                        if self.action.is_toolkit else api['name'])
+            for api in action.description.get('api_list', [action.description]):
+                name = f'{action.name}.{api["name"]}' if self.action.is_toolkit else api['name']
                 required_parameters = set(api['required'])
                 all_parameters = {j['name'] for j in api['parameters']}
                 if not required_parameters.issubset(all_parameters):
                     raise ValueError(
                         f'unknown parameters for function "{name}": '
-                        f'{required_parameters - all_parameters}')
+                        f'{required_parameters - all_parameters}'
+                    )
                 if self.PARAMETER_DESCRIPTION:
                     api['parameter_description'] = self.PARAMETER_DESCRIPTION
                 api_name = api['name'] if self.action.is_toolkit else 'run'
@@ -72,10 +71,7 @@ class BaseParser:
             outputs = json.dumps(outputs, ensure_ascii=False)
         elif not isinstance(outputs, str):
             outputs = str(outputs)
-        return [{
-            'type': 'text',
-            'content': outputs.encode('gbk', 'ignore').decode('gbk')
-        }]
+        return [{'type': 'text', 'content': outputs.encode('gbk', 'ignore').decode('gbk')}]
 
 
 class JsonParser(BaseParser):
@@ -87,15 +83,13 @@ class JsonParser(BaseParser):
 
     PARAMETER_DESCRIPTION = (
         'If you call this tool, you must pass arguments in '
-        'the JSON format {key: value}, where the key is the parameter name.')
+        'the JSON format {key: value}, where the key is the parameter name.'
+    )
 
-    def parse_inputs(self,
-                     inputs: Union[str, dict],
-                     name: str = 'run') -> dict:
+    def parse_inputs(self, inputs: Union[str, dict], name: str = 'run') -> dict:
         if not isinstance(inputs, dict):
             try:
-                match = re.search(r'^\s*(```json\n)?(.*)\n```\s*$', inputs,
-                                  re.S)
+                match = re.search(r'^\s*(```json\n)?(.*)\n```\s*$', inputs, re.S)
                 if match:
                     inputs = match.group(2).strip()
                 inputs = json.loads(inputs)
@@ -107,8 +101,7 @@ class JsonParser(BaseParser):
             raise ParseError(f'unknown arguments: {input_keys - all_keys}')
         required_keys = set(self._api2required[name])
         if not input_keys.issuperset(required_keys):
-            raise ParseError(
-                f'missing required arguments: {required_keys - input_keys}')
+            raise ParseError(f'missing required arguments: {required_keys - input_keys}')
         return inputs
 
 
@@ -121,11 +114,10 @@ class TupleParser(BaseParser):
 
     PARAMETER_DESCRIPTION = (
         'If you call this tool, you must pass arguments in the tuple format '
-        'like (arg1, arg2, arg3), and the arguments are ordered.')
+        'like (arg1, arg2, arg3), and the arguments are ordered.'
+    )
 
-    def parse_inputs(self,
-                     inputs: Union[str, tuple],
-                     name: str = 'run') -> dict:
+    def parse_inputs(self, inputs: Union[str, tuple], name: str = 'run') -> dict:
         if not isinstance(inputs, tuple):
             try:
                 inputs = literal_eval(inputs)
@@ -134,13 +126,12 @@ class TupleParser(BaseParser):
         if len(inputs) < len(self._api2required[name]):
             raise ParseError(
                 f'API takes {len(self._api2required[name])} required positional '
-                f'arguments but {len(inputs)} were given')
+                f'arguments but {len(inputs)} were given'
+            )
         if len(inputs) > len(self._api2param[name]):
             raise ParseError(
                 f'API takes {len(self._api2param[name])} positional arguments '
-                f'but {len(inputs)} were given')
-        inputs = {
-            self._api2param[name][i]['name']: item
-            for i, item in enumerate(inputs)
-        }
+                f'but {len(inputs)} were given'
+            )
+        inputs = {self._api2param[name][i]['name']: item for i, item in enumerate(inputs)}
         return inputs

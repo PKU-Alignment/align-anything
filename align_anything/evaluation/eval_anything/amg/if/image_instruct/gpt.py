@@ -14,45 +14,46 @@
 # ==============================================================================
 
 from __future__ import annotations
-import os
-from packaging import version
-import pkg_resources
-import hashlib
 
+import base64
+import hashlib
+import json
 import logging
 import os
 import time
-from typing import Any, Callable
-import json
-
-import base64
 from io import BytesIO
+from typing import Any, Callable
+
+import pkg_resources
+from packaging import version
 from PIL import Image
-from openai import OpenAI
+
+
 openai_version = pkg_resources.get_distribution('openai').version
-new_openai_flag = version.parse(openai_version) >= version.parse("1.0.0")
+new_openai_flag = version.parse(openai_version) >= version.parse('1.0.0')
 if not new_openai_flag:
-    import openai
-    
-API_KEY = ""
+    pass
+
+API_KEY = ''
 
 import ray
-
 import urllib3
-from urllib3.util.retry import Retry
 from tqdm import tqdm
+from urllib3.util.retry import Retry
+
 
 def image_to_base64(image_path):
     try:
         with Image.open(image_path) as img:
-                buffer = BytesIO()
-                img = img.convert("RGB")  
-                img.save(buffer, format="JPEG")
-                base64_encoded = base64.b64encode(buffer.getvalue())
-                base64_string = base64_encoded.decode('utf-8')
-                return base64_string
+            buffer = BytesIO()
+            img = img.convert('RGB')
+            img.save(buffer, format='JPEG')
+            base64_encoded = base64.b64encode(buffer.getvalue())
+            base64_string = base64_encoded.decode('utf-8')
+            return base64_string
     except Exception as e:
-        return f"Error: {str(e)}"
+        return f'Error: {str(e)}'
+
 
 @ray.remote(num_cpus=1)
 def bean_gpt_api(
@@ -65,18 +66,21 @@ def bean_gpt_api(
     image_url = image_to_base64(image_path)
     messages = [
         {'role': 'system', 'content': system_content},
-        {'role': 'user', 'content': [
-            {
-                "type": "text", 
-                "text": user_content,
-            },
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/jpeg;base64,{image_url}",
+        {
+            'role': 'user',
+            'content': [
+                {
+                    'type': 'text',
+                    'text': user_content,
                 },
-            },
-        ]},
+                {
+                    'type': 'image_url',
+                    'image_url': {
+                        'url': f'data:image/jpeg;base64,{image_url}',
+                    },
+                },
+            ],
+        },
     ]
 
     openai_api = 'https://api.openai.com'
@@ -91,8 +95,8 @@ def bean_gpt_api(
     headers = {
         'Content-Type': 'application/json',
         'Authorization': API_KEY,
-        'Connection':'close',
-        }
+        'Connection': 'close',
+    }
 
     retry_strategy = Retry(
         total=5,  # Maximum retry count
@@ -111,9 +115,11 @@ def bean_gpt_api(
         try:
             response = http.request('POST', url, body=encoded_data, headers=headers)
             if response.status == 200:
-                    response = json.loads(response.data.decode('utf-8'))['choices'][0]['message']['content']
-                    logging.info(response)
-                    break
+                response = json.loads(response.data.decode('utf-8'))['choices'][0]['message'][
+                    'content'
+                ]
+                logging.info(response)
+                break
             else:
                 err_msg = f'Access openai error, status code: {response.status} response: {response.data.decode("utf-8")}'
                 logging.error(err_msg)
@@ -174,7 +180,7 @@ def api(
             uid = uids[index]
             cache_path = os.path.join(cache_dir, f'{uid}.json')
             if os.path.exists(cache_path):
-                with open(cache_path, 'r', encoding='utf-8') as f:
+                with open(cache_path, encoding='utf-8') as f:
                     try:
                         result = json.load(f)
                     except:

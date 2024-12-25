@@ -1,7 +1,8 @@
-import re
-import gpt
 import json
-import numpy as np  
+import re
+
+import gpt
+import numpy as np
 from eval_prompt import IMAGE_EVALUATE_SYSTEM_PROMPT, IMAGE_EVALUATE_USER_PROMPT
 
 
@@ -13,24 +14,18 @@ def post_process(response: str):
     if score_match and explanation_match:
         score = score_match.group(1)
         explanation = explanation_match.group(1)
-        return {
-            'score': int(score),
-            'explanation': explanation,
-            'response': response
-        }
+        return {'score': int(score), 'explanation': explanation, 'response': response}
     else:
-        return {
-            'score': None,
-            'explanation': None,
-            'response': response
-        }
+        return {'score': None, 'explanation': None, 'response': response}
+
 
 def hash_checker(result: dict):
     return result['score'] is not None and result['explanation'] is not None
 
+
 def gpt_eval(eval_data, cache_dir='./cache'):
     eval_results = []
-    
+
     empty_index = list(range(len(eval_data)))
     max_repeat = 3
     while len(empty_index) > 0 and max_repeat > 0:
@@ -39,11 +34,7 @@ def gpt_eval(eval_data, cache_dir='./cache'):
         system_contents = [IMAGE_EVALUATE_SYSTEM_PROMPT] * len(empty_index)
         user_contents = []
         for i in empty_index:
-            user_contents.append(
-                IMAGE_EVALUATE_USER_PROMPT.format(
-                    prompt=eval_data[i]['prompt']
-                )
-            )
+            user_contents.append(IMAGE_EVALUATE_USER_PROMPT.format(prompt=eval_data[i]['prompt']))
         assert len(system_contents) == len(user_contents)
         image_paths = [eval_data[i]['image_path'] for i in empty_index]
         assert len(image_paths) == len(system_contents)
@@ -58,26 +49,26 @@ def gpt_eval(eval_data, cache_dir='./cache'):
             cache_dir=cache_dir,
         )
         for index, result in zip(empty_index, results):
-            eval_results.append({
-                'prompt_id': eval_data[index]['prompt_id'],
-                'score': result['score'],
-                'explanation': result['explanation'],
-                'response': result['response']
-            })
+            eval_results.append(
+                {
+                    'prompt_id': eval_data[index]['prompt_id'],
+                    'score': result['score'],
+                    'explanation': result['explanation'],
+                    'response': result['response'],
+                }
+            )
         empty_index = [i for i in empty_index if eval_results[i].get('score') is None]
         max_repeat -= 1
-        
+
     return eval_results
 
-with open(".cache/image_instruct/generated_results.json", "r") as f:
+
+with open('.cache/image_instruct/generated_results.json') as f:
     eval_data = json.load(f)
 
 eval_results = gpt_eval(eval_data)
 
 score = np.mean([result['score'] for result in eval_results])
 
-with open(".cache/image_instruct/eval_results.json", "w") as f:
-    json.dump({
-        "score": score,
-        "eval_results": eval_results
-    }, f)
+with open('.cache/image_instruct/eval_results.json', 'w') as f:
+    json.dump({'score': score, 'eval_results': eval_results}, f)

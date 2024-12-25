@@ -1,10 +1,9 @@
-from typing import List, Optional, Union
-
 import hashlib
 import json
+from typing import List, Optional, Union
 
-def filter_suffix(response: Union[str, List[str]],
-                  suffixes: Optional[List[str]] = None) -> str:
+
+def filter_suffix(response: Union[str, List[str]], suffixes: Optional[List[str]] = None) -> str:
     """Filter response with suffixes.
 
     Args:
@@ -31,6 +30,7 @@ def filter_suffix(response: Union[str, List[str]],
     if not batched:
         return processed[0]
     return processed
+
 
 def generate_hash_uid(to_hash: dict | tuple | list | str) -> str:
     """Generates a unique hash for a given model and arguments."""

@@ -17,11 +17,12 @@ class InvalidAction(BaseAction):
         ActionReturn: The action return.
     """
 
-    def __init__(self,
-                 err_msg:
-                 str = 'The action is invalid, please check the action name.',
-                 description: Optional[dict] = None,
-                 parser=BaseParser) -> None:
+    def __init__(
+        self,
+        err_msg: str = 'The action is invalid, please check the action name.',
+        description: Optional[dict] = None,
+        parser=BaseParser,
+    ) -> None:
         super().__init__(description, parser, enable=False)
         self._err_msg = err_msg
 
@@ -40,7 +41,8 @@ class InvalidAction(BaseAction):
             errmsg=err_msg or self._err_msg,
             type=self.name,
             valid=ActionValidCode.INVALID,
-            state=ActionStatusCode.API_ERROR)
+            state=ActionStatusCode.API_ERROR,
+        )
         return action_return
 
 
@@ -53,10 +55,12 @@ class NoAction(BaseAction):
             'Please follow the format'.
     """
 
-    def __init__(self,
-                 err_msg: str = 'Please follow the format',
-                 description: Optional[dict] = None,
-                 parser=BaseParser):
+    def __init__(
+        self,
+        err_msg: str = 'Please follow the format',
+        description: Optional[dict] = None,
+        parser=BaseParser,
+    ):
         super().__init__(description, parser, enable=False)
         self._err_msg = err_msg
 
@@ -78,7 +82,8 @@ class NoAction(BaseAction):
             type=self.name,
             errmsg=err_msg or self._err_msg,
             valid=ActionValidCode.INVALID,
-            state=ActionStatusCode.API_ERROR)
+            state=ActionStatusCode.API_ERROR,
+        )
         return action_return
 
 
@@ -105,5 +110,6 @@ class FinishAction(BaseAction):
             result=[dict(type='text', content=response)],
             type=self.name,
             valid=ActionValidCode.FINISH,
-            state=ActionStatusCode.SUCCESS)
+            state=ActionStatusCode.SUCCESS,
+        )
         return action_return

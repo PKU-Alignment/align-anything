@@ -12,7 +12,7 @@ The default way to load the dataset is:
 from datasets import load_dataset
 
 dataset = load_dataset(
-    "PKU-Alignment/EvalAnything-AMU", 
+    "PKU-Alignment/EvalAnything-AMU",
     name='image',
     trust_remote_code=True
 )
@@ -25,7 +25,7 @@ Considering that future multi-modal models might only handle either images or vi
 from datasets import load_dataset
 
 dataset = load_dataset(
-    "PKU-Alignment/EvalAnything-AMU", 
+    "PKU-Alignment/EvalAnything-AMU",
     name='image',
     trust_remote_code=True
 )
@@ -36,7 +36,7 @@ dataset = load_dataset(
 from datasets import load_dataset
 
 dataset = load_dataset(
-    "PKU-Alignment/EvalAnything-AMU", 
+    "PKU-Alignment/EvalAnything-AMU",
     name='video',
     trust_remote_code=True
 )
@@ -141,10 +141,10 @@ def sigmoid(x):
 def process_ia(prompt, image_path, audio_path):
     image_pixel_values = processor(data_paths = image_path, modality="image").pixel_values
     audio_pixel_values = processor(data_paths = audio_path, modality="audio").pixel_values
-    
+
     text_input = processor(
         text = user_prompt.format(input = prompt) + \
-                assistant_prompt.format(modality = "<image><audio>", text_response = ""), 
+                assistant_prompt.format(modality = "<image><audio>", text_response = ""),
         modality="text"
     )
     return {
@@ -171,7 +171,7 @@ def process_ti(prompt, response, image_path):
     image_pixel_values = processor(data_paths = image_path, modality="image").pixel_values
     text_input = processor(
         text = user_prompt.format(input = prompt) + \
-                assistant_prompt.format(modality = "<image>", text_response = response), 
+                assistant_prompt.format(modality = "<image>", text_response = response),
         modality="text"
     )
     return {
@@ -191,12 +191,12 @@ assistant_prompt: str = '\nASSISTANT:\n{modality}{text_response}'
 
 def sigmoid(x):
     return 1 / (1 + math.exp(-x))
-    
+
 def process_ta(prompt, response, audio_path):
     audio_pixel_values = processor(data_paths = audio_path, modality="audio").pixel_values
     text_input = processor(
         text = user_prompt.format(input = prompt) + \
-                assistant_prompt.format(modality = "<audio>", text_response = response), 
+                assistant_prompt.format(modality = "<audio>", text_response = response),
         modality="text"
     )
     return {

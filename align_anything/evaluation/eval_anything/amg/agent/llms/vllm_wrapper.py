@@ -24,17 +24,18 @@ class VllmModel(BaseModel):
 
         super().__init__(path=path, **kwargs)
         from vllm import LLM
-        self.model = LLM(
-            model=self.path,
-            trust_remote_code=True,
-            tensor_parallel_size=tp,
-            **vllm_cfg)
 
-    def generate(self,
-                 inputs: Union[str, List[str]],
-                 do_preprocess: bool = None,
-                 skip_special_tokens: bool = False,
-                 **kwargs):
+        self.model = LLM(
+            model=self.path, trust_remote_code=True, tensor_parallel_size=tp, **vllm_cfg
+        )
+
+    def generate(
+        self,
+        inputs: Union[str, List[str]],
+        do_preprocess: bool = None,
+        skip_special_tokens: bool = False,
+        **kwargs,
+    ):
         """Return the chat completions in non-stream mode.
 
         Args:
@@ -61,7 +62,8 @@ class VllmModel(BaseModel):
             skip_special_tokens=skip_special_tokens,
             max_tokens=max_new_tokens,
             stop=stop_words,
-            **gen_params)
+            **gen_params,
+        )
         response = self.model.generate(prompt, sampling_params=sampling_config)
         response = [resp.outputs[0].text for resp in response]
         # remove stop_words

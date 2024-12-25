@@ -1,10 +1,12 @@
-import json
-from agent.actions.modality_generator import *
-from argparse import ArgumentParser
 import hashlib
-import re
+import json
 import os
+import re
+from argparse import ArgumentParser
+
+from agent.actions.modality_generator import *
 from tqdm import tqdm
+
 
 def parse_args():
     parser = ArgumentParser()
@@ -15,11 +17,12 @@ def parse_args():
     parser.add_argument('--output_dir', type=str, required=True)
     return parser.parse_args()
 
+
 def extract_instructions(text):
-    response_pattern = r"\[\[response\]\]:\s*(.*?)(?=\n\n|\[\[image_instruction\]\])"
-    image_pattern = r"\[\[image_instruction\]\]:\s*(.*?)(?=\n\n|\[\[audio_instruction\]\])"
-    video_pattern = r"\[\[video_instruction\]\]:\s*(.*?)(?=\n\n|\[\[audio_instruction\]\])"
-    audio_pattern = r"\[\[audio_instruction\]\]:\s*(.*?)(?=\n|\[/output_format\])"
+    response_pattern = r'\[\[response\]\]:\s*(.*?)(?=\n\n|\[\[image_instruction\]\])'
+    image_pattern = r'\[\[image_instruction\]\]:\s*(.*?)(?=\n\n|\[\[audio_instruction\]\])'
+    video_pattern = r'\[\[video_instruction\]\]:\s*(.*?)(?=\n\n|\[\[audio_instruction\]\])'
+    audio_pattern = r'\[\[audio_instruction\]\]:\s*(.*?)(?=\n|\[/output_format\])'
 
     response = re.search(response_pattern, text, re.DOTALL)
     image_instruction = re.search(image_pattern, text, re.DOTALL)
@@ -27,14 +30,15 @@ def extract_instructions(text):
     video_instruction = re.search(video_pattern, text, re.DOTALL)
 
     return {
-        "response": response.group(1).strip() if response else None,
-        "image_instruction": image_instruction.group(1).strip() if image_instruction else None,
-        "audio_instruction": audio_instruction.group(1).strip() if audio_instruction else None,
-        "video_instruction": video_instruction.group(1).strip() if video_instruction else None
+        'response': response.group(1).strip() if response else None,
+        'image_instruction': image_instruction.group(1).strip() if image_instruction else None,
+        'audio_instruction': audio_instruction.group(1).strip() if audio_instruction else None,
+        'video_instruction': video_instruction.group(1).strip() if video_instruction else None,
     }
 
+
 def prepare_inputs(input_file: str, args):
-    with open(input_file, 'r', encoding='utf-8') as f:
+    with open(input_file, encoding='utf-8') as f:
         data = json.load(f)
     inputs = []
     for item in data:
@@ -51,7 +55,7 @@ def prepare_inputs(input_file: str, args):
                     'text_response': instructions['response'],
                     'image_instruction': instructions['image_instruction'],
                     'audio_instruction': instructions['audio_instruction'],
-                    'text_response_uid': generate_hash_uid(instructions['response'])
+                    'text_response_uid': generate_hash_uid(instructions['response']),
                 }
             )
         if args.video_model_name_or_path is not None:
@@ -64,24 +68,44 @@ def prepare_inputs(input_file: str, args):
                     'text_response': instructions['response'],
                     'video_instruction': instructions['video_instruction'],
                     'audio_instruction': instructions['audio_instruction'],
-                    'text_response_uid': generate_hash_uid(instructions['response'])
+                    'text_response_uid': generate_hash_uid(instructions['response']),
                 }
             )
-        
+
     print('len(raw_input): ', len(data))
     print('len(inputs): ', len(inputs))
     return inputs
 
-def prepare_pipeline(image_model_name_or_path: str, video_model_name_or_path: str, audio_model_name_or_path: str, output_dir: str):
-    generator = ModalityGenerator(image_model_path=image_model_name_or_path, video_model_path=video_model_name_or_path, audio_model_path=audio_model_name_or_path, output_dir=output_dir)
+
+def prepare_pipeline(
+    image_model_name_or_path: str,
+    video_model_name_or_path: str,
+    audio_model_name_or_path: str,
+    output_dir: str,
+):
+    generator = ModalityGenerator(
+        image_model_path=image_model_name_or_path,
+        video_model_path=video_model_name_or_path,
+        audio_model_path=audio_model_name_or_path,
+        output_dir=output_dir,
+    )
     return generator
+
 
 def generate(instruction: dict, generator):
     if 'image_instruction' in instruction.keys():
-        return generator.generate(instruction_uid=instruction['instruction_uid'], image_prompt=instruction['image_instruction'], audio_prompt=instruction['audio_instruction'])
+        return generator.generate(
+            instruction_uid=instruction['instruction_uid'],
+            image_prompt=instruction['image_instruction'],
+            audio_prompt=instruction['audio_instruction'],
+        )
     else:
-        return generator.generate(instruction_uid=instruction['instruction_uid'], video_prompt=instruction['video_instruction'], audio_prompt=instruction['audio_instruction'])
-        
+        return generator.generate(
+            instruction_uid=instruction['instruction_uid'],
+            video_prompt=instruction['video_instruction'],
+            audio_prompt=instruction['audio_instruction'],
+        )
+
 
 def generate_hash_uid(to_hash: dict | tuple | list | str) -> str:
     """Generates a unique hash for a given model and arguments."""
@@ -92,13 +116,19 @@ def generate_hash_uid(to_hash: dict | tuple | list | str) -> str:
     hash_object = hashlib.sha256(json_string.encode())
     return hash_object.hexdigest()
 
+
 if __name__ == '__main__':
     args = parse_args()
     inputs = prepare_inputs(args.input_path, args)
 
     print(inputs[0])
     if args.image_model_name_or_path is not None:
-        generator = prepare_pipeline(image_model_name_or_path=args.image_model_name_or_path, video_model_name_or_path=args.video_model_name_or_path, audio_model_name_or_path=args.audio_model_name_or_path, output_dir=args.output_dir)
+        generator = prepare_pipeline(
+            image_model_name_or_path=args.image_model_name_or_path,
+            video_model_name_or_path=args.video_model_name_or_path,
+            audio_model_name_or_path=args.audio_model_name_or_path,
+            output_dir=args.output_dir,
+        )
         if not os.path.exists(args.output_dir):
             os.makedirs(args.output_dir)
 
@@ -116,13 +146,18 @@ if __name__ == '__main__':
                 'source': {
                     'text': 'gpt-4o',
                     'image': args.image_model_name_or_path,
-                    'audio': args.audio_model_name_or_path
-                }
+                    'audio': args.audio_model_name_or_path,
+                },
             }
             with open(os.path.join(args.output_dir, 'config.jsonl'), 'a', encoding='utf-8') as f:
                 f.write(json.dumps(output, ensure_ascii=False) + '\n')
     elif args.video_model_name_or_path is not None:
-        generator = prepare_pipeline(image_model_name_or_path=None, video_model_name_or_path=args.video_model_name_or_path, audio_model_name_or_path=args.audio_model_name_or_path, output_dir=args.output_dir)
+        generator = prepare_pipeline(
+            image_model_name_or_path=None,
+            video_model_name_or_path=args.video_model_name_or_path,
+            audio_model_name_or_path=args.audio_model_name_or_path,
+            output_dir=args.output_dir,
+        )
         if not os.path.exists(args.output_dir):
             os.makedirs(args.output_dir)
 
@@ -140,9 +175,8 @@ if __name__ == '__main__':
                 'source': {
                     'text': 'gpt-4o',
                     'video': args.video_model_name_or_path,
-                    'audio': args.audio_model_name_or_path
-                }
+                    'audio': args.audio_model_name_or_path,
+                },
             }
             with open(os.path.join(args.output_dir, 'config.jsonl'), 'a', encoding='utf-8') as f:
                 f.write(json.dumps(output, ensure_ascii=False) + '\n')
-    

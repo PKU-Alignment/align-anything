@@ -4,8 +4,7 @@ from typing import Dict, List, Optional, Union
 
 
 def enum_dict_factory(inputs):
-    inputs = [(i[0], i[-1].value) if isinstance(i[-1], IntEnum) else i
-              for i in inputs]
+    inputs = [(i[0], i[-1].value) if isinstance(i[-1], IntEnum) else i for i in inputs]
     return dict(inputs)
 
 

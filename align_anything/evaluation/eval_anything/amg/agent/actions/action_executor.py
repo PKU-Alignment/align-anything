@@ -1,6 +1,7 @@
 from typing import Dict, List, Union
 
 from agent.schema import ActionReturn, ActionValidCode
+
 from .base_action import BaseAction
 from .builtin_actions import FinishAction, InvalidAction, NoAction
 
@@ -20,18 +21,21 @@ class ActionExecutor:
             action list. Defaults to False.
     """
 
-    def __init__(self,
-                 actions: Union[BaseAction, List[BaseAction]],
-                 invalid_action: BaseAction = InvalidAction(),
-                 no_action: BaseAction = NoAction(),
-                 finish_action: BaseAction = FinishAction(),
-                 finish_in_action: bool = False):
+    def __init__(
+        self,
+        actions: Union[BaseAction, List[BaseAction]],
+        invalid_action: BaseAction = InvalidAction(),
+        no_action: BaseAction = NoAction(),
+        finish_action: BaseAction = FinishAction(),
+        finish_in_action: bool = False,
+    ):
         if isinstance(actions, BaseAction):
             actions = [actions]
 
         for action in actions:
-            assert isinstance(action, BaseAction), \
-                f'action must be BaseAction, but got {type(action)}'
+            assert isinstance(
+                action, BaseAction
+            ), f'action must be BaseAction, but got {type(action)}'
         if finish_in_action:
             actions.append(finish_action)
         self.actions = {action.name: action for action in actions}
@@ -64,8 +68,7 @@ class ActionExecutor:
             return list(self.actions.keys())
 
     def add_action(self, action: BaseAction):
-        assert isinstance(action, BaseAction), \
-            f'action must be BaseAction, but got {type(action)}'
+        assert isinstance(action, BaseAction), f'action must be BaseAction, but got {type(action)}'
         self.actions[action.name] = action
 
     def del_action(self, name: str):
@@ -73,8 +76,7 @@ class ActionExecutor:
             del self.actions[name]
 
     def __call__(self, name: str, command: str) -> ActionReturn:
-        action_name, api_name = (
-            name.split('.') if '.' in name else (name, 'run'))
+        action_name, api_name = name.split('.') if '.' in name else (name, 'run')
         if not self.is_valid(action_name):
             if name == self.no_action.name:
                 action_return = self.no_action(command)

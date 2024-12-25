@@ -8,7 +8,7 @@ The input will include an instruct following prompt and an image generated based
 Your Task:
 Based on the provided prompt and the image, complete the following tasks:
 1. Analyze the specific content of the prompt and observe the image to assess whether the image follows the prompt's instructions well. Please evaluate the image's instruct following from the following four aspects and provide a rating between 1 and 10:
-    
+
     1.Inclusion of Key Elements (4 points):
         Description: Check if the image includes all the key elements mentioned in the prompt. Key elements may include objects, scenes, colors, positions, etc.
         Scoring Standards:
@@ -36,8 +36,8 @@ Based on the provided prompt and the image, complete the following tasks:
         Reasonable: The extra elements complement the prompt and enhance the image's expression. (1)
         Partially Reasonable: The extra elements are somewhat justified but may not fully align with the prompt's requirements.
         Unreasonable: The extra elements are irrelevant to the prompt or contradict its intent, distracting from the image's expression. (0)
-    
-    
+
+
 Please note that your evaluation criteria should be aligned with human judgment. When evaluating the image, avoid over-interpreting the descriptions in the prompt.
 
 2. Please provide a specific explanation for your rating. Keep your explanation within 100 words."

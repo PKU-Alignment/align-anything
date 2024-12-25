@@ -1,17 +1,19 @@
-import os
-import sys
 import json
+import os
+
 import numpy as np
 from tqdm import tqdm
+
 from datasets import load_dataset
+
 
 def parse_modality(text):
     """
     Parse the generated text to determine which modalities are used
-    
+
     Args:
         text (str): The generated text response
-        
+
     Returns:
         str: Returns modality combination (one of 't','i','a','ti','ta','ia','tia')
         t: text, i: image, a: audio
@@ -20,44 +22,44 @@ def parse_modality(text):
     has_text = False
     has_image = False
     has_audio = False
-    
+
     # Find content sections
-    response_start = text.find("[[response]]:")
-    image_start = text.find("[[image_instruction]]:")
-    audio_start = text.find("[[audio_instruction]]:")
-    
+    response_start = text.find('[[response]]:')
+    image_start = text.find('[[image_instruction]]:')
+    audio_start = text.find('[[audio_instruction]]:')
+
     # Check text response
     if response_start != -1:
-        response_content = text[response_start:image_start].split(":")[1].strip()
-        has_text = response_content and response_content.lower() != "none"
-    
+        response_content = text[response_start:image_start].split(':')[1].strip()
+        has_text = response_content and response_content.lower() != 'none'
+
     # Check image instruction
     if image_start != -1:
-        image_content = text[image_start:audio_start].split(":")[1].strip()
-        has_image = image_content and image_content.lower() != "none"
-    
+        image_content = text[image_start:audio_start].split(':')[1].strip()
+        has_image = image_content and image_content.lower() != 'none'
+
     # Check audio instruction
     if audio_start != -1:
-        audio_content = text[audio_start:].split(":")[1].strip()
-        has_audio = audio_content and audio_content.lower() != "none"
-    
+        audio_content = text[audio_start:].split(':')[1].strip()
+        has_audio = audio_content and audio_content.lower() != 'none'
+
     # Return combination based on present modalities
-    modalities = ""
+    modalities = ''
     if has_text:
-        modalities += "t"
+        modalities += 't'
     if has_image:
-        modalities += "i"
+        modalities += 'i'
     if has_audio:
-        modalities += "a"
-        
-    return modalities if modalities != "" else "t"  # Default to 't' if no modalities detected
+        modalities += 'a'
+
+    return modalities if modalities != '' else 't'  # Default to 't' if no modalities detected
 
 
 def generate(prompt):
     """
     The generate function should return a string of the response, where you should implement the inference logic.
     """
-    pass
+
 
 def inference(question):
     modality_selection_template = """
@@ -78,45 +80,39 @@ def inference(question):
     {question}
     [/User question]
     """
-    
-    prompt = modality_selection_template.format(question = question)
-    return generate(prompt)
-    
-def main():
-    dataset = load_dataset(
-        "PKU-Alignment/EvalAnything-Selection_Synergy", 
-        trust_remote_code=True
-    )
 
-    save_dir = os.path.join("amg", "selection")
+    prompt = modality_selection_template.format(question=question)
+    return generate(prompt)
+
+
+def main():
+    dataset = load_dataset('PKU-Alignment/EvalAnything-Selection_Synergy', trust_remote_code=True)
+
+    save_dir = os.path.join('amg', 'selection')
     os.makedirs(save_dir, exist_ok=True)
 
     results = []
     for entry in tqdm(dataset):
-        instruction = entry["instruction"]
-        selection_distribution = entry["selection"]
-        
-        response = inference(
-            instruction
-        )
-        
+        instruction = entry['instruction']
+        selection_distribution = entry['selection']
+
+        response = inference(instruction)
+
         modality = parse_modality(response)
-        
-        results.append({
-            "instruction_uid": entry["instruction_uid"],
-            "prompt": instruction,
-            "response": response,
-            "modality": modality,
-            "score": selection_distribution[modality]
-        })
-        
-    with open(os.path.join(save_dir, "results.json"), "w") as f:
-        json.dump({
-            "selection_score": np.mean(results["score"]),
-            "results": results
-        }, f, indent=4)
+
+        results.append(
+            {
+                'instruction_uid': entry['instruction_uid'],
+                'prompt': instruction,
+                'response': response,
+                'modality': modality,
+                'score': selection_distribution[modality],
+            }
+        )
+
+    with open(os.path.join(save_dir, 'results.json'), 'w') as f:
+        json.dump({'selection_score': np.mean(results['score']), 'results': results}, f, indent=4)
 
 
 if __name__ == '__main__':
     main()
-
