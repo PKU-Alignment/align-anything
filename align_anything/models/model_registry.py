@@ -84,6 +84,7 @@ MODEL_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('chameleon', 'AccustomedChameleonModel'),
         ('qwen2_vl', 'AccustomedQwen2VLModel'),
         ('modeling_emu3.mllm.modeling_emu3', 'Emu3ForCausalLM'),
+        ('llava_next_video', 'AccustomedLlavaNextVideoModel'),
     ],
 )
 
