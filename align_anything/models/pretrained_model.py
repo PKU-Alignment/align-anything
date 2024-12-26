@@ -291,10 +291,9 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     except Exception:
         processor = None
 
-    if processor:
+    if processor and hasattr(processor, 'tokenizer'):
         processor.tokenizer.padding_side = padding_side
         resize_tokenizer_embedding(tokenizer=processor.tokenizer, model=model)
-
         return model, processor.tokenizer, processor
     else:
         processor = None

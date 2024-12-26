@@ -158,7 +158,7 @@ class SupervisedCollator:
         self.padding_side = padding_side
 
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
-        return_dict = {}
+        return_dict = {'meta_info': {}}
         current_device = get_current_device()
 
         return_dict['labels'] = right_padding(
