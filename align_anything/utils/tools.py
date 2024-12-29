@@ -91,6 +91,8 @@ def dict_to_namedtuple(dic):
 
 
 def namedtuple_to_dict(obj: Any) -> Any:
+    if obj is None:
+        return {}
     if isinstance(obj, tuple) and hasattr(obj, '_fields'):
         return {field: namedtuple_to_dict(getattr(obj, field)) for field in obj._fields}
     elif isinstance(obj, list):

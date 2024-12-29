@@ -107,6 +107,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # loading actor reference model
         self.actor_reference_model, _, _ = load_pretrained_models(
@@ -116,6 +117,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # loading reward model
         self.reward_model, self.reward_tokenizer, _ = load_pretrained_models(
@@ -124,6 +126,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             is_reward_model=True,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = load_pretrained_models(
@@ -132,6 +135,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             padding_side='left',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             is_reward_model=True,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # initial checking
         if is_same_tokenizer(self.tokenizer, self.reward_tokenizer):

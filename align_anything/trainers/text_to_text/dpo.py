@@ -89,6 +89,7 @@ class DPOTrainer(SupervisedTrainerBase):
             trust_remote_code=True,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         self.reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
@@ -97,6 +98,7 @@ class DPOTrainer(SupervisedTrainerBase):
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
 
     def init_datasets(self) -> None:

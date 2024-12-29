@@ -57,6 +57,7 @@ class RMTrainer(RMtextTrainer):
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
             is_reward_model=True,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
         if hasattr(self.model, 'infer_batch'):

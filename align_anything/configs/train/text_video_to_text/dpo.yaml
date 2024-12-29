@@ -109,5 +109,12 @@ model_cfgs:
   trust_remote_code: True
   # The max token length
   model_max_length: 4096
+# The processor kwargs
+processor_kwargs:
+  # The max resolution of the image
+  max_pixels: 50176 # 64*28*28
+  # The min resolution of the image
+  min_pixels: 25088 # 32*28*28
 # Customized special tokens
 special_tokens: null
+

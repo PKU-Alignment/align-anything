@@ -67,6 +67,7 @@ class DPOTrainer(DPOtextTrainer):
             freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
             freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         self.reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
@@ -76,6 +77,7 @@ class DPOTrainer(DPOtextTrainer):
             freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
             freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
 
     def compute_log_probs(
