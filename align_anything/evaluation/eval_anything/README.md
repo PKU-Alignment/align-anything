@@ -64,7 +64,7 @@ To load test data for a single modality (e.g., images), use:
 ```python
 dataset = load_dataset(
     "PKU-Alignment/EvalAnything-InstructionFollowing",
-    name="image",
+    name="image_instruct",
     trust_remote_code=True
 )
 ```
@@ -112,12 +112,14 @@ For more details, refer to [PKU-Alignment/EvalAnything-Selection_Synergy](https:
 
 #### Model Evaluation
 
-Since there isn't currently a complete multi-modal generation model, you can simulate the multi-modal generation process using Agent-related technologies. Reference the Agent code in `eval_anything/amg/agent`. For evaluation:
+Since there isn't currently a true all-modality generation model, you can simulate the all-modality generation process using Agent-related technologies. Reference the Agent code in `eval_anything/amg/agent`.
 
-Use `eval_anything/amg/synergy/example.py` to generate relevant instructions
-Use `eval_anything/amg/generate.sh` to call the agent to simulate the multi-modal generation process
-Format the generated results as shown in `eval_anything/amg/synergy`
-Use `eval_anything/amg/synergyreward_eval.py` to evaluate modality synergy
+For evaluation:
+
+1. Use `eval_anything/amg/synergy/example.py` to generate relevant instructions.
+2. Use `eval_anything/amg/generate.sh` to call the agent to simulate the all-modality generation process.
+3. Format the generated results as shown in `eval_anything/amg/synergy`.
+4. Use `eval_anything/amg/synergyreward_eval.py` to evaluate modality synergy.
 
 We've trained a multi-modal input model for Modality Synergy scoring. For model details, refer to [PKU-Alignment/AnyRewardModel](https://huggingface.co/PKU-Alignment/AnyRewardModel).
 
@@ -207,4 +209,14 @@ def process_ta(prompt, response, audio_path):
     }
 
 score = sigmoid(model(**process_ta(prompt, response, audio_path)).end_scores.squeeze(dim=-1).item())
+```
+## Citation
+Please cite our work if you use our benchmark or model in your paper.
+```bibtex
+@inproceedings{ji2024align,
+  title={Align Anything: Training All-Modality Models to Follow Instructions with Language Feedback},
+  author={Jiaming Ji and Jiayi Zhou and Hantao Lou and Boyuan Chen and Donghai Hong and Xuyao Wang and Wenqi Chen and Kaile Wang and Rui Pan and Jiahao Li and Mohan Wang and Josef Dai and Tianyi Qiu and Hua Xu and Dong Li and Weipeng Chen and Jun Song and Bo Zheng and Yaodong Yang},
+  year={2024},
+  url={https://arxiv.org/abs/2412.15838}
+}
 ```
