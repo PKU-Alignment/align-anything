@@ -210,7 +210,6 @@ def process_ta(prompt, response, audio_path):
 
 score = sigmoid(model(**process_ta(prompt, response, audio_path)).end_scores.squeeze(dim=-1).item())
 ```
-
 ## Citation
 Please cite our work if you use our benchmark or model in your paper.
 ```bibtex

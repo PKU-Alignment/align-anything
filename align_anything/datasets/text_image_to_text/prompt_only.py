@@ -100,6 +100,8 @@ class PromptOnlyDataset(Dataset):
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
         formatted_prompt, meta_info = self.template.format_prompt_only_sample(raw_sample)
+        if formatted_prompt[-1] != self.tokenizer.eos_token:
+            formatted_prompt += self.tokenizer.eos_token
         return_dict = {}
 
         # return necessary information
@@ -159,7 +161,7 @@ class PromptOnlyCollator:
         self.padding_side = padding_side
 
     def __call__(self, samples: list[PromptOnlySample]) -> PromptOnlyBatch:
-        return_dict = {}
+        return_dict = {'meta_info': {}}
         current_device = get_current_device()
 
         images = [sample['image'] for sample in samples]

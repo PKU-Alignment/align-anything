@@ -100,6 +100,8 @@ class PromptOnlyDataset(Dataset):
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
         formatted_prompt, meta_info = self.template.format_prompt_only_sample(raw_sample)
+        if formatted_prompt[-1] != self.tokenizer.eos_token:
+            formatted_prompt += self.tokenizer.eos_token
         return_dict = {}
 
         # return necessary information

@@ -39,10 +39,10 @@
 
 Align-Anything aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for Large Models can be found in [AI Alignment](https://alignmentsurvey.com). Overall, this framework has the following characteristics:
 
-- **Highly Modular Framework.** Its versatility stems from the abstraction of different algorithm types and well-designed APIs, allowing users to easily modify and customize the code for different tasks.
-- **Support for Various Model Fine-Tuning.** This framework includes fine-tuning capabilities for models such as LLaMA3.1, LLaVA, Gemma, Qwen, Baichuan, and others (see [Model Zoo](https://github.com/PKU-Alignment/align-anything/blob/main/Model-Zoo.md)).
-- **Support Fine-Tuning across Any Modality.** It supports fine-tuning alignments for different modality model, including LLMs, VLMs, and other modalities (see [Development Roadmap](#development-roadmap)).
-- **Support Different Alignment Methods.** The framework supports different alignment algorithms, including SFT, DPO, PPO, and others.
+- **Highly Modular Framework.** Its versatility stems from the abstraction of different algorithm types and well-designed APIs, allowing users to easily modify and customize the code for different tasks (see [framework design](https://align-anything.readthedocs.io/)).
+- **Support for Various Modality Model Fine-Tuning.** This framework includes fine-tuning capabilities for models such as LLaMA3.2, LLaVA, Gemma, Qwen2Audio, Baichuan, and others (see [Model Zoo](#advanced-usage)).
+- **Support Different Alignment Methods.** The framework supports different alignment algorithms, including SFT, DPO, PPO, and others (see [scripts](./scripts)).
+- **Support Multi-Modal CLI.** The framework supports multi-modal CLI for image, audio, and video modalities (see [multi-modal CLI](#multi-modal-cli)).
 
 **Note:** We provide a [quick start guide](https://align-anything.readthedocs.io/) for users to quickly get the code structure and development details.
 
@@ -354,6 +354,22 @@ All evaluation scripts can be found in the `./scripts`. The `./scripts/evaluate.
 You can modify the configuration files for the benchmarks in [this directory](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/configs/evaluation/benchmarks) to suit specific evaluation tasks and models, and adjust inference parameters for [vLLM](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/configs/evaluation/vllm) or [DeepSpeed](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/configs/evaluation/deepspeed) based on your generation backend. For more details about the evaluation pipeline, refer to the [here](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/evaluation/README.md).
 
 ## Inference
+
+### Multi-Modal CLI
+
+```bash
+# Image inference
+python3 -m align_anything.serve.multi_modal_cli --model_name_or_path llava-hf/llava-1.5-7b-hf --modality image
+
+# Audio inference
+python3 -m align_anything.serve.multi_modal_cli --model_name_or_path Qwen/Qwen2-Audio-7B-Instruct --modality audio
+
+# Video inference
+python3 -m align_anything.serve.multi_modal_cli --model_name_or_path llava-hf/LLaVA-NeXT-Video-7B-hf --modality video
+```
+
+<img src="assets/cli.jpg" alt="multi_modal_cli" style="width:600px;">
+
 
 ### Interactive Client
 

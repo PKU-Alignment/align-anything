@@ -423,3 +423,5 @@ tags
 [._]*.un~
 
 local_scripts/
+
+*.gradio/
