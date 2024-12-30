@@ -69,6 +69,8 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
 
         self.init_check()
         dist.barrier()
+        self.infer_batch = lambda batch: {k: v for k, v in batch.items() if k != 'meta_info'}
+        self.reward_infer_batch = lambda batch: {k: v for k, v in batch.items() if k != 'meta_info'}
         self.init_models()
         if hasattr(self.actor_model, 'infer_batch'):
             self.infer_batch = self.actor_model.infer_batch
