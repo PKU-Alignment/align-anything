@@ -40,11 +40,11 @@ logger = logging.getLogger(__name__)
 
 IMAGE_FACTOR = 28
 MIN_PIXELS = 4 * 28 * 28
-MAX_PIXELS = 16384 * 28 * 28
+MAX_PIXELS = 1024 * 28 * 28
 MAX_RATIO = 200
 
-VIDEO_MIN_PIXELS = 128 * 28 * 28
-VIDEO_MAX_PIXELS = 768 * 28 * 28
+VIDEO_MIN_PIXELS = 2 * 28 * 28
+VIDEO_MAX_PIXELS = 8 * 28 * 28
 VIDEO_TOTAL_PIXELS = 24576 * 28 * 28
 FRAME_FACTOR = 2
 FPS = 2.0
@@ -335,22 +335,13 @@ def extract_vision_info(conversations: list[dict] | list[list[dict]]) -> list[di
     return vision_infos
 
 
-def process_vision_info(
-    conversations: list[dict] | list[list[dict]],
-) -> tuple[list[Image.Image] | None, list[torch.Tensor | list[Image.Image]] | None]:
-    vision_infos = extract_vision_info(conversations)
+def process_video_info(
+    video_infos: list[dict],
+) -> list[torch.Tensor | list[Image.Image]]:
     ## Read images or videos
-    image_inputs = []
     video_inputs = []
-    for vision_info in vision_infos:
-        if "image" in vision_info or "image_url" in vision_info:
-            image_inputs.append(fetch_image(vision_info))
-        elif "video" in vision_info:
-            video_inputs.append(fetch_video(vision_info))
-        else:
-            raise ValueError("image, image_url or video should in content.")
-    if len(image_inputs) == 0:
-        image_inputs = None
+    for video_info in video_infos:
+        video_inputs.append(fetch_video(video_info))
     if len(video_inputs) == 0:
         video_inputs = None
-    return image_inputs, video_inputs
+    return video_inputs

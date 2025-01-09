@@ -657,7 +657,6 @@ class AA_TV2T_Qwen2VL(BaseFormatter):
     def format_preference_sample(
         self, raw_sample: dict[str, Any]
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
-        print(raw_sample)
         better_id = int(raw_sample['overall_response'])
         worse_id = 2 if better_id == 1 else 1
 

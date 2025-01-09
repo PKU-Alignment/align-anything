@@ -29,7 +29,7 @@ from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import left_padding, right_padding
 from datasets import load_dataset
 from align_anything.utils.process_llava_next_video import read_video_pyav as llava_next_video_loader
-from align_anything.utils.process_qwen2vl import process_vision_info as qwen2vl_video_loader
+from align_anything.utils.process_qwen2vl import process_video_info as qwen2vl_video_loader
 from align_anything.configs.template import ChatTemplate
 
 
@@ -98,6 +98,7 @@ class PreferenceDataset(Dataset):
         better_conversation, worse_conversation, meta_info = self.template.format_preference_sample(
             raw_sample
         )
+        video = meta_info['video']
         return_dict = {}
         return_dict['better_response_lens'] = len(
             self.tokenize(meta_info['better_response'], add_special_tokens=False)['input_ids'][
@@ -109,6 +110,7 @@ class PreferenceDataset(Dataset):
         )
         return_dict['better_conversation'] = better_conversation
         return_dict['worse_conversation'] = worse_conversation
+        return_dict['video_info'] = {'video': video}
 
         return return_dict
 
@@ -184,8 +186,9 @@ class PreferenceCollator:
         raw_concated_worse_conversation = []
         concated_better_conversation = []
         concated_worse_conversation = []
-
+        video_infos = []
         for sample in samples:
+            video_infos.append(sample['video_info'])
             better_conversation = sample['better_conversation']
             worse_conversation = sample['worse_conversation']
             if better_conversation[-1] != self.processor.tokenizer.eos_token:
@@ -198,11 +201,11 @@ class PreferenceCollator:
             raw_concated_worse_conversation.append(worse_conversation)
             concated_worse_conversation.append(self.template.format_chat_sample(worse_conversation)[0])
 
-        video = self.video_loader(raw_concated_better_conversation + raw_concated_worse_conversation)
-        return_dict['meta_info']['video'] = video
+        videos = self.video_loader(video_infos)
+        return_dict['meta_info']['video'] = videos
 
         multi_modal_padding = self.processor(
-            video=video,
+            videos=videos,
             text=concated_better_conversation + concated_worse_conversation,
             padding=True,
             return_tensors='pt',
