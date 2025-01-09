@@ -71,6 +71,7 @@ def get_video_processor(
 
     return CustomVideoProcessor(sample_frames, resolution, do_resize, **kwargs)
 
+
 def read_video_pyav(container, indices):
     '''
     Decode the video with PyAV decoder.
@@ -89,4 +90,4 @@ def read_video_pyav(container, indices):
             break
         if i >= start_index and i in indices:
             frames.append(frame)
-    return np.stack([x.to_ndarray(format="rgb24") for x in frames])
+    return np.stack([x.to_ndarray(format='rgb24') for x in frames])
