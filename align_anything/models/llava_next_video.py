@@ -20,7 +20,6 @@
 from transformers import LlavaNextVideoForConditionalGeneration
 
 
-
 class AccustomedLlavaNextVideoModel(LlavaNextVideoForConditionalGeneration):
     """Accustomed Interface for LlavaNext model"""
 
