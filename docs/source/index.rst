@@ -379,6 +379,14 @@ Advanced Features and Framework Design
 
       - Custom templates in the corresponding model in the ``align_anything/models/`` folder:
 
+      The first way to implement custom templates is to implement the ``apply_chat_template`` function in the corresponding model class.
+
+      .. hint::
+
+         The input is ``messages``, which is a list of dictionaries, each containing ``role`` and ``content`` fields. The ``role`` field can be ``user`` or ``assistant``, and the ``content`` field can be a string or a list of dictionaries, each containing ``type`` and ``text`` fields. The ``type`` field can be ``text``, ``image``, ``audio``, etc. The ``text`` field is the content of the message. The output is a string.
+
+      Below is an example:
+
       .. toggle::
          :show:
 
@@ -410,6 +418,26 @@ Advanced Features and Framework Design
                   if add_generation_prompt:
                         conversation += '<AI>'
                   return conversation
+
+         The second way to implement custom templates is to implement the ``chat_template`` function with ``property`` decorator in the ``ModelFormatter`` class.
+
+         .. hint::
+
+            This usage is useful since Huggingface have already supported this kind of template specification.
+
+         Below is an example:
+
+         .. toggle::
+            :show:
+
+         .. code:: python
+
+            class AccustomedIdefics2Model(Idefics2ForConditionalGeneration):
+               """Accustomed Interface for Idefics2 model"""
+
+               @property
+               def chat_template(self):
+                  return "{% for message in messages %}{{message['role'].capitalize()}}{% if message['content'][0]['type'] == 'image' %}{{':'}}{% else %}{{': '}}{% endif %}{% for line in message['content'] %}{% if line['type'] == 'text' %}{{line['text']}}{% elif line['type'] == 'image' %}{{ '<image>' }}{% endif %}{% endfor %}<end_of_utterance>\n{% endfor %}{% if add_generation_prompt %}{{ 'Assistant:' }}{% endif %}"
 
          During the actual execution of the code, the priority of the templates is: custom template > transformers built-in template > default template.
 
