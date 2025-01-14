@@ -48,6 +48,10 @@ from align_anything.utils.tools import (
 )
 
 
+def strip_pad(seq: torch.Tensor, pad_token_id: int):
+    # remove the pad token in the tensor
+    return seq[seq != pad_token_id]
+
 class DPOTrainer(SupervisedTrainerBase):
 
     def __init__(self, cfgs, ds_cfgs) -> None:
@@ -89,7 +93,6 @@ class DPOTrainer(SupervisedTrainerBase):
             trust_remote_code=True,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
-            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         self.reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
@@ -98,7 +101,6 @@ class DPOTrainer(SupervisedTrainerBase):
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
-            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
 
     def init_datasets(self) -> None:
@@ -122,8 +124,28 @@ class DPOTrainer(SupervisedTrainerBase):
     ) -> torch.Tensor:
         """Compute log probabilities of given sequences."""
         logits = model(**self.infer_batch(batch)).logits
+        device = logits.device
         input_ids = batch['input_ids']
-        return gather_log_probabilities(logits[:, :-1], input_ids[:, 1:])
+        batch_size = len(batch['meta_info']['response_lens'])
+        logprob_list = []
+        for idx in range(batch_size):
+            response_length = batch['meta_info']['response_lens'][idx]
+            raw_input_id = strip_pad(input_ids[idx], self.tokenizer.pad_token_id)
+            # if is_main_process():
+                # print('original logit', logits[idx])
+                # print('original input id', input_ids[idx])
+            logit = logits[idx][-response_length:].unsqueeze(0)
+            input_id = raw_input_id[-response_length:].unsqueeze(0)
+            log_p = gather_log_probabilities(logit[:, :-1], input_id[:, 1:])
+            logprob_list.append(log_p.squeeze(0))
+            # if is_main_process():
+            #     print('response_length', response_length)
+            #     print('logit', raw_input_id)
+            #     print('response', self.tokenizer.decode(input_ids[idx][-response_length:]))
+            #     exit()
+        return torch.nn.utils.rnn.pad_sequence(
+            logprob_list, batch_first=True, padding_value=0.0
+        ).to(device)
 
     def loss(  # pylint: disable=too-many-locals
         self,
@@ -152,28 +174,12 @@ class DPOTrainer(SupervisedTrainerBase):
         better_sample_rewards = []
         worse_sample_rewards = []
 
-        better_input_ids, worse_input_ids = batch['input_ids'].chunk(chunks=2, dim=0)
-        better_attention_mask, worse_attention_mask = batch['attention_mask'].chunk(chunks=2, dim=0)
-
-        batch_size = better_input_ids.size(0)
+        batch_size = better_sequence_log_probs.size(0)
         for i in range(batch_size):
-            if torch.all(torch.eq(better_input_ids[i], worse_input_ids[i])).item():
-                continue
-            better_end_index = better_attention_mask[i].nonzero()[-1].squeeze().item()
-            worse_end_index = worse_attention_mask[i].nonzero()[-1].squeeze().item()
-            diverge_index = (
-                (better_input_ids[i] != worse_input_ids[i]).nonzero()[0].squeeze().item()
-            )
-            assert 0 <= diverge_index <= better_end_index, 'diverge index is out of range!'
-            assert 0 <= diverge_index <= worse_end_index, 'diverge index is out of range!'
-
-            better_seq_slice = slice(diverge_index, better_end_index + 1)
-            worse_seq_slice = slice(diverge_index, worse_end_index + 1)
-
-            better_log_prob = better_sequence_log_probs[i, better_seq_slice].sum(dim=-1)
-            worse_log_prob = worse_sequence_log_probs[i, worse_seq_slice].sum(dim=-1)
-            ref_better_log_prob = ref_better_sequence_log_probs[i, better_seq_slice].sum(dim=-1)
-            ref_worse_log_prob = ref_worse_sequence_log_probs[i, worse_seq_slice].sum(dim=-1)
+            better_log_prob = better_sequence_log_probs[i, :].sum(dim=-1)
+            worse_log_prob = worse_sequence_log_probs[i, :].sum(dim=-1)
+            ref_better_log_prob = ref_better_sequence_log_probs[i, :].sum(dim=-1)
+            ref_worse_log_prob = ref_worse_sequence_log_probs[i, :].sum(dim=-1)
             better_log_ratio = better_log_prob - ref_better_log_prob
             worse_log_ratio = worse_log_prob - ref_worse_log_prob
 

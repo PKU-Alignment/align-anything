@@ -79,10 +79,6 @@ class AccustomedQwen2VLOutput(Qwen2VLCausalLMOutputWithPast):
 
 class AccustomedQwen2VLModel(Qwen2VLForConditionalGeneration):
 
-    @classmethod
-    def pretrain_class(cls) -> Qwen2VLPreTrainedModel:
-        return Qwen2VLPreTrainedModel
-
     @property
     def processor_available(self):
         return True
@@ -97,7 +93,7 @@ class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
 
     def __init__(self, config: AutoConfig):
         super().__init__(config)
-        setattr(self, self.base_model_prefix, AccustomedQwen2VLModel(config))
+        # setattr(self, self.base_model_prefix, AccustomedQwen2VLModel(config))
         self.score_head = nn.Linear(3584, 1, bias=False)
 
     @property
@@ -108,7 +104,7 @@ class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
         self,
         **kwargs,
     ) -> ScoreModelOutput:
-        outputs = self.model(**kwargs)
+        outputs = self.forward(**kwargs)
         last_hidden_state = outputs.hidden_states[-1]
         scores = self.score_head(last_hidden_state)
         B, _, _ = scores.size()
