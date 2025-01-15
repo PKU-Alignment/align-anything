@@ -24,7 +24,7 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.tools import right_padding, left_padding
+from align_anything.utils.tools import left_padding, right_padding
 from datasets import load_dataset
 
 
@@ -100,9 +100,7 @@ class PreferenceDataset(Dataset):
         )
         return_dict = {}
         return_dict['better_response_lens'] = len(
-            self.tokenize(meta_info['better_response'], add_special_tokens=False)['input_ids'][
-                0
-            ]
+            self.tokenize(meta_info['better_response'], add_special_tokens=False)['input_ids'][0]
         )
         return_dict['worse_response_lens'] = len(
             self.tokenize(meta_info['worse_response'], add_special_tokens=False)['input_ids'][0]
@@ -180,5 +178,5 @@ class PreferenceCollator:
         better_response_lens = [sample['better_response_lens'] for sample in samples]
         worse_response_lens = [sample['worse_response_lens'] for sample in samples]
         return_dict['meta_info']['response_lens'] = better_response_lens + worse_response_lens
-        
+
         return return_dict

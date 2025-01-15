@@ -26,6 +26,8 @@ from PIL import Image
 from transformers import AutoConfig, AutoTokenizer
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
+from align_anything.utils.multi_process import print_on_main_process
+
 
 try:
 
@@ -34,16 +36,17 @@ try:
     CLASS_REF = CONFIG.auto_map['AutoModelForCausalLM']
     MiniCPMV = get_class_from_dynamic_module(CLASS_REF, MODEL_NAME_OR_PATH)
     MINICPMV_AVAILABLE = True
-    
+
 except ImportError:
-    print(
-        "It is recommended to use transformers==4.37.2 to run MiniCPM-V \
+    print_on_main_process(
+        'It is recommended to use transformers==4.37.2 to run MiniCPM-V \
           For more information, please refer to: \
-          https://huggingface.co/openbmb/MiniCPM-Embedding/discussions/9"
+          https://huggingface.co/openbmb/MiniCPM-Embedding/discussions/9'
     )
     MINICPMV_AVAILABLE = False
 
 if MINICPMV_AVAILABLE:
+
     class AccustomedMiniCPMV(MiniCPMV):
 
         def __init__(self, config: AutoConfig):
@@ -51,7 +54,9 @@ if MINICPMV_AVAILABLE:
             zero_stage = int(os.environ['ZERO_STAGE'])
             if zero_stage == 3:
                 raise ValueError('MiniCPM-V does not support ZeRO stage 3')
-            self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                MODEL_NAME_OR_PATH, trust_remote_code=True
+            )
 
         @property
         def processor_available(self):

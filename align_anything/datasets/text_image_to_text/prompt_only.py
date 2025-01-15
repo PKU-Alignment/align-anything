@@ -161,11 +161,10 @@ class PromptOnlyCollator:
         self.padding_side = padding_side
 
     def __call__(self, samples: list[PromptOnlySample]) -> PromptOnlyBatch:
-        return_dict = {'meta_info': {}}
+        return_dict = {}
         current_device = get_current_device()
 
         images = [sample['image'] for sample in samples]
-        return_dict['meta_info']['images'] = images
 
         concated_text = [sample['conversation'] for sample in samples]
 

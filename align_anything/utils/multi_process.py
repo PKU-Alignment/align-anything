@@ -35,6 +35,12 @@ def is_main_process() -> bool:
     return not dist.is_initialized() or dist.get_rank() == 0
 
 
+def print_on_main_process(msg: str) -> None:
+    """Print a message only on the main process."""
+    if is_main_process():
+        print(msg)
+
+
 def rank_zero_only(func: Func) -> Func:
     """Decorator to make a function only run on the main process."""
 

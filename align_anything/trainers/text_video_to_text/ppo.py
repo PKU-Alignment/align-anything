@@ -22,13 +22,9 @@ import sys
 import deepspeed
 import torch
 
-from align_anything.datasets.text_video_to_text import (
-    PromptOnlyDataset,
-    SupervisedDataset,
-)
-from align_anything.utils.multi_process import (
-    get_current_device,
-)
+from align_anything.datasets.text_video_to_text import PromptOnlyDataset, SupervisedDataset
+from align_anything.trainers.text_image_to_text.ppo import PPOTrainer as PPOTI2TTrainer
+from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -36,7 +32,6 @@ from align_anything.utils.tools import (
     seed_everything,
     update_dict,
 )
-from align_anything.trainers.text_image_to_text.ppo import PPOTrainer as PPOTI2TTrainer
 
 
 class PPOTrainer(PPOTI2TTrainer):  # pylint: disable=too-many-instance-attributes

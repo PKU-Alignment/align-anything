@@ -52,6 +52,7 @@ def strip_pad(seq: torch.Tensor, pad_token_id: int):
     # remove the pad token in the tensor
     return seq[seq != pad_token_id]
 
+
 class DPOTrainer(SupervisedTrainerBase):
 
     def __init__(self, cfgs, ds_cfgs) -> None:
@@ -131,18 +132,10 @@ class DPOTrainer(SupervisedTrainerBase):
         for idx in range(batch_size):
             response_length = batch['meta_info']['response_lens'][idx]
             raw_input_id = strip_pad(input_ids[idx], self.tokenizer.pad_token_id)
-            # if is_main_process():
-                # print('original logit', logits[idx])
-                # print('original input id', input_ids[idx])
             logit = logits[idx][-response_length:].unsqueeze(0)
             input_id = raw_input_id[-response_length:].unsqueeze(0)
             log_p = gather_log_probabilities(logit[:, :-1], input_id[:, 1:])
             logprob_list.append(log_p.squeeze(0))
-            # if is_main_process():
-            #     print('response_length', response_length)
-            #     print('logit', raw_input_id)
-            #     print('response', self.tokenizer.decode(input_ids[idx][-response_length:]))
-            #     exit()
         return torch.nn.utils.rnn.pad_sequence(
             logprob_list, batch_first=True, padding_value=0.0
         ).to(device)

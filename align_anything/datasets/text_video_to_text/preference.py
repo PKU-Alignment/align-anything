@@ -16,21 +16,19 @@
 
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
-from tqdm import tqdm
 
 import torch
 import transformers
 from torch.utils.data import Dataset
 from torchvision import transforms
+from tqdm import tqdm
+from transformers import LlavaNextVideoProcessor, Qwen2VLProcessor
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
-from transformers import Qwen2VLProcessor, LlavaNextVideoProcessor
 
-from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.tools import left_padding, right_padding
-from datasets import load_dataset
+from align_anything.utils.multi_process import get_current_device, print_on_main_process
 from align_anything.utils.process_llava_next_video import read_video_pyav as llava_next_video_loader
 from align_anything.utils.process_qwen2vl import process_video_info as qwen2vl_video_loader
-from align_anything.configs.template import ChatTemplate
+from datasets import load_dataset
 
 
 __all__ = [
@@ -91,7 +89,7 @@ class PreferenceDataset(Dataset):
     def filter_indices(self):
         valid_indices = []
         for i, item in tqdm(enumerate(self.raw_data), desc='Filtering indices'):
-                valid_indices.append(i)
+            valid_indices.append(i)
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
@@ -101,9 +99,7 @@ class PreferenceDataset(Dataset):
         video = meta_info['video']
         return_dict = {}
         return_dict['better_response_lens'] = len(
-            self.tokenize(meta_info['better_response'], add_special_tokens=False)['input_ids'][
-                0
-            ]
+            self.tokenize(meta_info['better_response'], add_special_tokens=False)['input_ids'][0]
         )
         return_dict['worse_response_lens'] = len(
             self.tokenize(meta_info['worse_response'], add_special_tokens=False)['input_ids'][0]
@@ -116,7 +112,7 @@ class PreferenceDataset(Dataset):
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
         return PreferenceCollator(
-            self.tokenizer.pad_token_id, self.processor, self.template, self.tokenizer.padding_side
+            self.tokenizer.pad_token_id, self.processor, self.tokenizer.padding_side
         )
 
     def tokenize(
@@ -157,67 +153,45 @@ class PreferenceCollator:
         self,
         pad_token_id: int,
         processor: transformers.ProcessorMixin | transforms.Compose | None = None,
-        template: ChatTemplate | None = None,
         padding_side: str = 'right',
     ) -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
-        self.padding_func = right_padding if padding_side == 'right' else left_padding
         self.processor = processor
         self.padding_side = padding_side
-        self.template = template
+        self.processor.tokenizer.padding_side = padding_side
         if isinstance(self.processor, Qwen2VLProcessor):
             self.video_loader = qwen2vl_video_loader
         elif isinstance(self.processor, LlavaNextVideoProcessor):
             self.video_loader = llava_next_video_loader
         else:
             self.video_loader = llava_next_video_loader
-            print("""Using pre-processing method in 
+            print_on_main_process(
+                """Using pre-processing method in
                   align_anything/utils/process_llava_next_video.py as the default video loader,
-                  If you want to use other video pre-processing methods, 
-                  please modify the code in 
-                  align_anything/datasets/text_video_to_text/preference.py""")
-
+                  If you want to use other video pre-processing methods,
+                  please modify the code in
+                  align_anything/datasets/text_video_to_text/preference.py"""
+            )
 
     def __call__(self, samples: list[PreferenceSample]) -> PreferenceBatch:
         return_dict = {'meta_info': {}}
         current_device = get_current_device()
-        raw_concated_better_conversation = []
-        raw_concated_worse_conversation = []
         concated_better_conversation = []
         concated_worse_conversation = []
-        video_infos = []
+        videos = []
+
         for sample in samples:
-            video_infos.append(sample['video_info'])
-            better_conversation = sample['better_conversation']
-            worse_conversation = sample['worse_conversation']
-            if better_conversation[-1] != self.processor.tokenizer.eos_token:
-                better_conversation = better_conversation + self.processor.tokenizer.eos_token
-            raw_concated_better_conversation.append(better_conversation)
-            concated_better_conversation.append(self.template.format_chat_sample(better_conversation)[0])
-
-            if worse_conversation[-1] != self.processor.tokenizer.eos_token:
-                worse_conversation = worse_conversation + self.processor.tokenizer.eos_token
-            raw_concated_worse_conversation.append(worse_conversation)
-            concated_worse_conversation.append(self.template.format_chat_sample(worse_conversation)[0])
-
-        videos = self.video_loader(video_infos)
-        return_dict['meta_info']['video'] = videos
+            videos.append(self.video_loader(sample['video_info']))
+            concated_better_conversation.append(sample['better_conversation'])
+            concated_worse_conversation.append(sample['worse_conversation'])
 
         multi_modal_padding = self.processor(
-            videos=videos,
+            videos=videos * 2,
             text=concated_better_conversation + concated_worse_conversation,
             padding=True,
             return_tensors='pt',
         )
-        input_ids_padding = self.processor.tokenizer(
-            text=concated_better_conversation + concated_worse_conversation,
-            return_tensors='pt',
-            padding=True,
-            padding_side=self.padding_side,
-            return_attention_mask=True,
-        )
-        multi_modal_padding.update(input_ids_padding)
 
         for key, value in multi_modal_padding.items():
             if isinstance(value, torch.Tensor):

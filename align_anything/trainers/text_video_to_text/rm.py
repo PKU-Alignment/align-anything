@@ -75,7 +75,7 @@ class RMTrainer(RMtextTrainer):
         ].chunk(chunks=2, dim=0)
         assert better_input_ids.size(0) == worse_input_ids.size(0), 'batch size mismatch!'
         output = self.model(**self.infer_batch(batch))
-        
+
         scores = output.scores
         end_scores = output.end_scores
         higher_rewards, lower_rewards = scores.squeeze(dim=-1).chunk(chunks=2, dim=0)

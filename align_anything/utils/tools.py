@@ -45,19 +45,18 @@ from torchvision.transforms import InterpolationMode
 from transformers import PreTrainedTokenizerBase, ProcessorMixin
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
 
-from align_anything.utils.multi_process import is_main_process
+from align_anything.utils.multi_process import print_on_main_process
 
 
 try:
     import yt_dlp
     from moviepy.editor import AudioFileClip
 except ImportError:
-    if is_main_process():
-        print(
-            """The moviepy and yt_dlp are not installed, which are required for evaluation.
+    print_on_main_process(
+        """The moviepy and yt_dlp are not installed, which are required for evaluation.
         You can ignore this warning if you are not using the evaluation module.
         or install them by `pip install -e .[evaluate]`."""
-        )
+    )
 
 
 def right_padding(sequences: list[torch.Tensor], padding_value: Number) -> torch.Tensor:

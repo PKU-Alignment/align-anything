@@ -271,7 +271,6 @@ class RMTrainer(SupervisedTrainerBase):
         )
 
         if self.cfgs.data_cfgs.eval_datasets:
-            self.logger.print('\n***** Evaluating at the beginning *****')
             self.logger.log(self.eval(), step=0)
 
         for epoch in range(int(self.cfgs.train_cfgs.epochs)):

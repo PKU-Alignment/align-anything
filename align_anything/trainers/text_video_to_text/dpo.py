@@ -44,6 +44,7 @@ class DPOTrainer(DPOTI2TTrainer):
             PreferenceDataset, PreferenceDataset
         )
 
+
 def main():
     # setup distribution training
     deepspeed.init_distributed()
