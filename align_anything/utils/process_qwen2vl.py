@@ -39,10 +39,10 @@ from torchvision.transforms import InterpolationMode
 logger = logging.getLogger(__name__)
 
 MIN_PIXELS = 4 * 28 * 28  # the minimum number of pixels of the image
-MAX_PIXELS = 16 * 28 * 28  # the maximum number of pixels of the image
+MAX_PIXELS = 8 * 28 * 28  # the maximum number of pixels of the image
 VIDEO_MIN_PIXELS = 4 * 28 * 28  # the minimum number of pixels of the video
-VIDEO_MAX_PIXELS = 16 * 28 * 28  # the maximum number of pixels of the video
-VIDEO_TOTAL_PIXELS = 1024 * 28 * 28  # the total number of pixels of the video
+VIDEO_MAX_PIXELS = 8 * 28 * 28  # the maximum number of pixels of the video
+VIDEO_TOTAL_PIXELS = 128 * 28 * 28  # the total number of pixels of the video
 
 MAX_RATIO = 200
 IMAGE_FACTOR = 28
@@ -86,7 +86,7 @@ def smart_resize(
     """
     if max(height, width) / min(height, width) > MAX_RATIO:
         raise ValueError(
-            f"absolute aspect ratio must be smaller than {MAX_RATIO}, got {max(height, width) / min(height, width)}"
+            f'absolute aspect ratio must be smaller than {MAX_RATIO}, got {max(height, width) / min(height, width)}'
         )
     h_bar = max(factor, round_by_factor(height, factor))
     w_bar = max(factor, round_by_factor(width, factor))
@@ -122,7 +122,7 @@ def fetch_image(ele: dict[str, str | Image.Image], size_factor: int = IMAGE_FACT
         image_obj = Image.open(image)
     if image_obj is None:
         raise ValueError(
-            f"Unrecognized image input, support local path, http url, base64 and PIL.Image, got {image}"
+            f'Unrecognized image input, support local path, http url, base64 and PIL.Image, got {image}'
         )
     image = image_obj.convert('RGB')
     ## resize
@@ -185,7 +185,7 @@ def smart_nframes(
         nframes = round_by_factor(nframes, FRAME_FACTOR)
     if not (FRAME_FACTOR <= nframes and nframes <= total_frames):
         raise ValueError(
-            f"nframes should in interval [{FRAME_FACTOR}, {total_frames}], but got {nframes}."
+            f'nframes should in interval [{FRAME_FACTOR}, {total_frames}], but got {nframes}.'
         )
     return nframes
 
@@ -222,7 +222,7 @@ def _read_video_torchvision(
     )
     total_frames, video_fps = video.size(0), info['video_fps']
     logger.info(
-        f"torchvision:  {video_path=}, {total_frames=}, {video_fps=}, time={time.time() - st:.3f}s"
+        f'torchvision:  {video_path=}, {total_frames=}, {video_fps=}, time={time.time() - st:.3f}s'
     )
     nframes = smart_nframes(ele, total_frames=total_frames, video_fps=video_fps)
     idx = torch.linspace(0, total_frames - 1, nframes).round().long()
@@ -260,7 +260,7 @@ def _read_video_decord(
         raise NotImplementedError('not support start_pts and end_pts in decord for now.')
     total_frames, video_fps = len(vr), vr.get_avg_fps()
     logger.info(
-        f"decord:  {video_path=}, {total_frames=}, {video_fps=}, time={time.time() - st:.3f}s"
+        f'decord:  {video_path=}, {total_frames=}, {video_fps=}, time={time.time() - st:.3f}s'
     )
     nframes = smart_nframes(ele, total_frames=total_frames, video_fps=video_fps)
     idx = torch.linspace(0, total_frames - 1, nframes).round().long().tolist()
@@ -285,7 +285,7 @@ def get_video_reader_backend() -> str:
         video_reader_backend = 'decord'
     else:
         video_reader_backend = 'torchvision'
-    print(f"qwen-vl-utils using {video_reader_backend} to read video.", file=sys.stderr)
+    print(f'qwen-vl-utils using {video_reader_backend} to read video.', file=sys.stderr)
     return video_reader_backend
 
 
@@ -356,12 +356,6 @@ def extract_vision_info(conversations: list[dict] | list[list[dict]]) -> list[di
 
 
 def process_video_info(
-    video_infos: list[dict],
-) -> list[torch.Tensor | list[Image.Image]]:
-    ## Read images or videos
-    video_inputs = []
-    for video_info in video_infos:
-        video_inputs.append(fetch_video(video_info))
-    if len(video_inputs) == 0:
-        video_inputs = None
-    return video_inputs
+    video_info: dict,
+) -> torch.Tensor:
+    return fetch_video(video_info)

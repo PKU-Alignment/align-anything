@@ -22,7 +22,6 @@ import transformers
 from torch.utils.data import Dataset
 from torchvision import transforms
 from transformers import LlavaNextVideoProcessor, Qwen2VLProcessor
-from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device, print_on_main_process
 from align_anything.utils.process_llava_next_video import read_video_pyav as llava_next_video_loader
@@ -116,29 +115,6 @@ class PromptOnlyDataset(Dataset):
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
         return PromptOnlyCollator(self.tokenizer.pad_token_id, self.processor, self.padding_side)
 
-    def tokenize(
-        self,
-        conversation: str,
-        meta_info: dict[str, Any],
-        add_special_tokens: bool = True,
-        padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
-        truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
-        max_length: int | None = None,
-    ) -> torch.LongTensor:  # size = (L,)
-        """Tokenize a text string into a tensor representation."""
-        if max_length is None:
-            max_length = self.tokenizer.model_max_length
-
-        return self.processor(
-            text=conversation,
-            videos=meta_info['video'],
-            add_special_tokens=add_special_tokens,
-            padding=padding,
-            max_length=max_length,
-            truncation=truncation,
-            return_tensors='pt',
-        )
-
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
         raw_sample = self.raw_data[index]
@@ -174,7 +150,7 @@ class PromptOnlyCollator:
                   align_anything/utils/process_llava_next_video.py as the default video loader,
                   If you want to use other video pre-processing methods,
                   please modify the code in
-                  align_anything/datasets/text_video_to_text/preference.py"""
+                  align_anything/datasets/text_video_to_text/prompt_only.py"""
             )
 
     def __call__(self, samples: list[PromptOnlySample]) -> PromptOnlyBatch:

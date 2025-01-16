@@ -96,13 +96,11 @@ class SupervisedDataset(Dataset):
         # return necessary information
         return_dict['prompt'] = prompt
         return_dict['conversation'] = conversation
-        return_dict['video'] = meta_info['video']
+        return_dict['video_info'] = {'video': meta_info['video']}
 
         # set the labels masked by the prompt
-        return_dict['response_lens'] = len(
-            self.tokenize(conversation.replace(prompt, ''), add_special_tokens=False)['input_ids'][
-                0
-            ]
+        return_dict['prompt_lens'] = len(
+            self.tokenize(prompt, add_special_tokens=False)['input_ids'][0]
         )
 
         return return_dict
@@ -166,7 +164,7 @@ class SupervisedCollator:
                   align_anything/utils/process_llava_next_video.py as the default video loader,
                   If you want to use other video pre-processing methods,
                   please modify the code in
-                  align_anything/datasets/text_video_to_text/preference.py"""
+                  align_anything/datasets/text_video_to_text/supervised.py"""
             )
 
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
@@ -181,8 +179,16 @@ class SupervisedCollator:
             text=concated_text,
             return_tensors='pt',
             padding=True,
-            return_attention_mask=True,
         )
+
+        inputs_ids = multi_modal_padding['input_ids']
+        labels = inputs_ids.clone()
+
+        for i in range(len(samples)):
+            prompt_lens = samples[i]['prompt_lens']
+            labels[i, :prompt_lens] = IGNORE_INDEX
+
+        return_dict['labels'] = labels.to(current_device)
 
         for key, value in multi_modal_padding.items():
             if isinstance(value, torch.Tensor):
