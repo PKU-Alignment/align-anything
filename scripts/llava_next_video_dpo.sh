@@ -16,14 +16,14 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="Qwen/Qwen2-VL-7B-Instruct" # model path
+MODEL_NAME_OR_PATH="llava-hf/LLaVA-NeXT-Video-7B-hf" # model path
 
 TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
 TRAIN_TEMPLATE="AA_TV2T" # dataset template
 TRAIN_NAME="text-video-to-text" # dataset name
 TRAIN_SPLIT="train" # split the dataset
 
-OUTPUT_DIR="../outputs/qwen2vl_dpo" # output dir
+OUTPUT_DIR="../outputs/llava_next_video_dpo" # output dir
 
 export ROOT_VIDEO_PATH=$TRAIN_DATASETS"/text-video-to-text"
 
