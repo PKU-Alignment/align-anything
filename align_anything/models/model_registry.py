@@ -129,6 +129,7 @@ class AnyModel(_BaseAutoModelClass):
         trust_remote_code=False,
         code_revision=None,
         commit_hash=None,
+        modality=None,
         **kwargs,
     ):
         config, unused_kwargs = AutoConfig.from_pretrained(
@@ -141,9 +142,12 @@ class AnyModel(_BaseAutoModelClass):
         )
         model_type = config.model_type
         if model_type in TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES:
-            return get_model_class_for_trust_remote_code(
+            model_class = get_model_class_for_trust_remote_code(
                 model_type, TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES
-            ).from_pretrained(
+            )
+            if hasattr(model_class, 'model_additional_kwargs'):
+                kwargs.update(model_class.model_additional_kwargs(modality))
+            return model_class.from_pretrained(
                 pretrained_model_name_or_path,
                 *model_args,
                 trust_remote_code=True,

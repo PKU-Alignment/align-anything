@@ -98,14 +98,9 @@ class SupervisedDataset(Dataset):
         return_dict['image'] = meta_info['image']
 
         # set the labels masked by the prompt
-        inputs = self.tokenize(conversation, meta_info, padding=PaddingStrategy.DO_NOT_PAD)
-        labels = inputs['input_ids'][0].clone().to(torch.long)
-        labels[
-            : len(
-                self.tokenize(prompt, meta_info, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0]
-            )
-        ] = IGNORE_INDEX
-        return_dict['labels'] = labels
+        return_dict['prompt_lens'] = len(
+            self.tokenize(prompt, add_special_tokens=False)['input_ids'][0]
+        )
 
         return return_dict
 
@@ -115,7 +110,6 @@ class SupervisedDataset(Dataset):
     def tokenize(
         self,
         conversation: str,
-        meta_info: dict[str, Any],
         add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
         truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
@@ -125,9 +119,8 @@ class SupervisedDataset(Dataset):
         if max_length is None:
             max_length = self.tokenizer.model_max_length
 
-        return self.processor(
+        return self.tokenizer(
             text=conversation,
-            images=meta_info['image'],
             add_special_tokens=add_special_tokens,
             padding=padding,
             max_length=max_length,
@@ -162,19 +155,14 @@ class SupervisedCollator:
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
         return_dict = {'meta_info': {}}
         current_device = get_current_device()
-
-        return_dict['labels'] = right_padding(
-            [sample['labels'] for sample in samples],
-            padding_value=IGNORE_INDEX,
-        ).to(current_device)
+        
+        concated_text = [sample['conversation'] for sample in samples]
 
         if os.environ.get('MULTI_IMAGES_INFERENCE_MODELS') == 'Yes':
             images = [[sample['image']] for sample in samples]
         else:
             images = [sample['image'] for sample in samples]
         return_dict['meta_info']['images'] = images
-
-        concated_text = [sample['conversation'] for sample in samples]
 
         multi_modal_padding = self.processor(
             images=images,
@@ -185,7 +173,16 @@ class SupervisedCollator:
             return_attention_mask=True,
         )
         
+        inputs_ids = multi_modal_padding['input_ids']
+        labels = inputs_ids.clone()
+
+        for i in range(len(samples)):
+            prompt_lens = samples[i]['prompt_lens']
+            labels[i, :prompt_lens] = IGNORE_INDEX
+        
         return_dict.update(multi_modal_padding)
+        
+        return_dict['labels'] = labels.to(torch.long)
 
         for key, value in return_dict.items():
             if isinstance(value, torch.Tensor):

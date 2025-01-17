@@ -44,6 +44,14 @@ class AccustomedMiniCPMO(MiniCPMO):
         self.system_prompt = 'You are a helpful assistant. You can accept video, audio and text input and output voice and text. '
         os.environ['MULTI_IMAGES_INFERENCE_MODELS'] = 'Yes'
 
+    @staticmethod
+    def model_additional_kwargs(modality: list[str]):
+        return {
+            'init_audio': 'audio' in modality,
+            'init_tts': 'audio' in modality,
+            'init_vision': 'image' in modality,
+        }
+
     def apply_chat_template(
         self, messages: list[dict[str, Any]], add_generation_prompt: bool = False
     ) -> dict[str, Any]:
