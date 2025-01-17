@@ -94,6 +94,7 @@ MODEL_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
 TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES = OrderedDict(
     [
         ('minicpmv', 'AccustomedMiniCPMV'),
+        ('minicpmo', 'AccustomedMiniCPMO'),
     ],
 )
 
@@ -130,7 +131,7 @@ class AnyModel(_BaseAutoModelClass):
         commit_hash=None,
         **kwargs,
     ):
-        config, kwargs = AutoConfig.from_pretrained(
+        config, unused_kwargs = AutoConfig.from_pretrained(
             pretrained_model_name_or_path,
             return_unused_kwargs=True,
             trust_remote_code=trust_remote_code,
@@ -145,12 +146,12 @@ class AnyModel(_BaseAutoModelClass):
             ).from_pretrained(
                 pretrained_model_name_or_path,
                 *model_args,
-                trust_remote_code=trust_remote_code,
+                trust_remote_code=True,
                 **kwargs,
             )
         return super().from_pretrained(
             pretrained_model_name_or_path,
             *model_args,
             trust_remote_code=trust_remote_code,
-            **kwargs,
+            **unused_kwargs,
         )
