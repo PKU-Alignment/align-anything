@@ -5,7 +5,7 @@ TRAIN_DATASETS="PKU-Alignment/Align-Anything-TI2T-Instruction-100K" # dataset pa
 TRAIN_TEMPLATE="AA_TI2T" # dataset template
 TRAIN_SPLIT="train" # split the dataset
 
-OUTPUT_DIR="../outputs/minicpmo_dpo" # output dir
+OUTPUT_DIR="../outputs/minicpmo_sft" # output dir
 
 # For wandb online logging
 export WANDB_API_KEY=""
@@ -22,6 +22,8 @@ deepspeed \
      --train_datasets ${TRAIN_DATASETS} \
      --train_template ${TRAIN_TEMPLATE} \
      --train_split ${TRAIN_SPLIT} \
+     --per_device_train_batch_size 1 \
+     --gradient_accumulation_steps 1 \
      --output_dir ${OUTPUT_DIR} \
-     --save_interval 600 \
+     --save_interval 20000 \
      --epochs 5
