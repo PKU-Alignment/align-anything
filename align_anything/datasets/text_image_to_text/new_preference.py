@@ -87,24 +87,9 @@ class PreferenceDataset(Dataset):
         if isinstance(optional_args, str):
             optional_args = [optional_args]
             
-        # self.raw_data = load_dataset(
-        #     path,
-        #     split=split,
-        #     data_files=data_files,
-        #     subset=subset,
-        #     *optional_args,
-        #     trust_remote_code=True,
-        # )
-        # print(path)
-        # print(data_files)
-        # exit()
-        
         with open(path, 'r') as f:
             self.raw_data = json.load(f)
-        # self.raw_data = self.raw_data[:100]
-        # self.raw_data = self.raw_data[:10]
-        # if len(self.raw_data) > 9187:
-        #     self.raw_data = self.raw_data.select(range(9187))
+
 
         # 获取当前临时目录
         current_tmp_dir = tempfile.gettempdir()
@@ -116,14 +101,7 @@ class PreferenceDataset(Dataset):
         tempfile.tempdir = '/aifs4su/chenxinyu/.tmp'
         current_tmp_dir = tempfile.gettempdir()
         print(f"当前临时目录是: {current_tmp_dir}")
-        # df = pd.read_json("hf://datasets/zhiqings/LLaVA-Human-Preference-10K/llava_7b_v1_preference.json")
-        # train_dataset = Dataset.from_pandas(df)
-        # self.raw_data = DatasetDict({
-        #     'train': train_dataset,
-        # })
-        # self.raw_data = load_dataset(path)['train']
-        #exit()
-        
+
         self.data = self.pre_tokenize()
         if size:
             size = min(size, len(self.data))
@@ -192,11 +170,6 @@ class PreferenceDataset(Dataset):
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
-        # raw_sample = self.raw_data[index]
-        # print("###############")
-        # print("now index is: ", index)
-        # print(raw_sample)
-        # print("###############")
         return self.preprocess(self.data[index])
 
     def __len__(self) -> int:
@@ -308,14 +281,6 @@ class PreferenceDataset_ours(Dataset):
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        # self.raw_data = load_dataset(
-        #     path,
-        #     split=split,
-        #     data_files=data_files,
-        #     subset=subset,
-        #     *optional_args,
-        #     trust_remote_code=True,
-        # )
         with open(path, 'r') as f:
             self.raw_data = json.load(f)
         #self.raw_data = self.raw_data[:400]
