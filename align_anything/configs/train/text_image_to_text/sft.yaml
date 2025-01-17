@@ -113,5 +113,13 @@ model_cfgs:
   trust_remote_code: True
   # The max token length
   model_max_length: 2048
+# Additional model kwargs
+additional_model_kwargs:
+  # init audio module
+  init_audio: False
+  # init tts module
+  init_tts: False
+  # init vision module
+  init_vision: True
 # Customized special tokens
 special_tokens: null

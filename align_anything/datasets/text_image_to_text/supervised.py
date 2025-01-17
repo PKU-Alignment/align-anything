@@ -17,6 +17,7 @@
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
+import os
 import torch
 import transformers
 from torch.utils.data import Dataset
@@ -88,7 +89,7 @@ class SupervisedDataset(Dataset):
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         return_dict = {}
         prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)
-        if conversation[-1] != self.tokenizer.eos_token:
+        if self.tokenizer.eos_token not in conversation:
             conversation += self.tokenizer.eos_token
 
         # return necessary information
@@ -98,7 +99,7 @@ class SupervisedDataset(Dataset):
 
         # set the labels masked by the prompt
         inputs = self.tokenize(conversation, meta_info, padding=PaddingStrategy.DO_NOT_PAD)
-        labels = inputs['input_ids'][0].clone()
+        labels = inputs['input_ids'][0].clone().to(torch.long)
         labels[
             : len(
                 self.tokenize(prompt, meta_info, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0]
@@ -167,7 +168,10 @@ class SupervisedCollator:
             padding_value=IGNORE_INDEX,
         ).to(current_device)
 
-        images = [sample['image'] for sample in samples]
+        if os.environ.get('MULTI_IMAGES_INFERENCE_MODELS') == 'Yes':
+            images = [[sample['image']] for sample in samples]
+        else:
+            images = [sample['image'] for sample in samples]
         return_dict['meta_info']['images'] = images
 
         concated_text = [sample['conversation'] for sample in samples]
@@ -180,9 +184,20 @@ class SupervisedCollator:
             padding_side=self.padding_side,
             return_attention_mask=True,
         )
+        
+        return_dict.update(multi_modal_padding)
 
-        for key, value in multi_modal_padding.items():
+        for key, value in return_dict.items():
             if isinstance(value, torch.Tensor):
                 return_dict[key] = value.to(current_device)
+            elif key == 'pixel_values':
+                def move_to_device(item):
+                    if isinstance(item, list):
+                        return [move_to_device(sub_item) for sub_item in item]
+                    elif isinstance(item, torch.Tensor):
+                        return item.to(current_device)
+                    return item
+
+                return_dict[key] = move_to_device(value)
 
         return return_dict
