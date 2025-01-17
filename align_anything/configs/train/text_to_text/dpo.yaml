@@ -30,13 +30,13 @@ train_cfgs:
   # Whether to use gradient checkpointing
   gradient_checkpointing: True
   # Initial learning rate
-  learning_rate: 5.e-6
+  learning_rate: 1.e-6
   # Type of learning rate scheduler
   lr_scheduler_type: cosine
   # Ratio of warmup steps for learning rate
   lr_warmup_ratio: 0.03
   # Weight decay coefficient
-  weight_decay: 0.01
+  weight_decay: 0.05
   # Hyper-parameters for adam optimizer
   adam_betas: [0.9, 0.95]
   # Hyper-parameters for adam epsilon

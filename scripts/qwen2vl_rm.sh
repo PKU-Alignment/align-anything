@@ -18,17 +18,19 @@
 
 MODEL_NAME_OR_PATH="Qwen/Qwen2-VL-7B-Instruct" # model path
 
-TRAIN_DATASETS="PKU-Alignment/align-anything-400k" # dataset path
-TRAIN_TEMPLATE="Qwen2-VL" # dataset template
+TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
+TRAIN_TEMPLATE="AA_TV2T" # dataset template
 TRAIN_NAME="text-video-to-text" # dataset name
 TRAIN_SPLIT="train" # split the dataset
 
-EVAL_DATASETS="PKU-Alignment/align-anything-400k" # dataset path
+EVAL_DATASETS="PKU-Alignment/align-anything" # dataset path
 EVAL_TEMPLATE="Qwen2-VL" # dataset template
 EVAL_NAME="text-video-to-text" # dataset name
 EVAL_SPLIT="val" # split the dataset
 
 OUTPUT_DIR="../outputs/qwen2vl_rm" # output dir
+
+export ROOT_VIDEO_PATH=$TRAIN_DATASETS"/text-video-to-text"
 
 # For wandb online logging
 export WANDB_API_KEY=""

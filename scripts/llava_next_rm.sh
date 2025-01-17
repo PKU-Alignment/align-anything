@@ -16,14 +16,19 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="Qwen/Qwen2-VL-7B-Instruct" # model path
+MODEL_NAME_OR_PATH="llava-hf/LLaVA-NeXT-Video-7B-hf" # model path
 
 TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
 TRAIN_TEMPLATE="AA_TV2T" # dataset template
 TRAIN_NAME="text-video-to-text" # dataset name
 TRAIN_SPLIT="train" # split the dataset
 
-OUTPUT_DIR="../outputs/qwen2vl_dpo" # output dir
+EVAL_DATASETS="PKU-Alignment/align-anything" # dataset path
+EVAL_TEMPLATE="Qwen2-VL" # dataset template
+EVAL_NAME="text-video-to-text" # dataset name
+EVAL_SPLIT="val" # split the dataset
+
+OUTPUT_DIR="../outputs/llava_next_video_rm" # output dir
 
 export ROOT_VIDEO_PATH=$TRAIN_DATASETS"/text-video-to-text"
 
@@ -36,12 +41,16 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
      --master_port ${MASTER_PORT} \
-     --module align_anything.trainers.text_video_to_text.dpo \
+     --module align_anything.trainers.text_video_to_text.rm \
      --model_name_or_path ${MODEL_NAME_OR_PATH} \
      --train_datasets ${TRAIN_DATASETS} \
      --train_template ${TRAIN_TEMPLATE} \
      --train_name ${TRAIN_NAME} \
      --train_split ${TRAIN_SPLIT} \
+     --eval_datasets ${EVAL_DATASETS} \
+     --eval_template ${EVAL_TEMPLATE} \
+     --eval_name ${EVAL_NAME} \
+     --eval_split ${EVAL_SPLIT} \
      --output_dir ${OUTPUT_DIR} \
      --save_interval 1000 \
      --epochs 2

@@ -107,6 +107,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # loading actor reference model
         self.actor_reference_model, _, _ = load_pretrained_models(
@@ -116,6 +117,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # loading reward model
         self.reward_model, self.reward_tokenizer, _ = load_pretrained_models(
@@ -124,6 +126,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             is_reward_model=True,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = load_pretrained_models(
@@ -132,6 +135,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             padding_side='left',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             is_reward_model=True,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # initial checking
         if is_same_tokenizer(self.tokenizer, self.reward_tokenizer):
@@ -193,11 +197,8 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
     ) -> list[dict[str, torch.Tensor]]:
         """Split a batch of PTX samples into micro-batches."""
         micro_batches = []
-        total_batch_size = ptx_batch['input_ids'].size(0)
-        micro_batch_size = int(self.cfgs.train_cfgs.per_device_train_batch_size)
-        for i in range(0, total_batch_size, micro_batch_size):
-            micro_batch = {key: value[i : i + micro_batch_size] for key, value in ptx_batch.items()}
-            micro_batches.append(micro_batch)
+        micro_batch = self.infer_batch(ptx_batch)
+        micro_batches.append(micro_batch)
         return micro_batches
 
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> dict[str, Any]:

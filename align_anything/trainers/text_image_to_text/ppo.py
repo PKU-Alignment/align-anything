@@ -111,6 +111,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
         # loading actor reference model
@@ -119,6 +120,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # loading reward model
         self.reward_model, self.reward_tokenizer, _ = load_pretrained_models(
@@ -127,6 +129,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             is_reward_model=True,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # loading reward critic model
         self.reward_critic_model, self.reward_critic_tokenizer, _ = load_pretrained_models(
@@ -138,6 +141,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # initial checking
         if is_same_tokenizer(self.tokenizer, self.reward_tokenizer):
@@ -204,65 +208,59 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
         # freeze the model for rolling out
         self.set_train(mode=False)
 
-        total_batch_size = prompt_only_batch['input_ids'].size(0)
-        micro_batch_size = int(self.cfgs.train_cfgs.per_device_train_batch_size)
         micro_inference_batches = []
         micro_training_batches = []
-        mini_batch = {}
-        for i in range(0, total_batch_size, micro_batch_size):
-            mini_batch = {
-                key: prompt_only_batch[key][i : i + micro_batch_size] for key in prompt_only_batch
-            }
-            # actor generation
-            actor_batch, response_lens = self.actor_step(mini_batch)
-            # reward model and reward critic model scoring
-            reward_batch = self.reward_model_step(actor_batch)
-            # calculate the log probabilities
-            logits = self.actor_model(**actor_batch).logits
-            ref_logits = self.actor_reference_model(**actor_batch).logits
+        mini_batch = prompt_only_batch.copy()
+        # actor generation
+        actor_batch, response_lens = self.actor_step(mini_batch)
+        # reward model and reward critic model scoring
+        reward_batch = self.reward_model_step(actor_batch)
+        # calculate the log probabilities
+        logits = self.actor_model(**actor_batch).logits
+        ref_logits = self.actor_reference_model(**actor_batch).logits
 
-            logprob_list = []
-            ref_logprob_list = []
-            reward_value_list = []
+        logprob_list = []
+        ref_logprob_list = []
+        reward_value_list = []
 
-            batch_size = logits.size(0)
+        batch_size = logits.size(0)
 
-            for idx in range(batch_size):
-                response_length = response_lens[idx]
-                input_id = actor_batch['input_ids'][idx, 1:][-response_length:].unsqueeze(0)
+        for idx in range(batch_size):
+            response_length = response_lens[idx]
+            input_id = actor_batch['input_ids'][idx, 1:][-response_length:].unsqueeze(0)
 
-                logit = logits[idx, :-1][-response_length:].unsqueeze(0)
-                ref_logit = ref_logits[idx, :-1][-response_length:].unsqueeze(0)
-                reward_value = reward_batch['reward_values'][idx][-response_length:].unsqueeze(0)
+            logit = logits[idx, :-1][-response_length:].unsqueeze(0)
+            ref_logit = ref_logits[idx, :-1][-response_length:].unsqueeze(0)
+            reward_value = reward_batch['reward_values'][idx][-response_length:].unsqueeze(0)
 
-                logprob_list.append(gather_log_probabilities(logit, input_id).squeeze())
-                ref_logprob_list.append(gather_log_probabilities(ref_logit, input_id).squeeze())
-                reward_value_list.append(reward_value.squeeze())
+            logprob_list.append(gather_log_probabilities(logit, input_id).squeeze())
+            ref_logprob_list.append(gather_log_probabilities(ref_logit, input_id).squeeze())
+            reward_value_list.append(reward_value.squeeze())
 
-            log_probs = torch.nn.utils.rnn.pad_sequence(
-                logprob_list, batch_first=True, padding_value=0.0
-            ).to(logits.device)
-            ref_log_probs = torch.nn.utils.rnn.pad_sequence(
-                ref_logprob_list, batch_first=True, padding_value=0.0
-            ).to(logits.device)
-            reward_values = torch.nn.utils.rnn.pad_sequence(
-                reward_value_list, batch_first=True, padding_value=0.0
-            ).to(logits.device)
-            response_mask = (log_probs != 0).bool().to(logits.device)
+        log_probs = torch.nn.utils.rnn.pad_sequence(
+            logprob_list, batch_first=True, padding_value=0.0
+        ).to(logits.device)
+        ref_log_probs = torch.nn.utils.rnn.pad_sequence(
+            ref_logprob_list, batch_first=True, padding_value=0.0
+        ).to(logits.device)
+        reward_values = torch.nn.utils.rnn.pad_sequence(
+            reward_value_list, batch_first=True, padding_value=0.0
+        ).to(logits.device)
+        response_mask = (log_probs != 0).bool().to(logits.device)
 
-            micro_training_batch = {}
-            micro_training_batch['response_lens'] = response_lens
-            micro_training_batch['log_probs'] = log_probs
-            micro_training_batch['ref_log_probs'] = ref_log_probs
-            micro_training_batch['reward'] = reward_batch['reward']
-            micro_training_batch['reward_values'] = reward_values
-            micro_training_batch['response_mask'] = response_mask
+        micro_training_batch = {}
+        micro_training_batch['response_lens'] = response_lens
+        micro_training_batch['log_probs'] = log_probs
+        micro_training_batch['ref_log_probs'] = ref_log_probs
+        micro_training_batch['reward'] = reward_batch['reward']
+        micro_training_batch['reward_values'] = reward_values
+        micro_training_batch['response_mask'] = response_mask
 
-            mini_batch['input_ids'] = reward_batch['input_ids']
-            mini_batch['attention_mask'] = actor_batch['attention_mask']
-            # add rollout results to the batches
-            micro_inference_batches.append(mini_batch)
-            micro_training_batches.append(micro_training_batch)
+        mini_batch['input_ids'] = reward_batch['input_ids']
+        mini_batch['attention_mask'] = actor_batch['attention_mask']
+        # add rollout results to the batches
+        micro_inference_batches.append(mini_batch)
+        micro_training_batches.append(micro_training_batch)
 
         # unfreeze the model for training
         self.set_train()

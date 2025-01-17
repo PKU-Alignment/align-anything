@@ -20,16 +20,14 @@ ACTOR_MODEL_NAME_OR_PATH="Qwen/Qwen2-VL-7B-Instruct" # model path
 REWARD_MODEL_NAME_OR_PATH="../outputs/qwen2vl_rm" # model path
 CRITIC_MODEL_NAME_OR_PATH="../outputs/qwen2vl_rm" # model path
 
-TRAIN_DATASETS="PKU-Alignment/align-anything-400k" # dataset path
-TRAIN_TEMPLATE="Qwen2-VL" # dataset template
+TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
+TRAIN_TEMPLATE="AA_TV2T" # dataset template
 TRAIN_NAME="text-video-to-text" # dataset name
-TRAIN_SPLIT="train" # split the dataset
-
-PTX_DATASETS="PKU-Alignment/align-anything-400k"
-PTX_TEMPLATE="Qwen2-VL"
-PTX_SPLIT="train"
+TRAIN_SPLIT="train" # split the dataset 
 
 OUTPUT_DIR="../outputs/qwen2vl_ppo" # output dir
+
+export ROOT_VIDEO_PATH=$TRAIN_DATASETS"/text-video-to-text"
 
 # For wandb online logging
 export WANDB_API_KEY=""
@@ -48,9 +46,6 @@ deepspeed \
      --train_template ${TRAIN_TEMPLATE} \
      --train_name ${TRAIN_NAME} \
      --train_split ${TRAIN_SPLIT} \
-     --ptx_datasets ${PTX_DATASETS} \
-     --ptx_template ${PTX_TEMPLATE} \
-     --ptx_split ${PTX_SPLIT} \
      --output_dir ${OUTPUT_DIR} \
      --save_interval 1000 \
      --epochs 2

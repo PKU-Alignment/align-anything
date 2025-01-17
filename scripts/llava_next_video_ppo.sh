@@ -16,14 +16,16 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="Qwen/Qwen2-VL-7B-Instruct" # model path
+ACTOR_MODEL_NAME_OR_PATH="llava-hf/LLaVA-NeXT-Video-7B-hf" # model path
+REWARD_MODEL_NAME_OR_PATH="../outputs/llava_next_video_rm" # model path
+CRITIC_MODEL_NAME_OR_PATH="../outputs/llava_next_video_rm" # model path
 
 TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
 TRAIN_TEMPLATE="AA_TV2T" # dataset template
 TRAIN_NAME="text-video-to-text" # dataset name
-TRAIN_SPLIT="train" # split the dataset
+TRAIN_SPLIT="train" # split the dataset 
 
-OUTPUT_DIR="../outputs/qwen2vl_dpo" # output dir
+OUTPUT_DIR="../outputs/llava_next_video_ppo" # output dir
 
 export ROOT_VIDEO_PATH=$TRAIN_DATASETS"/text-video-to-text"
 
@@ -36,8 +38,10 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
      --master_port ${MASTER_PORT} \
-     --module align_anything.trainers.text_video_to_text.dpo \
-     --model_name_or_path ${MODEL_NAME_OR_PATH} \
+     --module align_anything.trainers.text_video_to_text.ppo \
+     --actor_model_name_or_path ${ACTOR_MODEL_NAME_OR_PATH} \
+     --reward_model_name_or_path ${REWARD_MODEL_NAME_OR_PATH} \
+     --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME_OR_PATH} \
      --train_datasets ${TRAIN_DATASETS} \
      --train_template ${TRAIN_TEMPLATE} \
      --train_name ${TRAIN_NAME} \

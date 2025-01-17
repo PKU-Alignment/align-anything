@@ -117,6 +117,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # loading actor reference model
         self.actor_reference_model, _, _ = load_pretrained_models(
@@ -124,6 +125,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='left',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # loading reward model
         self.reward_model, self.reward_tokenizer, _ = load_pretrained_models(
@@ -131,6 +133,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
             is_reward_model=True,
         )
         # loading reward critic model
@@ -143,6 +146,7 @@ class PPOTrainer(PPOTextTrainer):  # pylint: disable=too-many-instance-attribute
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # initial checking
         if is_same_tokenizer(self.tokenizer, self.reward_tokenizer):

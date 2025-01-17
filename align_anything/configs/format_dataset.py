@@ -591,6 +591,103 @@ class AA_TI2T_LLF(BaseFormatter):
         ], {'image': image}
 
 
+@register_template('AA_TV2T')
+class AA_TV2T(BaseFormatter):
+    system_prompt: str = ''
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.root_video_path = os.environ.get('ROOT_VIDEO_PATH')
+        if self.root_video_path is None:
+            raise ValueError('ROOT_VIDEO_PATH is not set')
+
+    def format_prompt_only_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['prompt'].replace('<video>', '').strip()
+        video_path = self.root_video_path + raw_sample['video_path'].replace('./', '/')
+        return [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'video', 'video': video_path},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+        ], {'video': video_path}
+
+    def format_preference_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+        better_id = int(raw_sample['overall_response'])
+        worse_id = 2 if better_id == 1 else 1
+
+        if better_id not in [1, 2] or worse_id not in [1, 2]:
+            return [], [], {}
+
+        raw_better_response = raw_sample[f'response_{better_id}']
+        raw_worse_response = raw_sample[f'response_{worse_id}']
+        prompt = raw_sample['prompt'].replace('<video>', '').strip()
+        video_path = self.root_video_path + raw_sample['video_path'].replace('./', '/')
+        better_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'video', 'video': video_path},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_better_response}]},
+        ]
+        worse_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'video', 'video': video_path},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_worse_response}]},
+        ]
+
+        meta_info = {
+            'video': video_path,
+            'better_response': raw_better_response,
+            'worse_response': raw_worse_response,
+        }
+
+        return better_conversation, worse_conversation, meta_info
+
+    def format_supervised_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+        better_id = int(raw_sample['overall_response'])
+        worse_id = 2 if better_id == 1 else 1
+
+        if better_id not in [1, 2] or worse_id not in [1, 2]:
+            return [], [], {}
+
+        raw_better_response = raw_sample[f'response_{better_id}']
+        prompt = raw_sample['prompt'].replace('<video>', '').strip()
+        video_path = self.root_video_path + raw_sample['video_path'].replace('./', '/')
+        better_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'video', 'video': video_path},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_better_response}]},
+        ]
+
+        meta_info = {
+            'video': video_path,
+        }
+
+        return better_conversation, meta_info
+
+
 @register_template('DiffusionDB')
 class DiffusionDB:
     system_prompt: str = ''

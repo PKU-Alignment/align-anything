@@ -26,7 +26,7 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.datasets.text_to_text.preference import PreferenceBatch
 from align_anything.datasets.text_video_to_text.preference import PreferenceDataset
-from align_anything.models.pretrained_model_with_value import load_pretrained_model_with_value_head
+from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.rm import RMTrainer as RMtextTrainer
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
@@ -50,7 +50,7 @@ class RMTrainer(RMtextTrainer):
         """Initialize model and tokenizer."""
         if self.ds_train_cfgs is not None and self.ds_train_cfgs['zero_optimization']['stage'] == 3:
             self.dstchf = HfDeepSpeedConfig(self.ds_train_cfgs)
-        self.model, self.tokenizer, self.processor = load_pretrained_model_with_value_head(
+        self.model, self.tokenizer, self.processor = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
@@ -58,7 +58,7 @@ class RMTrainer(RMtextTrainer):
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
-            modality='text_video_to_text',
+            is_reward_model=True,
         )
         self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
 
@@ -73,12 +73,9 @@ class RMTrainer(RMtextTrainer):
         ) = batch[
             'input_ids'
         ].chunk(chunks=2, dim=0)
-        keys_to_remove = ['better_response_lens', 'worse_response_lens', 'response_lens']
-
-        infer_batch = {key: value for key, value in batch.items() if key not in keys_to_remove}
         assert better_input_ids.size(0) == worse_input_ids.size(0), 'batch size mismatch!'
+        output = self.model(**self.infer_batch(batch))
 
-        output = self.model.forward(**infer_batch)
         scores = output.scores
         end_scores = output.end_scores
         higher_rewards, lower_rewards = scores.squeeze(dim=-1).chunk(chunks=2, dim=0)

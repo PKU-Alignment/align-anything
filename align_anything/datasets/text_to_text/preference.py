@@ -24,7 +24,7 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.tools import right_padding
+from align_anything.utils.tools import left_padding, right_padding
 from datasets import load_dataset
 
 
@@ -95,22 +95,25 @@ class PreferenceDataset(Dataset):
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        return_dict = {}
-        formatted_better_text, formatted_worse_text, _ = self.template.format_preference_sample(
+        better_conversation, worse_conversation, meta_info = self.template.format_preference_sample(
             raw_sample
         )
-        return_dict['better_input_ids'] = self.tokenize(formatted_better_text)
-        return_dict['worse_input_ids'] = self.tokenize(formatted_worse_text)
+        return_dict = {}
+        return_dict['better_response_lens'] = len(
+            self.tokenize(meta_info['better_response'], add_special_tokens=False)['input_ids'][0]
+        )
+        return_dict['worse_response_lens'] = len(
+            self.tokenize(meta_info['worse_response'], add_special_tokens=False)['input_ids'][0]
+        )
+        return_dict['better_conversation'] = better_conversation
+        return_dict['worse_conversation'] = worse_conversation
 
         return return_dict
 
-    def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return PreferenceCollator(self.tokenizer.pad_token_id)
-
     def tokenize(
         self,
-        text: str,
-        add_special_tokens: bool = True,
+        conversation: str,
+        add_special_tokens: bool = False,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
         truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
         max_length: int | None = None,
@@ -120,13 +123,16 @@ class PreferenceDataset(Dataset):
             max_length = self.tokenizer.model_max_length
 
         return self.tokenizer(
-            text,
+            text=conversation,
             add_special_tokens=add_special_tokens,
             padding=padding,
             max_length=max_length,
             truncation=truncation,
             return_tensors='pt',
-        )['input_ids'][0]
+        )
+
+    def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
+        return PreferenceCollator(self.tokenizer, self.tokenizer.padding_side)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
@@ -141,24 +147,36 @@ class PreferenceDataset(Dataset):
 
 class PreferenceCollator:
 
-    def __init__(self, pad_token_id: int) -> None:
+    def __init__(
+        self,
+        tokenizer: transformers.PreTrainedTokenizer,
+        padding_side: str = 'right',
+    ) -> None:
         """Initialize a collator."""
-        self.pad_token_id = pad_token_id
+        self.padding_func = right_padding if padding_side == 'right' else left_padding
+        self.tokenizer = tokenizer
+        self.padding_side = padding_side
 
     def __call__(self, samples: list[PreferenceSample]) -> tuple[PreferenceBatch]:
-        return_dict = {}
+        return_dict = {'meta_info': {}}
         current_device = get_current_device()
-        input_ids = [sample['better_input_ids'] for sample in samples] + [
-            sample['worse_input_ids'] for sample in samples
+        concated_text = [sample['better_conversation'] for sample in samples] + [
+            sample['worse_conversation'] for sample in samples
         ]  # size = (2 * B, L)
-        return_dict['input_ids'] = right_padding(input_ids, padding_value=self.pad_token_id).to(
-            current_device
-        )  # size = (2 * B, L)
-        attention_mask = [
-            input_id.new_ones(input_id.size(), dtype=torch.bool) for input_id in input_ids
-        ]  # size = (2 * B, L)
-        return_dict['attention_mask'] = right_padding(attention_mask, padding_value=0).to(
-            current_device
-        )  # size = (2 * B, L)
+        tokenized_input = self.tokenizer(
+            text=concated_text,
+            return_tensors='pt',
+            padding=True,
+            padding_side=self.padding_side,
+            return_attention_mask=True,
+            add_special_tokens=False,
+        )
+        for key, value in tokenized_input.items():
+            if isinstance(value, torch.Tensor):
+                return_dict[key] = value.to(current_device)
+
+        better_response_lens = [sample['better_response_lens'] for sample in samples]
+        worse_response_lens = [sample['worse_response_lens'] for sample in samples]
+        return_dict['meta_info']['response_lens'] = better_response_lens + worse_response_lens
 
         return return_dict

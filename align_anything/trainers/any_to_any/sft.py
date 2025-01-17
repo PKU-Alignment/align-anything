@@ -57,6 +57,7 @@ class SuperviseTrainer(SupervisedtextTrainer):
             model_max_length=self.cfgs.model_cfgs.model_max_length,
             padding_side='right',
             trust_remote_code=True,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         processor_name_or_path = self.cfgs.model_cfgs.processor_name_or_path
         image_processor = AutoImageProcessor.from_pretrained(

@@ -50,6 +50,7 @@ from transformers.utils import ContextManagers
 
 from align_anything.models.model_registry import AnyModel, AnyModelForScore
 from align_anything.utils.multi_process import get_current_device, is_main_process
+from align_anything.utils.tools import namedtuple_to_dict
 
 
 DEFAULT_BOS_TOKEN: str = '<s>'
@@ -179,6 +180,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     bnb_cfgs: dict[str, Any] | None = None,
     lora_cfgs: dict[str, Any] | None = None,
     is_reward_model: bool = False,
+    processor_kwargs: dict[str, Any] = {},
 ) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
     """Load pre-trained model and tokenizer from a given path."""
     model_name_or_path = os.path.expanduser(model_name_or_path)
@@ -287,7 +289,9 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     )
 
     try:
-        processor = AutoProcessor.from_pretrained(model_name_or_path)
+        processor = AutoProcessor.from_pretrained(
+            model_name_or_path, **namedtuple_to_dict(processor_kwargs)
+        )
     except Exception:
         processor = None
 

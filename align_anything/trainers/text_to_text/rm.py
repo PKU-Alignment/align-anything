@@ -80,6 +80,7 @@ class RMTrainer(SupervisedTrainerBase):
             padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             is_reward_model=True,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
 
     def init_datasets(self) -> None:
@@ -270,7 +271,6 @@ class RMTrainer(SupervisedTrainerBase):
         )
 
         if self.cfgs.data_cfgs.eval_datasets:
-            self.logger.print('\n***** Evaluating at the beginning *****')
             self.logger.log(self.eval(), step=0)
 
         for epoch in range(int(self.cfgs.train_cfgs.epochs)):

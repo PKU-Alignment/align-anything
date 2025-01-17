@@ -78,6 +78,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
             trust_remote_code=True,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
 
     def init_datasets(self) -> None:

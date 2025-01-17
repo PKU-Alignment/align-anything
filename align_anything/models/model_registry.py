@@ -71,6 +71,7 @@ MODEL_FOR_SCORE_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('chameleon', 'AccustomedChameleonRewardModel'),
         ('qwen2_vl', 'AccustomedQwen2VLRewardModel'),
         ('idefics2', 'AccustomedIdefics2RewardModel'),
+        ('llava_next_video', 'AccustomedLlavaNextVideoRewardModel'),
     ],
 )
 
