@@ -360,6 +360,9 @@ You can modify the configuration files for the benchmarks in [this directory](ht
 ### Multi-Modal CLI
 
 ```bash
+# Omni-modal inference
+python3 -m align_anything.serve.omni_modal_cli --model_name_or_path openbmb/MiniCPM-o-2_6
+
 # Image inference
 python3 -m align_anything.serve.multi_modal_cli --model_name_or_path llava-hf/llava-1.5-7b-hf --modality image
 

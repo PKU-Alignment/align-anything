@@ -145,7 +145,6 @@ if __name__ == '__main__':
         }
     )
     model = model.eval().cuda()
-    model.init_tts()
 
     examples = IMAGE_EXAMPLES + AUDIO_EXAMPLES + VIDEO_EXAMPLES
     iface = gr.ChatInterface(
