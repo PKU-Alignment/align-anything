@@ -157,6 +157,7 @@ class AnyModel(_BaseAutoModelClass):
                 trust_remote_code=True,
                 **kwargs,
             )
+
         return super().from_pretrained(
             pretrained_model_name_or_path,
             *model_args,

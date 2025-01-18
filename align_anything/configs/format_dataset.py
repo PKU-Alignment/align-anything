@@ -252,36 +252,6 @@ class Aligner(BaseFormatter):
             {'role': 'assistant', 'content': text},
         ], {}
 
-@register_template('O1_T2T')
-class O1_T2T(BaseFormatter):
-    system_prompt: str = ''
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.special_tokens = os.environ.get('O1_SPECIAL_TOKENS')
-        if self.special_tokens is None:
-            raise ValueError('O1_SPECIAL_TOKENS is not set')
-        if self.special_tokens.startswith('[') and self.special_tokens.endswith(']'):
-            self.special_tokens = self.special_tokens[1:-1].split(',')
-            self.special_tokens = [token.strip().strip('"').strip("'") for token in self.special_tokens]
-        else:
-            raise ValueError('O1_SPECIAL_TOKENS must be a list of strings')
-        if len(self.special_tokens) < 3:
-            raise ValueError('O1_SPECIAL_TOKENS must contain at least three tokens')
-        
-    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
-        prompt = raw_sample['prompt']
-        thoughts = ""
-        answer = raw_sample['answer']
-        for thought in raw_sample['thoughts']:
-            if "title" in thought.keys():
-                thoughts += f"**{thought['title']}**\n{thought['content']}\n{self.special_tokens[1]}\n"
-            else:
-                thoughts += f"{thought['content']}\n{self.special_tokens[1]}\n"
-        return [
-            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
-            {'role': 'assistant', 'content': [{'type': 'text', 'text': f'{self.special_tokens[0]}{thoughts}{self.special_tokens[2]}{answer}'}]},
-        ], {}
 
 @register_template('AA_T2T')
 class AA_T2T(BaseFormatter):
@@ -480,6 +450,33 @@ class AA_TA2T(BaseFormatter):
         }
 
         return better_conversation, worse_conversation, meta_info
+
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        better_id = int(raw_sample['overall_response'])
+        better_response = raw_sample[f'response_{better_id}']
+        prompt = raw_sample['prompt']
+
+        better_conversation = [
+            {'role': 'system', 'content': [{'type': 'text', 'text': self.system_prompt}]},
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'audio', 'audio_url': 'placeholder'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': better_response}]},
+        ]
+
+        raw_audio, raw_sr = (
+            raw_sample['audio_path']['array'],
+            raw_sample['audio_path']['sampling_rate'],
+        )
+        audio = librosa.resample(raw_audio, orig_sr=raw_sr, target_sr=16000)
+
+        meta_info = {'audios': [audio]}
+
+        return better_conversation, meta_info
 
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['prompt']
