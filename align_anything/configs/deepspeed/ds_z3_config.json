@@ -15,7 +15,8 @@
       "max_live_parameters": 1e8,
       "prefetch_bucket_size": 3e7,
       "memory_efficient_linear": false,
-      "gather_16bit_weights_on_model_save": true
+      "gather_16bit_weights_on_model_save": true,
+      "reduce_bucket_size": 5e8
   },
   "gradient_clipping": 1.0,
   "prescale_gradients": false,

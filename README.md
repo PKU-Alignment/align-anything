@@ -33,16 +33,17 @@
 
 <div align="center">
 
-[Our 100K Instruction-Following Datasets](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K)
+[Our All-Modality Alignment Datasets](https://huggingface.co/datasets/PKU-Alignment/align-anything)
 
 </div>
 
 Align-Anything aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for Large Models can be found in [AI Alignment](https://alignmentsurvey.com). Overall, this framework has the following characteristics:
 
 - **Highly Modular Framework.** Its versatility stems from the abstraction of different algorithm types and well-designed APIs, allowing users to easily modify and customize the code for different tasks (see [framework design](https://align-anything.readthedocs.io/)).
-- **Support for Various Modality Model Fine-Tuning.** This framework includes fine-tuning capabilities for models such as LLaMA3.2, LLaVA, Gemma, Qwen2Audio, Baichuan, and others (see [Model Zoo](#advanced-usage)).
-- **Support Different Alignment Methods.** The framework supports different alignment algorithms, including SFT, DPO, PPO, and others (see [scripts](./scripts)).
-- **Support Multi-Modal CLI.** The framework supports multi-modal CLI for image, audio, and video modalities (see [multi-modal CLI](#multi-modal-cli)).
+- **Various Modality Model Fine-Tuning.** Fine-tuning capabilities for models such as LLaMA3.2, LLaVA, Gemma, Qwen2Audio, Chameleon, and others (see [Model Zoo](#advanced-usage)).
+- **Different Alignment Methods.** Different alignment algorithms, including SFT, DPO, PPO, and others (see [scripts](./scripts)).
+- **Multi-Modal CLI.** Multi-modal CLI for image, audio, and video modalities (see [multi-modal CLI](#multi-modal-cli)).
+- **O1-like Training.** O1-like training based on [DollyTails](https://huggingface.co/datasets/PKU-Alignment/DollyTails-12K) (see [scripts/llama_sft_o1.sh](./scripts)).
 
 **Note:** We provide a [quick start guide](https://align-anything.readthedocs.io/) for users to quickly get the code structure and development details.
 
@@ -112,6 +113,7 @@ pip install -e .[all]
 
 - `pip install -e .[text-to-audio]`: Install the text-to-audio dependencies.
 - `pip install -e .[minicpmv]`: Install the minicpmv dependencies.
+- `pip install -e .[minicpmo]`: Install the minicpmo dependencies.
 
 </details>
 
@@ -358,6 +360,9 @@ You can modify the configuration files for the benchmarks in [this directory](ht
 ### Multi-Modal CLI
 
 ```bash
+# Omni-modal inference
+python3 -m align_anything.serve.omni_modal_cli --model_name_or_path openbmb/MiniCPM-o-2_6
+
 # Image inference
 python3 -m align_anything.serve.multi_modal_cli --model_name_or_path llava-hf/llava-1.5-7b-hf --modality image
 

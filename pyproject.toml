@@ -161,6 +161,13 @@ minicpmv = [
     "transformers==4.40.0",
 ]
 
+minicpmo = [
+    "vector-quantize-pytorch",
+    "vocos",
+    "decord",
+    "moviepy",
+]
+
 text-to-audio = [
     "pytorchvideo",
 ]

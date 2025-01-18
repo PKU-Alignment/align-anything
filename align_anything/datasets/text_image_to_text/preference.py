@@ -24,7 +24,7 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.tools import left_padding, right_padding
+from align_anything.utils.tools import left_padding, right_padding, ends_with_any
 from datasets import load_dataset
 
 
@@ -103,12 +103,12 @@ class PreferenceDataset(Dataset):
         )
         better_conversation = (
             better_conversation + self.tokenizer.eos_token
-            if better_conversation[-1] != self.tokenizer.eos_token
+            if not ends_with_any(better_conversation, self.tokenizer.eos_token)
             else better_conversation
         )
         worse_conversation = (
             worse_conversation + self.tokenizer.eos_token
-            if worse_conversation[-1] != self.tokenizer.eos_token
+            if not ends_with_any(worse_conversation, self.tokenizer.eos_token)
             else worse_conversation
         )
         return_dict = {}

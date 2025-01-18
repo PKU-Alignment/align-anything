@@ -27,6 +27,7 @@ from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 from align_anything.utils.multi_process import get_current_device, print_on_main_process
 from align_anything.utils.process_llava_next_video import read_video_pyav as llava_next_video_loader
 from align_anything.utils.process_qwen2vl import process_video_info as qwen2vl_video_loader
+from align_anything.utils.tools import ends_with_any
 from datasets import load_dataset
 
 
@@ -90,7 +91,7 @@ class SupervisedDataset(Dataset):
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         return_dict = {}
         prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)
-        if self.tokenizer.eos_token not in conversation:
+        if not ends_with_any(conversation, self.tokenizer.eos_token):
             conversation += self.tokenizer.eos_token
 
         # return necessary information

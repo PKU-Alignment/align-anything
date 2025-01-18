@@ -181,6 +181,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     lora_cfgs: dict[str, Any] | None = None,
     is_reward_model: bool = False,
     processor_kwargs: dict[str, Any] = {},
+    modality: list[str] | None = None,
 ) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
     """Load pre-trained model and tokenizer from a given path."""
     model_name_or_path = os.path.expanduser(model_name_or_path)
@@ -258,6 +259,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
             torch_dtype=dtype,
             trust_remote_code=trust_remote_code,
             **auto_model_kwargs,
+            modality=modality,
         )
 
     forbidden_modules = set()
@@ -284,13 +286,15 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
         cache_dir=cache_dir,
         model_max_length=model_max_length,
         padding_side=padding_side,
-        trust_remote_code=trust_remote_code,
+        trust_remote_code=True,
         **auto_tokenizer_kwargs,
     )
 
     try:
         processor = AutoProcessor.from_pretrained(
-            model_name_or_path, **namedtuple_to_dict(processor_kwargs)
+            model_name_or_path, 
+            trust_remote_code=True,
+            **namedtuple_to_dict(processor_kwargs)
         )
     except Exception:
         processor = None

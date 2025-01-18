@@ -270,8 +270,8 @@ def prepare_ds_train_cfgs(custom_cfgs: NamedTuple, raw_ds_cfgs: dict[str, Any]) 
     ds_cfgs = raw_ds_cfgs.copy()
     world_size = dist.get_world_size() if dist.is_initialized() else 1
 
-    micro_batch_size_per_gpu = custom_cfgs.per_device_train_batch_size
-    gradient_accumulation_steps = custom_cfgs.gradient_accumulation_steps
+    micro_batch_size_per_gpu = int(custom_cfgs.per_device_train_batch_size)
+    gradient_accumulation_steps = int(custom_cfgs.gradient_accumulation_steps)
 
     train_batch_size = micro_batch_size_per_gpu * world_size * gradient_accumulation_steps
     ds_cfgs['train_batch_size'] = train_batch_size
@@ -810,3 +810,16 @@ def count_right_padding(lst, padding=0):
             break
 
     return count
+
+def ends_with_any(s, substrings):
+    """Check if the string ends with any of the substrings.
+
+    Args:
+        s (str): The string to check.
+        substrings (list[str]): The list of substrings to check.
+
+    Returns:
+        bool: True if the string ends with any of the substrings, False otherwise.
+    """
+    temp = s.strip()
+    return temp.endswith(tuple(substrings))

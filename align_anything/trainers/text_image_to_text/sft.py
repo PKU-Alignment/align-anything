@@ -30,6 +30,7 @@ from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
+    namedtuple_to_dict,
     read_cfgs,
     seed_everything,
     update_dict,
@@ -62,6 +63,7 @@ class SuperviseTrainer(SupervisedtextTrainer):
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
             processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
+            modality=['image'],
         )
         self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
 

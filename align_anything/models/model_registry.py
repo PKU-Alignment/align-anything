@@ -94,6 +94,7 @@ MODEL_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
 TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES = OrderedDict(
     [
         ('minicpmv', 'AccustomedMiniCPMV'),
+        ('minicpmo', 'AccustomedMiniCPMO'),
     ],
 )
 
@@ -116,6 +117,10 @@ TRUST_REMOTE_CODE_MODEL_MAPPING: OrderedDict[str, Any] = _LazyAutoMappingInAlign
 class AnyModelForScore(_BaseAutoModelClass):
     _model_mapping: OrderedDict[str, Any] = MODEL_FOR_SCORE_MAPPING
 
+    @classmethod
+    def from_pretrained(cls, *args, **kwargs):
+        kwargs.pop('modality')
+        return super().from_pretrained(*args, **kwargs)
 
 class AnyModel(_BaseAutoModelClass):
     _model_mapping: OrderedDict[str, Any] = MODEL_MAPPING
@@ -128,9 +133,10 @@ class AnyModel(_BaseAutoModelClass):
         trust_remote_code=False,
         code_revision=None,
         commit_hash=None,
+        modality=None,
         **kwargs,
     ):
-        config, kwargs = AutoConfig.from_pretrained(
+        config, unused_kwargs = AutoConfig.from_pretrained(
             pretrained_model_name_or_path,
             return_unused_kwargs=True,
             trust_remote_code=trust_remote_code,
@@ -140,17 +146,20 @@ class AnyModel(_BaseAutoModelClass):
         )
         model_type = config.model_type
         if model_type in TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES:
-            return get_model_class_for_trust_remote_code(
+            model_class = get_model_class_for_trust_remote_code(
                 model_type, TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES
-            ).from_pretrained(
+            )
+            if hasattr(model_class, 'model_additional_kwargs'):
+                kwargs.update(model_class.model_additional_kwargs(modality))
+            return model_class.from_pretrained(
                 pretrained_model_name_or_path,
                 *model_args,
-                trust_remote_code=trust_remote_code,
+                trust_remote_code=True,
                 **kwargs,
             )
         return super().from_pretrained(
             pretrained_model_name_or_path,
             *model_args,
             trust_remote_code=trust_remote_code,
-            **kwargs,
+            **unused_kwargs,
         )
