@@ -810,3 +810,16 @@ def count_right_padding(lst, padding=0):
             break
 
     return count
+
+def ends_with_any(s, substrings):
+    """Check if the string ends with any of the substrings.
+
+    Args:
+        s (str): The string to check.
+        substrings (list[str]): The list of substrings to check.
+
+    Returns:
+        bool: True if the string ends with any of the substrings, False otherwise.
+    """
+    temp = s.strip()
+    return temp.endswith(tuple(substrings))

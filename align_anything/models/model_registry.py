@@ -117,6 +117,10 @@ TRUST_REMOTE_CODE_MODEL_MAPPING: OrderedDict[str, Any] = _LazyAutoMappingInAlign
 class AnyModelForScore(_BaseAutoModelClass):
     _model_mapping: OrderedDict[str, Any] = MODEL_FOR_SCORE_MAPPING
 
+    @classmethod
+    def from_pretrained(cls, *args, **kwargs):
+        kwargs.pop('modality')
+        return super().from_pretrained(*args, **kwargs)
 
 class AnyModel(_BaseAutoModelClass):
     _model_mapping: OrderedDict[str, Any] = MODEL_MAPPING

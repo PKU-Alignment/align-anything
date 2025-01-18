@@ -28,6 +28,7 @@ from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 from align_anything.utils.multi_process import get_current_device, print_on_main_process
 from align_anything.utils.process_llava_next_video import read_video_pyav as llava_next_video_loader
 from align_anything.utils.process_qwen2vl import process_video_info as qwen2vl_video_loader
+from align_anything.utils.tools import ends_with_any
 from datasets import load_dataset
 
 
@@ -95,6 +96,16 @@ class PreferenceDataset(Dataset):
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
         better_conversation, worse_conversation, meta_info = self.template.format_preference_sample(
             raw_sample
+        )
+        better_conversation = (
+            better_conversation + self.tokenizer.eos_token
+            if not ends_with_any(better_conversation, self.tokenizer.eos_token)
+            else better_conversation
+        )
+        worse_conversation = (
+            worse_conversation + self.tokenizer.eos_token
+            if not ends_with_any(worse_conversation, self.tokenizer.eos_token)
+            else worse_conversation
         )
         video = meta_info['video']
         return_dict = {}

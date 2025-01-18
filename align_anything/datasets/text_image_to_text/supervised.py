@@ -25,7 +25,7 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.tools import right_padding
+from align_anything.utils.tools import ends_with_any
 from datasets import load_dataset
 
 
@@ -89,7 +89,7 @@ class SupervisedDataset(Dataset):
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         return_dict = {}
         prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)
-        if self.tokenizer.eos_token not in conversation:
+        if not ends_with_any(conversation, self.tokenizer.eos_token):
             conversation += self.tokenizer.eos_token
 
         # return necessary information
