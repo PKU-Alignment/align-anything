@@ -18,7 +18,7 @@
 
 
 import os
-
+import math
 import torch.utils.checkpoint
 from typing import Any
 
@@ -48,8 +48,8 @@ class AccustomedMiniCPMO(MiniCPMO):
     def model_additional_kwargs(modality: list[str]):
         return {
             'init_audio': 'audio' in modality,
-            'init_tts': 'audio' in modality,
-            'init_vision': 'image' in modality,
+            'init_tts': False,
+            'init_vision': True,
         }
 
     def apply_chat_template(
@@ -83,7 +83,7 @@ class AccustomedMiniCPMO(MiniCPMO):
         self,
         input_ids: torch.LongTensor | None = None,
         attention_mask: torch.Tensor | None = None,
-        pixel_values: torch.Tensor | None = None,
+        pixel_values: torch.Tensor | list = [],
         tgt_sizes: torch.Tensor | None = None,
         audio_features: torch.Tensor | None = None,
         audio_feature_lens: torch.Tensor | None = None,
@@ -94,14 +94,26 @@ class AccustomedMiniCPMO(MiniCPMO):
         labels: torch.Tensor | None = None,
         **kwargs,
     ):
+        batch_size = input_ids.shape[0]
         model_inputs = {
             "input_ids": input_ids,
             "audio_features": audio_features,
             "audio_feature_lens": audio_feature_lens,
-            "image_bound": image_bound,
+            "image_bound": image_bound or [[]] * batch_size,
             "audio_bounds": audio_bounds,
             "spk_bounds": spk_bounds,
         }
+        dtype = self.llm.model.embed_tokens.weight.dtype
+        device = self.llm.model.embed_tokens.weight.device
+        if len(pixel_values) == 0:
+            vision_hidden_states = []
+            dummy_image = torch.zeros((batch_size, 3, 224, 224), device=device, dtype=dtype)
+            tgt_sizes = torch.Tensor(
+                [[(224 // self.config.patch_size), math.ceil(224 / self.config.patch_size)]]
+            ).type(torch.int32)
+            dummy_feature = self.resampler(self.vpm(dummy_image).last_hidden_state, tgt_sizes)
+            for _ in range(batch_size):
+                vision_hidden_states.append(dummy_feature)
         if vision_hidden_states is None:
             model_inputs["pixel_values"] = pixel_values
             model_inputs["tgt_sizes"] = tgt_sizes
@@ -111,9 +123,10 @@ class AccustomedMiniCPMO(MiniCPMO):
         position_ids = attention_mask.long().cumsum(-1) - 1
         position_ids.masked_fill_(attention_mask == 0, 1).to(torch.long)
         model_inputs["position_ids"] = position_ids
+
         return super().forward(
             data=model_inputs, 
             attention_mask=attention_mask, 
-            labels=labels, 
+            labels=labels.to(torch.long), 
             **kwargs
         )

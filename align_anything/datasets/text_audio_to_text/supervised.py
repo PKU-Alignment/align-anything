@@ -97,14 +97,9 @@ class SupervisedDataset(Dataset):
         return_dict['audios'] = meta_info['audios']
 
         # set the labels masked by the prompt
-        inputs = self.tokenize(conversation, meta_info, padding=PaddingStrategy.DO_NOT_PAD)
-        labels = inputs['input_ids'][0].clone()
-        labels[
-            : len(
-                self.tokenize(prompt, meta_info, padding=PaddingStrategy.DO_NOT_PAD)['input_ids'][0]
-            )
-        ] = IGNORE_INDEX
-        return_dict['labels'] = labels
+        return_dict['prompt_lens'] = len(
+            self.tokenize(prompt, add_special_tokens=False)['input_ids'][0]
+        )
 
         return return_dict
 
@@ -114,23 +109,22 @@ class SupervisedDataset(Dataset):
     def tokenize(
         self,
         conversation: str,
-        meta_info: dict[str, Any],
         add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
         truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
         max_length: int | None = None,
     ) -> torch.LongTensor:  # size = (L,)
         """Tokenize a text string into a tensor representation."""
+        if max_length is None:
+            max_length = self.tokenizer.model_max_length
 
-        return self.processor(
+        return self.tokenizer(
             text=conversation,
-            audios=meta_info['audios'],
             add_special_tokens=add_special_tokens,
             padding=padding,
             max_length=max_length,
             truncation=truncation,
             return_tensors='pt',
-            sampling_rate=self.processor.feature_extractor.sampling_rate,
         )
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
@@ -158,18 +152,11 @@ class SupervisedCollator:
         self.padding_side = padding_side
 
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
-        return_dict = {'meta_info': {}}
+        return_dict = {}
         current_device = get_current_device()
 
-        return_dict['labels'] = right_padding(
-            [sample['labels'] for sample in samples],
-            padding_value=IGNORE_INDEX,
-        ).to(current_device)
-
-        audios = [sample['audios'] for sample in samples]
-        return_dict['meta_info']['audios'] = audios
-
         concated_text = [sample['conversation'] for sample in samples]
+        audios = [sample['audios'] for sample in samples]
 
         multi_modal_padding = self.processor(
             audios=audios,
@@ -179,9 +166,26 @@ class SupervisedCollator:
             padding_side=self.padding_side,
             return_attention_mask=True,
         )
+        inputs_ids = multi_modal_padding['input_ids']
+        labels = inputs_ids.clone()
+
+        for i in range(len(samples)):
+            prompt_lens = samples[i]['prompt_lens']
+            labels[i, :prompt_lens] = IGNORE_INDEX
+
+        return_dict.update(multi_modal_padding)
+        
+        return_dict['labels'] = labels.to(current_device)
 
         for key, value in multi_modal_padding.items():
             if isinstance(value, torch.Tensor):
                 return_dict[key] = value.to(current_device)
+            else:
+                def move_to_device(item):
+                    if isinstance(item, list):
+                        return [move_to_device(sub_item) for sub_item in item]
+                    elif isinstance(item, torch.Tensor):
+                        return item.to(current_device)
+                    return item
 
         return return_dict

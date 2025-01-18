@@ -23,7 +23,7 @@ TRAIN_DATASETS="PKU-Alignment/Align-Anything-TI2T-Instruction-100K" # dataset pa
 TRAIN_TEMPLATE="AA_TI2T" # dataset template
 TRAIN_SPLIT="train" # split the dataset
 
-OUTPUT_DIR="../outputs/minicpmo_sft" # output dir
+OUTPUT_DIR="../outputs/minicpmo_sft_vision" # output dir
 
 # For wandb online logging
 export WANDB_API_KEY=""
