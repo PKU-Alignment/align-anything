@@ -35,7 +35,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
      --master_port ${MASTER_PORT} \
-     --module align_anything.trainers.text_image_to_text.sft \
+     --module align_anything.trainers.text_audio_to_text.sft \
      --model_name_or_path ${MODEL_NAME_OR_PATH} \
      --trust_remote_code True \
      --train_datasets ${TRAIN_DATASETS} \
