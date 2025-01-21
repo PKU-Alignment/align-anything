@@ -181,9 +181,7 @@ class SupervisedCollator:
             labels[i, :prompt_lens] = IGNORE_INDEX
         
         return_dict.update(multi_modal_padding)
-        
-        return_dict['labels'] = labels.to(torch.long)
-
+        return_dict['labels'] = labels
         for key, value in return_dict.items():
             if isinstance(value, torch.Tensor):
                 return_dict[key] = value.to(current_device)

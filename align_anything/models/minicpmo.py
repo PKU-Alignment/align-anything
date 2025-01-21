@@ -19,6 +19,7 @@
 
 import os
 import math
+import deepspeed
 import torch.utils.checkpoint
 from typing import Any
 
@@ -43,6 +44,7 @@ class AccustomedMiniCPMO(MiniCPMO):
         )
         self.system_prompt = 'You are a helpful assistant. You can accept video, audio and text input and output voice and text. '
         os.environ['MULTI_IMAGES_INFERENCE_MODELS'] = 'Yes'
+        deepspeed.zero.register_external_parameter(self, self.apm.embed_positions.weight)
 
     @staticmethod
     def model_additional_kwargs(modality: list[str]):
@@ -50,6 +52,7 @@ class AccustomedMiniCPMO(MiniCPMO):
             'init_audio': 'audio' in modality,
             'init_tts': False,
             'init_vision': True,
+            'vision_batch_size': 256,
         }
 
     def apply_chat_template(
@@ -119,14 +122,14 @@ class AccustomedMiniCPMO(MiniCPMO):
             model_inputs["tgt_sizes"] = tgt_sizes
         else:
             model_inputs["vision_hidden_states"] = vision_hidden_states
-        
-        position_ids = attention_mask.long().cumsum(-1) - 1
-        position_ids.masked_fill_(attention_mask == 0, 1).to(torch.long)
-        model_inputs["position_ids"] = position_ids
+
+        with torch.no_grad():   
+            position_ids = torch.arange(input_ids.size(1)).long().repeat(batch_size, 1)
+            model_inputs["position_ids"] = position_ids.to(device)
 
         return super().forward(
             data=model_inputs, 
             attention_mask=attention_mask, 
-            labels=labels.to(torch.long), 
+            labels=labels.to(torch.long) if labels is not None else None, 
             **kwargs
         )

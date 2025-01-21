@@ -62,12 +62,13 @@ class DPOTrainer(DPOtextTrainer):
         self.model, self.tokenizer, self.processor = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
             padding_side='left',
-            trust_remote_code=False,
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             freeze_mm_proj=self.cfgs.train_cfgs.freeze_mm_proj,
             freeze_audio_proj=self.cfgs.train_cfgs.freeze_audio_proj,
             freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
             processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
+            modality=['audio'],
         )
         self.reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.model_name_or_path,
@@ -78,6 +79,7 @@ class DPOTrainer(DPOtextTrainer):
             freeze_audio_tower=self.cfgs.train_cfgs.freeze_audio_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
             processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
+            modality=['audio'],
         )
 
     def compute_log_probs(

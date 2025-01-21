@@ -181,7 +181,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
     lora_cfgs: dict[str, Any] | None = None,
     is_reward_model: bool = False,
     processor_kwargs: dict[str, Any] = {},
-    modality: list[str] | None = None,
+    modality: list[str] | list[None] = [],
 ) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
     """Load pre-trained model and tokenizer from a given path."""
     model_name_or_path = os.path.expanduser(model_name_or_path)
