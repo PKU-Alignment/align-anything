@@ -23,6 +23,10 @@ default:
   eval_cfgs:
     # Output directory name
     output_dir: null
+    # OpenAI base url
+    openai_api_base_url: null
+    # OpenAI Key
+    openai_api_key: null
     # Unique identifier for cache folder
     uuid: null
     # Num shot
@@ -32,7 +36,7 @@ default:
   # Configuration for data
   data_cfgs:
     # Task name
-    task: ['harm', 'help']
+    task: ['harm','help']
     # Task directory
     task_dir: sqrti/SPA-VL
     # Evaluation split
