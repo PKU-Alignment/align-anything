@@ -69,6 +69,7 @@ class DPOTrainer(DPOtextTrainer):
             freeze_vision_tower=self.cfgs.train_cfgs.freeze_vision_tower,
             freeze_language_model=self.cfgs.train_cfgs.freeze_language_model,
             processor_kwargs=self.cfgs.processor_kwargs,
+            modality=['image'],
         )
         self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
         self.reference_model, _, _ = load_pretrained_models(
@@ -77,6 +78,7 @@ class DPOTrainer(DPOtextTrainer):
             padding_side='left',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             processor_kwargs=self.cfgs.processor_kwargs,
+            modality=['image'],
         )
 
     def compute_log_probs(

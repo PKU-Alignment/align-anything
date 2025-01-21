@@ -349,10 +349,10 @@ def custom_cfgs_to_dict(key_list: str, value: Any) -> dict[str, Any]:
         value = True
     elif value == 'False':
         value = False
-    elif is_convertible_to_float(value):
-        value = float(value)
     elif value.isdigit():
         value = int(value)
+    elif is_convertible_to_float(value):
+        value = float(value)
     elif value.startswith('[') and value.endswith(']'):
         value = value[1:-1]
         value = value.split(',')
@@ -404,7 +404,7 @@ def gather_log_probabilities(
     gathered_log_probs = torch.gather(  # size = (B, L, 1)
         log_probs,
         dim=-1,
-        index=labels.unsqueeze(dim=-1),
+        index=labels.unsqueeze(dim=-1).to(torch.int64),
     )
     return gathered_log_probs.squeeze(dim=-1)  # size = (B, L)
 

@@ -19,11 +19,13 @@ from typing_extensions import TypedDict  # Python 3.10+
 
 import torch
 import transformers
+
+from tqdm import tqdm
 from torch.utils.data import Dataset
 from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
-from align_anything.utils.multi_process import get_current_device
+from align_anything.utils.multi_process import get_current_device, is_main_process
 from align_anything.utils.tools import left_padding, right_padding, ends_with_any
 from datasets import load_dataset
 
@@ -81,15 +83,14 @@ class PreferenceDataset(Dataset):
             trust_remote_code=True,
             verification_mode='no_checks',
         )
-        self.valid_indices = self.filter_indices()
-
         if size:
             size = min(size, len(self.raw_data))
             self.raw_data = self.raw_data.select(range(int(size)))
+        self.valid_indices = self.filter_indices()
 
     def filter_indices(self):
         valid_indices = []
-        for i, item in enumerate(self.raw_data):
+        for i, item in tqdm(enumerate(self.raw_data), disable=not is_main_process()):
             if not self.template.check_equal(item):
                 if hasattr(self.template, 'check_validation'):
                     if not self.template.check_validation(item):
@@ -183,11 +184,7 @@ class PreferenceCollator:
     def __call__(self, samples: list[PreferenceSample]) -> PreferenceBatch:
         return_dict = {'meta_info': {}}
         current_device = get_current_device()
-        audios = []
-        for sample in samples:
-            audios.extend(sample['audios'])
-        # repeat audios for better and worse conversations
-        audios = audios * 2
+        audios = [sample['audios'] for sample in samples]
         return_dict['meta_info']['audios'] = audios
         # concate better and worse conversations
         concated_text = [sample['better_conversation'] for sample in samples] + [
@@ -195,17 +192,27 @@ class PreferenceCollator:
         ]
 
         multi_modal_padding = self.processor(
-            audios=audios,
+            audios=audios * 2,
             text=concated_text,
             return_tensors='pt',
             padding=True,
             padding_side=self.padding_side,
             sampling_rate=self.processor.feature_extractor.sampling_rate,
+            return_attention_mask=True,
         )
 
+        return_dict.update(multi_modal_padding)
+        
         for key, value in multi_modal_padding.items():
             if isinstance(value, torch.Tensor):
                 return_dict[key] = value.to(current_device)
+            else:
+                def move_to_device(item):
+                    if isinstance(item, list):
+                        return [move_to_device(sub_item) for sub_item in item]
+                    elif isinstance(item, torch.Tensor):
+                        return item.to(current_device)
+                    return item
 
         better_response_lens = [sample['better_response_lens'] for sample in samples]
         worse_response_lens = [sample['worse_response_lens'] for sample in samples]
