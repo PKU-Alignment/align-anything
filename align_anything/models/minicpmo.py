@@ -17,12 +17,12 @@
 # ==============================================================================
 
 
-import os
 import math
-import deepspeed
-import torch.utils.checkpoint
+import os
 from typing import Any
 
+import deepspeed
+import torch.utils.checkpoint
 from transformers import AutoConfig, AutoTokenizer
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
@@ -32,6 +32,7 @@ CONFIG = AutoConfig.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
 CLASS_REF = CONFIG.auto_map['AutoModel']
 MiniCPMO = get_class_from_dynamic_module(CLASS_REF, MODEL_NAME_OR_PATH)
 
+
 class AccustomedMiniCPMO(MiniCPMO):
 
     def __init__(self, config: AutoConfig):
@@ -39,9 +40,7 @@ class AccustomedMiniCPMO(MiniCPMO):
         zero_stage = int(os.environ.get('ZERO_STAGE', '0'))
         if zero_stage == 2:
             raise ValueError('MiniCPM-O does not support ZeRO stage 2')
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            MODEL_NAME_OR_PATH, trust_remote_code=True
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
         self.system_prompt = 'You are a helpful assistant. You can accept video, audio and text input and output voice and text. '
         os.environ['MULTI_IMAGES_INFERENCE_MODELS'] = 'Yes'
         deepspeed.zero.register_external_parameter(self, self.apm.embed_positions.weight)
@@ -80,8 +79,13 @@ class AccustomedMiniCPMO(MiniCPMO):
                                 msg['content'] += '(<audio>./</audio>)'
                     prompt_list.append(msg)
 
-        return self.tokenizer.apply_chat_template(prompt_list, tokenize=False, add_generation_prompt=add_generation_prompt)
-    
+        return self.tokenizer.apply_chat_template(
+            prompt_list,
+            tokenize=False,
+            add_generation_prompt=add_generation_prompt,
+            chat_template=self.default_tts_chat_template if self.config.init_audio else None,
+        )
+
     def forward(
         self,
         input_ids: torch.LongTensor | None = None,
@@ -99,12 +103,12 @@ class AccustomedMiniCPMO(MiniCPMO):
     ):
         batch_size = input_ids.shape[0]
         model_inputs = {
-            "input_ids": input_ids,
-            "audio_features": audio_features,
-            "audio_feature_lens": audio_feature_lens,
-            "image_bound": image_bound or [[]] * batch_size,
-            "audio_bounds": audio_bounds,
-            "spk_bounds": spk_bounds,
+            'input_ids': input_ids,
+            'audio_features': audio_features,
+            'audio_feature_lens': audio_feature_lens,
+            'image_bound': image_bound or [[]] * batch_size,
+            'audio_bounds': audio_bounds,
+            'spk_bounds': spk_bounds,
         }
         dtype = self.llm.model.embed_tokens.weight.dtype
         device = self.llm.model.embed_tokens.weight.device
@@ -118,18 +122,18 @@ class AccustomedMiniCPMO(MiniCPMO):
             for _ in range(batch_size):
                 vision_hidden_states.append(dummy_feature)
         if vision_hidden_states is None:
-            model_inputs["pixel_values"] = pixel_values
-            model_inputs["tgt_sizes"] = tgt_sizes
+            model_inputs['pixel_values'] = pixel_values
+            model_inputs['tgt_sizes'] = tgt_sizes
         else:
-            model_inputs["vision_hidden_states"] = vision_hidden_states
+            model_inputs['vision_hidden_states'] = vision_hidden_states
 
-        with torch.no_grad():   
+        with torch.no_grad():
             position_ids = torch.arange(input_ids.size(1)).long().repeat(batch_size, 1)
-            model_inputs["position_ids"] = position_ids.to(device)
+            model_inputs['position_ids'] = position_ids.to(device)
 
         return super().forward(
-            data=model_inputs, 
-            attention_mask=attention_mask, 
-            labels=labels.to(torch.long) if labels is not None else None, 
-            **kwargs
+            data=model_inputs,
+            attention_mask=attention_mask,
+            labels=labels.to(torch.long) if labels is not None else None,
+            **kwargs,
         )
