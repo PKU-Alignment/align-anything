@@ -43,7 +43,8 @@ class AccustomedMiniCPMO(MiniCPMO):
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
         self.system_prompt = 'You are a helpful assistant. You can accept video, audio and text input and output voice and text. '
         os.environ['MULTI_IMAGES_INFERENCE_MODELS'] = 'Yes'
-        deepspeed.zero.register_external_parameter(self, self.apm.embed_positions.weight)
+        if hasattr(self, 'apm'):
+            deepspeed.zero.register_external_parameter(self, self.apm.embed_positions.weight)
 
     @staticmethod
     def model_additional_kwargs(modality: list[str]):
