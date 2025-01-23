@@ -20,6 +20,7 @@ from typing import Dict, List
 
 import numpy as np
 from gpt_judger import *
+from md_judger import *
 from tqdm import tqdm
 
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
@@ -54,7 +55,7 @@ class SPAVLDataLoader(BaseDataLoader):
         return f"{data['question']}\n{answer}"
 
     def build_prompt(self, data):
-        assert self.num_shot == 0, 'SPAVL does not support few-shot learning.'
+        assert self.num_shot == 0, 'SPA-VL does not support few-shot learning.'
         prompt = ''
         template = get_template_class(self.chat_template)
         question = [
@@ -116,6 +117,12 @@ class SPAVLGeneratorVLLM(BaseInferencer_vllm):
             for output, input in zip(outputs, inputs)
         ]
         return InferenceOutputs
+def evaluator_harm_usr(test_data, output_data):
+    num_sum = md_judger(test_data, output_data)
+    total_sum = len(output_data)
+    unsafe_rate = round(num_sum / total_sum, 4)
+
+    return unsafe_rate, total_sum
 
 
 def evaluator_harm(
@@ -124,7 +131,7 @@ def evaluator_harm(
     num_sum = 0
     results = []
     for test_item in tqdm(test_dataset, desc='Evaluating'):
-        for output_item in output_data:
+        for i,output_item in enumerate(output_data):
             qid = test_item['question'] + np.array2string(np.array(test_item['image']))
             if qid == output_item.question_id:
                 num_sum += 1
@@ -138,7 +145,7 @@ def evaluator_harm(
                     result, gpt_response = judger_harm(
                         test_item['question'],
                         output_item.response[0],
-                        base_model_QA[test_item['question']],
+                        base_model_QA[i]['response'],
                         api_key,
                         base_url,
                     )
@@ -167,7 +174,7 @@ def evaluator_help(
     num_sum = 0
     results = []
     for test_item in tqdm(test_dataset, desc='Evaluating'):
-        for output_item in output_data:
+        for i, output_item in enumerate(output_data):
             qid = test_item['question'] + np.array2string(np.array(test_item['image']))
             if qid == output_item.question_id:
                 num_sum += 1
@@ -181,7 +188,7 @@ def evaluator_help(
                     result, gpt_response = judger_help(
                         test_item['question'],
                         output_item.response[0],
-                        base_model_QA[qid],
+                        base_model_QA[i]['response'],
                         api_key,
                         base_url,
                     )
@@ -237,6 +244,7 @@ def main():
         dataloader.num_shot > 0 or dataloader.cot
     ), 'Few-shot or chain-of-thought cannot be used for this benchmark.'
     eval_module = SPAVLGeneratorVLLM(model_config, infer_configs)
+    
     raw_outputs_dir = os.path.join(
         eval_configs.output_dir,
         f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl",
@@ -247,6 +255,14 @@ def main():
         test_data = dataloader.load_dataset()
         raw_outputs = eval_module.eval(test_data, eval_configs)
         save_raw_outputs(raw_outputs, raw_outputs_dir)
+    print(raw_outputs['harm'][0].response[0])
+    extracted_raw_outputs = {}
+    if 'harm' in raw_outputs.keys():
+        extracted_raw_outputs['harm'] = [item.response[0] for item in raw_outputs['harm']]
+    if 'help' in raw_outputs.keys():
+        extracted_raw_outputs['help'] = [item.response[0] for item in raw_outputs['help']]
+
+    del eval_module
 
     api_key = eval_configs.openai_api_key or os.getenv('OPENAI_API_KEY')
     base_url = eval_configs.openai_api_base_url or os.getenv('OPENAI_API_BASE_URL')
@@ -271,10 +287,13 @@ def main():
     for task, _ in raw_outputs.items():
         test_data = load_dataset(data_cfgs.task_dir, data_cfgs.split)[task]
         file_path = f'{uuid_path}/{task}.json'
+        # if task == 'harm_usr':
 
         if task == 'harm':
             with open(f'./base_model_harm_QA.json') as file:
                 base_model_QA = json.load(file)
+            
+            unsafe_rate, num_sum = evaluator_harm_usr(test_data, extracted_raw_outputs[task])
 
             harm_score, num_sum = evaluator_harm(
                 test_data,
@@ -291,6 +310,7 @@ def main():
                 'model_id': [dict_configs.default.model_cfgs.model_id],
                 'num_sum': [num_sum],
                 'harm_score': [harm_score],
+                'unsafe_rate': [unsafe_rate],
             }
             logger.print_table(title=f'SPAVL/{task} Benchmark', data=output_dict)
             logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
@@ -298,6 +318,7 @@ def main():
             logger.log('info', f"model_id: {output_dict['model_id'][0]},")
             logger.log('info', f"num_sum: {output_dict['num_sum'][0]},")
             logger.log('info', f"harm_score: {output_dict['harm_score'][0]},")
+            logger.log('info', f"unsafe_rate: {output_dict['unsafe_rate'][0]},")
             logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
         elif task == 'help':
