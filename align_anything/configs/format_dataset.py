@@ -216,7 +216,12 @@ class PKUSafeRLHF(BaseFormatter):
             {'role': 'assistant', 'content': worse_response},
         ]
 
-        return better_conversation, worse_conversation, {}
+        meta_info = {
+            'better_response': better_response,
+            'worse_response': worse_response,
+        }
+
+        return better_conversation, worse_conversation, meta_info
 
     def format_prompt_only_sample(
         self, raw_sample: dict[str, Any]
