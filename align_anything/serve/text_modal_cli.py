@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Command line interface for interacting with a multi-modal model."""
+"""Command line interface for interacting with a text-modal model."""
 
 
 import argparse
