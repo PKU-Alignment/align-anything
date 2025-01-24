@@ -216,7 +216,12 @@ class PKUSafeRLHF(BaseFormatter):
             {'role': 'assistant', 'content': worse_response},
         ]
 
-        return better_conversation, worse_conversation, {}
+        meta_info = {
+            'better_response': better_response,
+            'worse_response': worse_response,
+        }
+
+        return better_conversation, worse_conversation, meta_info
 
     def format_prompt_only_sample(
         self, raw_sample: dict[str, Any]
@@ -264,24 +269,38 @@ class O1_T2T(BaseFormatter):
             raise ValueError('O1_SPECIAL_TOKENS is not set')
         if self.special_tokens.startswith('[') and self.special_tokens.endswith(']'):
             self.special_tokens = self.special_tokens[1:-1].split(',')
-            self.special_tokens = [token.strip().strip('"').strip("'") for token in self.special_tokens]
+            self.special_tokens = [
+                token.strip().strip('"').strip("'") for token in self.special_tokens
+            ]
         else:
             raise ValueError('O1_SPECIAL_TOKENS must be a list of strings')
         if len(self.special_tokens) < 3:
             raise ValueError('O1_SPECIAL_TOKENS must contain at least three tokens')
 
-    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
+    def format_supervised_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], str]:
         prompt = raw_sample['prompt']
-        thoughts = ""
+        thoughts = ''
         answer = raw_sample['answer']
         for thought in raw_sample['thoughts']:
-            if "title" in thought.keys():
-                thoughts += f"**{thought['title']}**\n{thought['content']}\n{self.special_tokens[1]}\n"
+            if 'title' in thought.keys():
+                thoughts += (
+                    f"**{thought['title']}**\n{thought['content']}\n{self.special_tokens[1]}\n"
+                )
             else:
                 thoughts += f"{thought['content']}\n{self.special_tokens[1]}\n"
         return [
             {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
-            {'role': 'assistant', 'content': [{'type': 'text', 'text': f'{self.special_tokens[0]}{thoughts}{self.special_tokens[2]}{answer}'}]},
+            {
+                'role': 'assistant',
+                'content': [
+                    {
+                        'type': 'text',
+                        'text': f'{self.special_tokens[0]}{thoughts}{self.special_tokens[2]}{answer}',
+                    }
+                ],
+            },
         ], {}
 
 

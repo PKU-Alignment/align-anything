@@ -17,6 +17,7 @@
 
 import argparse
 import os
+
 import gradio as gr
 import librosa
 import torch
@@ -50,6 +51,7 @@ AUDIO_FILES = ['.wav', '.mp3', '.flac', '.m4a', '.ogg', '.aac']
 IMAGE_FILES = ['.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.ico', '.webp']
 VIDEO_FILES = ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm']
 
+
 def satisfy_modal(info: str):
     for file in AUDIO_FILES:
         if info.endswith(file):
@@ -60,6 +62,7 @@ def satisfy_modal(info: str):
     for file in VIDEO_FILES:
         if info.endswith(file):
             return 'video'
+
 
 def multi_modal_conversation(question: str, multi_modal_info: list):
     content = [question]
@@ -91,11 +94,15 @@ def question_answering(message: dict, history: list):
                 if isinstance(past_message['content'], str):
                     if i + 1 < len(history) and isinstance(history[i + 1]['content'], tuple):
                         conversation.extend(
-                            multi_modal_conversation(past_message['content'], list(history[i + 1]['content']))
+                            multi_modal_conversation(
+                                past_message['content'], list(history[i + 1]['content'])
+                            )
                         )
                     elif i - 1 >= 0 and isinstance(history[i - 1]['content'], tuple):
                         conversation.extend(
-                            multi_modal_conversation(past_message['content'], list(history[i - 1]['content']))
+                            multi_modal_conversation(
+                                past_message['content'], list(history[i - 1]['content'])
+                            )
                         )
                     else:
                         conversation.extend(text_conversation(past_message['content']))
@@ -108,19 +115,21 @@ def question_answering(message: dict, history: list):
     else:
         current_question = message['text']
         current_multi_modal_info = message['files']
-        conversation.extend(multi_modal_conversation(current_question, list(current_multi_modal_info)))
-    
+        conversation.extend(
+            multi_modal_conversation(current_question, list(current_multi_modal_info))
+        )
+
     res = model.chat(
         msgs=conversation,
         tokenizer=tokenizer,
         sampling=True,
         temperature=0.5,
         max_new_tokens=4096,
-        omni_input=True, # please set omni_input=True when omni inference
+        omni_input=True,  # please set omni_input=True when omni inference
         use_tts_template=True,
         max_slice_nums=1,
         use_image_id=False,
-        return_dict=True
+        return_dict=True,
     )
     return res.text
 
@@ -135,14 +144,10 @@ if __name__ == '__main__':
     os.environ['MODEL_NAME_OR_PATH'] = model_name_or_path
     global processor, model, tokenizer, chat_template
     model, tokenizer, processor = load_pretrained_models(
-        model_name_or_path, 
-        dtype=torch.float16, 
+        model_name_or_path,
+        dtype=torch.float16,
         trust_remote_code=True,
-        auto_model_kwargs={
-            'init_vision': True,
-            'init_audio': True,
-            'init_tts': True
-        }
+        auto_model_kwargs={'init_vision': True, 'init_audio': True, 'init_tts': True},
     )
     model = model.eval().cuda()
 

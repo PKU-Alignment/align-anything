@@ -95,6 +95,7 @@ TRUST_REMOTE_CODE_MODEL_MAPPING_NAMES = OrderedDict(
     [
         ('minicpmv', 'AccustomedMiniCPMV'),
         ('minicpmo', 'AccustomedMiniCPMO'),
+        ('baichuan_m1', 'AccustomedBaichuanM1'),
     ],
 )
 
@@ -121,6 +122,7 @@ class AnyModelForScore(_BaseAutoModelClass):
     def from_pretrained(cls, *args, **kwargs):
         kwargs.pop('modality')
         return super().from_pretrained(*args, **kwargs)
+
 
 class AnyModel(_BaseAutoModelClass):
     _model_mapping: OrderedDict[str, Any] = MODEL_MAPPING

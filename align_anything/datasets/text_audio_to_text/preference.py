@@ -19,14 +19,13 @@ from typing_extensions import TypedDict  # Python 3.10+
 
 import torch
 import transformers
-
-from tqdm import tqdm
 from torch.utils.data import Dataset
 from torchvision import transforms
+from tqdm import tqdm
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device, is_main_process
-from align_anything.utils.tools import left_padding, right_padding, ends_with_any
+from align_anything.utils.tools import ends_with_any, left_padding, right_padding
 from datasets import load_dataset
 
 
@@ -202,11 +201,12 @@ class PreferenceCollator:
         )
 
         return_dict.update(multi_modal_padding)
-        
+
         for key, value in multi_modal_padding.items():
             if isinstance(value, torch.Tensor):
                 return_dict[key] = value.to(current_device)
             else:
+
                 def move_to_device(item):
                     if isinstance(item, list):
                         return [move_to_device(sub_item) for sub_item in item]

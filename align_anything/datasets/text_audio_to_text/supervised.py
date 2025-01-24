@@ -24,7 +24,7 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.tools import right_padding, ends_with_any
+from align_anything.utils.tools import ends_with_any
 from datasets import load_dataset
 
 
@@ -174,13 +174,14 @@ class SupervisedCollator:
             labels[i, :prompt_lens] = IGNORE_INDEX
 
         return_dict.update(multi_modal_padding)
-        
+
         return_dict['labels'] = labels.to(current_device)
 
         for key, value in multi_modal_padding.items():
             if isinstance(value, torch.Tensor):
                 return_dict[key] = value.to(current_device)
             else:
+
                 def move_to_device(item):
                     if isinstance(item, list):
                         return [move_to_device(sub_item) for sub_item in item]

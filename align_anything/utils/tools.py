@@ -811,6 +811,7 @@ def count_right_padding(lst, padding=0):
 
     return count
 
+
 def ends_with_any(s, substrings):
     """Check if the string ends with any of the substrings.
 
