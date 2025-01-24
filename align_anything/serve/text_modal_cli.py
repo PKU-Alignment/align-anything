@@ -17,10 +17,9 @@
 
 import argparse
 import os
+
 import gradio as gr
-import librosa
 import torch
-from PIL import Image
 
 from align_anything.models.pretrained_model import load_pretrained_models
 
@@ -34,8 +33,7 @@ def text_conversation(text: str, role: str = 'user'):
 
 def question_answering(message: dict, history: list):
     conversation = []
-    
-    # 处理历史消息
+
     for past_message in history:
         if isinstance(past_message, str):
             conversation.extend(text_conversation(past_message))
@@ -45,13 +43,9 @@ def question_answering(message: dict, history: list):
             elif past_message['role'] == 'assistant':
                 conversation.extend(text_conversation(past_message['content'], 'assistant'))
 
-    # 处理当前消息
     current_question = message['text']
     conversation.extend(text_conversation(current_question))
-    res = model.chat(
-        messages=conversation,
-        tokenizer=tokenizer
-    )
+    res = model.chat(messages=conversation, tokenizer=tokenizer)
     return res
 
 
@@ -65,8 +59,8 @@ if __name__ == '__main__':
     os.environ['MODEL_NAME_OR_PATH'] = model_name_or_path
     global processor, model, tokenizer, chat_template
     model, tokenizer, processor = load_pretrained_models(
-        model_name_or_path, 
-        dtype=torch.float16, 
+        model_name_or_path,
+        dtype=torch.float16,
         trust_remote_code=True,
     )
     model = model.eval().cuda()
