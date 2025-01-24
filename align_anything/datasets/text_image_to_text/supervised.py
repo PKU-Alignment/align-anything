@@ -14,10 +14,10 @@
 # ==============================================================================
 
 
+import os
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
-import os
 import torch
 import transformers
 from torch.utils.data import Dataset
@@ -155,7 +155,7 @@ class SupervisedCollator:
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
         return_dict = {'meta_info': {}}
         current_device = get_current_device()
-        
+
         concated_text = [sample['conversation'] for sample in samples]
 
         if os.environ.get('MULTI_IMAGES_INFERENCE_MODELS') == 'Yes':
@@ -172,20 +172,21 @@ class SupervisedCollator:
             padding_side=self.padding_side,
             return_attention_mask=True,
         )
-        
+
         inputs_ids = multi_modal_padding['input_ids']
         labels = inputs_ids.clone()
 
         for i in range(len(samples)):
             prompt_lens = samples[i]['prompt_lens']
             labels[i, :prompt_lens] = IGNORE_INDEX
-        
+
         return_dict.update(multi_modal_padding)
         return_dict['labels'] = labels
         for key, value in return_dict.items():
             if isinstance(value, torch.Tensor):
                 return_dict[key] = value.to(current_device)
             elif key == 'pixel_values':
+
                 def move_to_device(item):
                     if isinstance(item, list):
                         return [move_to_device(sub_item) for sub_item in item]

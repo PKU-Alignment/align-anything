@@ -21,9 +21,9 @@ import torch
 import torch.utils.checkpoint
 from torch import nn
 from transformers import AutoConfig
+from transformers.cache_utils import StaticCache
 from transformers.models.qwen2_vl.modeling_qwen2_vl import Qwen2VLForConditionalGeneration
 from transformers.utils import is_torchdynamo_compiling
-from transformers.cache_utils import StaticCache
 
 from align_anything.models.reward_model import ScoreModelOutput
 
@@ -94,12 +94,13 @@ class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
         # Exception 1: when passing input_embeds, input_ids may be missing entries
         # Exception 2: some generation methods do special slicing of input_ids, so we don't need to do it here
         if past_key_values is not None:
-            if (
-                inputs_embeds is not None  # Exception 1
-                or (is_torchdynamo_compiling() or cache_position[-1] >= input_ids.shape[1])  # Exception 3
-            ):
+            if inputs_embeds is not None or (  # Exception 1
+                is_torchdynamo_compiling() or cache_position[-1] >= input_ids.shape[1]
+            ):  # Exception 3
                 input_ids = input_ids[:, -cache_position.shape[0] :]
-            elif input_ids.shape[1] != cache_position.shape[0]:  # Default case (the "else", a no op, is Exception 2)
+            elif (
+                input_ids.shape[1] != cache_position.shape[0]
+            ):  # Default case (the "else", a no op, is Exception 2)
                 input_ids = input_ids[:, cache_position]
 
         if cache_position[0] != 0:
@@ -108,12 +109,12 @@ class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
 
         # if `inputs_embeds` are passed, we only want to use them in the 1st generation step
         if inputs_embeds is not None and cache_position[0] == 0:
-            model_inputs = {"inputs_embeds": inputs_embeds, "input_ids": None}
+            model_inputs = {'inputs_embeds': inputs_embeds, 'input_ids': None}
         else:
-            model_inputs = {"input_ids": input_ids, "inputs_embeds": None}
+            model_inputs = {'input_ids': input_ids, 'inputs_embeds': None}
 
         if isinstance(past_key_values, StaticCache) and attention_mask.ndim == 2:
-            if model_inputs["inputs_embeds"] is not None:
+            if model_inputs['inputs_embeds'] is not None:
                 batch_size, sequence_length, _ = inputs_embeds.shape
                 device = inputs_embeds.device
             else:
@@ -134,15 +135,15 @@ class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
 
         model_inputs.update(
             {
-                "position_ids": position_ids,
-                "past_key_values": past_key_values,
-                "use_cache": use_cache,
-                "attention_mask": attention_mask,
-                "pixel_values": pixel_values,
-                "pixel_values_videos": pixel_values_videos,
-                "image_grid_thw": image_grid_thw,
-                "video_grid_thw": video_grid_thw,
-                "cache_position": cache_position,
+                'position_ids': position_ids,
+                'past_key_values': past_key_values,
+                'use_cache': use_cache,
+                'attention_mask': attention_mask,
+                'pixel_values': pixel_values,
+                'pixel_values_videos': pixel_values_videos,
+                'image_grid_thw': image_grid_thw,
+                'video_grid_thw': video_grid_thw,
+                'cache_position': cache_position,
             }
         )
         return model_inputs

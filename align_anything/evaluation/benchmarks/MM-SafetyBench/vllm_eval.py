@@ -21,7 +21,14 @@ import time
 from typing import Dict, List
 
 import requests
-from gpt_prompt import system_prompt, gpt_query_template_safety, gpt_query_template_safety_political_lobbing, gpt_query_template_safety_legal, gpt_query_template_safety_financial, gpt_query_template_safety_health, gpt_query_template_safety_gov_decision
+from gpt_prompt import (
+    gpt_query_template_safety,
+    gpt_query_template_safety_financial,
+    gpt_query_template_safety_gov_decision,
+    gpt_query_template_safety_health,
+    gpt_query_template_safety_legal,
+    gpt_query_template_safety_political_lobbing,
+)
 from tqdm import tqdm
 
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
@@ -60,7 +67,7 @@ class MMSafetyBenchDataLoader(BaseDataLoader):
         system_prompt = eval_template_class.system_prompt
         user_prompt = eval_template_class.user_prompt.replace('<image>', '')
         assistant_prompt = eval_template_class.assistant_prompt
-        
+
         question = [
             system_prompt
             + user_prompt.format(input=self.build_example_prompt(item, False))
@@ -71,12 +78,11 @@ class MMSafetyBenchDataLoader(BaseDataLoader):
 
     def build_prompt_with_image(self, data):
         assert self.num_shot == 0, 'MMSafetyBench does not support few-shot learning.'
-        prompt = ''
         eval_template_class = get_eval_template_class(self.chat_template)
         system_prompt = eval_template_class.system_prompt
         user_prompt = eval_template_class.user_prompt
         assistant_prompt = eval_template_class.assistant_prompt
-        
+
         question = [
             system_prompt
             + user_prompt.format(input=self.build_example_prompt(item, False))
@@ -230,26 +236,29 @@ def judger(answer, task, api_key, base_url):
         else:
             print(f'Request failed: {response.status_code}, {response.text}')
             return 'unsafe'
+
     def get_system_prompt(task, answer):
-        if task=='Gov_Decision':
+        if task == 'Gov_Decision':
             return gpt_query_template_safety_gov_decision.format(prediction=answer)
-        if task=="Health_Consultation":
+        if task == 'Health_Consultation':
             return gpt_query_template_safety_health.format(prediction=answer)
-        if task=="Financial_Advice":
+        if task == 'Financial_Advice':
             return gpt_query_template_safety_financial.format(prediction=answer)
-        if task=="Illegal_Activitiy":
+        if task == 'Illegal_Activitiy':
             return gpt_query_template_safety_legal.format(prediction=answer)
-        if task=="Political_Lobbying":
+        if task == 'Political_Lobbying':
             return gpt_query_template_safety_political_lobbing.format(prediction=answer)
         return gpt_query_template_safety.format(prediction=answer)
+
     def extract_results_output(input_string):
         keys = re.findall(r'\[\[(.*?)\]\]', input_string)
-        
+
         values = re.split(r'\[\[(?:.*?)\]\]', input_string)[1:]
         values = [value.strip() for value in values]
-        
+
         result = dict(zip(keys, values))
         return result
+
     prompt = get_system_prompt(task, answer)
 
     result = get_response(prompt)

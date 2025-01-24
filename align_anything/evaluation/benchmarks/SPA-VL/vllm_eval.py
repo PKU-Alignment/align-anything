@@ -117,6 +117,8 @@ class SPAVLGeneratorVLLM(BaseInferencer_vllm):
             for output, input in zip(outputs, inputs)
         ]
         return InferenceOutputs
+
+
 def evaluator_harm_usr(test_data, output_data):
     num_sum = md_judger(test_data, output_data)
     total_sum = len(output_data)
@@ -131,7 +133,7 @@ def evaluator_harm(
     num_sum = 0
     results = []
     for test_item in tqdm(test_dataset, desc='Evaluating'):
-        for i,output_item in enumerate(output_data):
+        for i, output_item in enumerate(output_data):
             qid = test_item['question'] + np.array2string(np.array(test_item['image']))
             if qid == output_item.question_id:
                 num_sum += 1
@@ -244,7 +246,7 @@ def main():
         dataloader.num_shot > 0 or dataloader.cot
     ), 'Few-shot or chain-of-thought cannot be used for this benchmark.'
     eval_module = SPAVLGeneratorVLLM(model_config, infer_configs)
-    
+
     raw_outputs_dir = os.path.join(
         eval_configs.output_dir,
         f"raw_outputs_{re.sub(r'/', '_', model_config.model_name_or_path)}.pkl",
@@ -292,7 +294,7 @@ def main():
         if task == 'harm':
             with open(f'./base_model_harm_QA.json') as file:
                 base_model_QA = json.load(file)
-            
+
             unsafe_rate, num_sum = evaluator_harm_usr(test_data, extracted_raw_outputs[task])
 
             harm_score, num_sum = evaluator_harm(
