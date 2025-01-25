@@ -292,9 +292,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
 
     try:
         processor = AutoProcessor.from_pretrained(
-            model_name_or_path, 
-            trust_remote_code=True,
-            **namedtuple_to_dict(processor_kwargs)
+            model_name_or_path, trust_remote_code=True, **namedtuple_to_dict(processor_kwargs)
         )
     except Exception:
         processor = None

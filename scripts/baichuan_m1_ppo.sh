@@ -16,9 +16,9 @@
 # ==============================================================================
 
 
-ACTOR_MODEL_NAME_OR_PATH="meta-llama/Llama-3.1-8B-Instruct" # actor model path
-CRITIC_MODEL_NAME_OR_PATH="../outputs/llama_rm" # critic model path
-REWARD_MODEL_NAME_OR_PATH="../outputs/llama_rm" # reward model path
+ACTOR_MODEL_NAME_OR_PATH="baichuan-inc/Baichuan-M1-14B-Instruct" # actor model path
+CRITIC_MODEL_NAME_OR_PATH="../outputs/baichuan_m1_rm" # critic model path
+REWARD_MODEL_NAME_OR_PATH="../outputs/baichuan_m1_rm" # reward model path
 
 TRAIN_DATASETS="PKU-Alignment/PKU-SafeRLHF-single-dimension" # dataset path
 TRAIN_TEMPLATE="PKUSafeRLHF" # rlhf dataset template
@@ -28,7 +28,7 @@ PTX_DATASETS="tatsu-lab/alpaca" # sft dataset path
 PTX_TEMPLATE="Alpaca" # sft dataset template
 PTX_SPLIT="train" # split the sft dataset
 
-OUTPUT_DIR="../output/llama_ppo" # output dir
+OUTPUT_DIR="../output/baichuan_m1_ppo" # output dir
 # For wandb online logging
 export WANDB_API_KEY=""
 

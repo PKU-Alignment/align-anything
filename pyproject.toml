@@ -35,6 +35,7 @@ dependencies = [
     "torch >= 1.13",
     "frechet_audio_distance",
     "transformers",
+    "flash-attn",
     "datasets",
     "tokenizers >= 0.13.3",
     "accelerate",
@@ -156,21 +157,11 @@ all = [
     "av",
 ]
 
-minicpmv = [
-    "timm==1.0.11",
-    "transformers==4.40.0",
-]
+minicpmv = ["timm==1.0.11", "transformers==4.40.0"]
 
-minicpmo = [
-    "vector-quantize-pytorch",
-    "vocos",
-    "decord",
-    "moviepy",
-]
+minicpmo = ["vector-quantize-pytorch", "vocos", "decord", "moviepy"]
 
-text-to-audio = [
-    "pytorchvideo",
-]
+text-to-audio = ["pytorchvideo"]
 
 [tool.setuptools]
 include-package-data = true

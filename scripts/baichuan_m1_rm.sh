@@ -16,17 +16,16 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="meta-llama/Llama-3.1-8B" # model path
+MODEL_NAME_OR_PATH="baichuan-inc/Baichuan-M1-14B-Instruct" # model path
 
-TRAIN_DATASETS="PKU-Alignment/DollyTails-12K" # sft dataset path
-TRAIN_TEMPLATE="O1_T2T" # sft dataset template
-TRAIN_SPLIT="train" # split the sft dataset
+TRAIN_DATASETS="PKU-Alignment/PKU-SafeRLHF-single-dimension" # dataset path
+TRAIN_TEMPLATE="PKUSafeRLHF" # dataset template
+TRAIN_SPLIT="train" # split the dataset
 
-OUTPUT_DIR="../outputs/llama_sft_o1" # output dir
+OUTPUT_DIR="../outputs/baichuan_m1_rm" # output dir
 
 # For wandb online logging
 export WANDB_API_KEY=""
-export O1_SPECIAL_TOKENS="['<|reserved_special_token_0|>', '<|reserved_special_token_1|>', '<|reserved_special_token_2|>']"
 
 # Source the setup script
 source ./setup.sh
@@ -34,7 +33,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
      --master_port ${MASTER_PORT} \
-     --module align_anything.trainers.text_to_text.sft \
+     --module align_anything.trainers.text_to_text.rm \
      --model_name_or_path ${MODEL_NAME_OR_PATH} \
      --train_template ${TRAIN_TEMPLATE} \
      --train_datasets ${TRAIN_DATASETS} \

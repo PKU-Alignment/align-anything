@@ -30,7 +30,6 @@ from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
-    namedtuple_to_dict,
     read_cfgs,
     seed_everything,
     update_dict,

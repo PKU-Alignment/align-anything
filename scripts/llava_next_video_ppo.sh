@@ -23,7 +23,7 @@ CRITIC_MODEL_NAME_OR_PATH="../outputs/llava_next_video_rm" # model path
 TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
 TRAIN_TEMPLATE="AA_TV2T" # dataset template
 TRAIN_NAME="text-video-to-text" # dataset name
-TRAIN_SPLIT="train" # split the dataset 
+TRAIN_SPLIT="train" # split the dataset
 
 OUTPUT_DIR="../outputs/llava_next_video_ppo" # output dir
 

@@ -63,7 +63,7 @@ def get_response(prompt, api_key, base_url):
     if response.status_code == 200:
         result = response.json()
         return result['choices'][0]['message']['content']
-    else: 
+    else:
         raise Exception(f'Request failed: {response.status_code}, {response.text}')
 
 
