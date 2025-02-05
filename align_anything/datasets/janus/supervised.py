@@ -120,18 +120,7 @@ class SupervisedDataset(Dataset):
             return_dict['labels'] = return_dict['input_ids'].clone()
             return_dict['labels'][:len(prompt_inputs['input_ids'])] = IGNORE_INDEX
         elif 'output_image' in formatted_sample and formatted_sample['output_image'] is not None:
-            raise NotImplementedError("Not implemented yet.")
-            # full_conversation = [
-            #     {
-            #         "role": "User",
-            #         "content": formatted_sample['input_text'],
-            #     },
-            #     {
-            #         "role": "Assistant",
-            #         "content": formatted_sample['output_text'],
-            #         "images": [formatted_sample['output_image']] if isinstance(formatted_sample['output_image'], str) else formatted_sample['output_image'],
-            #     },
-            # ]
+            raise NotImplementedError("Not implemented inside SupervisedDataset. Please follow the instructions in projects/janus/README.md to deal with image input.")
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
