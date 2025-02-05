@@ -6,7 +6,7 @@ import torch.multiprocessing as mp
 from transformers import AutoModelForCausalLM
 
 from janus.models import MultiModalityCausalLM, VLChatProcessor, VLMImageProcessor
-from janus.utils.io import load_pil_images # need to change after turn to absolute path
+from janus.utils.io import load_pil_images
 
 from PIL import Image
 import PIL
@@ -17,7 +17,6 @@ import uuid
 import requests
 
 ignore_index = -100
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 def load_image(image_path: str):
     try:
