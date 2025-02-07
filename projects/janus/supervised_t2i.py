@@ -15,68 +15,74 @@
 import argparse
 import json
 import os
+import uuid
+
+import requests
 import torch
 import torch.multiprocessing as mp
-from transformers import AutoModelForCausalLM
-
 from janus.models import MultiModalityCausalLM, VLChatProcessor, VLMImageProcessor
-from janus.utils.io import load_pil_images
-
 from PIL import Image
-import PIL
-import numpy as np
-
 from tqdm import tqdm
-import uuid
-import requests
+
 
 ignore_index = -100
 
+
 def load_image(image_path: str):
     try:
-        if image_path.startswith("http"):
-            image = Image.open(requests.get(image_path, stream=True).raw).convert("RGB")
+        if image_path.startswith('http'):
+            image = Image.open(requests.get(image_path, stream=True).raw).convert('RGB')
         else:
-            image = Image.open(image_path).convert("RGB")
+            image = Image.open(image_path).convert('RGB')
         return image
     except Exception as e:
         print(f"Error occured when dealing with {image_path}: {e}")
         raise Exception
 
+
 def format_sample_janus(piece, vl_chat_processor):
     sample = {
-        "input_text": piece["prompt"],
-        "output_image": load_image(piece["image"]),
+        'input_text': piece['prompt'],
+        'output_image': load_image(piece['image']),
     }
     return sample
 
+
 def tokenize_sample(vl_chat_processor, vl_gpt, vl_image_processor, formatted_sample):
     conversation = [
-        {"role": "User", "content": formatted_sample["input_text"]},
-        {"role": "Assistant", "content": ""},
+        {'role': 'User', 'content': formatted_sample['input_text']},
+        {'role': 'Assistant', 'content': ''},
     ]
     sft_format = vl_chat_processor.apply_sft_template_for_multi_turn_prompts(
         conversations=conversation,
         sft_format=vl_chat_processor.sft_format,
-        system_prompt="",
+        system_prompt='',
     )
 
     prompt = sft_format + vl_chat_processor.image_start_tag
     input_ids = vl_chat_processor.tokenizer.encode(prompt)
     input_ids = torch.LongTensor(input_ids).to(vl_gpt.device)
 
-    pixel_values = vl_image_processor([formatted_sample["output_image"]], return_tensors="pt")["pixel_values"].to(vl_gpt.device).to(torch.bfloat16)
-    quant, (vq_loss, commit_loss, entropy_loss), (perplexity, min_encodings, min_encoding_indices) = vl_gpt.gen_vision_model.encode(pixel_values)
+    pixel_values = (
+        vl_image_processor([formatted_sample['output_image']], return_tensors='pt')['pixel_values']
+        .to(vl_gpt.device)
+        .to(torch.bfloat16)
+    )
+    (
+        quant,
+        (vq_loss, commit_loss, entropy_loss),
+        (perplexity, min_encodings, min_encoding_indices),
+    ) = vl_gpt.gen_vision_model.encode(pixel_values)
     full_input_ids = torch.cat([input_ids, min_encoding_indices])
     labels = full_input_ids.clone()
-    labels[:len(input_ids)] = ignore_index
+    labels[: len(input_ids)] = ignore_index
 
     return {
-        "input_ids": full_input_ids.to("cpu"),
-        "labels": labels.to("cpu"),
+        'input_ids': full_input_ids.to('cpu'),
+        'labels': labels.to('cpu'),
     }
-    
-    
+
+
 def process_data(gpu, chunk, model_path, output_paths, cache_path):
     device = f"cuda:{gpu}"
     print(f"Initializing Model on {device}")
@@ -101,61 +107,63 @@ def process_data(gpu, chunk, model_path, output_paths, cache_path):
     output_paths.extend(local_output_paths)
     print(f"Processed {len(local_output_paths)} samples on GPU {gpu}")
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_path", type=str, required=True)
-    parser.add_argument("--output_path", type=str, required=True)
-    parser.add_argument("--model_path", type=str, required=True)
-    parser.add_argument("--cache_dir", type=str, default=".cache")
-    parser.add_argument("--num_processes", type=int, default=8)
-    parser.add_argument("--num_gpus", type=int, default=8)
+    parser.add_argument('--input_path', type=str, required=True)
+    parser.add_argument('--output_path', type=str, required=True)
+    parser.add_argument('--model_path', type=str, required=True)
+    parser.add_argument('--cache_dir', type=str, default='.cache')
+    parser.add_argument('--num_processes', type=int, default=8)
+    parser.add_argument('--num_gpus', type=int, default=8)
 
-    
     args = parser.parse_args()
 
     input_path = args.input_path
     output_path = args.output_path
     model_path = args.model_path
     cache_path = args.cache_dir
-    
+
     # if cache dir does not exist, make one
     if not os.path.exists(cache_path):
         os.makedirs(cache_path)
-    
-    with open(input_path, 'r') as f:
+
+    with open(input_path) as f:
         input_data = json.load(f)
 
     num_processes = args.num_processes
     num_gpus = args.num_gpus
     mp.set_start_method('spawn', force=True)
     output_paths = mp.Manager().list()  # For collecting results from multiple processes
-    
-    target = input_data # add to_list() if you acquire the dataset from load_dataset
+
+    target = input_data  # add to_list() if you acquire the dataset from load_dataset
     print(f"Full Length: {len(target)}")
     chunks = [target[i::num_processes] for i in range(num_processes)]
-        
+
     processes = []
     for id in range(num_processes):
         gpu = id % num_gpus  # This maps process to GPU cyclically
-        p = mp.Process(target=process_data, args=(gpu, chunks[id], model_path, output_paths, ".cache"))
+        p = mp.Process(
+            target=process_data, args=(gpu, chunks[id], model_path, output_paths, '.cache')
+        )
         p.start()
         processes.append(p)
 
     for p in processes:
         p.join()
-    
+
     output_paths = list(output_paths)
-    
+
     all_data = []
     for path in output_paths:
         data = torch.load(path)
-        all_data.append(data) 
-        
+        all_data.append(data)
+
     torch.set_printoptions(threshold=torch.inf)
     print(f"Effective Length: {len(all_data)}")
-    
-    torch.save(all_data, output_path)
-        
 
-if __name__ == "__main__":
+    torch.save(all_data, output_path)
+
+
+if __name__ == '__main__':
     main()
