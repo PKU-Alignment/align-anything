@@ -15,3 +15,7 @@ The contents of each project are as follows:
 ## Language Feedback
 
 [This project](./lang_feedback/README.md) contains the process for generating language feedback data for Align-Anything algorithm. It utilizes VLLM to efficiently handle the language model inference. This project is currently under development and is only set for internal use.
+
+## Janus
+
+[This project](./janus/README.md) contains the process for training [Janus](https://huggingface.co/deepseek-ai/Janus-1.3B) model series. To be specific, it contains the scripts for SFT Janus model.
