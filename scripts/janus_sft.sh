@@ -36,4 +36,4 @@ deepspeed \
     --learning_rate 1e-6 \
     --epochs 3 \
     --lr_scheduler_type cosine \
-    --output_dir ${OUTPUT_DIR} 
+    --output_dir ${OUTPUT_DIR}

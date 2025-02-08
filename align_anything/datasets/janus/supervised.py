@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
 import torch
@@ -23,10 +23,9 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.template_registry import get_template_class
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
-from transformers import DataCollatorForSeq2Seq, PreTrainedTokenizer, ProcessorMixin
+
 
 IGNORE_INDEX = -100
 
@@ -89,38 +88,49 @@ class SupervisedDataset(Dataset):
         formatted_sample = self.template.format_sample(raw_sample)
         return_dict = {}
         if 'input_image' in formatted_sample and formatted_sample['input_image'] is not None:
-            
+
             full_conversation = [
                 {
-                    "role": "User",
-                    "content": formatted_sample['input_text'],
-                    "images": [formatted_sample['input_image']] if isinstance(formatted_sample['input_image'], str) else formatted_sample['input_image'],
+                    'role': 'User',
+                    'content': formatted_sample['input_text'],
+                    'images': (
+                        [formatted_sample['input_image']]
+                        if isinstance(formatted_sample['input_image'], str)
+                        else formatted_sample['input_image']
+                    ),
                 },
-                {
-                    "role": "Assistant", 
-                    "content": formatted_sample['output_text']
-                },
+                {'role': 'Assistant', 'content': formatted_sample['output_text']},
             ]
 
             prompt_conversation = [
                 {
-                    "role": "User",
-                    "content": formatted_sample['input_text'],
-                    "images": [formatted_sample['input_image']] if isinstance(formatted_sample['input_image'], str) else formatted_sample['input_image'],
+                    'role': 'User',
+                    'content': formatted_sample['input_text'],
+                    'images': (
+                        [formatted_sample['input_image']]
+                        if isinstance(formatted_sample['input_image'], str)
+                        else formatted_sample['input_image']
+                    ),
                 },
                 {
-                    "role": "Assistant",
-                    "content": "",
-                }
+                    'role': 'Assistant',
+                    'content': '',
+                },
             ]
-            full_inputs = self.processor(full_conversation, formatted_sample['input_image'], return_tensors="pt")
-            prompt_inputs = self.processor(prompt_conversation, formatted_sample['input_image'], return_tensors="pt")
+            full_inputs = self.processor(
+                full_conversation, formatted_sample['input_image'], return_tensors='pt'
+            )
+            prompt_inputs = self.processor(
+                prompt_conversation, formatted_sample['input_image'], return_tensors='pt'
+            )
 
             return_dict = full_inputs.copy()
             return_dict['labels'] = return_dict['input_ids'].clone()
-            return_dict['labels'][:len(prompt_inputs['input_ids'])] = IGNORE_INDEX
+            return_dict['labels'][: len(prompt_inputs['input_ids'])] = IGNORE_INDEX
         elif 'output_image' in formatted_sample and formatted_sample['output_image'] is not None:
-            raise NotImplementedError("Not implemented inside SupervisedDataset. Please follow the instructions in projects/janus/README.md to deal with image input.")
+            raise NotImplementedError(
+                'Not implemented inside SupervisedDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
+            )
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
@@ -179,7 +189,6 @@ class SupervisedTokenizedDataset(Dataset):
         self.tokenizer = tokenizer
         self.processor = processor
 
-
         self.raw_data = torch.load(f"{path}/{data_files}", map_location=torch.device('cpu'))
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
@@ -215,7 +224,7 @@ class SupervisedCollator:
 
         return_dict['labels'] = right_padding(
             [sample['labels'] for sample in samples],
-            padding_value=IGNORE_INDEX,   
+            padding_value=IGNORE_INDEX,
         ).to(current_device)
 
         if 'attention_mask' in return_dict:
@@ -226,20 +235,20 @@ class SupervisedCollator:
 
         if 'pixel_values' in return_dict:
             new_samples = []
-                        
+
             for sample in samples:
-                
+
                 sample['pixel_values'] = torch.cat(
                     [tensor.to(current_device) for tensor in sample['pixel_values']], dim=0
                 )
-            
+
                 new_samples.append(sample)
-            
+
             _pixel_values_list = []
             for sample in new_samples:
                 pixel_values = sample['pixel_values']  # size = (P, C, H, W)
                 _pixel_values_list.append(pixel_values)
-            
-            return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device) 
-        
+
+            return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device)
+
         return return_dict
