@@ -12,8 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Dataset classes for any to text training."""
+INPUT_PATH=""
+OUTPUT_PATH=""
+MODEL_PATH=""
+CACHE_DIR=""
+JANUS_REPO_PATH=""
+mkdir -p $CACHE_DIR
+NUM_PROCESSES=8
+NUM_GPUS=8
 
+export PYTHONPATH=$PYTHONPATH:"$JANUS_REPO_PATH"
 
-from align_anything.datasets.janus.supervised import *
-from align_anything.datasets.janus.preference import *
+python preference_text_to_image.py \
+    --input_path $INPUT_PATH \
+    --output_path $OUTPUT_PATH \
+    --model_path $MODEL_PATH \
+    --cache_dir $CACHE_DIR \
+    --num_processes $NUM_PROCESSES \
+    --num_gpus $NUM_GPUS
