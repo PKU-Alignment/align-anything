@@ -224,7 +224,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
                 src_tokenizer=self.tokenizer,
                 dest_tokenizer=self.reward_tokenizer,
                 skip_special_tokens=True,
-                device=self.args.device,
+                device=self.reward_model.device,
             )
             reward_batch['input_ids'] = reward_tokenize_output['input_ids']
             reward_batch['attention_mask'] = reward_tokenize_output['attention_mask']
