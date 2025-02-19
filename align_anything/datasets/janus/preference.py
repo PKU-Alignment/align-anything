@@ -1,4 +1,4 @@
-# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -130,12 +130,12 @@ class SupervisedDataset(Dataset):
             return_dict['labels'][: len(prompt_inputs['input_ids'])] = IGNORE_INDEX
         elif 'output_image' in formatted_sample and formatted_sample['output_image'] is not None:
             raise NotImplementedError(
-                'Not implemented inside SupervisedDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
+                'Not implemented inside PreferenceDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
             )
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return SupervisedCollator(self.tokenizer, self.processor)
+        return PreferenceCollator(self.tokenizer.pad_token_id)
 
     def tokenize(
         self,
@@ -169,7 +169,7 @@ class SupervisedDataset(Dataset):
         return len(self.raw_data)
 
 
-class SupervisedTokenizedDataset(Dataset):
+class PreferenceTokenizedDataset(Dataset):
 
     def __init__(
         self,
@@ -196,7 +196,7 @@ class SupervisedTokenizedDataset(Dataset):
         self.template = template
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return SupervisedCollator(self.tokenizer.pad_token_id)
+        return PreferenceCollator(self.tokenizer.pad_token_id)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
@@ -208,7 +208,7 @@ class SupervisedTokenizedDataset(Dataset):
         return len(self.raw_data)
 
 
-class SupervisedCollator:
+class PreferenceCollator:
 
     def __init__(self, pad_token_id: int) -> None:
         """Initialize a collator."""
@@ -218,14 +218,14 @@ class SupervisedCollator:
         return_dict = {}
         current_device = get_current_device()
 
-        return_dict['input_ids'] = right_padding(
-            [sample['input_ids'] for sample in samples],
+        return_dict['better_input_ids'] = right_padding(
+            [sample['better_input_ids'] for sample in samples],
             padding_value=self.pad_token_id,
         ).to(current_device)
 
-        return_dict['labels'] = right_padding(
-            [sample['labels'] for sample in samples],
-            padding_value=IGNORE_INDEX,
+        return_dict['worse_input_ids'] = right_padding(
+            [sample['worse_input_ids'] for sample in samples],
+            padding_value=self.pad_token_id,
         ).to(current_device)
 
         if 'attention_mask' in return_dict:
@@ -251,6 +251,6 @@ class SupervisedCollator:
                 _pixel_values_list.append(pixel_values)
 
             return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device)
-
+            
         return_dict['modality'] = samples[0]['modality']
         return return_dict
