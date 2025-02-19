@@ -128,6 +128,7 @@ class SupervisedDataset(Dataset):
             return_dict = full_inputs.copy()
             return_dict['labels'] = return_dict['input_ids'].clone()
             return_dict['labels'][: len(prompt_inputs['input_ids'])] = IGNORE_INDEX
+            return_dict['modality'] = 'understanding'
         elif 'output_image' in formatted_sample and formatted_sample['output_image'] is not None:
             raise NotImplementedError(
                 'Not implemented inside SupervisedDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
