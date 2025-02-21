@@ -12,8 +12,14 @@ pip install -e .
 
 ## Pre-tokenization
 
-Set the input, output, Janus model path and Janus repo path (the path to the cloned Janus repo) correctly in `sft_tokenize.sh` and run:
+In the case of performing supervised finetuning, set the input, output, Janus model path and Janus repo path (the path to the cloned Janus repo) correctly in `supervised_tokenize.sh` and run:
 
 ```bash
-bash sft_tokenize.sh
+bash supervised_tokenize.sh
+```
+
+In the case of performing preference learning (currently, only DPO is supported), set the input, output, Janus model path and Janus repo path (the path to the cloned Janus repo) correctly in `preference_tokenize.sh` and run:
+
+```bash
+bash preference_tokenize.sh
 ```
