@@ -13,7 +13,6 @@
         "tokenizer_mode": "auto",
         "trust_remote_code": false,
         "memory_utilization": 0.8,
-        "tensor_parallel_size": 2,
         "max_num_seqs": 1
     }
 }
