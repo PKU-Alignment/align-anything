@@ -35,6 +35,14 @@ from align_anything.utils.tools import (
     read_eval_cfgs,
     update_dict,
 )
+from align_anything.utils.device_utils import (
+    is_gpu_or_npu_available,
+    get_current_device,
+    get_device_count,
+    get_peak_memory,
+    set_device,
+    torch_gc,
+)
 from datasets import DatasetDict, load_dataset
 
 
@@ -84,7 +92,7 @@ class ImageRewardDBGenerator(BaseInferencer):
 
         processes = []
         for i in range(num_processes):
-            device = f'cuda:{i%num_gpus}'
+            device = set_device(i % num_gpus)
             chunks = {}
             for task, inputs in data.items():
                 chunk = inputs[i::num_processes]

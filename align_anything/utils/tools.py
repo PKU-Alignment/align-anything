@@ -46,6 +46,15 @@ from transformers import PreTrainedTokenizerBase, ProcessorMixin
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import print_on_main_process
+from align_anything.utils.device_utils import (
+    is_gpu_or_npu_available,
+    get_current_device,
+    get_device_count,
+    get_peak_memory,
+    manual_seed_all,
+    set_device,
+    torch_gc,
+)
 
 
 try:
@@ -376,8 +385,7 @@ def seed_everything(seed: int) -> None:
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    manual_seed_all(seed)
 
 
 def split_prompt_response(
@@ -582,7 +590,7 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
     assert batch_size > 0
     assert N > batch_size
 
-    device = torch.device('cuda' if cuda and torch.cuda.is_available() else 'cpu')
+    device = get_current_device() if cuda else 'cpu'
 
     dataloader = torch.utils.data.DataLoader(imgs, batch_size=batch_size)
     inception_model = inception_v3(pretrained=True, transform_input=False).to(device)

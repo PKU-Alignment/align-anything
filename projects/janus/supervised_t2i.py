@@ -23,6 +23,14 @@ import torch.multiprocessing as mp
 from janus.models import MultiModalityCausalLM, VLChatProcessor, VLMImageProcessor
 from PIL import Image
 from tqdm import tqdm
+from align_anything.utils.device_utils import (
+    is_gpu_or_npu_available,
+    get_current_device,
+    get_device_count,
+    get_peak_memory,
+    set_device,
+    torch_gc,
+)
 
 
 ignore_index = -100
@@ -84,7 +92,7 @@ def tokenize_sample(vl_chat_processor, vl_gpt, vl_image_processor, formatted_sam
 
 
 def process_data(gpu, chunk, model_path, output_paths, cache_path):
-    device = f"cuda:{gpu}"
+    device = set_device(gpu)
     print(f"Initializing Model on {device}")
     vl_chat_processor = VLChatProcessor.from_pretrained(model_path, device=device)
     vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
