@@ -32,7 +32,6 @@ classifiers = [
 
 dependencies = [
     "vllm >= 0.6.2",
-    "vllm-ascend",
     "torch >= 1.13",
     "frechet_audio_distance",
     "transformers",
@@ -92,7 +91,6 @@ train = [
 
 evaluate = [
     "vllm >= 0.6.2",
-    "vllm-ascend",
     "torch >= 1.13",
     "frechet_audio_distance",
     "transformers",
@@ -127,7 +125,6 @@ evaluate = [
 
 all = [
     "vllm >= 0.6.2",
-    "vllm-ascend",
     "torch >= 1.13",
     "frechet_audio_distance",
     "transformers",
@@ -166,7 +163,7 @@ minicpmo = ["vector-quantize-pytorch", "vocos", "decord", "moviepy"]
 
 text-to-audio = ["pytorchvideo"]
 
-ascend =  ["torch==2.1.0", "torch-npu==2.1.0.post3", "decorator"]
+ascend =  ["torch==2.1.0", "torch-npu==2.1.0.post3", "decorator", "vllm-ascend"]
 
 [tool.setuptools]
 include-package-data = true
