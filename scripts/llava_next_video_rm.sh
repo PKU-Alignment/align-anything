@@ -24,7 +24,7 @@ TRAIN_NAME="text-video-to-text" # dataset name
 TRAIN_SPLIT="train" # split the dataset
 
 EVAL_DATASETS="PKU-Alignment/align-anything" # dataset path
-EVAL_TEMPLATE="Qwen2-VL" # dataset template
+EVAL_TEMPLATE="AA_TV2T" # dataset template
 EVAL_NAME="text-video-to-text" # dataset name
 EVAL_SPLIT="val" # split the dataset
 

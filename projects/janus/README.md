@@ -17,4 +17,3 @@ Set the input, output, Janus model path and Janus repo path (the path to the clo
 ```bash
 bash sft_tokenize.sh
 ```
-

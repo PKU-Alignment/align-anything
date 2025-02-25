@@ -282,7 +282,7 @@ class Llama2_zh:
 
 @register_template('Llama3')
 class Llama3:
-    system_prompt: str = '<bos><|start_header_id|>system<|end_header_id|>\n\n'
+    system_prompt: str = '<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n'
     user_prompt: str = '<|start_header_id|>user<|end_header_id|>\n\n{input}<|eot_id|>'
     assistant_prompt: str = '<|start_header_id|>assistant<|end_header_id|>\n\n{output}'
     separator: str = ''

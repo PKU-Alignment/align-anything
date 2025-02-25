@@ -28,6 +28,7 @@ from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
 from align_anything.utils.multi_process import print_on_main_process
 
+
 try:
     MODEL_NAME_OR_PATH = os.environ.get('MODEL_NAME_OR_PATH', 'openbmb/MiniCPM-o-2_6')
     CONFIG = AutoConfig.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
@@ -52,7 +53,9 @@ if MINICPMV_AVAILABLE:
             zero_stage = int(os.environ.get('ZERO_STAGE', '0'))
             if zero_stage == 2:
                 raise ValueError('MiniCPM-O does not support ZeRO stage 2')
-            self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                MODEL_NAME_OR_PATH, trust_remote_code=True
+            )
             self.system_prompt = 'You are a helpful assistant. You can accept video, audio and text input and output voice and text. '
             os.environ['MULTI_IMAGES_INFERENCE_MODELS'] = 'Yes'
             if hasattr(self, 'apm'):

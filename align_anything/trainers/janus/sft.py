@@ -21,10 +21,13 @@ import sys
 
 import deepspeed
 import torch
-from transformers.integrations.deepspeed import HfDeepSpeedConfig
+import transformers
+from janus.models import MultiModalityCausalLM, VLChatProcessor, VLMImageProcessor
 
-from align_anything.datasets.janus import SupervisedDataset, SupervisedTokenizedDataset, SupervisedBatch
-from align_anything.models.pretrained_model import load_pretrained_models
+from align_anything.datasets.janus import (
+    SupervisedBatch,
+    SupervisedTokenizedDataset,
+)
 from align_anything.trainers.text_to_text.sft import SupervisedTrainer as SupervisedtextTrainer
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
@@ -35,11 +38,9 @@ from align_anything.utils.tools import (
     update_dict,
 )
 
-import transformers
-from transformers import AutoImageProcessor, AutoTokenizer, AutoModel
-from janus.models import VLChatProcessor, MultiModalityCausalLM, VLMImageProcessor
 
 transformers.logging.set_verbosity_info()
+
 
 class SuperviseTrainer(SupervisedtextTrainer):
 
@@ -52,8 +53,8 @@ class SuperviseTrainer(SupervisedtextTrainer):
     def update_configs(self, model_config, args, fields):
         cross_update = lambda a, b, field_name: (
             setattr(b, field_name, getattr(a, field_name))
-            if getattr(b, field_name, None) is None else
-            setattr(a, field_name, getattr(b, field_name))
+            if getattr(b, field_name, None) is None
+            else setattr(a, field_name, getattr(b, field_name))
         )
 
         for f in fields:
@@ -66,7 +67,6 @@ class SuperviseTrainer(SupervisedtextTrainer):
         ).to(get_current_device())
         if self.cfgs.train_cfgs.bf16:
             self.model = self.model.to(torch.bfloat16)
-
 
         self.processor = VLMImageProcessor.from_pretrained(
             self.cfgs.model_cfgs.model_name_or_path,
@@ -81,7 +81,7 @@ class SuperviseTrainer(SupervisedtextTrainer):
 
     def loss(self, sft_batch: SupervisedBatch) -> dict[str, torch.Tensor]:
         """Loss function for supervised finetuning."""
-        outputs = self.model.forward(**sft_batch, modality="generation")
+        outputs = self.model.forward(**sft_batch, modality='generation')
         return {
             'loss': outputs.loss,
         }
