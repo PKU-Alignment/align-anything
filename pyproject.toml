@@ -32,6 +32,7 @@ classifiers = [
 
 dependencies = [
     "vllm >= 0.6.2",
+    "vllm-ascend",
     "torch >= 1.13",
     "frechet_audio_distance",
     "transformers",
@@ -91,6 +92,7 @@ train = [
 
 evaluate = [
     "vllm >= 0.6.2",
+    "vllm-ascend",
     "torch >= 1.13",
     "frechet_audio_distance",
     "transformers",
@@ -125,6 +127,7 @@ evaluate = [
 
 all = [
     "vllm >= 0.6.2",
+    "vllm-ascend",
     "torch >= 1.13",
     "frechet_audio_distance",
     "transformers",
