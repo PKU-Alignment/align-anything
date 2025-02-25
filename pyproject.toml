@@ -163,6 +163,8 @@ minicpmo = ["vector-quantize-pytorch", "vocos", "decord", "moviepy"]
 
 text-to-audio = ["pytorchvideo"]
 
+ascend =  ["torch==2.1.0", "torch-npu==2.1.0.post3", "decorator"]
+
 [tool.setuptools]
 include-package-data = true
 
