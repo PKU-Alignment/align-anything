@@ -23,13 +23,9 @@ import torch
 
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.utils.device_utils import (
-    is_gpu_or_npu_available,
     get_current_device,
-    get_device_count,
-    get_peak_memory,
-    set_device,
-    torch_gc,
 )
+
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 

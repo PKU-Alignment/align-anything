@@ -20,13 +20,9 @@ import torch
 from diffusers import CogVideoXPipeline
 from diffusers.utils import export_to_video
 from tqdm import tqdm
+
 from align_anything.utils.device_utils import (
-    is_gpu_or_npu_available,
     get_current_device,
-    get_device_count,
-    get_peak_memory,
-    set_device,
-    torch_gc,
 )
 from datasets import load_dataset
 

@@ -31,13 +31,10 @@ from transformers import AutoTokenizer, ChameleonProcessor
 
 from align_anything.models.chameleon_model import AccustomedChameleonModel
 from align_anything.utils.device_utils import (
-    is_gpu_or_npu_available,
-    get_current_device,
-    get_device_count,
-    get_peak_memory,
     set_device,
     torch_gc,
 )
+
 
 ALLOWED_ATTRIBUTES = ['split_token']
 DEFAULT_SPLIT_TOKEN = 'ASSISTANT:'

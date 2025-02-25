@@ -32,20 +32,16 @@ from align_anything.evaluation.inference.ds_inference import (
     ListDataset,
     get_rank,
 )
+from align_anything.utils.device_utils import (
+    get_current_device,
+    set_device,
+)
 from align_anything.utils.template_registry import get_eval_template_class as get_template_class
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
     read_eval_cfgs,
     update_dict,
-)
-from align_anything.utils.device_utils import (
-    is_gpu_or_npu_available,
-    get_current_device,
-    get_device_count,
-    get_peak_memory,
-    set_device,
-    torch_gc,
 )
 from datasets import DatasetDict, load_dataset
 

@@ -31,10 +31,8 @@ from transformers import GenerationConfig, TextIteratorStreamer
 
 from align_anything.configs.template import ChatTemplate
 from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.utils.device_utils import (
-    is_gpu_or_npu_available,
-    get_current_device,
-)
+from align_anything.utils.device_utils import is_gpu_or_npu_available
+
 
 __all__ = [
     'CODE_BLOCK_PATTERN',

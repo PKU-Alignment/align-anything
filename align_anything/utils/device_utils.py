@@ -16,7 +16,7 @@
 
 import gc
 import os
-from typing import Tuple
+from typing import Tuple, Union
 
 import torch
 from transformers.utils import (
@@ -27,39 +27,41 @@ from transformers.utils import (
 )
 
 
-def get_current_device() -> "torch.device":
+def get_current_device() -> 'torch.device':
     r"""
     Gets the current available device.
     """
     if is_torch_xpu_available():
-        device = "xpu:{}".format(os.environ.get("LOCAL_RANK", "0"))
+        device = 'xpu:{}'.format(os.environ.get('LOCAL_RANK', '0'))
     elif is_torch_npu_available():
-        device = "npu:{}".format(os.environ.get("LOCAL_RANK", "0"))
+        device = 'npu:{}'.format(os.environ.get('LOCAL_RANK', '0'))
     elif is_torch_mps_available():
-        device = "mps:{}".format(os.environ.get("LOCAL_RANK", "0"))
+        device = 'mps:{}'.format(os.environ.get('LOCAL_RANK', '0'))
     elif is_torch_cuda_available():
-        device = "cuda:{}".format(os.environ.get("LOCAL_RANK", "0"))
+        device = 'cuda:{}'.format(os.environ.get('LOCAL_RANK', '0'))
     else:
-        device = "cpu"
+        device = 'cpu'
 
     return torch.device(device)
+
 
 def set_device(device_id) -> str:
     r"""
     Sets the device.
     """
     if is_torch_xpu_available():
-        device = "xpu:{}".format(device_id)
+        device = f'xpu:{device_id}'
     elif is_torch_npu_available():
-        device = "npu:{}".format(device_id)
+        device = f'npu:{device_id}'
     elif is_torch_mps_available():
-        device = "mps:{}".format(device_id)
+        device = f'mps:{device_id}'
     elif is_torch_cuda_available():
-        device = "cuda:{}".format(device_id)
+        device = f'cuda:{device_id}'
     else:
-        device = "cpu"
+        device = 'cpu'
 
     return device
+
 
 def get_device_count() -> int:
     r"""
@@ -73,7 +75,8 @@ def get_device_count() -> int:
         return torch.cuda.device_count()
     else:
         return 0
-    
+
+
 def get_peak_memory() -> Tuple[int, int]:
     r"""
     Gets the peak memory usage for the current device (in Bytes).
@@ -84,12 +87,14 @@ def get_peak_memory() -> Tuple[int, int]:
         return torch.cuda.max_memory_allocated(), torch.cuda.max_memory_reserved()
     else:
         return 0, 0
-    
+
+
 def is_gpu_or_npu_available() -> bool:
     r"""
     Checks if the GPU or NPU is available.
     """
     return is_torch_npu_available() or is_torch_cuda_available()
+
 
 def torch_gc() -> None:
     r"""
@@ -104,7 +109,18 @@ def torch_gc() -> None:
         torch.mps.empty_cache()
     elif is_torch_cuda_available():
         torch.cuda.empty_cache()
-        
+
+
+def torch_set_device(device: Union[torch.device, str, int, None]) -> None:
+    r"""
+    Sets the device for PyTorch.
+    """
+    if is_torch_npu_available():
+        torch.npu.set_device(device)
+    elif is_torch_cuda_available():
+        torch.cuda.set_device(device)
+
+
 def manual_seed_all(seed) -> None:
     r"""
     Sets the seed for generating random numbers.

@@ -45,16 +45,11 @@ from torchvision.transforms import InterpolationMode
 from transformers import PreTrainedTokenizerBase, ProcessorMixin
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
 
-from align_anything.utils.multi_process import print_on_main_process
 from align_anything.utils.device_utils import (
-    is_gpu_or_npu_available,
     get_current_device,
-    get_device_count,
-    get_peak_memory,
     manual_seed_all,
-    set_device,
-    torch_gc,
 )
+from align_anything.utils.multi_process import print_on_main_process
 
 
 try:

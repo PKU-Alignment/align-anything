@@ -33,6 +33,7 @@ from tqdm import tqdm
 from align_anything.datasets.text_to_audio import PreferenceBatch, PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_audio_diffusion_models
 from align_anything.trainers.base import SupervisedTrainerBase
+from align_anything.utils.device_utils import get_current_device, torch_gc, torch_set_device
 from align_anything.utils.multi_process import (
     get_all_reduce_mean,
     get_current_device,
@@ -47,14 +48,6 @@ from align_anything.utils.tools import (
     read_cfgs,
     seed_everything,
     update_dict,
-)
-from align_anything.utils.device_utils import (
-    is_gpu_or_npu_available,
-    get_current_device,
-    get_device_count,
-    get_peak_memory,
-    set_device,
-    torch_gc,
 )
 
 
@@ -334,7 +327,7 @@ class DPOTrainer(SupervisedTrainerBase):
 def main():
     # setup distribution training
     current_device = get_current_device()
-    torch.cuda.set_device(current_device)
+    torch_set_device(current_device)
 
     # read default configs from the yaml file
     task = os.path.join('text_to_audio', 'dpo')

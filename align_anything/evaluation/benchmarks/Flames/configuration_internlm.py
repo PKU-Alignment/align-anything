@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright (c) The InternLM team and The HuggingFace Inc. team. All rights reserved.
 #
 # This code is based on transformers/src/transformers/models/llama/configuration_llama.py
@@ -18,6 +17,7 @@
 
 from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import logging
+
 
 logger = logging.get_logger(__name__)
 
@@ -68,8 +68,9 @@ class InternLMConfig(PretrainedConfig):
     >>> # Accessing the model configuration
     >>> configuration = model.config
     ```"""
-    model_type = "internlm"
-    _auto_class = "AutoConfig"
+
+    model_type = 'internlm'
+    _auto_class = 'AutoConfig'
 
     def __init__(  # pylint: disable=W0102
         self,
@@ -78,7 +79,7 @@ class InternLMConfig(PretrainedConfig):
         intermediate_size=11008,
         num_hidden_layers=32,
         num_attention_heads=32,
-        hidden_act="silu",
+        hidden_act='silu',
         max_position_embeddings=2048,
         initializer_range=0.02,
         rms_norm_eps=1e-6,
@@ -88,8 +89,8 @@ class InternLMConfig(PretrainedConfig):
         eos_token_id=2,
         tie_word_embeddings=False,
         bias=True,
-        rotary={"base": 10000, "type": "dynamic"},  # pylint: disable=W0102
-        attn_implementation="eager",
+        rotary={'base': 10000, 'type': 'dynamic'},  # pylint: disable=W0102
+        attn_implementation='eager',
         **kwargs,
     ):
         self.vocab_size = vocab_size
@@ -106,7 +107,7 @@ class InternLMConfig(PretrainedConfig):
         self.rotary = rotary
         self.attn_implementation = attn_implementation
         if self.attn_implementation is None:
-            self.attn_implementation = "eager"
+            self.attn_implementation = 'eager'
         super().__init__(
             pad_token_id=pad_token_id,
             bos_token_id=bos_token_id,
