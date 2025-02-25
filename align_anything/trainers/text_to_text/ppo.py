@@ -55,7 +55,14 @@ from align_anything.utils.tools import (
     seed_everything,
     update_dict,
 )
-
+from align_anything.utils.device_utils import (
+    is_gpu_or_npu_available,
+    get_current_device,
+    get_device_count,
+    get_peak_memory,
+    set_device,
+    torch_gc,
+)
 
 class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
     """Trainer base class for PPO training."""
@@ -432,7 +439,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
                     ptx_batches = self.split_ptx_micro_batches(ptx_batch)
                 else:
                     ptx_batches = [None for _ in range(len(inference_batches))]
-                torch.cuda.empty_cache()
+                torch_gc()
 
                 for _ in range(self.cfgs.train_cfgs.update_iters):
                     for inference_batch, training_batch, ptx_batch in zip(
@@ -440,11 +447,11 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
                     ):
                         rl_info = self.rl_step(inference_batch, training_batch)
 
-                        torch.cuda.empty_cache()
+                        torch_gc()
                         self.logger.log(rl_info, step=self.global_step)
                         if self.use_ptx:
                             ptx_info = self.ptx_step(ptx_batch)
-                            torch.cuda.empty_cache()
+                            torch_gc()
                             self.logger.log(ptx_info, step=self.global_step)
 
                         self.global_step += 1

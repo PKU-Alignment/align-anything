@@ -45,7 +45,14 @@ from align_anything.utils.tools import (
     seed_everything,
     update_dict,
 )
-
+from align_anything.utils.device_utils import (
+    is_gpu_or_npu_available,
+    get_current_device,
+    get_device_count,
+    get_peak_memory,
+    set_device,
+    torch_gc,
+)
 
 class SupervisedTrainer(SupervisedTrainerBase):
 
@@ -176,7 +183,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
             for batch in self.train_dataloader:
                 info = self.train_step(batch)
-                torch.cuda.empty_cache()
+                torch_gc()
 
                 self.global_step += 1
                 progress_bar.set_description(

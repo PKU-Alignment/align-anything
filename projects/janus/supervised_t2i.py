@@ -110,7 +110,7 @@ def process_data(gpu, chunk, model_path, output_paths, cache_path):
         torch.save(sample, file_path)
         local_output_paths.append(file_path)
         del sample
-        torch.cuda.empty_cache()
+        torch_gc()
 
     output_paths.extend(local_output_paths)
     print(f"Processed {len(local_output_paths)} samples on GPU {gpu}")

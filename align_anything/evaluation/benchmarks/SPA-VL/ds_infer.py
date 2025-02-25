@@ -40,6 +40,14 @@ from align_anything.utils.tools import (
     read_eval_cfgs,
     update_dict,
 )
+from align_anything.utils.device_utils import (
+    is_gpu_or_npu_available,
+    get_current_device,
+    get_device_count,
+    get_peak_memory,
+    set_device,
+    torch_gc,
+)
 from datasets import DatasetDict, load_dataset
 
 
@@ -77,7 +85,7 @@ class SPAVLDataLoader(BaseDataLoader):
         return question
 
     def preprocess(self, data):
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = get_current_device()
         raw_images = [item['image'] for item in data[self.split]]
         prompts = self.build_prompt(data[self.split])
 
@@ -158,8 +166,8 @@ class SPAVLGeneratorDS(BaseInferencer_deepspeed):
         for batch in tqdm(dataloader):
             local_rank = int(os.environ['LOCAL_RANK'])
             outputs = self.model.generate(
-                inputs=batch['pad_token_ids'].to(f'cuda:{local_rank}'),
-                pixel_values=batch['pixel_values'].to(f'cuda:{local_rank}'),
+                inputs=batch['pad_token_ids'].to(set_device(local_rank)),
+                pixel_values=batch['pixel_values'].to(set_device(local_rank)),
                 return_dict_in_generate=True,
                 num_return_sequences=num_sequences,
                 early_stopping=True,

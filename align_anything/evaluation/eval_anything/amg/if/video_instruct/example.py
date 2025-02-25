@@ -20,7 +20,14 @@ import torch
 from diffusers import CogVideoXPipeline
 from diffusers.utils import export_to_video
 from tqdm import tqdm
-
+from align_anything.utils.device_utils import (
+    is_gpu_or_npu_available,
+    get_current_device,
+    get_device_count,
+    get_peak_memory,
+    set_device,
+    torch_gc,
+)
 from datasets import load_dataset
 
 
@@ -59,7 +66,7 @@ def inference(data):
         num_inference_steps=50,
         num_frames=49,
         guidance_scale=6,
-        generator=torch.Generator(device='cuda').manual_seed(42),
+        generator=torch.Generator(device=get_current_device()).manual_seed(42),
     ).frames[0]
 
     return video

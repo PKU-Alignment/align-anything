@@ -21,7 +21,14 @@ from typing import Dict, List, Optional, Union
 from agent.llms.base_api import APITemplateParser
 from agent.llms.base_llm import BaseModel
 from agent.schema import ModelStatusCode
-
+from align_anything.utils.device_utils import (
+    is_gpu_or_npu_available,
+    get_current_device,
+    get_device_count,
+    get_peak_memory,
+    set_device,
+    torch_gc,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +190,7 @@ class HFTransformer(BaseModel):
             inputs = self.tokenizer(inputs, padding=True, return_tensors='pt', return_length=True)
             input_length = inputs['length']
             for k, v in inputs.items():
-                inputs[k] = v.cuda()
+                inputs[k] = v.to(get_current_device())
             input_ids = inputs['input_ids']
             attention_mask = inputs['attention_mask']
             batch_size = input_ids.shape[0]
