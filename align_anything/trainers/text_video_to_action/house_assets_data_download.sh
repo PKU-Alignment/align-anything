@@ -1,11 +1,11 @@
-export PYTHONPATH=$PYTHONPATH:/root/poliformer
-export OBJAVERSE_HOUSES_BASE_DIR=/root/data/houses/objaverse_houses,
-export OBJAVERSE_HOUSES_DIR=/root/data/houses/objaverse_houses/houses_2023_07_28
-export OBJAVERSE_DATA_BASE_DIR=/root/data/assets/objaverse_houses
-export OBJAVERSE_DATA_DIR=/root/data/assets/objaverse_assets/2023_07_28
-export OBJAVERSE_ANNOTATIONS_PATH=/root/data/assets/objaverse_assets/2023_07_28/annotations.json.gz
+export HOME_PREFIX=/your/local/data/path
 
 
+export OBJAVERSE_HOUSES_BASE_DIR=${HOME_PREFIX}/houses/objaverse_houses
+export OBJAVERSE_HOUSES_DIR=${HOME_PREFIX}/houses/objaverse_houses/houses_2023_07_28
+export OBJAVERSE_DATA_BASE_DIR=${HOME_PREFIX}/assets/objaverse_houses
+export OBJAVERSE_DATA_DIR=${HOME_PREFIX}/assets/objaverse_assets/2023_07_28
+export OBJAVERSE_ANNOTATIONS_PATH=${HOME_PREFIX}/assets/objaverse_assets/2023_07_28/annotations.json.gz
 
 
 echo "Download objaverse assets and annotation"

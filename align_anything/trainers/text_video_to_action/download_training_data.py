@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 
 from objathor.utils.download_utils import download_with_progress_bar
 
-from utils.task_type_mapping_utils import map_task_type, inverse_map_task_type
+from align_anything.utils.utils.task_type_mapping_utils import map_task_type, inverse_map_task_type
 
 ALL_TASK_TYPES = [
     "FetchType",

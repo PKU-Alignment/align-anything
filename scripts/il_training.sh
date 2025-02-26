@@ -1,4 +1,4 @@
-export HOME_PREFIX=/home/yuhao/safevla/data
+export HOME_PREFIX=/your/local/data/path
 
 export OBJAVERSE_HOUSES_BASE_DIR=${HOME_PREFIX}/houses/objaverse_houses
 export OBJAVERSE_HOUSES_DIR=${HOME_PREFIX}/houses/objaverse_houses/houses_2023_07_28
@@ -6,9 +6,7 @@ export OBJAVERSE_DATA_BASE_DIR=${HOME_PREFIX}/assets/objaverse_houses
 export OBJAVERSE_DATA_DIR=${HOME_PREFIX}/assets/objaverse_assets/2023_07_28
 export OBJAVERSE_ANNOTATIONS_PATH=${HOME_PREFIX}/assets/objaverse_assets/2023_07_28/annotations.json.gz
 export WANDB_DIR=${HOME_PREFIX}/align-anything/wandb
-export HF_ENDPOINT="https://hf-mirror.com"  # 注意：这里是一个链接，可能需要检查其有效性
 
-export LONG_ACTION_NAME=1
 python -m align_anything.trainers.text_video_to_action.training.offline.train_pl \
  --max_samples 10000000 \
  --eval_max_samples 100 \

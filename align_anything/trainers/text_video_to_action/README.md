@@ -8,7 +8,7 @@ AI2-THOR is an interactive 3D environment designed for visual AI research, provi
 
 
 ```bash
-cd align-anything/align_anything/trainers/text_video_to_action/training
+cd align-anything/align_anything/trainers/text_video_to_action
 pip install -r requirements.txt
 pip install --extra-index-url https://ai2thor-pypi.allenai.org ai2thor==0+966bd7758586e05d18f6181f459c0e90ba318bec
 pip install --extra-index-url https://miropsota.github.io/torch_packages_builder detectron2==0.6+864913fpt2.1.2cu121
@@ -52,7 +52,7 @@ Once you run the above command, you will have a directory structure that looks l
 ## 🏋 Running IL training 🏋
 
 ```bash
-cd pr/align-anything/scripts
+cd align-anything/scripts
 ```
 modify ``HOME_PREFIX`` in ``il_training.sh`` to your local data path.
 These will create the directory structure:
