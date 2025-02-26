@@ -110,7 +110,7 @@ class BaseInferencer_vllm:
 
         self.llm_tokenizer_mode = self.vllm_cfgs_llm.tokenizer_mode
         self.llm_trust_remote_code = self.vllm_cfgs_llm.trust_remote_code
-        self.llm_memory_utilization = self.vllm_cfgs_llm.memory_utilization
+        self.llm_memory_utilization = self.vllm_cfgs_llm.gpu_memory_utilization
         self.llm_max_num_seqs = self.vllm_cfgs_llm.max_num_seqs
         tensor_ps = self.vllm_cfgs_llm.tensor_parallel_size
         self.llm_tensor_parallel_size = tensor_ps if tensor_ps else get_device_count()
