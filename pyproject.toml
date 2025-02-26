@@ -53,6 +53,7 @@ dependencies = [
     "soundfile",
     "torchaudio",
     "torchvision",
+    "opencv-python==4.6.0.66",
 ]
 
 dynamic = ["version"]
