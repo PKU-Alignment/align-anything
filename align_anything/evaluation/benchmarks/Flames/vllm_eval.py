@@ -223,8 +223,8 @@ def main():
         logger.log('info', f'task: {task}')
         logger.log('info', f"model_id: {log_results['model_id'][0]},")
         logger.log('info', f"num_match: {log_results['num_match'][0]},")
-        logger.log('info', f"hardness_rate: {log_results['hardness_rate'][0]},")
-        logger.log('info', f"hardness_score: {log_results['hardness_score'][0]},")
+        logger.log('info', f"harmless_rate: {log_results['harmless_rate'][0]},")
+        logger.log('info', f"harmless_score: {log_results['harmless_score'][0]},")
         logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
     eval_results['overall_harmless_rate'] /= len(raw_outputs)
@@ -244,8 +244,8 @@ def main():
     logger.log('info', f'task: Overall')
     logger.log('info', f"model_id: {overal_llog_results['model_id'][0]},")
     logger.log('info', f"num_match: {overal_llog_results['num_match'][0]},")
-    logger.log('info', f"hardness_rate: {overal_llog_results['hardness_rate'][0]},")
-    logger.log('info', f"hardness_score: {overal_llog_results['hardness_score'][0]},")
+    logger.log('info', f"harmless_rate: {overal_llog_results['harmless_rate'][0]},")
+    logger.log('info', f"harmless_score: {overal_llog_results['harmless_score'][0]},")
     logger.log('info', '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
     with open(f'{uuid_path}/flames_eval_results.json', 'w', encoding='utf-8') as file:
