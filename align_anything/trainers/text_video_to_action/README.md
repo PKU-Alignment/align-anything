@@ -1,10 +1,8 @@
-# Alignment VLA
+# Align VLA
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/release/python-390/)
 
-AI2-THOR is an interactive 3D environment designed for visual AI research, providing a platform where AI agents can navigate and interact with objects in near photo-realistic indoor scenes. It consists of over 200 high-quality scenes across various categories such as kitchens, living rooms, bedrooms, and bathrooms. The framework includes over 2600 household objects with realistic physics, enabling agents to perform a wide range of actions, such as opening a microwave or slicing bread
 
-## 🐍 Setting up the Python environment 🐍
+## Setting up the Python environment 
 
 
 ```bash
@@ -15,9 +13,9 @@ pip install --extra-index-url https://miropsota.github.io/torch_packages_builder
 ```
 
 
-## 📊 Data 📊
+## Data 
 
-### 📥 Downloading the training data 📥
+### Downloading the training data
 
 ```bash
 python -m download_training_data --save_dir /your/local/save/dir --types astar
@@ -28,7 +26,7 @@ Download the house and assets data
 bash house_assets_data_download.sh
 ```
 
-#### 📁 Dataset format 📁
+#### Dataset format
 
 Once you run the above command, you will have a directory structure that looks like this
 ```
@@ -49,7 +47,7 @@ Once you run the above command, you will have a directory structure that looks l
 
 
 
-## 🏋 Running IL training 🏋
+## Running IL training
 
 ```bash
 cd align-anything/scripts
@@ -65,10 +63,10 @@ bash il_training.sh
 
 
 
-## 🚀 Running RL finetuning 🚀
+## Running RL finetuning
 
-to be continue
+coming soon
 
-## 🚀 Running evaluation with a trained model 🚀
+## Running evaluation with a trained model
 
-to be continue
+coming soom
