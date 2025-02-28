@@ -1,0 +1,12 @@
+[
+    {
+        "prompt": "Briefly describe what's in the image.",
+        "image": "images/example_1.png",
+        "output_text": "A close-up high-contrast photo of a doomed cityscape, with dark blue skies and high-rise buildings standing in the distance."
+    },
+    {
+        "prompt": "Briefly describe what's in the image.",
+        "image": "images/example_1.png",
+        "output_text": "A close-up high-contrast photo of a doomed cityscape, with dark blue skies and high-rise buildings standing in the distance."
+    }
+]

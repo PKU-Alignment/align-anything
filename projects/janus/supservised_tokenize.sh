@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ NUM_GPUS=8
 
 export PYTHONPATH=$PYTHONPATH:"$JANUS_REPO_PATH"
 
-python supervised_t2i.py \
+python supervised_text_to_image.py \
     --input_path $INPUT_PATH \
     --output_path $OUTPUT_PATH \
     --model_path $MODEL_PATH \

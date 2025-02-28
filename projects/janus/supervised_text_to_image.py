@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -85,6 +85,7 @@ def tokenize_sample(vl_chat_processor, vl_gpt, vl_image_processor, formatted_sam
     return {
         'input_ids': full_input_ids.to('cpu'),
         'labels': labels.to('cpu'),
+        'task': 'generation',
     }
 
 

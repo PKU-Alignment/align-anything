@@ -30,29 +30,29 @@ from datasets import load_dataset
 IGNORE_INDEX = -100
 
 __all__ = [
-    'SupervisedDataset',
-    'SupervisedTokenizedDataset',
-    'SupervisedCollator',
-    'SupervisedSample',
-    'SupervisedBatch',
+    'PreferenceDataset',
+    'PreferenceTokenizedDataset',
+    'PreferenceCollator',
+    'PreferenceSample',
+    'PreferenceBatch',
 ]
 
 
-class SupervisedSample(TypedDict, total=True):
-    input_ids: torch.LongTensor  # size = (L,)
-    labels: torch.LongTensor  # size = (L,)
+class PreferenceSample(TypedDict, total=True):
+    better_input_ids: torch.LongTensor  # size = (L,)
+    worse_input_ids: torch.LongTensor  # size = (L,)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
-class SupervisedBatch(TypedDict, total=True):
-    input_ids: torch.LongTensor  # size = (B, L)
-    labels: torch.LongTensor  # size = (B, L)
+class PreferenceBatch(TypedDict, total=True):
+    better_input_ids: torch.LongTensor  # size = (B, L)
+    worse_input_ids: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
     task: str
 
 
-class SupervisedDataset(Dataset):
+class PreferenceDataset(Dataset):
 
     def __init__(
         self,
@@ -85,12 +85,12 @@ class SupervisedDataset(Dataset):
             self.raw_data = self.raw_data.select(range(int(size)))
         self.template = template
 
-    def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
+    def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
         formatted_sample = self.template.format_sample(raw_sample)
         return_dict = {}
         if 'input_image' in formatted_sample and formatted_sample['input_image'] is not None:
 
-            full_conversation = [
+            better_full_conversation = [
                 {
                     'role': 'User',
                     'content': formatted_sample['input_text'],
@@ -100,10 +100,10 @@ class SupervisedDataset(Dataset):
                         else formatted_sample['input_image']
                     ),
                 },
-                {'role': 'Assistant', 'content': formatted_sample['output_text']},
+                {'role': 'Assistant', 'content': formatted_sample['better_output_text']},
             ]
 
-            prompt_conversation = [
+            worse_full_conversation = [
                 {
                     'role': 'User',
                     'content': formatted_sample['input_text'],
@@ -113,30 +113,28 @@ class SupervisedDataset(Dataset):
                         else formatted_sample['input_image']
                     ),
                 },
-                {
-                    'role': 'Assistant',
-                    'content': '',
-                },
+                {'role': 'Assistant', 'content': formatted_sample['worse_output_text']},
             ]
-            full_inputs = self.processor(
-                full_conversation, formatted_sample['input_image'], return_tensors='pt'
+
+            
+            better_inputs = self.processor(
+                better_full_conversation, formatted_sample['input_image'], return_tensors='pt'
             )
-            prompt_inputs = self.processor(
-                prompt_conversation, formatted_sample['input_image'], return_tensors='pt'
+            worse_inputs = self.processor(
+                worse_full_conversation, formatted_sample['input_image'], return_tensors='pt'
             )
 
-            return_dict = full_inputs.copy()
-            return_dict['labels'] = return_dict['input_ids'].clone()
-            return_dict['labels'][: len(prompt_inputs['input_ids'])] = IGNORE_INDEX
+            return_dict = better_inputs.copy()  
+            return_dict['worse_input_ids'] = worse_inputs['input_ids']
             return_dict['task'] = 'understanding'
         elif 'output_image' in formatted_sample and formatted_sample['output_image'] is not None:
             raise NotImplementedError(
-                'Not implemented inside SupervisedDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
+                'Not implemented inside PreferenceDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
             )
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return SupervisedCollator(self.tokenizer, self.processor)
+        return PreferenceCollator(self.tokenizer.pad_token_id)
 
     def tokenize(
         self,
@@ -170,7 +168,7 @@ class SupervisedDataset(Dataset):
         return len(self.raw_data)
 
 
-class SupervisedTokenizedDataset(Dataset):
+class PreferenceTokenizedDataset(Dataset):
 
     def __init__(
         self,
@@ -197,7 +195,7 @@ class SupervisedTokenizedDataset(Dataset):
         self.template = template
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return SupervisedCollator(self.tokenizer.pad_token_id)
+        return PreferenceCollator(self.tokenizer.pad_token_id)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
@@ -209,24 +207,24 @@ class SupervisedTokenizedDataset(Dataset):
         return len(self.raw_data)
 
 
-class SupervisedCollator:
+class PreferenceCollator:
 
     def __init__(self, pad_token_id: int) -> None:
         """Initialize a collator."""
         self.pad_token_id = pad_token_id
 
-    def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
+    def __call__(self, samples: list[PreferenceSample]) -> PreferenceBatch:
         return_dict = {}
         current_device = get_current_device()
 
-        return_dict['input_ids'] = right_padding(
-            [sample['input_ids'] for sample in samples],
+        return_dict['better_input_ids'] = right_padding(
+            [sample['better_input_ids'] for sample in samples],
             padding_value=self.pad_token_id,
         ).to(current_device)
 
-        return_dict['labels'] = right_padding(
-            [sample['labels'] for sample in samples],
-            padding_value=IGNORE_INDEX,
+        return_dict['worse_input_ids'] = right_padding(
+            [sample['worse_input_ids'] for sample in samples],
+            padding_value=self.pad_token_id,
         ).to(current_device)
 
         if 'attention_mask' in return_dict:
@@ -252,6 +250,6 @@ class SupervisedCollator:
                 _pixel_values_list.append(pixel_values)
 
             return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device)
-
+            
         return_dict['task'] = samples[0]['task']
         return return_dict
