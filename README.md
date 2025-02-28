@@ -395,18 +395,17 @@ python3 -m align_anything.serve.arena \
 ### Downloading the training data
 
 ```bash
-python -m download_training_data --save_dir /your/local/save/dir --types astar
+python -m align_anything.trainers.text_video_to_action.download_training_data --save_dir ./path/to/your/data  --types astar
 ```
+Then decompress the compressed data package.
 ### Training
-```bash
-cd align-anything/scripts
-```
-modify ``HOME_PREFIX`` in ``il_training.sh`` to your local data path.
+
+modify ``HOME_PREFIX`` in ``align-anything/scripts/il_training.sh`` to your local data path.
 
 ```bash
-bash il_training.sh
+bash scripts/il_training.sh
 ```
-More details on [alignVLA](align_anything/trainers/text_video_to_action/README.md)
+More details on [AlignVLA](align_anything/trainers/text_video_to_action/README.md)
 
 
 

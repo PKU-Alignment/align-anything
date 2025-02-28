@@ -14,7 +14,7 @@
 
 Currently only supports Python 3.10
 ```bash
-cd align-anything/align_anything/trainers/text_video_to_action
+cd align_anything/trainers/text_video_to_action
 pip install -r requirements.txt
 pip install --extra-index-url https://ai2thor-pypi.allenai.org ai2thor==0+966bd7758586e05d18f6181f459c0e90ba318bec
 pip install --extra-index-url https://miropsota.github.io/torch_packages_builder detectron2==0.6+864913fpt2.1.2cu121
@@ -26,13 +26,9 @@ pip install --extra-index-url https://miropsota.github.io/torch_packages_builder
 ### Downloading the training data
 
 ```bash
-python -m download_training_data --save_dir /your/local/save/dir --types astar
+python -m align_anything.trainers.text_video_to_action.download_training_data --save_dir ./path/to/your/data  --types astar
 ```
-
-Download the house and assets data
-```bash
-bash house_assets_data_download.sh
-```
+Then decompress the compressed data package.
 
 #### Dataset format
 
@@ -57,14 +53,11 @@ Once you run the above command, you will have a directory structure that looks l
 
 ## Running IL Training
 
-```bash
-cd align-anything/scripts
-```
-modify ``HOME_PREFIX`` in ``il_training.sh`` to your local data path.
-These will create the directory structure:
+modify ``HOME_PREFIX`` in ``align-anything/scripts/il_training.sh`` to your local data path.
+
 
 ```bash
-bash il_training.sh
+bash scripts/il_training.sh
 ```
 
 

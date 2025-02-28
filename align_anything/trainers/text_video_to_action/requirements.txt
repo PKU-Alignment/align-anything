@@ -63,7 +63,7 @@ fire
 decorator==4.4.2
 timeout-decorator
 objathor>=0.0.2
-
+librosa
 # for objaverse pipeline
 trimesh
 objaverse
@@ -74,9 +74,10 @@ compress_json
 phonemizer
 
 -e git+https://github.com/openai/CLIP.git@a1d071733d7111c9c014f024669f959182114e33#egg=clip
-torch==2.0.1
-torchvision
-xformers
+torch==2.0.0
+torchvision==0.15.1
+torchaudio==2.0.1
+xformers==0.0.19
 lightning
 open-clip-torch
 -e "git+https://github.com/openai/CLIP.git@a1d071733d7111c9c014f024669f959182114e33#egg=clip"
