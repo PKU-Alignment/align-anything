@@ -141,7 +141,8 @@ We support basic alignment algorithms for different modalities, each of which ma
 | `Text+Video -> Text (tv2t)`        | ✔️   | ✔️   | ✔️   | ✔️   |
 | `Text -> Image (t2i)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
 | `Text -> Video (t2v)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
-| `Text -> Audio (t2a)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| `Text -> Audio (t2audio)`          | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| `Text+Video -> Action (tv2action)` | ✔️   | ⚒️   | ⚒️   | ⚒️   |
 
 ## Evaluation
 We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Text -> Image`.
@@ -154,7 +155,8 @@ We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Tex
 |`ta2t` |[AIR-Bench](https://huggingface.co/datasets/qyang1021/AIR-Bench-Dataset) |
 | `t2i`      | [ImageReward](https://huggingface.co/datasets/THUDM/ImageRewardDB), [HPSv2](https://huggingface.co/datasets/zhwang/HPDv2), [COCO-30k(FID)](https://huggingface.co/datasets/sayakpaul/coco-30-val-2014) |
 | `t2v`      | [ChronoMagic-Bench](https://huggingface.co/datasets/BestWishYsh/ChronoMagic-Bench) |
-| `t2a`      | [AudioCaps(FAD)](https://huggingface.co/datasets/AudioLLMs/audiocaps_test) |
+| `t2audio`  | [AudioCaps(FAD)](https://huggingface.co/datasets/AudioLLMs/audiocaps_test) |
+| `tv2action`| ⚒️|
 
 - ⚒️ : coming soon.
 
@@ -384,6 +386,30 @@ python3 -m align_anything.serve.arena \
 
 <img src="assets/arena_demo.gif" alt="arena_demo" style="width:600px;">
 
+## New Feature: Align VLA
+|| <details><summary>prompt</summary>navigate to a basketball</details> | <details><summary>prompt</summary>find to a basketball</details>  | <details><summary>prompt</summary>locate a vase.</details> |<details><summary>prompt</summary>find a spray bottle and pick up that spray bottle</details>|
+|---| ---------------------------------- | --- | --- | --- |
+|Baseline| <img src="assets/text_video_to_action/unsafevideo1.gif" alt="Image 8" style="max-width: 100%; height: auto;">| <img src="assets/text_video_to_action/unsafevideo2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/text_video_to_action/unsafevideo3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="assets/text_video_to_action/unsafevideo4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
+|**AlignVLA**| <img src="assets/text_video_to_action//safevideo1.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/text_video_to_action//safevideo2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/text_video_to_action//safevideo3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="assets/text_video_to_action//safevideo4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
+> Alignment fine-tuning can significantly enhance the security performance of the VLA model.
+### Downloading the training data
+
+```bash
+python -m download_training_data --save_dir /your/local/save/dir --types astar
+```
+### Training
+```bash
+cd align-anything/scripts
+```
+modify ``HOME_PREFIX`` in ``il_training.sh`` to your local data path.
+
+```bash
+bash il_training.sh
+```
+More details on [alignVLA](align_anything/trainers/text_video_to_action/README.md)
+
+
+
 ## Citation
 
 Please cite the repo if you find the data or code in this repo useful 😊
@@ -396,6 +422,7 @@ Please cite the repo if you find the data or code in this repo useful 😊
   url={https://arxiv.org/abs/2412.15838}
 }
 ```
+
 
 ## Report Issues
 

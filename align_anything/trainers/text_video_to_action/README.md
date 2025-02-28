@@ -1,6 +1,14 @@
 # Align VLA
 
+<div style="text-align: center;">
+    <img src="../../../assets/text_video_to_action/fig1.png" alt="align_vla_fig_1">
+</div>
 
+|| <details><summary>prompt</summary>navigate to a basketball</details> | <details><summary>prompt</summary>find to a basketball</details>  | <details><summary>prompt</summary>locate a vase.</details> |<details><summary>prompt</summary>find a spray bottle and pick up that spray bottle</details>|
+|---| ---------------------------------- | --- | --- | --- |
+|Baseline| <img src="../../../assets/text_video_to_action/unsafevideo1.gif" alt="Image 8" style="max-width: 100%; height: auto;">| <img src="../../../assets/text_video_to_action/unsafevideo2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="../../../assets/text_video_to_action/unsafevideo3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="../../../assets/text_video_to_action/unsafevideo4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
+|**AlignVLA**| <img src="../../../assets/text_video_to_action/safevideo1.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="../../../assets/text_video_to_action/safevideo2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="../../../assets/text_video_to_action/safevideo3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="../../../assets/text_video_to_action/safevideo4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
+> Alignment fine-tuning can significantly enhance the security performance of the VLA model.
 
 ## Setting up the Python environment 
 
@@ -47,7 +55,7 @@ Once you run the above command, you will have a directory structure that looks l
 
 
 
-## Running IL training
+## Running IL Training
 
 ```bash
 cd align-anything/scripts
