@@ -103,6 +103,14 @@ pip install -e .[all]
 - `pip install -e .[text-to-audio]`: Install the text-to-audio dependencies.
 - `pip install -e .[minicpmv]`: Install the minicpmv dependencies.
 - `pip install -e .[minicpmo]`: Install the minicpmo dependencies.
+- `pip install -e .[ascend]`: Install the ascend dependencies.
+```
+NOTE: The current test environment for Ascend is:
+- Python 3.10.6
+- CANN 8.0.rc3
+- Architecture: aarch64
+- Hardware: 8x Ascend-SNT9B ARM (192 cores, 1536GB memory)
+```
 
 </details>
 

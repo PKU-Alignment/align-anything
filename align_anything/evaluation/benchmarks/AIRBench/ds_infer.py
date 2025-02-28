@@ -34,6 +34,11 @@ from align_anything.evaluation.inference.ds_inference import (
     get_rank,
 )
 from align_anything.models.pretrained_model import load_pretrained_models
+from align_anything.utils.device_utils import (
+    get_current_device,
+    get_device_count,
+    set_device,
+)
 from align_anything.utils.template_registry import get_eval_template_class as get_template_class
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
@@ -75,7 +80,7 @@ class AIRBenchDataLoader(BaseDataLoader):
         return question
 
     def preprocess(self, data, task_name):
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = get_current_device()
         prompts = self.build_prompt(data)
 
         audio_data = [
@@ -139,7 +144,7 @@ class AIRBenchGeneratorDS(BaseInferencer_deepspeed):
 
             self.model = deepspeed.init_inference(
                 self.model,
-                mp_size=torch.cuda.device_count(),
+                mp_size=get_device_count(),
                 dtype=torch.float16,
                 replace_with_kernel_inject=True,
             )
@@ -201,7 +206,7 @@ class AIRBenchGeneratorDS(BaseInferencer_deepspeed):
             local_rank = int(os.environ['LOCAL_RANK'])
             try:
                 outputs = self.model.generate(
-                    **batch['inputs'][0].to(f'cuda:{local_rank}'),
+                    **batch['inputs'][0].to(set_device(local_rank)),
                     return_dict_in_generate=True,
                     output_scores=True,
                     repetition_penalty=1.3,

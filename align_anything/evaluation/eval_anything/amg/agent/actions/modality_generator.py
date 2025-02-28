@@ -21,6 +21,10 @@ from diffusers import (
 # from tango import Tango
 from diffusers.utils import export_to_video
 
+from align_anything.utils.device_utils import (
+    get_current_device,
+)
+
 
 class ImageFLUXPipeline(BaseDiffusionModelPipeline):
     def __init__(
@@ -55,7 +59,7 @@ class ImageFLUXPipeline(BaseDiffusionModelPipeline):
             guidance_scale=0.0,
             num_inference_steps=self.n_inference_steps,
             max_sequence_length=256,
-            generator=torch.Generator('cuda').manual_seed(0),
+            generator=torch.Generator(device=get_current_device()).manual_seed(0),
         ).images[0]
         image.save(save_path)
 
@@ -174,7 +178,7 @@ class CogVideoXModelPipeline(BaseDiffusionModelPipeline):
             num_inference_steps=50,
             num_frames=49,
             guidance_scale=6,
-            generator=torch.Generator(device='cuda').manual_seed(42),
+            generator=torch.Generator(device=get_current_device()).manual_seed(42),
         ).frames[0]
         export_to_video(video, save_path, fps=8)
 
@@ -189,7 +193,7 @@ class AudioAudioLDM2Pipeline(BaseDiffusionModelPipeline):
 
     def _load_pipe(self):
         pipe = AudioLDM2Pipeline.from_pretrained(self.model_path, torch_dtype=self.dtype)
-        pipe = pipe.to('cuda')
+        pipe = pipe.to(get_current_device())
         return pipe
 
     def generate(self, prompts: str, instruction_uid) -> str:
@@ -220,7 +224,7 @@ class AudioAudioLDMPipeline(AudioAudioLDM2Pipeline):
 
     def _load_pipe(self):
         pipe = AudioLDMPipeline.from_pretrained(self.model_path, torch_dtype=self.dtype)
-        pipe = pipe.to('cuda')
+        pipe = pipe.to(get_current_device())
         return pipe
 
 

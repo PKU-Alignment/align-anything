@@ -26,6 +26,9 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, ChameleonProcessor
 
 from align_anything.models.chameleon_model import AccustomedChameleonModel
+from align_anything.utils.device_utils import (
+    get_current_device,
+)
 
 
 ALLOWED_ATTRIBUTES = ['split_token']
@@ -144,7 +147,7 @@ def main():
     model_path = args.model_path
 
     model = AccustomedChameleonModel.from_pretrained(
-        model_path, torch_dtype=torch.bfloat16, device_map='cuda'
+        model_path, torch_dtype=torch.bfloat16, device_map=get_current_device()
     )
     processor = ChameleonProcessor.from_pretrained(model_path)
     tokenizer = AutoTokenizer.from_pretrained(model_path)

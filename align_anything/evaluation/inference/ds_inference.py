@@ -27,6 +27,10 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.models.pretrained_model import load_pretrained_models
+from align_anything.utils.device_utils import (
+    get_current_device,
+    set_device,
+)
 
 
 class ListDataset(Dataset):
@@ -80,7 +84,7 @@ class BaseInferencer_deepspeed:
         self.llm_trust_remote_code = self.model_cfgs.trust_remote_code
         self.sp_max_tokens = self.model_cfgs.model_max_length
 
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = get_current_device()
         self.batch_size = self.infer_cfgs['inference_batch_size']
 
         self.task2details = {}
@@ -159,7 +163,7 @@ class BaseInferencer_deepspeed:
             local_rank = int(os.environ['LOCAL_RANK'])
             if 'pixel_values' not in batch.keys():
                 outputs = self.model.generate(
-                    inputs=batch['pad_token_ids'].to(f'cuda:{local_rank}'),
+                    inputs=batch['pad_token_ids'].to(set_device(local_rank)),
                     return_dict_in_generate=True,
                     num_return_sequences=num_sequences,
                     early_stopping=True,
@@ -170,8 +174,8 @@ class BaseInferencer_deepspeed:
                 )
             else:
                 outputs = self.model.generate(
-                    inputs=batch['pad_token_ids'].to(f'cuda:{local_rank}'),
-                    pixel_values=batch['pixel_values'].to(f'cuda:{local_rank}'),
+                    inputs=batch['pad_token_ids'].to(set_device(local_rank)),
+                    pixel_values=batch['pixel_values'].to(set_device(local_rank)),
                     return_dict_in_generate=True,
                     num_return_sequences=num_sequences,
                     early_stopping=True,

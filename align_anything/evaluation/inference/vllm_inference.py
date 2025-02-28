@@ -19,10 +19,10 @@ import re
 from typing import Any, Dict, List
 
 from vllm import LLM, SamplingParams
-from vllm.utils import cuda_device_count_stateless
 
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.utils.tools import requestoutput_to_dict
+from align_anything.utils.device_utils import get_device_count
 
 
 def update_results(
@@ -110,10 +110,10 @@ class BaseInferencer_vllm:
 
         self.llm_tokenizer_mode = self.vllm_cfgs_llm.tokenizer_mode
         self.llm_trust_remote_code = self.vllm_cfgs_llm.trust_remote_code
-        self.llm_gpu_memory_utilization = self.vllm_cfgs_llm.gpu_memory_utilization
+        self.llm_memory_utilization = self.vllm_cfgs_llm.gpu_memory_utilization
         self.llm_max_num_seqs = self.vllm_cfgs_llm.max_num_seqs
         tensor_ps = self.vllm_cfgs_llm.tensor_parallel_size
-        self.llm_tensor_parallel_size = tensor_ps if tensor_ps else cuda_device_count_stateless()
+        self.llm_tensor_parallel_size = tensor_ps if tensor_ps else get_device_count()
 
         self.model_id = self.model_cfgs.model_id
         self.model_name_or_path = self.model_cfgs.model_name_or_path
@@ -142,7 +142,6 @@ class BaseInferencer_vllm:
             tokenizer_mode=self.llm_tokenizer_mode,
             trust_remote_code=self.llm_trust_remote_code,
             tensor_parallel_size=self.llm_tensor_parallel_size,
-            gpu_memory_utilization=self.llm_gpu_memory_utilization,
             max_num_seqs=self.llm_max_num_seqs,
         )
 

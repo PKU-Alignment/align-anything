@@ -26,8 +26,8 @@ from align_anything.evaluation.inference.vllm_inference import (
     os,
     re,
     save_detail,
-    tqdm,
 )
+from tqdm import tqdm
 from align_anything.utils.template_registry import get_eval_template_class as get_template_class
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,

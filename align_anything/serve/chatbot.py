@@ -31,6 +31,7 @@ from transformers import GenerationConfig, TextIteratorStreamer
 
 from align_anything.configs.template import ChatTemplate
 from align_anything.models.pretrained_model import load_pretrained_models
+from align_anything.utils.device_utils import is_gpu_or_npu_available
 
 
 __all__ = [
@@ -211,7 +212,7 @@ class Chatbot(AbstractChatbot):
         self.model, self.tokenizer, self.processor = load_pretrained_models(
             model_name_or_path,
             model_max_length=max_length,
-            auto_device_mapping=torch.cuda.is_available(),
+            auto_device_mapping=is_gpu_or_npu_available(),
             dtype=dtype,
             trust_remote_code=True,
         )

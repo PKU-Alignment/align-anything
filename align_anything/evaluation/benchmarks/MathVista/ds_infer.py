@@ -32,6 +32,10 @@ from align_anything.evaluation.inference.ds_inference import (
     ListDataset,
     get_rank,
 )
+from align_anything.utils.device_utils import (
+    get_current_device,
+    set_device,
+)
 from align_anything.utils.template_registry import get_eval_template_class as get_template_class
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
@@ -70,7 +74,7 @@ class MathVistaDataLoader(BaseDataLoader):
         return question
 
     def preprocess(self, data):
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = get_current_device()
         raw_images = [item['decoded_image'] for item in data[self.split]]
         prompts = self.build_prompt(data[self.split])
         inputs = self.processor(prompts, raw_images, return_tensors='pt', padding=True)
@@ -147,8 +151,8 @@ class MathVistaGeneratorDS(BaseInferencer_deepspeed):
         for batch in tqdm(dataloader):
             local_rank = int(os.environ['LOCAL_RANK'])
             outputs = self.model.generate(
-                inputs=batch['pad_token_ids'].to(f'cuda:{local_rank}'),
-                pixel_values=batch['pixel_values'].to(f'cuda:{local_rank}'),
+                inputs=batch['pad_token_ids'].to(set_device(local_rank)),
+                pixel_values=batch['pixel_values'].to(set_device(local_rank)),
                 return_dict_in_generate=True,
                 num_return_sequences=num_sequences,
                 early_stopping=True,

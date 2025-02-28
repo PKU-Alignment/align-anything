@@ -22,6 +22,9 @@ import gradio as gr
 import torch
 
 from align_anything.models.pretrained_model import load_pretrained_models
+from align_anything.utils.device_utils import (
+    get_current_device,
+)
 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -63,7 +66,7 @@ if __name__ == '__main__':
         dtype=torch.float16,
         trust_remote_code=True,
     )
-    model = model.eval().cuda()
+    model = model.eval().to(get_current_device())
 
     iface = gr.ChatInterface(
         fn=question_answering,

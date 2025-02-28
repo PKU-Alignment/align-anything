@@ -29,6 +29,9 @@ from align_anything.evaluation.inference.base_inference import (
     torch,
     tqdm,
 )
+from align_anything.utils.device_utils import (
+    set_device,
+)
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -84,7 +87,7 @@ class ImageRewardDBGenerator(BaseInferencer):
 
         processes = []
         for i in range(num_processes):
-            device = f'cuda:{i%num_gpus}'
+            device = set_device(i % num_gpus)
             chunks = {}
             for task, inputs in data.items():
                 chunk = inputs[i::num_processes]

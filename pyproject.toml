@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 name = "align-anything"
 description = "Align Anything"
 readme = "README.md"
-requires-python = ">= 3.11"
+requires-python = ">= 3.10"
 authors = [{ name = "PKU-Alignment Team" }]
 license = { text = "Apache License, Version 2.0" }
 keywords = [
@@ -31,11 +31,9 @@ classifiers = [
 ]
 
 dependencies = [
-    "vllm >= 0.6.2",
     "torch >= 1.13",
     "frechet_audio_distance",
     "transformers",
-    "flash-attn",
     "datasets",
     "tokenizers >= 0.13.3",
     "accelerate",
@@ -55,6 +53,7 @@ dependencies = [
     "soundfile",
     "torchaudio",
     "torchvision",
+    "opencv-python==4.6.0.66",
 ]
 
 dynamic = ["version"]
@@ -66,6 +65,7 @@ train = [
     "torch >= 1.13",
     "frechet_audio_distance",
     "transformers",
+    "flash-attn",
     "datasets",
     "tokenizers >= 0.13.3",
     "accelerate",
@@ -162,6 +162,8 @@ minicpmv = ["timm==1.0.11", "transformers==4.40.0"]
 minicpmo = ["vector-quantize-pytorch", "vocos", "decord", "moviepy"]
 
 text-to-audio = ["pytorchvideo"]
+
+ascend =  ["numpy==1.26.4", "torch==2.1.0", "torch-npu==2.1.0.post3", "decorator"]
 
 [tool.setuptools]
 include-package-data = true

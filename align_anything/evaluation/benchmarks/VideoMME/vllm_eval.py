@@ -31,8 +31,8 @@ from align_anything.evaluation.inference.vllm_inference import (
     SamplingParams,
     re,
     save_detail,
-    tqdm,
 )
+from tqdm import tqdm
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,

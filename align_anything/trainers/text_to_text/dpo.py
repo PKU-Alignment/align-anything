@@ -31,6 +31,7 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from align_anything.datasets.text_to_text.preference import PreferenceBatch, PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.base import SupervisedTrainerBase
+from align_anything.utils.device_utils import torch_gc, torch_set_device
 from align_anything.utils.multi_process import (
     get_all_reduce_mean,
     get_current_device,
@@ -256,7 +257,7 @@ class DPOTrainer(SupervisedTrainerBase):
 
             for batch in self.train_dataloader:
                 info = self.train_step(batch)
-                torch.cuda.empty_cache()
+                torch_gc()
 
                 self.global_step += 1
                 progress_bar.set_description(
@@ -306,7 +307,7 @@ def main():
     # setup distribution training
     deepspeed.init_distributed()
     current_device = get_current_device()
-    torch.cuda.set_device(current_device)
+    torch_set_device(current_device)
 
     # read default configs from the yaml file
     task = os.path.join('text_to_text', 'dpo')

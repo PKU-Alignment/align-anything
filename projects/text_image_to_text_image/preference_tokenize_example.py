@@ -30,6 +30,10 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, ChameleonProcessor
 
 from align_anything.models.chameleon_model import AccustomedChameleonModel
+from align_anything.utils.device_utils import (
+    set_device,
+    torch_gc,
+)
 
 
 ALLOWED_ATTRIBUTES = ['split_token']
@@ -205,7 +209,7 @@ def preprocess(tokenizer, processor, formatted_sample: dict[str, Any]):
 
 
 def process_data(gpu, input_data, model_path, output_path, cache_dir):
-    device = f'cuda:{gpu}'
+    device = set_device(gpu)
     print(f'Initializing Model on {device}')
     model = AccustomedChameleonModel.from_pretrained(
         model_path, torch_dtype=torch.bfloat16, device_map=device
@@ -256,7 +260,7 @@ def process_data(gpu, input_data, model_path, output_path, cache_dir):
 
         # Clean up memory
         del updated_piece
-        torch.cuda.empty_cache()
+        torch_gc()
 
     output_path.extend(local_output_paths)
     print(f'GPU {gpu} processed {len(local_output_paths)} messages')
