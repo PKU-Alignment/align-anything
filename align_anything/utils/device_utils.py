@@ -98,7 +98,12 @@ def is_gpu_or_npu_available() -> bool:
 
 def torch_gc() -> None:
     r"""
-    Collects GPU or NPU memory.
+    Frees up unused memory on supported hardware accelerators (GPU, NPU, MPS, etc.).
+
+    This function performs two key steps:
+    1. Invokes Python's garbage collector (`gc.collect()`) to reclaim memory from unreachable objects.
+    2. Clears cached memory on the respective hardware device by calling the appropriate 
+       PyTorch API (`torch.xpu.empty_cache()`, `torch.npu.empty_cache()`, `torch.mps.empty_cache()`, 
     """
     gc.collect()
     if is_torch_xpu_available():
