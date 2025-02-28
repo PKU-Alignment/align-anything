@@ -1,6 +1,6 @@
 # Copyright 2024 Allen Institute for AI
 
-# Copyright 2024-2025 OmniSafe Team. All Rights Reserved.
+# Copyright 2024-2025 Align-Anything. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-export HOME_PREFIX=/home/yuhao/safevla/data
+export HOME_PREFIX=/path/to/your/data
 
 export OBJAVERSE_HOUSES_BASE_DIR=${HOME_PREFIX}/houses/objaverse_houses
 export OBJAVERSE_HOUSES_DIR=${HOME_PREFIX}/houses/objaverse_houses/houses_2023_07_28
