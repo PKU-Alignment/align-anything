@@ -141,8 +141,8 @@ We support basic alignment algorithms for different modalities, each of which ma
 | `Text+Video -> Text (tv2t)`        | ✔️   | ✔️   | ✔️   | ✔️   |
 | `Text -> Image (t2i)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
 | `Text -> Video (t2v)`              | ✔️   | ⚒️   | ✔️   | ⚒️   |
-| `Text -> Audio (t2audio)`          | ✔️   | ⚒️   | ✔️   | ⚒️   |
-| `Text+Video -> Action (tv2action)` | ✔️   | ⚒️   | ⚒️   | ⚒️   |
+| `Text -> Audio (t2a)`          | ✔️   | ⚒️   | ✔️   | ⚒️   |
+| `Text+Video -> Action (tv2act)` | ✔️   | ⚒️   | ⚒️   | ⚒️   |
 
 ## Evaluation
 We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Text -> Image`.
@@ -155,8 +155,8 @@ We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Tex
 |`ta2t` |[AIR-Bench](https://huggingface.co/datasets/qyang1021/AIR-Bench-Dataset) |
 | `t2i`      | [ImageReward](https://huggingface.co/datasets/THUDM/ImageRewardDB), [HPSv2](https://huggingface.co/datasets/zhwang/HPDv2), [COCO-30k(FID)](https://huggingface.co/datasets/sayakpaul/coco-30-val-2014) |
 | `t2v`      | [ChronoMagic-Bench](https://huggingface.co/datasets/BestWishYsh/ChronoMagic-Bench) |
-| `t2audio`  | [AudioCaps(FAD)](https://huggingface.co/datasets/AudioLLMs/audiocaps_test) |
-| `tv2action`| ⚒️|
+| `t2a`      | [AudioCaps(FAD)](https://huggingface.co/datasets/AudioLLMs/audiocaps_test) |
+| `tv2act`   | ⚒️|
 
 - ⚒️ : coming soon.
 
