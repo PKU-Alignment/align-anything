@@ -87,7 +87,7 @@ class DPOTrainer(DPOtextTrainer):
 
     def loss(self, dpo_batch: PreferenceBatch) -> dict[str, torch.Tensor]:
         """Loss function for preference learning."""
-        outputs = self.model.forward(**dpo_batch, modality='generation')
+        outputs = self.model.forward(**dpo_batch, task='generation')
         return {
             'loss': outputs.loss,
         }

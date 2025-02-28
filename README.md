@@ -166,8 +166,9 @@ We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Tex
 
 - ⚒️ : coming soon.
 
-<!-- # News
+# News
 
+- 2025-02-28: We support SFT and DPO for `Text + Video -> Text` and `Text + Image -> Text` modalities model [Janus](https://github.com/deepseek-ai/Janus). You can find the examples in the `./scripts` and `./projects/janus` directory.
 - 2024-11-20: We release a bunch of scripts for all-modality models [here](./scripts). You can directly run the scripts to fine-tune your models, without any need to modify the code.
 - 2024-10-10: We support SFT for `Any -> Any` modality models Emu3.
 - 2024-09-24: We support SFT, DPO, RM and PPO for `Text + Video -> Text` modality models.
@@ -183,7 +184,7 @@ We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Tex
 - 2024-07-17: We open-source the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
 - 2024-07-14: We open-source the align-anything framework.
 
-</details> -->
+</details>
 
 
 ## Wandb Logger

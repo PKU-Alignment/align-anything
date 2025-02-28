@@ -49,7 +49,7 @@ class PreferenceBatch(TypedDict, total=True):
     worse_input_ids: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
-    modality: str
+    task: str
 
 
 class PreferenceDataset(Dataset):
@@ -126,7 +126,7 @@ class PreferenceDataset(Dataset):
 
             return_dict = better_inputs.copy()  
             return_dict['worse_input_ids'] = worse_inputs['input_ids']
-            return_dict['modality'] = 'understanding'
+            return_dict['task'] = 'understanding'
         elif 'output_image' in formatted_sample and formatted_sample['output_image'] is not None:
             raise NotImplementedError(
                 'Not implemented inside PreferenceDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
@@ -251,5 +251,5 @@ class PreferenceCollator:
 
             return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device)
             
-        return_dict['modality'] = samples[0]['modality']
+        return_dict['task'] = samples[0]['task']
         return return_dict

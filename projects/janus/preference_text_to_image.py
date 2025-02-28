@@ -97,7 +97,7 @@ def tokenize_sample(vl_chat_processor, vl_gpt, vl_image_processor, formatted_sam
     return {
         'better_input_ids': better_full_input_ids.to('cpu'),
         'worse_input_ids': worse_full_input_ids.to('cpu'),
-        'modality': 'generation',
+        'task': 'generation',
     }
 
 

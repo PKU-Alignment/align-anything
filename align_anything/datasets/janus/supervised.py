@@ -49,7 +49,7 @@ class SupervisedBatch(TypedDict, total=True):
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
-    modality: str
+    task: str
 
 
 class SupervisedDataset(Dataset):
@@ -128,7 +128,7 @@ class SupervisedDataset(Dataset):
             return_dict = full_inputs.copy()
             return_dict['labels'] = return_dict['input_ids'].clone()
             return_dict['labels'][: len(prompt_inputs['input_ids'])] = IGNORE_INDEX
-            return_dict['modality'] = 'understanding'
+            return_dict['task'] = 'understanding'
         elif 'output_image' in formatted_sample and formatted_sample['output_image'] is not None:
             raise NotImplementedError(
                 'Not implemented inside SupervisedDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
@@ -253,5 +253,5 @@ class SupervisedCollator:
 
             return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device)
 
-        return_dict['modality'] = samples[0]['modality']
+        return_dict['task'] = samples[0]['task']
         return return_dict
