@@ -13,11 +13,11 @@
 # limitations under the License.
 # ==============================================================================
 # Initialize variables
-MODEL_NAME_OR_PATH=""
-TRAIN_DATASETS=""
-TRAIN_DATA_FILE=""
-OUTPUT_DIR=""
-JANUS_REPO_PATH=""
+MODEL_NAME_OR_PATH="deepseek-ai/Janus-Pro-7B"
+TRAIN_DATASETS="../projects/janus/example/preference/text_image_to_text"
+TRAIN_DATA_FILE="train.json"
+OUTPUT_DIR="output/janus_dpo_text_image_to_text"
+JANUS_REPO_PATH="/path/to/Janus"
 
 export PYTHONPATH=$PYTHONPATH:$JANUS_REPO_PATH
 export WANDB_API_KEY=""
