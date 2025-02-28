@@ -12,7 +12,7 @@
 
 ## Setting up the Python environment 
 
-
+Currently only supports Python 3.10
 ```bash
 cd align-anything/align_anything/trainers/text_video_to_action
 pip install -r requirements.txt
