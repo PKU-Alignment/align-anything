@@ -1,5 +1,5 @@
-OmniSafe
-omnisafe
+Align-Anything
+Align-Anything
 RL
 envs
 env
