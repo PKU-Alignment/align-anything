@@ -49,8 +49,9 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 
 # 📣 News
+* **Coming Soon** ⚡️ We plan to separate the evaluation component from align-anything and establish eval-anything as a dedicated repository for large-scale evaluation of any-to-any models. Meanwhile, align-anything will remain focused on the post-training alignment of any-to-any models.
 * **[2025.03.02]** 🎉 We have implemented alignment training for Vision-Language-Action Models in embodied intelligence, see [VLA Trainer](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/trainers/text_video_to_action), with more features coming soon!
-* **[2025.02.28]** ⚡️🤝 我们支持了align-anything在Huawei Ascend NPU上的训练与推理。
+* **[2025.02.28]** 🤝 我们支持了align-anything在Huawei Ascend NPU上的训练与推理。
   >  近期align-anything团队正在和华为昇腾团队积极联合开发，基于VLLMs-Ascend上的多模态推理与多模态对齐。
 * **[2025.02.28]** 🎉 We supported the alignment fine-tuning of DeepSeek’s Unified Multimodal Understanding and Generation Models, as well as the SFT and DPO of the [Janus-Series](https://github.com/deepseek-ai/Janus). See [Janus Trainer](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/trainers/janus).
 * **[2025.02.19]** We supported the alignment methods GRPO used in DeepSeek R1. See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
