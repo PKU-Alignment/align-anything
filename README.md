@@ -47,12 +47,16 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 **Note:** We provide a [quick start guide](https://align-anything.readthedocs.io/) for users to quickly get the code structure and development details.
 
-|| <details><summary>prompt</summary>Small white toilet sitting in a small corner next to a wall.</details> | <details><summary>prompt</summary>A close up of a neatly made bed with two night stands</details>  | <details><summary>prompt</summary>A pizza is sitting on a plate at a restaurant.</details> |<details><summary>prompt</summary>A girl in a dress next to a piece of luggage and flowers.</details>|
-|---| ---------------------------------- | --- | --- | --- |
-|Before Alignment ([Chameleon-7B](https://huggingface.co/facebook/chameleon-7b))| <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/1.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/2.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/3.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/before/4.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">|
-|**After Alignment ([Chameleon 7B Plus](https://huggingface.co/PKU-Alignment/AA-chameleon-7b-plus))**| <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/1.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/2.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/3.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="https://github.com/Gaiejj/align-anything-images/blob/main/chameleon/after/4.png?raw=true" alt="Image 8" style="max-width: 100%; height: auto;">|
 
-> Alignment fine-tuning can significantly enhance the instruction-following capabilities of large multimodal models. After fine-tuning, Chameleon 7B Plus generates images that are more relevant to the prompt.
+# 📣 News
+* **[2025.03.02]** 🎉 We have implemented alignment training for Vision-Language-Action Models in embodied intelligence, see [VLA Trainer](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/trainers/text_video_to_action), with more features coming soon!
+* **[2025.02.28]** ⚡️🤝 我们支持了align-anything在Huawei Ascend NPU上的训练与推理。
+  
+  >  近期align-anything团队正在和华为昇腾团队积极联合开发，基于VLLMs-Ascend上的多模态推理与多模态对齐。
+
+* **[2025.02.28]** 🎉 We supported the alignment fine-tuning of DeepSeek’s Unified Multimodal Understanding and Generation Models, as well as the SFT and DPO of the [Janus-Series](https://github.com/deepseek-ai/Janus). See [Janus Trainer](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/trainers/janus).
+* **[2024.08.13]** We supported the alignment methods GRPO used in DeepSeek R1. See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
+
 
 ## Quick Start
 
