@@ -55,7 +55,7 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
   >  近期align-anything团队正在和华为昇腾团队积极联合开发，基于VLLMs-Ascend上的多模态推理与多模态对齐。
 
 * **[2025.02.28]** 🎉 We supported the alignment fine-tuning of DeepSeek’s Unified Multimodal Understanding and Generation Models, as well as the SFT and DPO of the [Janus-Series](https://github.com/deepseek-ai/Janus). See [Janus Trainer](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/trainers/janus).
-* **[2024.08.13]** We supported the alignment methods GRPO used in DeepSeek R1. See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
+* **[2025.02.19]** We supported the alignment methods GRPO used in DeepSeek R1. See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
 
 
 ## Quick Start
