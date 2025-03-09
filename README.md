@@ -57,6 +57,9 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 * **[2025.02.19]** We supported the alignment methods GRPO used in DeepSeek R1. See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
 * **[2025.01.21]** We supported the alignment fine-tuning of MiniCPM-o (audio & image), also included in [the official repository’s README recommendations](https://github.com/OpenBMB/MiniCPM-o#with-align-anything-). See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
 * **[2025.01.17]** We supported the fine-tuning of O1-like reasoning in the text2text modality, with multimodal and additional modalities coming soon!
+* **[2024.10.11]** We supported the alignment fine-tuning of the latest Emu3 model. For more details, see [reference].
+* **[2024.10.10]** We contributed to the evaluation of new modalities, particularly the performance assessment of text-video-to-text models.
+* **[2024.08.29]** We supported learning from language feedback (different from binary feedback). For more details, see [lang-feedback](https://github.com/PKU-Alignment/align-anything/tree/main/projects/lang_feedback).
 
 ## Quick Start
 
