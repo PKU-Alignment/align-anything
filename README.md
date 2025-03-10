@@ -123,13 +123,6 @@ NOTE: The current test environment for Ascend is:
 <details>
   <summary>Install dependencies using our docker image</summary>
 
-  ```
-  NOTE: The current test environment for Ascend is:
-  - Python 3.10.6
-  - CANN 8.0.rc3
-  - Architecture: aarch64
-  - Hardware: 8x Ascend-SNT9B ARM (192 cores, 1536GB memory)
-  ```
   1. **Current Ascend Machine Environment Configuration**  
      The current environment configuration for the Ascend Machine is as follows:
      ```
