@@ -19,7 +19,7 @@
 # Update DEVICE according to your device (/dev/davinci[0-7])
 DEVICE=/dev/davinci7
 # Update the vllm-ascend image
-IMAGE=repoan/align-anything:align-ds-v
+IMAGE=pkualignment/align-anything:align-ds-v
 docker pull $IMAGE
 docker run --rm \
     --name align-anything \
