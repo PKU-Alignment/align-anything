@@ -120,6 +120,43 @@ NOTE: The current test environment for Ascend is:
 - Hardware: 8x Ascend-SNT9B ARM (192 cores, 1536GB memory)
 ```
 
+<details>
+  <summary>Install dependencies using our docker image</summary>
+
+  1. **Current Ascend Machine Environment Configuration**  
+     The current environment configuration for the Ascend Machine is as follows:
+     ```
+     - Python version: 3.10.6
+     - CANN version: 8.0.rc3
+     - Architecture: aarch64
+     - Hardware: 8x Ascend-SNT9B ARM (192 cores, 1536GB memory)
+     - Ascend Driver Version: 23.0.7
+     - AscendHAL Version: 7.35.19
+     - AICPU Version: 1.0
+     - TDT Version: 1.0
+     - Log Version: 1.0
+     - Profiler Version: 2.0
+     - DVPP Kernels Version: 1.1
+     - TSFW Version: 1.0
+     - Inner Version: V100R001C15SPC012B220
+     - Compatible Versions: V100R001C30, V100R001C13, V100R001C15
+     - Compatible Firmware Versions: [7.0.0, 7.1.99]
+     - Package Version: 23.0.7
+     ```
+
+  2. **Create the Docker Container**  
+     To get started with the pre-configured environment, you can use the `setup_docker.sh` script located in the `./scripts` directory to pull the Docker image and create a container with all necessary environments set up:
+       ```
+       cd scripts
+       bash setup_docker.sh
+       ```
+     This will automatically pull the Docker image and create a Docker container where all the dependencies and configurations for running the framework are already set up.
+
+  3. **Warning**  
+     **Environment Compatibility**: The environment mentioned above is tested and verified to work. If you attempt to run the setup on other environments, you may encounter issues. In such cases, you will need to perform debugging and adjustments yourself to ensure compatibility with your specific environment.
+
+</details>
+
 </details>
 
 
