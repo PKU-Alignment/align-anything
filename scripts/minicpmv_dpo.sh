@@ -28,5 +28,5 @@ deepspeed \
      --train_name ${TRAIN_NAME} \
      --train_split ${TRAIN_SPLIT} \
      --output_dir ${OUTPUT_DIR} \
-     --save_interval 600 \
+     --save_total_limit 3 \
      --epochs 5

@@ -112,7 +112,7 @@ logger_cfgs:
   # The directory to cache the downloaded model
   cache_dir: null
   # The interval of saving models
-  save_total_limit: 100000
+  save_total_limit: 1
 # The model configurations
 model_cfgs:
   # Pretrained model name or path

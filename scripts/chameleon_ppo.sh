@@ -45,5 +45,5 @@ deepspeed \
      --ptx_datasets ${PTX_DATASETS} \
      --ptx_data_files ${PTX_DATA_FILES} \
      --output_dir ${OUTPUT_DIR} \
-     --save_interval 1000 \
+     --save_total_limit 3 \
      --epochs 2
