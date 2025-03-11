@@ -23,17 +23,17 @@ def get_mixture_by_name(name):
 
 CHORES = [
     # "ObjectNavType",
-    "PickupType",
+    'PickupType',
     # "FetchType",
     # "RoomVisit",  # "SimpleExploreHouse",  #
 ]
 
 CHORESNAV = [
-    "ObjectNavType",
-    "ObjectNavRoom",
-    "ObjectNavRelAttribute",
-    "ObjectNavAffordance",
-    "ObjectNavLocalRef",
-    "ObjectNavDescription",
-    "RoomNav",
+    'ObjectNavType',
+    'ObjectNavRoom',
+    'ObjectNavRelAttribute',
+    'ObjectNavAffordance',
+    'ObjectNavLocalRef',
+    'ObjectNavDescription',
+    'RoomNav',
 ]

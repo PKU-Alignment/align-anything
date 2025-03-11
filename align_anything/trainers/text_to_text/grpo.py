@@ -27,10 +27,7 @@ from tqdm import tqdm
 from transformers import GenerationConfig
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.text_to_text import (
-    PromptOnlyDataset,
-    SupervisedDataset,
-)
+from align_anything.datasets.text_to_text import PromptOnlyDataset, SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.base import RLTrainerBase
 from align_anything.utils.device_utils import torch_set_device
@@ -335,7 +332,7 @@ class GRPOTrainer(RLTrainerBase):
         total_training_steps = self.cfgs.train_cfgs.total_training_steps
         progress_bar = tqdm(
             total=total_training_steps,
-            desc=f"Training 1/{self.cfgs.train_cfgs.epochs} epoch",
+            desc=f'Training 1/{self.cfgs.train_cfgs.epochs} epoch',
             position=0,
             leave=True,
             disable=not is_main_process(),
@@ -356,8 +353,13 @@ class GRPOTrainer(RLTrainerBase):
                 )
                 progress_bar.update(1)
 
-                if self.global_step % self.cfgs.logger_cfgs.save_interval == 0:
-                    self.logger.print(f"Saving checkpoint at step {self.global_step} ...")
+                save_interval = (
+                    self.cfgs.train_cfgs.epochs
+                    * len(self.train_dataloader)
+                    // self.cfgs.logger_cfgs.save_total_limit
+                )
+                if self.global_step % save_interval == 0:
+                    self.logger.print(f'Saving checkpoint at step {self.global_step} ...')
                     self.save(tag=self.global_step)
                     self.logger.print('Checkpoint saved.')
 
@@ -366,7 +368,7 @@ class GRPOTrainer(RLTrainerBase):
                     and self.cfgs.train_cfgs.eval_strategy == 'steps'
                     and self.global_step % self.cfgs.train_cfgs.eval_interval == 0
                 ):
-                    self.logger.print(f"\n***** Evaluating at step {self.global_step} *****")
+                    self.logger.print(f'\n***** Evaluating at step {self.global_step} *****')
                     self.eval()
 
         self.save()

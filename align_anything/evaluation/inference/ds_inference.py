@@ -27,10 +27,7 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.utils.device_utils import (
-    get_current_device,
-    set_device,
-)
+from align_anything.utils.device_utils import get_current_device, set_device
 
 
 class ListDataset(Dataset):

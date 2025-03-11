@@ -17,15 +17,16 @@
 
 
 import copy
-from typing import Sequence, Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 import cv2
 import numpy as np
 import torch
-from PIL import ImageFont, Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 from align_anything.environment.stretch_controller import StretchController
 from align_anything.utils.utils.constants.stretch_initialization_utils import stretch_long_names
+
 
 DISTINCT_COLORS = [
     (255, 0, 0),  # Red
@@ -82,7 +83,7 @@ def add_bboxes_to_frame(
 
     bboxes_cleaned = [[int(v) for v in bbox] for bbox in bboxes if -1 not in bbox]
     if labels is None:
-        labels = [""] * len(bboxes_cleaned)
+        labels = [''] * len(bboxes_cleaned)
 
     h, w, _ = frame.shape
 
@@ -148,9 +149,9 @@ def add_bbox_sensor_to_image(curr_frame, task_observations, det_sensor_key, whic
         task_relevant_object_bboxes = [
             b for b in task_relevant_object_bboxes if b[1] <= curr_frame.shape[0]
         ]
-    if which_image == "nav":
+    if which_image == 'nav':
         pass
-    elif which_image == "manip":
+    elif which_image == 'manip':
         start_index = curr_frame.shape[1] // 2
         for i in range(len(task_relevant_object_bboxes)):
             task_relevant_object_bboxes[i][0] += start_index
@@ -181,26 +182,26 @@ def get_top_down_path_view(
 
     if original_hw != map_height_width:
         event = thor_controller.step(
-            "ChangeResolution", x=map_height_width[1], y=map_height_width[0], raise_for_failure=True
+            'ChangeResolution', x=map_height_width[1], y=map_height_width[0], raise_for_failure=True
         )
 
     if len(thor_controller.last_event.third_party_camera_frames) < 2:
-        event = thor_controller.step("GetMapViewCameraProperties", raise_for_failure=True)
-        cam = copy.deepcopy(event.metadata["actionReturn"])
+        event = thor_controller.step('GetMapViewCameraProperties', raise_for_failure=True)
+        cam = copy.deepcopy(event.metadata['actionReturn'])
         if not orthographic:
-            bounds = event.metadata["sceneBounds"]["size"]
-            max_bound = max(bounds["x"], bounds["z"])
+            bounds = event.metadata['sceneBounds']['size']
+            max_bound = max(bounds['x'], bounds['z'])
 
-            cam["fieldOfView"] = 50
-            cam["position"]["y"] += 1.1 * max_bound
-            cam["orthographic"] = False
-            cam["farClippingPlane"] = 50
-            del cam["orthographicSize"]
+            cam['fieldOfView'] = 50
+            cam['position']['y'] += 1.1 * max_bound
+            cam['orthographic'] = False
+            cam['farClippingPlane'] = 50
+            del cam['orthographicSize']
 
         event = thor_controller.step(
-            action="AddThirdPartyCamera",
+            action='AddThirdPartyCamera',
             **cam,
-            skyboxColor="white",
+            skyboxColor='white',
             raise_for_failure=True,
         )
 
@@ -208,33 +209,33 @@ def get_top_down_path_view(
     for target in targets_to_highlight or []:
         target_position = controller.get_object_position(target)
         target_dict = {
-            "position": target_position,
-            "color": {"r": 1, "g": 0, "b": 0, "a": 1},
-            "radius": 0.5,
-            "text": "",
+            'position': target_position,
+            'color': {'r': 1, 'g': 0, 'b': 0, 'a': 1},
+            'radius': 0.5,
+            'text': '',
         }
         waypoints.append(target_dict)
 
     if len(agent_path) != 0:
         thor_controller.step(
-            action="VisualizeWaypoints",
+            action='VisualizeWaypoints',
             waypoints=waypoints,
             raise_for_failure=True,
         )
         # put this over the waypoints just in case
         event = thor_controller.step(
-            action="VisualizePath",
+            action='VisualizePath',
             positions=agent_path,
             pathWidth=path_width,
             raise_for_failure=True,
         )
-        thor_controller.step({"action": "HideVisualizedPath"})
+        thor_controller.step({'action': 'HideVisualizedPath'})
 
     map = event.third_party_camera_frames[-1]
 
     if original_hw != map_height_width:
         thor_controller.step(
-            "ChangeResolution", x=original_hw[1], y=original_hw[0], raise_for_failure=True
+            'ChangeResolution', x=original_hw[1], y=original_hw[0], raise_for_failure=True
         )
 
     return map
@@ -259,7 +260,7 @@ class VideoLogging:
     ) -> np.array:
         agent_height, agent_width, ch = agent_frame.shape
 
-        font_to_use = "Arial.ttf"  # possibly need a full path here
+        font_to_use = 'Arial.ttf'  # possibly need a full path here
         full_font_load = ImageFont.truetype(font_to_use, 14)
 
         IMAGE_BORDER = 25
@@ -294,8 +295,8 @@ class VideoLogging:
                         ),
                         action_long_name,
                         font=ImageFont.truetype(font_to_use, 10),
-                        fill="gray" if action != taken_action else "black",
-                        anchor="rm",
+                        fill='gray' if action != taken_action else 'black',
+                        anchor='rm',
                     )
                     img_draw.rectangle(
                         (
@@ -304,8 +305,8 @@ class VideoLogging:
                             IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 5) + int(100 * prob),
                             (TEXT_OFFSET_V + 5) + i * 10,
                         ),
-                        outline="blue",
-                        fill="blue",
+                        outline='blue',
+                        fill='blue',
                     )
                 else:
                     img_draw.text(
@@ -315,8 +316,8 @@ class VideoLogging:
                         ),
                         action_long_name,
                         font=ImageFont.truetype(font_to_use, 10),
-                        fill="gray" if action != taken_action else "black",
-                        anchor="rm",
+                        fill='gray' if action != taken_action else 'black',
+                        anchor='rm',
                     )
                     img_draw.rectangle(
                         (
@@ -328,55 +329,55 @@ class VideoLogging:
                             + int(100 * prob),
                             (TEXT_OFFSET_V + 5) + (i - 10) * 10,
                         ),
-                        outline="blue",
-                        fill="blue",
+                        outline='blue',
+                        fill='blue',
                     )
 
         img_draw.text(
             (IMAGE_BORDER * 1.1, IMAGE_BORDER * 1),
             str(frame_number),
             font=full_font_load,  # ImageFont.truetype(font_to_use, 25),
-            fill="white",
+            fill='white',
         )
 
         if last_action_success is not None:
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 235),
-                "Last Action:",
+                'Last Action:',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="gray",
-                anchor="rm",
+                fill='gray',
+                anchor='rm',
             )
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 235),
-                " Success" if last_action_success else " Failure",
+                ' Success' if last_action_success else ' Failure',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="green" if last_action_success else "red",
-                anchor="lm",
+                fill='green' if last_action_success else 'red',
+                anchor='lm',
             )
 
-        if taken_action == "manual override":
+        if taken_action == 'manual override':
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H + 50, TEXT_OFFSET_V + 5 * 20),
-                "Manual Override",
+                'Manual Override',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="red",
-                anchor="rm",
+                fill='red',
+                anchor='rm',
             )
 
         img_draw.text(
             (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 145),
-            "Target Dist:",
+            'Target Dist:',
             font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-            fill="gray",
-            anchor="rm",
+            fill='gray',
+            anchor='rm',
         )
         img_draw.text(
             (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 145),
-            f" Task: {task_desc}",
+            f' Task: {task_desc}',
             font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-            fill="gray",
-            anchor="lm",
+            fill='gray',
+            anchor='lm',
         )
 
         lower_offset = 10
@@ -389,8 +390,8 @@ class VideoLogging:
                 IMAGE_BORDER + agent_width,
                 agent_height + IMAGE_BORDER + progress_bar_height + lower_offset,
             ),
-            outline="lightgray",
-            fill="lightgray",
+            outline='lightgray',
+            fill='lightgray',
         )
         img_draw.rectangle(
             (
@@ -399,8 +400,8 @@ class VideoLogging:
                 IMAGE_BORDER + int(frame_number * agent_width / ep_length),
                 agent_height + IMAGE_BORDER + progress_bar_height + lower_offset,
             ),
-            outline="blue",
-            fill="blue",
+            outline='blue',
+            fill='blue',
         )
 
         return np.array(text_image)

@@ -1,4 +1,3 @@
-
 # Copyright 2024 Allen Institute for AI
 
 # Copyright 2024-2025 Align-Anything Team. All Rights Reserved.
@@ -41,35 +40,35 @@ class TransformerConfig:
 
 
 TEXT_ENCODER_DIMS = {
-    "t5-small": 512,
-    "t5-base": 768,
-    "t5-large": 1024,
-    "SigLIPBase": 768,
-    "SigLIPBase384": 768,
-    "SigLIPBase384Resize": 768,
-    "SigLIPLarge": 1024,
+    't5-small': 512,
+    't5-base': 768,
+    't5-large': 1024,
+    'SigLIPBase': 768,
+    'SigLIPBase384': 768,
+    'SigLIPBase384Resize': 768,
+    'SigLIPLarge': 1024,
 }
 
 
 def create_text_encoder(encoder_name):
-    if "siglip" in encoder_name.lower():
+    if 'siglip' in encoder_name.lower():
         _, cfg = IMAGE_ENCODERS[encoder_name]
-        encoder = create_model_from_pretrained(f"hf-hub:timm/{cfg.model}")[0].text
+        encoder = create_model_from_pretrained(f'hf-hub:timm/{cfg.model}')[0].text
         encoder.output_tokens = True
         return encoder
-    elif "t5" in encoder_name.lower():
+    elif 't5' in encoder_name.lower():
         return T5EncoderModel.from_pretrained(encoder_name)
     else:
-        raise NotImplementedError("Only SigLIP and T5 text encoders are supported.")
+        raise NotImplementedError('Only SigLIP and T5 text encoders are supported.')
 
 
 @dataclass
 class TextCondVisualEncoderConfig:
-    image_encoder: str = "Dinov2Small"
-    text_encoder: str = "t5-small"
+    image_encoder: str = 'Dinov2Small'
+    text_encoder: str = 't5-small'
     fusion_xformer: TransformerConfig = field(default_factory=lambda: TransformerConfig(3, 512, 8))
     input_sensors: List[str] = None
-    bbox_encoding_type: Literal["positional"] = "positional"
+    bbox_encoding_type: Literal['positional'] = 'positional'
 
 
 class TextCondMultiCameraVisualEncoder(nn.Module):
@@ -78,9 +77,9 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
         self.cfg = cfg
 
         # TODO KE: This is just a hack to be backward compatible
-        if cfg.image_encoder == "dinov2" and cfg.image_encoder not in IMAGE_ENCODERS:
-            cfg.image_encoder = "Dinov2Small"
-            print("REAPLACING DINOV2 WITH DINOV2SMALL")
+        if cfg.image_encoder == 'dinov2' and cfg.image_encoder not in IMAGE_ENCODERS:
+            cfg.image_encoder = 'Dinov2Small'
+            print('REAPLACING DINOV2 WITH DINOV2SMALL')
 
         if cfg.image_encoder in IMAGE_ENCODERS:
             image_encoder_model_cls, image_encoder_cfg = IMAGE_ENCODERS[cfg.image_encoder]
@@ -117,12 +116,12 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
         for sensor in self.visual_sensors:
             setattr(
                 self,
-                f"visual_sensor_token_{sensor}",
+                f'visual_sensor_token_{sensor}',
                 nn.Parameter(0.1 * torch.rand(cfg.fusion_xformer.d_model)),
             )
 
-        if "task_relevant_object_bbox" in cfg.input_sensors:
-            if self.cfg.bbox_encoding_type == "positional":
+        if 'task_relevant_object_bbox' in cfg.input_sensors:
+            if self.cfg.bbox_encoding_type == 'positional':
                 self.bbox_pos_encoder = nn.Sequential(
                     PositionalEncoder(32),
                     nn.Linear(32, self.cfg.fusion_xformer.d_model),
@@ -135,8 +134,8 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
                     f"Unknown bbox encoding type '{self.cfg.bbox_encoding_type}' for bbox sensor, "
                     f"must be one of ['positional']"
                 )
-        if "manip_task_relevant_object_box" in cfg.input_sensors:
-            if self.cfg.bbox_encoding_type == "positional":
+        if 'manip_task_relevant_object_box' in cfg.input_sensors:
+            if self.cfg.bbox_encoding_type == 'positional':
                 self.manip_bbox_pos_encoder = nn.Sequential(
                     PositionalEncoder(32),
                     nn.Linear(32, self.cfg.fusion_xformer.d_model),
@@ -166,8 +165,10 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
             self.image_encoder(imgs.reshape(B * T, C, H, W))  # shape: [496, 384, 7, 12]
         )  # BTxC_xH_xW_
         _, C_, H_, W_ = feats.shape
-        feats = feats.reshape(B * T, C_, H_ * W_).permute(0, 2, 1)  # BTxH_W_xC_ ([496, 84, 512]) - make sense
-        return self.visual_adapter(feats) # doesn't change shape
+        feats = feats.reshape(B * T, C_, H_ * W_).permute(
+            0, 2, 1
+        )  # BTxH_W_xC_ ([496, 84, 512]) - make sense
+        return self.visual_adapter(feats)  # doesn't change shape
 
     def create_compressor(self):
         return nn.Sequential(
@@ -203,7 +204,7 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
         concatenated_feats = []
 
         for k in self.visual_sensors:
-            corresponding_camera_token = getattr(self, f"visual_sensor_token_{k}")
+            corresponding_camera_token = getattr(self, f'visual_sensor_token_{k}')
             concatenated_feats.append(all_img_features[k] + corresponding_camera_token)
 
         concatenated_feats = torch.cat(concatenated_feats, dim=1)
@@ -220,7 +221,7 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
 
         if task_relevant_object_bbox is not None:
             B, T, N = task_relevant_object_bbox.shape
-            if self.cfg.bbox_encoding_type == "positional":
+            if self.cfg.bbox_encoding_type == 'positional':
                 task_relevant_object_bbox = task_relevant_object_bbox.reshape(B * T, N)
                 bbox_feats = self.bbox_pos_encoder(task_relevant_object_bbox)
                 bbox_feats = bbox_feats + self.coord_pos_enc(
@@ -233,7 +234,7 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
 
         if manip_task_relevant_object_bbox is not None:
             B, T, N = manip_task_relevant_object_bbox.shape
-            if self.cfg.bbox_encoding_type == "positional":
+            if self.cfg.bbox_encoding_type == 'positional':
                 manip_task_relevant_object_bbox = manip_task_relevant_object_bbox.reshape(B * T, N)
                 bbox_feats = self.manip_bbox_pos_encoder(manip_task_relevant_object_bbox)
                 bbox_feats = bbox_feats + self.manip_coord_pos_enc(
@@ -258,7 +259,7 @@ class PositionalEncoder(nn.Module):
         self.d_model = d_model
         self.max_len = max_len
         div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
-        self.register_buffer("div_term", div_term)
+        self.register_buffer('div_term', div_term)
 
     def forward(self, position):
         """
@@ -275,8 +276,8 @@ class PositionalEncoder(nn.Module):
 
 @dataclass
 class NonTxVisualEncoderConfig:
-    image_encoder: str = "Dinov2Small"
-    text_encoder: str = "t5-small"
+    image_encoder: str = 'Dinov2Small'
+    text_encoder: str = 't5-small'
     input_sensors: List[str] = None
     compressor_hidden_dims: List[int] = (128, 32)
     text_adapter_output_dim: int = 32
@@ -291,9 +292,9 @@ class NonTxMultiCameraVisualEncoder(nn.Module):
         self.cfg = cfg
 
         # TODO KE: This is just a hack to be backward compatible
-        if cfg.image_encoder == "dinov2" and cfg.image_encoder not in IMAGE_ENCODERS:
-            cfg.image_encoder = "Dinov2Small"
-            print("REAPLACING DINOV2 WITH DINOV2SMALL")
+        if cfg.image_encoder == 'dinov2' and cfg.image_encoder not in IMAGE_ENCODERS:
+            cfg.image_encoder = 'Dinov2Small'
+            print('REAPLACING DINOV2 WITH DINOV2SMALL')
 
         if cfg.image_encoder in IMAGE_ENCODERS:
             image_encoder_model_cls, image_encoder_cfg = IMAGE_ENCODERS[cfg.image_encoder]

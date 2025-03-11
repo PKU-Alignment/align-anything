@@ -33,10 +33,7 @@ from align_anything.evaluation.inference.ds_inference import (
     ListDataset,
     get_rank,
 )
-from align_anything.utils.device_utils import (
-    get_current_device,
-    set_device,
-)
+from align_anything.utils.device_utils import get_current_device, set_device
 from align_anything.utils.template_registry import get_eval_template_class as get_template_class
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,

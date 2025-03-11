@@ -24,9 +24,7 @@ import torch
 from PIL import Image
 
 from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.utils.device_utils import (
-    get_current_device,
-)
+from align_anything.utils.device_utils import get_current_device
 from align_anything.utils.process_minicpmo import get_video_chunk_content
 
 

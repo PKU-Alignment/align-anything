@@ -20,6 +20,7 @@ from typing import Dict, List
 
 import av
 import numpy as np
+from tqdm import tqdm
 from transformers import AutoProcessor, LlavaNextVideoProcessor
 
 from align_anything.evaluation.data_type import InferenceInput
@@ -32,7 +33,6 @@ from align_anything.evaluation.inference.vllm_inference import (
     re,
     save_detail,
 )
-from tqdm import tqdm
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,

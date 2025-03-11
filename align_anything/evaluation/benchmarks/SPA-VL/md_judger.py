@@ -1,9 +1,7 @@
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from align_anything.utils.device_utils import (
-    get_current_device,
-)
+from align_anything.utils.device_utils import get_current_device
 
 
 def md_judger(test_data, output_data):

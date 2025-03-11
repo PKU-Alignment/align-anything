@@ -16,43 +16,39 @@
 # ==============================================================================
 
 
-import os
-import glob
-import shutil
-import pathlib
 import argparse
+import glob
+import os
+import pathlib
+import shutil
 import sys
 
-import ai2thor.fifo_server
 from objathor.asset_conversion.util import (
-    view_asset_in_thor,
+    EXTENSIONS_LOADABLE_IN_UNITY,
     get_existing_thor_asset_file_path,
     load_existing_thor_asset_file,
     save_thor_asset_file,
-    EXTENSIONS_LOADABLE_IN_UNITY,
 )
-import ai2thor.controller
-from ai2thor.hooks.procedural_asset_hook import ProceduralAssetHookRunner
 
 
-def make_assets_paths_relative(asset, save_dir="."):
-    asset["albedoTexturePath"] = os.path.join(
+def make_assets_paths_relative(asset, save_dir='.'):
+    asset['albedoTexturePath'] = os.path.join(
         save_dir,
-        os.path.basename(asset["albedoTexturePath"]),
+        os.path.basename(asset['albedoTexturePath']),
     )
-    if "metallicSmoothnessTexturePath" in asset:
-        asset["metallicSmoothnessTexturePath"] = os.path.join(
+    if 'metallicSmoothnessTexturePath' in asset:
+        asset['metallicSmoothnessTexturePath'] = os.path.join(
             save_dir,
-            os.path.basename(asset["metallicSmoothnessTexturePath"]),
+            os.path.basename(asset['metallicSmoothnessTexturePath']),
         )
-    asset["normalTexturePath"] = os.path.join(
+    asset['normalTexturePath'] = os.path.join(
         save_dir,
-        os.path.basename(asset["normalTexturePath"]),
+        os.path.basename(asset['normalTexturePath']),
     )
-    if "emissionTexturePath" in asset:
-        asset["emissionTexturePath"] = os.path.join(
+    if 'emissionTexturePath' in asset:
+        asset['emissionTexturePath'] = os.path.join(
             save_dir,
-            os.path.basename(asset["emissionTexturePath"]),
+            os.path.basename(asset['emissionTexturePath']),
         )
     return asset
 
@@ -63,12 +59,12 @@ def convert_to_unity_loadable(
     delete_original=False,
     replace_if_exists=False,
     asset_ids=[],
-    target_extension=".msgpack.gz",
+    target_extension='.msgpack.gz',
     source_extension=None,
 ):
     if target_extension not in EXTENSIONS_LOADABLE_IN_UNITY:
         raise Exception(
-            f"Invalid extention `{target_extension}` must be one of {EXTENSIONS_LOADABLE_IN_UNITY}"
+            f'Invalid extention `{target_extension}` must be one of {EXTENSIONS_LOADABLE_IN_UNITY}'
         )
     # no asset_ids in args means all assets
     if len(asset_ids) == 0:
@@ -132,7 +128,7 @@ def convert_to_unity_loadable(
                 asset_source_dir_path, id, force_extension=source_extension
             )
         except:
-            print(f"Error loading asset {asset_source_dir_path}")
+            print(f'Error loading asset {asset_source_dir_path}')
             continue
 
         # to not do it again if already done
@@ -140,7 +136,7 @@ def convert_to_unity_loadable(
         # print(f"Pre asset albedo: {pre_asset['albedoTexturePath']}")
         asset = make_assets_paths_relative(pre_asset)
         # print(f"Post asset albedo: {asset['albedoTexturePath']}")
-        save_asset_path = os.path.join(asset_target_dir_path, f"{id}{target_extension}")
+        save_asset_path = os.path.join(asset_target_dir_path, f'{id}{target_extension}')
         save_thor_asset_file(asset, save_asset_path)
         # print(f"Wrote asset to `{save_asset_path}`")
 
@@ -150,55 +146,55 @@ def convert_to_unity_loadable(
         #     os.remove(existing_asset_file_in_source)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--delete_with_source_extension", action="store_true", help="Deletes original file"
+        '--delete_with_source_extension', action='store_true', help='Deletes original file'
     )
 
     parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Runs conversion even if file with target extension exists in asset_target_dir",
+        '--force',
+        action='store_true',
+        help='Runs conversion even if file with target extension exists in asset_target_dir',
     )
 
-    parser.add_argument("--asset_source_dir", type=str)
+    parser.add_argument('--asset_source_dir', type=str)
 
     parser.add_argument(
-        "--target_extension",
+        '--target_extension',
         type=str,
-        default=".msgpack.gz",
+        default='.msgpack.gz',
     )
 
     parser.add_argument(
-        "--asset_target_dir",
-        type=str,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--source_extension",
+        '--asset_target_dir',
         type=str,
         default=None,
     )
 
     parser.add_argument(
-        "--asset_ids", type=str, default="", help="Comma separated string of hex ids"
+        '--source_extension',
+        type=str,
+        default=None,
+    )
+
+    parser.add_argument(
+        '--asset_ids', type=str, default='', help='Comma separated string of hex ids'
     )
 
     args = parser.parse_args(sys.argv[1:])
     # asset_source_dir = "/Users/alvaroh/net/nfs.cirrascale/prior/datasets/vida_datasets/objaverse_vida/processed_2023_07_28"
-    asset_source_dir = "/Users/alvaroh/net/nfs.cirrascale/prior/datasets/vida_datasets/objaverse_vida/processed_2023_07_28/"
+    asset_source_dir = '/Users/alvaroh/net/nfs.cirrascale/prior/datasets/vida_datasets/objaverse_vida/processed_2023_07_28/'
     asset_target_dir = asset_source_dir
     # asset_target_dir = "/Users/alvaroh/net/nfs.cirrascale/prior/datasets/vida_datasets/objaverse_vida/test"
 
     asset_ids = []
-    if args.asset_ids != "":
-        asset_ids.split(",")
+    if args.asset_ids != '':
+        asset_ids.split(',')
 
     asset_ids = []  # ["2119148f2741425aa4eec00f970b3720"]# ['3203a050e9e647339340b64c8b38751f']
-    target_extension = ".msgpack.gz"
+    target_extension = '.msgpack.gz'
     convert_to_unity_loadable(
         asset_source_dir=args.asset_source_dir,
         asset_target_dir=args.asset_target_dir if args.asset_target_dir else args.asset_source_dir,

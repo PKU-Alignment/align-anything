@@ -15,7 +15,6 @@
 # limitations under the License.
 # ==============================================================================
 import datetime
-import json
 import os
 import random
 import string
@@ -23,13 +22,15 @@ from typing import Dict
 
 import lightning.pytorch as pl
 import wandb
-from lightning.pytorch.loggers.logger import Logger
-from lightning.pytorch.utilities.rank_zero import rank_zero_only
 import yaml
+from lightning.pytorch.utilities.rank_zero import rank_zero_only
+
+
 try:
     from prettytable import PrettyTable
 except:
-    print("warning: prettytable not installed")
+    print('warning: prettytable not installed')
+
 
 class LoggerInfo:
     pass
@@ -50,7 +51,7 @@ class LocalWandbLogger(pl.loggers.wandb.WandbLogger):
         self._log_model = log_model
         random.seed(datetime.datetime.now().microsecond)
         characters = string.ascii_letters + string.digits
-        run_id = "".join(random.choice(characters) for _ in range(8))
+        run_id = ''.join(random.choice(characters) for _ in range(8))
         self._run_id = run_id
         self._experiment = None
 
@@ -93,20 +94,20 @@ class LoadLocalWandb:
     def get_checkpoint(self, ckpt_step):
         if ckpt_step is not None:
             path = os.path.join(
-                self.save_dir, self.run_id, f"checkpoint_train_steps={ckpt_step}.ckpt"
+                self.save_dir, self.run_id, f'checkpoint_train_steps={ckpt_step}.ckpt'
             )
         else:
-            path = os.path.join(self.save_dir, self.run_id, f"checkpoint_final.ckpt")
-        assert os.path.exists(path), "Checkpoint does not exist"
+            path = os.path.join(self.save_dir, self.run_id, f'checkpoint_final.ckpt')
+        assert os.path.exists(path), 'Checkpoint does not exist'
         return path
 
     def load_config(self):
-        with open(os.path.join(self.save_dir, self.run_id, "config.yaml"), "r") as f:
+        with open(os.path.join(self.save_dir, self.run_id, 'config.yaml')) as f:
             config = yaml.safe_load(f)
         result = {}
         for k, v in config.items():  # To support the config file format loaded from wandb
-            if type(v) == dict and "value" in v:
-                result[k] = v["value"]
+            if type(v) == dict and 'value' in v:
+                result[k] = v['value']
             else:
                 result[k] = v
         config = result
@@ -134,41 +135,41 @@ class LocalWandb:
         if run_id is None:
             random.seed(datetime.datetime.now().microsecond)
             characters = string.ascii_letters + string.digits
-            run_id = "".join(random.choice(characters) for _ in range(8))
+            run_id = ''.join(random.choice(characters) for _ in range(8))
 
         self.run_id = run_id
 
-        self.config["exp_name"] = exp_name if exp_name is not None else self.run_id
+        self.config['exp_name'] = exp_name if exp_name is not None else self.run_id
 
         self.full_dir = os.path.join(self.save_dir, self.run_id)
         os.makedirs(self.full_dir, exist_ok=True)
-        print("Logging everything in ", os.path.abspath(self.full_dir))
+        print('Logging everything in ', os.path.abspath(self.full_dir))
 
     def log_config(self, config):
 
-        with open(os.path.join(self.full_dir, "config.yaml"), "w") as outfile:
+        with open(os.path.join(self.full_dir, 'config.yaml'), 'w') as outfile:
             yaml.dump(config, outfile)
 
     def write_logs(self, dict_to_log, step=None):
-        things_to_log = ""
+        things_to_log = ''
         if step is not None:
-            things_to_log = f"step: {str(step)}\n"
+            things_to_log = f'step: {str(step)}\n'
 
         if type(dict_to_log) == dict:
             for key, value in dict_to_log.items():
                 if type(value) == wandb.Table:
                     new_value = LocalTable.get_local_table_from_wandb_table(value)
                     value = new_value
-                things_to_log += f"{str(key)}: {str(value)}\n"
+                things_to_log += f'{str(key)}: {str(value)}\n'
         elif type(dict_to_log) == str:
             things_to_log += dict_to_log
         else:
             things_to_log += str(dict_to_log)
 
-        with open(os.path.join(self.full_dir, "logs.txt"), "a") as f:
+        with open(os.path.join(self.full_dir, 'logs.txt'), 'a') as f:
             f.write(str(things_to_log))
             # print(str(things_to_log))
-            f.write("\n")
+            f.write('\n')
 
     @property
     def id(self):
@@ -177,14 +178,12 @@ class LocalWandb:
     def download_artifact(self, artifact_name, save_dir):
         assert os.path.exists(save_dir)
 
-        pass
 
     def log_artifact(self, artifact: wandb.Artifact, aliases):
         for file, info in artifact._added_local_paths.items():
-            command = f"cp {file} {self.full_dir}"
-            self.write_logs(f"executing {command}")
+            command = f'cp {file} {self.full_dir}'
+            self.write_logs(f'executing {command}')
             os.system(command)
-        pass
 
     @staticmethod
     def Table(columns):
@@ -204,7 +203,6 @@ class LocalWandb:
     def log(self, dict_to_log, step=None):
         self.write_logs(dict_to_log, step)
 
-        pass
 
 
 class LocalTable:
@@ -236,8 +234,8 @@ class LocalTable:
         return str(self)
 
 
-if __name__ == "__main__":
-    tab = LocalTable(["a", "b"])
+if __name__ == '__main__':
+    tab = LocalTable(['a', 'b'])
     tab.add_data(1, 2)
     tab.add_data(3, 4)
     print(str(tab))

@@ -25,9 +25,7 @@ import torch.multiprocessing as mp
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from align_anything.evaluation.eval_logger import EvalLogger
 from align_anything.evaluation.inference.base_inference import BaseInferencer, save_detail, tqdm
-from align_anything.utils.device_utils import (
-    set_device,
-)
+from align_anything.utils.device_utils import set_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,

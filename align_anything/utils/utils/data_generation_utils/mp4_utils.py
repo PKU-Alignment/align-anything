@@ -15,7 +15,7 @@
 # limitations under the License.
 # ==============================================================================
 import os
-from typing import Sequence, Optional, Dict, Any
+from typing import Any, Dict, Optional, Sequence
 
 import imageio
 import numpy as np
@@ -33,8 +33,8 @@ def save_frames_to_mp4(
         frames = np.array(frames)
 
     kwargs = {
-        "fps": fps,
-        "quality": 5,
+        'fps': fps,
+        'quality': 5,
         **(extra_kwargs if extra_kwargs is not None else {}),
     }
     imageio.mimwrite(file_path, frames, macro_block_size=1, **kwargs)

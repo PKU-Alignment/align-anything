@@ -1,4 +1,3 @@
-
 # Copyright 2024 Allen Institute for AI
 
 # Copyright 2024-2025 Align-Anything Team. All Rights Reserved.
@@ -19,7 +18,7 @@
 
 import random
 from dataclasses import dataclass, field
-from typing import Tuple, List
+from typing import List, Tuple
 
 import torch
 import torchvision
@@ -32,14 +31,17 @@ from transformers import AutoTokenizer
 
 from align_anything.utils.utils.constants.stretch_initialization_utils import ALL_STRETCH_ACTIONS
 from align_anything.utils.utils.sensor_constant_utils import is_a_visual_sensor
-from align_anything.utils.utils.transformation_util import get_full_transformation_list, sample_a_specific_transform
+from align_anything.utils.utils.transformation_util import (
+    get_full_transformation_list,
+    sample_a_specific_transform,
+)
 
 
 def tensor_image_preprocessor(
     size=(224, 384),
     data_augmentation=False,
     specific=False,
-    augmentation_version="v2",
+    augmentation_version='v2',
     mean=(0.48145466, 0.4578275, 0.40821073),
     std=(0.26862954, 0.26130258, 0.27577711),
 ):
@@ -52,7 +54,7 @@ def tensor_image_preprocessor(
         list_of_transformations += [
             torchvision.transforms.Resize(
                 size,
-                interpolation=T.InterpolationMode("bicubic"),
+                interpolation=T.InterpolationMode('bicubic'),
                 max_size=None,
                 antialias=True,
             )
@@ -81,9 +83,9 @@ class PreprocessorConfig:
     pad: bool = True
     action_list: List[str] = field(default_factory=lambda: ALL_STRETCH_ACTIONS)
     data_augmentation: bool = False
-    augmentation_version: str = "v2"
-    goal_sensor_uuid: str = "goals"
-    model_version: str = ""
+    augmentation_version: str = 'v2'
+    goal_sensor_uuid: str = 'goals'
+    model_version: str = ''
     text_encoder_context_length: int = None
 
 
@@ -92,7 +94,7 @@ class Preprocessor:
         self.cfg = cfg
         self.device = device
         self.action2idx = {action: i for i, action in enumerate(self.cfg.action_list)}
-        self.action2idx[""] = len(
+        self.action2idx[''] = len(
             self.cfg.action_list
         )  # for start of sequence token in last_actions
 
@@ -106,7 +108,7 @@ class Preprocessor:
 
     @lazy_property
     def text_preprocessor(self):
-        return AutoTokenizer.from_pretrained("t5-small")
+        return AutoTokenizer.from_pretrained('t5-small')
 
     @property
     def num_actions(self):
@@ -141,7 +143,7 @@ class Preprocessor:
 
     def get_action_processor(self):
         def action_processor(sample):
-            actions = sample["actions"][: self.cfg.max_steps]
+            actions = sample['actions'][: self.cfg.max_steps]
             actions = torch.tensor(
                 [self.action2idx[action] for action in actions], dtype=torch.int64
             ).to(self.device)
@@ -159,7 +161,7 @@ class Preprocessor:
 
     def get_last_actions_processor(self):
         def last_actions_processor(sample):
-            last_actions = sample["last_actions"][: self.cfg.max_steps]
+            last_actions = sample['last_actions'][: self.cfg.max_steps]
             last_actions = torch.tensor(
                 [self.action2idx[action] for action in last_actions], dtype=torch.int64
             ).to(self.device)
@@ -169,27 +171,27 @@ class Preprocessor:
 
     def process_goals(self, batch):
         goal_spec = self.text_preprocessor(
-            [sample["goal"] for sample in batch],
-            return_tensors="pt",
+            [sample['goal'] for sample in batch],
+            return_tensors='pt',
             padding=True,
         )
         return {k: v.to(self.device) for k, v in goal_spec.items()}
 
     def process_visibility(self, batch):
-        visibility = [torch.tensor(sample["visibility"]) for sample in batch]
+        visibility = [torch.tensor(sample['visibility']) for sample in batch]
         if self.cfg.pad:
             return pad_sequence(visibility, batch_first=True, padding_value=-1).to(self.device)
 
         return visibility
 
-    def process_rooms_seen(self, batch, key="rooms_seen"):
+    def process_rooms_seen(self, batch, key='rooms_seen'):
         rooms_seen = [torch.tensor(sample[key]) for sample in batch]
         if self.cfg.pad:
             return pad_sequence(rooms_seen, batch_first=True, padding_value=19).to(self.device)
 
         return rooms_seen
 
-    def process_room_current_seen(self, batch, key="room_current_seen"):
+    def process_room_current_seen(self, batch, key='room_current_seen'):
         room_current_seen = [torch.tensor(sample[key], dtype=torch.int64) for sample in batch]
         if self.cfg.pad:
             return pad_sequence(room_current_seen, batch_first=True, padding_value=2).to(
@@ -199,7 +201,7 @@ class Preprocessor:
         return room_current_seen
 
     def process_time_ids(self, batch):
-        time_ids = [torch.tensor(sample["time_ids"][: self.cfg.max_steps]) for sample in batch]
+        time_ids = [torch.tensor(sample['time_ids'][: self.cfg.max_steps]) for sample in batch]
         if self.cfg.pad:
             return pad_sequence(time_ids, batch_first=True, padding_value=-1).to(self.device)
 
@@ -207,7 +209,7 @@ class Preprocessor:
 
     def process_objinhand(self, batch):
         obj_in_hand = [
-            torch.tensor(sample["an_object_is_in_hand"][: self.cfg.max_steps]).long()
+            torch.tensor(sample['an_object_is_in_hand'][: self.cfg.max_steps]).long()
             for sample in batch
         ]
         if self.cfg.pad:
@@ -217,7 +219,7 @@ class Preprocessor:
 
     def process_arm_proprioceptive(self, batch):
         arm_proprioceptive = [
-            torch.tensor(sample["relative_arm_location_metadata"][: self.cfg.max_steps]).float()
+            torch.tensor(sample['relative_arm_location_metadata'][: self.cfg.max_steps]).float()
             for sample in batch
         ]
         if self.cfg.pad:
@@ -243,7 +245,7 @@ class Preprocessor:
         if len(batch) == 0:
             return None
 
-        batch = [sample["observations"] for sample in batch]
+        batch = [sample['observations'] for sample in batch]
 
         batch_keys = list(batch[0].keys())
         output = dict()
@@ -251,47 +253,47 @@ class Preprocessor:
         for sensor in batch_keys:
             if is_a_visual_sensor(sensor):
                 output[sensor] = self.process_frames(batch, sensor_key=sensor)
-            elif sensor == "an_object_is_in_hand":
+            elif sensor == 'an_object_is_in_hand':
                 output[sensor] = self.process_objinhand(batch)
-            elif sensor == "relative_arm_location_metadata":
+            elif sensor == 'relative_arm_location_metadata':
                 output[sensor] = self.process_arm_proprioceptive(batch)
-            elif sensor == "actions":
-                output["actions"] = self.process_actions(batch)
-            elif sensor == "last_actions":
-                output["last_actions"] = self.process_last_actions(batch)
-            elif sensor == "goal":
+            elif sensor == 'actions':
+                output['actions'] = self.process_actions(batch)
+            elif sensor == 'last_actions':
+                output['last_actions'] = self.process_last_actions(batch)
+            elif sensor == 'goal':
                 output[self.cfg.goal_sensor_uuid] = self.process_goals(batch)
-            elif sensor == "time_ids":
-                output["time_ids"] = self.process_time_ids(batch)
-            elif sensor == "visibility":
-                output["visibility"] = self.process_visibility(batch)
-            elif sensor in ["rooms_seen", "rooms_seen_output"]:
+            elif sensor == 'time_ids':
+                output['time_ids'] = self.process_time_ids(batch)
+            elif sensor == 'visibility':
+                output['visibility'] = self.process_visibility(batch)
+            elif sensor in ['rooms_seen', 'rooms_seen_output']:
                 output[sensor] = self.process_rooms_seen(batch, key=sensor)
-            elif sensor in ["room_current_seen", "room_current_seen_output"]:
+            elif sensor in ['room_current_seen', 'room_current_seen_output']:
                 output[sensor] = self.process_room_current_seen(batch, key=sensor)
             elif sensor in [
-                "nav_task_relevant_object_bbox",
-                "manip_task_relevant_object_bbox",
-                "nav_accurate_object_bbox",
-                "manip_accurate_object_bbox",
+                'nav_task_relevant_object_bbox',
+                'manip_task_relevant_object_bbox',
+                'nav_accurate_object_bbox',
+                'manip_accurate_object_bbox',
             ]:
                 output[sensor] = self.process_task_relevant_bbox(batch, sensor)
             else:
-                if sensor not in ["initial_agent_location", "templated_task_type"]:
-                    raise NotImplementedError(f"Sensor {sensor} not implemented")
+                if sensor not in ['initial_agent_location', 'templated_task_type']:
+                    raise NotImplementedError(f'Sensor {sensor} not implemented')
 
-        if "actions" in batch_keys:
-            key_to_look_at = "actions"
+        if 'actions' in batch_keys:
+            key_to_look_at = 'actions'
         else:
             key_to_look_at = random.choice([k for k in batch_keys if is_a_visual_sensor(k)])
 
-        output["lengths"] = torch.tensor(
+        output['lengths'] = torch.tensor(
             [len(sample[key_to_look_at]) for sample in batch], dtype=torch.int32
         ).to(self.device)
 
         if self.cfg.pad:
-            output["padding_mask"] = self.create_padding_mask(
-                output["lengths"], output[key_to_look_at].shape[1]
+            output['padding_mask'] = self.create_padding_mask(
+                output['lengths'], output[key_to_look_at].shape[1]
             )
 
         return output
@@ -304,9 +306,9 @@ class SigLipPreprocessorConfig:
     pad: bool = True
     action_list: List[str] = field(default_factory=lambda: ALL_STRETCH_ACTIONS)
     data_augmentation: bool = False
-    augmentation_version: str = "v2"
-    goal_sensor_uuid: str = "goals"
-    model_version: str = "hf-hub:timm/ViT-B-16-SigLIP-256"
+    augmentation_version: str = 'v2'
+    goal_sensor_uuid: str = 'goals'
+    model_version: str = 'hf-hub:timm/ViT-B-16-SigLIP-256'
     text_encoder_context_length: int = None
 
 
@@ -327,7 +329,7 @@ class SigLipPreprocessor(Preprocessor):
 
     def process_goals(self, batch):
         goal_spec = self.text_preprocessor(
-            [sample["goal"] for sample in batch],
+            [sample['goal'] for sample in batch],
             context_length=self.cfg.text_encoder_context_length,  # for SigLIP
         )
         # # only keep padding till max length

@@ -1,4 +1,3 @@
-
 # Copyright 2024 Allen Institute for AI
 
 # Copyright 2024-2025 Align-Anything Team. All Rights Reserved.
@@ -432,7 +431,7 @@ class TransformerDecoder(nn.Module):
 
         mask = None
         if seqlen > 1:
-            mask = torch.full((seqlen, seqlen), float("-inf"), device=tokens.device)
+            mask = torch.full((seqlen, seqlen), float('-inf'), device=tokens.device)
 
             mask = torch.triu(mask, diagonal=1)
 

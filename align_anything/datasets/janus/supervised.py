@@ -191,7 +191,7 @@ class SupervisedTokenizedDataset(Dataset):
         self.tokenizer = tokenizer
         self.processor = processor
 
-        self.raw_data = torch.load(f"{path}/{data_files}", map_location=torch.device('cpu'))
+        self.raw_data = torch.load(f'{path}/{data_files}', map_location=torch.device('cpu'))
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
         self.template = template

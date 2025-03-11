@@ -30,11 +30,7 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from align_anything.datasets.text_to_text.preference import PreferenceBatch, PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.base import SupervisedTrainerBase
-from align_anything.utils.device_utils import (
-    get_current_device,
-    torch_gc,
-    torch_set_device,
-)
+from align_anything.utils.device_utils import get_current_device, torch_gc, torch_set_device
 from align_anything.utils.multi_process import (
     get_all_reduce_mean,
     get_current_device,
@@ -295,7 +291,12 @@ class RMTrainer(SupervisedTrainerBase):
                 info['train/epoch'] = self.global_step / len(self.train_dataloader)
                 self.logger.log(info, step=self.global_step)
 
-                if self.global_step % self.cfgs.logger_cfgs.save_interval == 0:
+                save_interval = (
+                    self.cfgs.train_cfgs.epochs
+                    * len(self.train_dataloader)
+                    // self.cfgs.logger_cfgs.save_total_limit
+                )
+                if self.global_step % save_interval == 0:
                     self.logger.print(f'Saving checkpoint at step {self.global_step} ...')
                     self.save(tag=self.global_step)
                     self.logger.print('Checkpoint saved.')

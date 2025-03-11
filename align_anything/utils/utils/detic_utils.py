@@ -20,27 +20,28 @@
 import os
 import sys
 
+
 try:
-    DETIC_REPO_PATH = next(p for p in sys.path if p.endswith("Detic") or p.endswith("Detic/"))
+    DETIC_REPO_PATH = next(p for p in sys.path if p.endswith('Detic') or p.endswith('Detic/'))
 except StopIteration:
     try:
-        DETIC_REPO_PATH = os.getenv("DETIC_REPO_PATH")
+        DETIC_REPO_PATH = os.getenv('DETIC_REPO_PATH')
     except KeyError:
-        raise ImportError("Could not find Detic repo path. Please add Detic to your PYTHONPATH.")
+        raise ImportError('Could not find Detic repo path. Please add Detic to your PYTHONPATH.')
 
 # Add CenterNet2 to the path
 try:
-    import centernet
+    pass
 except ImportError:
-    _center_net_path = os.path.join(DETIC_REPO_PATH, "third_party/CenterNet2")
+    _center_net_path = os.path.join(DETIC_REPO_PATH, 'third_party/CenterNet2')
     if not os.path.exists(_center_net_path):
-        raise ImportError(f"Path {_center_net_path} does not exist")
+        raise ImportError(f'Path {_center_net_path} does not exist')
 
     sys.path.insert(0, _center_net_path)
 
 
 import os
-from typing import Optional, Sequence, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Sequence
 
 import torch
 from detectron2.checkpoint import DetectionCheckpointer
@@ -51,9 +52,11 @@ from torch.distributions.utils import lazy_property
 from torch.nn import functional as F
 from torchvision.transforms import Resize
 
+
 # from data_generation.object_detection import DETIC_REPO_PATH
 sys.path.insert(0, DETIC_REPO_PATH)
 from detic.config import add_detic_config
+
 
 if TYPE_CHECKING:
     # Assumes you've set up Detic to be in your IDE's PYTHONPATH
@@ -62,7 +65,7 @@ else:
     try:
         from centernet.config import add_centernet_config
     except ImportError:
-        raise ImportError("Please set up your python path to include Detic/third_party/CenterNet2")
+        raise ImportError('Please set up your python path to include Detic/third_party/CenterNet2')
 
 
 def create_detic_cfg(
@@ -76,7 +79,7 @@ def create_detic_cfg(
     cfg.MODEL.DEVICE = (
         device
         if isinstance(device, (str, int))
-        else ("cpu" if device.index is None else device.index)
+        else ('cpu' if device.index is None else device.index)
     )
     add_centernet_config(cfg)
     add_detic_config(cfg)
@@ -86,7 +89,7 @@ def create_detic_cfg(
     cfg.MODEL.RETINANET.SCORE_THRESH_TEST = confidence_threshold
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = confidence_threshold
     cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = confidence_threshold
-    cfg.MODEL.ROI_BOX_HEAD.ZEROSHOT_WEIGHT_PATH = "rand"  # load later
+    cfg.MODEL.ROI_BOX_HEAD.ZEROSHOT_WEIGHT_PATH = 'rand'  # load later
     if not pred_all_class:
         cfg.MODEL.ROI_HEADS.ONE_CLASS_PER_PROPOSAL = True
 
@@ -142,34 +145,34 @@ class DeticPredictor:
 
     def __init__(
         self,
-        vocabulary: Sequence[str] = ("apple", "potato"),
-        prompt: str = "a ",
-        config_file: str = "Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml",
-        model_weights_file: str = "Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth",
+        vocabulary: Sequence[str] = ('apple', 'potato'),
+        prompt: str = 'a ',
+        config_file: str = 'Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml',
+        model_weights_file: str = 'Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth',
         min_size_test: Optional[int] = None,
         max_size_test: Optional[int] = None,
         confidence_threshold=0.3,
         pred_all_class=False,
-        device="cpu",
+        device='cpu',
     ):
         if not os.path.exists(config_file):
-            config_file = os.path.join(DETIC_REPO_PATH, "configs", config_file)
+            config_file = os.path.join(DETIC_REPO_PATH, 'configs', config_file)
             assert os.path.exists(config_file)
 
         if not os.path.exists(model_weights_file):
-            model_weights_file = os.path.join(DETIC_REPO_PATH, "models", model_weights_file)
+            model_weights_file = os.path.join(DETIC_REPO_PATH, 'models', model_weights_file)
             assert os.path.exists(model_weights_file)
 
         opts = [
-            "MODEL.WEIGHTS",
+            'MODEL.WEIGHTS',
             model_weights_file,
         ]
 
         if min_size_test is not None:
-            opts.extend(["INPUT.MIN_SIZE_TEST", min_size_test])
+            opts.extend(['INPUT.MIN_SIZE_TEST', min_size_test])
 
         if max_size_test is not None:
-            opts.extend(["INPUT.MAX_SIZE_TEST", max_size_test])
+            opts.extend(['INPUT.MAX_SIZE_TEST', max_size_test])
 
         cfg = create_detic_cfg(
             config_file=config_file,
@@ -190,7 +193,7 @@ class DeticPredictor:
         self._vocabulary: Optional[str] = None
         self.vocabulary = vocabulary
 
-        assert cfg.INPUT.FORMAT == "RGB"
+        assert cfg.INPUT.FORMAT == 'RGB'
 
     def to(self, device: torch.device):
         self.model.to(device)
@@ -210,7 +213,7 @@ class DeticPredictor:
         text_encoder.to(self.model.device)
         return text_encoder
 
-    def get_clip_embeddings(self, vocabulary, prompt="a "):
+    def get_clip_embeddings(self, vocabulary, prompt='a '):
         texts = [prompt + x for x in vocabulary]
         with torch.no_grad():
             return self.text_encoder(texts).detach().permute(1, 0).contiguous()
@@ -269,7 +272,7 @@ class DeticPredictor:
 
             inputs = []
             for i in range(nbatch):
-                inputs.append({"image": images[i], "height": height, "width": width})
+                inputs.append({'image': images[i], 'height': height, 'width': width})
 
             predictions = self.model(inputs)
             return predictions

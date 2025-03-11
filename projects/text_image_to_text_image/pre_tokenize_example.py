@@ -26,9 +26,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, ChameleonProcessor
 
 from align_anything.models.chameleon_model import AccustomedChameleonModel
-from align_anything.utils.device_utils import (
-    get_current_device,
-)
+from align_anything.utils.device_utils import get_current_device
 
 
 ALLOWED_ATTRIBUTES = ['split_token']

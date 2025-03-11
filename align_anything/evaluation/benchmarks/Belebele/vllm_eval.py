@@ -18,14 +18,12 @@ import os
 import re
 from typing import Any, Dict, List
 
+from tqdm import tqdm
+
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
 from align_anything.evaluation.eval_logger import EvalLogger
-from align_anything.evaluation.inference.vllm_inference import (
-    BaseInferencer_vllm,
-    save_detail,
-)
-from tqdm import tqdm
+from align_anything.evaluation.inference.vllm_inference import BaseInferencer_vllm, save_detail
 from align_anything.utils.template_registry import get_eval_template_class as get_template_class
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
