@@ -121,7 +121,7 @@ NOTE: The current test environment for Ascend is:
 ```
 
 <details>
-  <summary>Install dependencies using our docker image</summary>
+  <summary>Install ascend dependencies using our docker image</summary>
 
   1. **Current Ascend Machine Environment Configuration**  
      The current environment configuration for the Ascend Machine is as follows:
@@ -215,6 +215,7 @@ We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Tex
 
 # News
 
+- 2025-03-11: We support the installation of Ascend dependencies through our Docker image.
 - 2025-02-28: We support SFT and DPO for `Text + Video -> Text` and `Text + Image -> Text` modalities model [Janus](https://github.com/deepseek-ai/Janus). You can find the examples in the `./scripts` and `./projects/janus` directory.
 - 2024-11-20: We release a bunch of scripts for all-modality models [here](./scripts). You can directly run the scripts to fine-tune your models, without any need to modify the code.
 - 2024-10-10: We support SFT for `Any -> Any` modality models Emu3.
