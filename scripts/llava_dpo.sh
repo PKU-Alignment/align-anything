@@ -39,6 +39,7 @@ deepspeed \
      --train_datasets ${TRAIN_DATASETS} \
      --train_template ${TRAIN_TEMPLATE} \
      --train_split ${TRAIN_SPLIT} \
+     --train_name ${TRAIN_NAME} \
      --output_dir ${OUTPUT_DIR} \
      --save_total_limit 3 \
      --train_batch_size 1 \
