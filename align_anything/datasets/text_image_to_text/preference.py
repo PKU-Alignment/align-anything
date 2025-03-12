@@ -35,10 +35,10 @@ __all__ = [
     'PreferenceCollator',
     'PreferenceSample',
     'PreferenceBatch',
-    'PreferenceDataset_cm',
-    'PreferenceCollator_cm',
-    'PreferenceSample_cm',
-    'PreferenceBatch_cm',
+    'SafetyPreferenceDataset',
+    'SafetyPreferenceCollator',
+    'SafetyPreferenceSample',
+    'SafetyPreferenceBatch',
 ]
 
 
@@ -55,7 +55,7 @@ class PreferenceBatch(TypedDict, total=True):
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
 
 
-class PreferenceSample_cm(TypedDict, total=True):
+class SafetyPreferenceSample(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (L,)
     labels: torch.LongTensor  # size = (L,)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
@@ -63,7 +63,7 @@ class PreferenceSample_cm(TypedDict, total=True):
     is_worse_safe: str
 
 
-class PreferenceBatch_cm(TypedDict, total=True):
+class SafetyPreferenceBatch(TypedDict, total=True):
     input_ids: torch.LongTensor  # size = (B, L)
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
@@ -246,7 +246,7 @@ class PreferenceCollator:
         return return_dict
 
 
-class PreferenceDataset_cm(Dataset):
+class SafetyPreferenceDataset(Dataset):
 
     def __init__(
         self,
@@ -295,7 +295,7 @@ class PreferenceDataset_cm(Dataset):
                 valid_indices.append(i)
         return valid_indices
 
-    def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample_cm:
+    def preprocess(self, raw_sample: dict[str, Any]) -> SafetyPreferenceSample:
         better_conversation, worse_conversation, meta_info = self.template.format_preference_sample(
             raw_sample
         )
@@ -327,7 +327,7 @@ class PreferenceDataset_cm(Dataset):
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return PreferenceCollator_cm(
+        return SafetyPreferenceCollator(
             self.tokenizer.pad_token_id, self.processor, self.tokenizer.padding_side
         )
 
@@ -365,7 +365,7 @@ class PreferenceDataset_cm(Dataset):
         return len(self.valid_indices)
 
 
-class PreferenceCollator_cm:
+class SafetyPreferenceCollator:
 
     def __init__(
         self,
@@ -379,7 +379,7 @@ class PreferenceCollator_cm:
         self.processor = processor
         self.padding_side = padding_side
 
-    def __call__(self, samples: list[PreferenceSample_cm]) -> PreferenceBatch_cm:
+    def __call__(self, samples: list[SafetyPreferenceSample]) -> SafetyPreferenceBatch:
         return_dict = {'meta_info': {}}
         current_device = get_current_device()
 

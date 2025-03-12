@@ -1838,8 +1838,8 @@ class OpenAQA:
         }
 
 
-@register_template('RM_V')
-class RM_V(BaseFormatter):
+@register_template('SafeRLHF_V_Reward')
+class SafeRLHF_V_Reward(BaseFormatter):
     system_prompt: str = ''
 
     def format_preference_sample(
@@ -1924,8 +1924,8 @@ class RM_V(BaseFormatter):
         return better_id in [1, 2] and worse_id in [1, 2]
 
 
-@register_template('CM_V')
-class CM_V(BaseFormatter):
+@register_template('SafeRLHF_V_Cost')
+class SafeRLHF_V_Cost(BaseFormatter):
     system_prompt: str = ''
 
     def format_preference_sample(

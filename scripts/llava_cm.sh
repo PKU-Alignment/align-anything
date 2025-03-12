@@ -19,12 +19,12 @@
 MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # model path
 
 TRAIN_DATASETS='PKU-Alignment/BeaverTails-V' # dataset path
-TRAIN_TEMPLATE="CM_V" # dataset template
+TRAIN_TEMPLATE="SafeRLHF_V_Cost" # dataset template
 TRAIN_NAME="animal_abuse" # dataset name
 TRAIN_SPLIT="train" # split the dataset
 
 EVAL_DATASETS="PKU-Alignment/BeaverTails-V"
-EVAL_TEMPLATE="CM_V"
+EVAL_TEMPLATE="SafeRLHF_V_Cost"
 EVAL_NAME="dangerous_behavior"
 EVAL_SPLIT="evaluation"
 

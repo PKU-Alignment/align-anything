@@ -22,7 +22,7 @@ CRITIC_MODEL_NAME_OR_PATH="../outputs/llava_rm" # model path
 COST_MODEL_NAME_OR_PATH="../outputs/llava_cm" # model path
 
 TRAIN_DATASETS='PKU-Alignment/BeaverTails-V' # dataset path
-TRAIN_TEMPLATE="RM_V" # dataset template
+TRAIN_TEMPLATE="SafeRLHF_V_Reward" # dataset template
 TRAIN_NAME="animal_abuse" # dataset name
 TRAIN_SPLIT="train" # split the dataset
 

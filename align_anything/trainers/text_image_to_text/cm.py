@@ -23,7 +23,7 @@ import deepspeed
 import torch
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.text_image_to_text.preference import PreferenceDataset_cm as PreferenceDataset
+from align_anything.datasets.text_image_to_text.preference import SafetyPreferenceDataset as PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.cm import CMTrainer as CMtextTrainer
 from align_anything.utils.multi_process import get_current_device
@@ -71,7 +71,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('text_image_to_text', 'cm')
+    task = os.path.join('text_image_to_text', 'cost_model')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # get custom configs from command line
