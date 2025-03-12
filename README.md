@@ -50,17 +50,34 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 ## 📣 News
 * **`Coming Soon`** ⚡️⚡️⚡️ We plan to separate the evaluation component from align-anything and establish eval-anything as a dedicated repository for large-scale evaluation of any-to-any models. Meanwhile, align-anything will remain focused on the post-training alignment of any-to-any models.
+* **[2025.03.11]** 🎉🎉🎉 We support the installation of **Huawei Ascend** dependencies through pre-set Docker image.
 * **[2025.03.02]** 🎉🎉🎉 We have implemented alignment training for Vision-Language-Action Models in embodied intelligence, see [VLA Trainer](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/trainers/text_video_to_action), with more features coming soon!
 * **[2025.02.28]** 🤝🤝🤝 We supported the training and inference of align-anything on Huawei Ascend NPU.
   >  近期align-anything团队正在和华为昇腾团队积极联合开发，基于VLLMs-Ascend上的全模态推理和对齐微调。
 * **[2025.02.28]** 🤗🤗🤗 We open-sourced [🤗Align-DS-V](https://huggingface.co/PKU-Alignment/Align-DS-V), an experimental vision-language model based on [DeepSeek-R1-Distill-Llama-8B](https://github.com/deepseek-ai/DeepSeek-R1), which enhances reasoning by incorporating additional modalities into the language model. The model has already surpassed **18,000+** downloads!
-* **[2025.02.28]** We supported the alignment fine-tuning of DeepSeek’s Unified Multimodal Understanding and Generation Models, as well as the SFT and DPO of the [**Janus-Series**](https://github.com/deepseek-ai/Janus). See [**Janus Trainer**](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/trainers/janus).
+* **[2025.02.28]** We supported the alignment fine-tuning of DeepSeek’s Unified Multimodal Understanding and Generation Models, as well as the SFT and DPO of the [**Janus-Series**](https://github.com/deepseek-ai/Janus). You can find the examples in the `./scripts` and `./projects/janus` directory.
 * **[2025.02.19]** We supported the alignment methods **GRPO** used in DeepSeek R1. See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
 * **[2025.01.21]** We supported the alignment fine-tuning of **MiniCPM-o** (audio & image), also included in [the official repository’s README recommendations](https://github.com/OpenBMB/MiniCPM-o#with-align-anything-). See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
 * **[2025.01.17]** 🔥🔥🔥 We supported the fine-tuning of **O1-like reasoning in the text2text modality** (see [DollyTails](https://huggingface.co/datasets/PKU-Alignment/DollyTails-12K)), with multimodal and additional modalities coming soon!
+* **[2024.11.20]** We release a bunch of scripts for all-modality models [here](./scripts). You can directly run the scripts to fine-tune your models, without any need to modify the code.
 * **[2024.10.11]** We supported the alignment fine-tuning of the latest **Emu3** model.
 * **[2024.10.10]** We contributed to the evaluation of new modalities, particularly the performance assessment of text-video-to-text models.
 * **[2024.08.29]** 💡💡💡 We supported learning from language feedback (different from binary feedback). For more details, see [lang-feedback](https://github.com/PKU-Alignment/align-anything/tree/main/projects/lang_feedback).
+<details><summary>More News</summary>
+
+* **[2024.10.10]** We support SFT for `Any -> Any` modality models Emu3.
+* **[2024.09.24]** We support SFT, DPO, RM and PPO for `Text + Video -> Text` modality models.
+* **[2024.09.13]** We support SFT, DPO, RM and PPO for `Text + Audio -> Text` modality models.
+* **[2024.08.17]** We support DPO and PPO for `Text+Image -> Text+Image` modality models.
+* **[2024.08.15]** We support a new function in the evaluation module: the `models_pk` script in [here](./scripts/models_pk.sh), which enables comparing the performance of two models across different benchmarks.
+* **[2024.08.06]** We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
+* **[2024.08.06]** We support `Text+Image -> Text+Image` modality for the SFT trainer and Chameleon models.
+* **[2024.07.23]** We support `Text -> Image`, `Text -> Audio`, and `Text -> Video` modalities for the SFT trainer and DPO trainer.
+* **[2024.07.22]** We support the **Chameleon** model for the SFT trainer and DPO trainer!
+* **[2024.07.17]** We open-source the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
+* **[2024.07.14]** We open-source the align-anything framework.
+
+</details>
 
 ## Quick Start
 
@@ -120,6 +137,43 @@ NOTE: The current test environment for Ascend is:
 - Hardware: 8x Ascend-SNT9B ARM (192 cores, 1536GB memory)
 ```
 
+<details>
+  <summary>Install ascend dependencies using our docker image</summary>
+
+  1. **Current Ascend Machine Environment Configuration**  
+     The current environment configuration for the Ascend Machine is as follows:
+     ```
+     - Python version: 3.10.6
+     - CANN version: 8.0.rc3
+     - Architecture: aarch64
+     - Hardware: 8x Ascend-SNT9B ARM (192 cores, 1536GB memory)
+     - Ascend Driver Version: 23.0.7
+     - AscendHAL Version: 7.35.19
+     - AICPU Version: 1.0
+     - TDT Version: 1.0
+     - Log Version: 1.0
+     - Profiler Version: 2.0
+     - DVPP Kernels Version: 1.1
+     - TSFW Version: 1.0
+     - Inner Version: V100R001C15SPC012B220
+     - Compatible Versions: V100R001C30, V100R001C13, V100R001C15
+     - Compatible Firmware Versions: [7.0.0, 7.1.99]
+     - Package Version: 23.0.7
+     ```
+
+  2. **Create the Docker Container**  
+     To get started with the pre-configured environment, you can use the `setup_docker.sh` script located in the `./scripts` directory to pull the Docker image and create a container with all necessary environments set up:
+       ```
+       cd scripts
+       bash setup_docker.sh
+       ```
+     This will automatically pull the Docker image and create a Docker container where all the dependencies and configurations for running the framework are already set up.
+
+  3. **Warning**  
+     **Environment Compatibility**: The environment mentioned above is tested and verified to work. If you attempt to run the setup on other environments, you may encounter issues. In such cases, you will need to perform debugging and adjustments yourself to ensure compatibility with your specific environment.
+
+</details>
+
 </details>
 
 
@@ -175,26 +229,6 @@ We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Tex
 | `tv2act`   | ⚒️|
 
 - ⚒️ : coming soon.
-
-# News
-
-- 2025-02-28: We support SFT and DPO for `Text + Video -> Text` and `Text + Image -> Text` modalities model [Janus](https://github.com/deepseek-ai/Janus). You can find the examples in the `./scripts` and `./projects/janus` directory.
-- 2024-11-20: We release a bunch of scripts for all-modality models [here](./scripts). You can directly run the scripts to fine-tune your models, without any need to modify the code.
-- 2024-10-10: We support SFT for `Any -> Any` modality models Emu3.
-- 2024-09-24: We support SFT, DPO, RM and PPO for `Text + Video -> Text` modality models.
-- 2024-09-13: We support SFT, DPO, RM and PPO for `Text + Audio -> Text` modality models.
-- 2024-08-17: We support DPO and PPO for `Text+Image -> Text+Image` modality models.
-- 2024-08-15: We support a new function in the evaluation module: the `models_pk` script in [here](./scripts/models_pk.sh), which enables comparing the performance of two models across different benchmarks.
-- 2024-08-06: We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
-- 2024-08-06: We support `Text+Image -> Text+Image` modality for the SFT trainer and Chameleon models.
-<details><summary>More News</summary>
-
-- 2024-07-23: We support `Text -> Image`, `Text -> Audio`, and `Text -> Video` modalities for the SFT trainer and DPO trainer.
-- 2024-07-22: We support the **Chameleon** model for the SFT trainer and DPO trainer!
-- 2024-07-17: We open-source the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
-- 2024-07-14: We open-source the align-anything framework.
-
-</details>
 
 
 ## Wandb Logger
