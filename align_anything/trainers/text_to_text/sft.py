@@ -122,7 +122,6 @@ class SupervisedTrainer(SupervisedTrainerBase):
         progress_bar.update(self.global_step)
 
         if self.cfgs.data_cfgs.eval_datasets:
-            self.logger.print('\n***** Evaluating at the beginning *****')
             self.logger.log(self.eval(), step=0)
 
         remain_epoch = self.cfgs.train_cfgs.epochs - (

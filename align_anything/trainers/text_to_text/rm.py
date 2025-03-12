@@ -270,14 +270,27 @@ class RMTrainer(SupervisedTrainerBase):
             leave=True,
             disable=not is_main_process(),
         )
+        progress_bar.update(self.global_step)
 
         if self.cfgs.data_cfgs.eval_datasets:
             self.logger.log(self.eval(), step=0)
 
-        for epoch in range(int(self.cfgs.train_cfgs.epochs)):
-            self.model.train()
+        remain_epoch = self.cfgs.train_cfgs.epochs - (
+            self.global_step // len(self.train_dataloader)
+        )
 
-            for batch in self.train_dataloader:
+        start_batch_idx = self.global_step % len(self.train_dataloader)
+
+        for epoch in range(int(remain_epoch)):
+            self.model.train()
+            progress_bar.set_description(
+                f'Resuming from checkpoint {epoch + 1}/{self.cfgs.train_cfgs.epochs} epoch '
+            )
+
+            for batch_idx, batch in enumerate(self.train_dataloader):
+                if epoch == 0 and batch_idx < start_batch_idx:
+                    continue
+
                 info = self.train_step(batch)
                 torch_gc()
 
