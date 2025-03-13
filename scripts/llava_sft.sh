@@ -39,6 +39,6 @@ deepspeed \
      --train_template ${TRAIN_TEMPLATE} \
      --train_split ${TRAIN_SPLIT} \
      --output_dir ${OUTPUT_DIR} \
-     --save_interval 1000 \
+     --save_total_limit 3 \
      --train_batch_size 1 \
      --epochs 2

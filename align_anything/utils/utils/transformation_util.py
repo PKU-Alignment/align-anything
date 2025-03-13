@@ -27,8 +27,8 @@ from align_anything.utils.utils.constants.stretch_initialization_utils import ST
 from align_anything.utils.utils.data_generation_utils.mp4_utils import save_frames_to_mp4
 
 
-def get_full_transformation_list(size, version="v2"):
-    if version == "v2":
+def get_full_transformation_list(size, version='v2'):
+    if version == 'v2':
         return [
             torchvision.transforms.ColorJitter(
                 brightness=0.4, contrast=0.4, saturation=0.2, hue=0.05
@@ -44,7 +44,7 @@ def get_full_transformation_list(size, version="v2"):
             torchvision.transforms.RandomPosterize(bits=4, p=0.2),
             torchvision.transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
         ]
-    elif version == "v1":
+    elif version == 'v1':
         return [
             torchvision.transforms.ColorJitter(
                 brightness=0.4, contrast=0.4, saturation=0.4, hue=0.2
@@ -60,7 +60,7 @@ def get_full_transformation_list(size, version="v2"):
         ]
     else:
         raise NotImplementedError(
-            f"data augmentation versions supported are v1 and v2, got {version}"
+            f'data augmentation versions supported are v1 and v2, got {version}'
         )
 
 
@@ -139,7 +139,7 @@ def sample_a_specific_transform(transformation_list, size=(224, 384)):
 
 def frame_by_frame_augmentation():
     controller = ai2thor.controller.Controller(**STRETCH_ENV_ARGS)
-    action_list = ["MoveAhead", "RotateRight", "RotateLeft", "MoveBack"]
+    action_list = ['MoveAhead', 'RotateRight', 'RotateLeft', 'MoveBack']
     frames = []
     augmented_frames = []
     transformation = get_transformation()
@@ -155,19 +155,19 @@ def frame_by_frame_augmentation():
 
     save_frames_to_mp4(
         frames,
-        "og_frames.mp4",
+        'og_frames.mp4',
         5,
     )
     save_frames_to_mp4(
         augmented_frames,
-        "augmented_frames.mp4",
+        'augmented_frames.mp4',
         5,
     )
 
 
 def test_apply_same_transformation():
     controller = ai2thor.controller.Controller(**STRETCH_ENV_ARGS)
-    action_list = ["MoveAhead", "RotateRight", "RotateLeft", "MoveBack"]
+    action_list = ['MoveAhead', 'RotateRight', 'RotateLeft', 'MoveBack']
     frames = []
     augmented_frames = []
     transformation = get_transformation()
@@ -185,11 +185,11 @@ def test_apply_same_transformation():
 
     save_frames_to_mp4(
         frames,
-        "og_frames.mp4",
+        'og_frames.mp4',
         5,
     )
     save_frames_to_mp4(
         augmented_frames,
-        "augmented_frames.mp4",
+        'augmented_frames.mp4',
         5,
     )

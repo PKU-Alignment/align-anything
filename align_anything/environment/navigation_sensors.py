@@ -15,7 +15,8 @@
 # limitations under the License.
 # ==============================================================================
 import json
-from typing import List, Optional, Any, TYPE_CHECKING, Union, Dict, Literal
+import random
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
 import gym
 import numpy as np
@@ -37,18 +38,18 @@ from utils.string_utils import (
 )
 from utils.task_spec_to_instruction import best_lemma
 from utils.type_utils import get_task_relevant_synsets
-import random
+
 
 if TYPE_CHECKING:
     from tasks.abstract_task import AbstractSPOCTask
 else:
     from typing import TypeVar
 
-    AbstractSPOCTask = TypeVar("AbstractSPOCTask")
+    AbstractSPOCTask = TypeVar('AbstractSPOCTask')
 
 
 class LastActionSuccessSensor(Sensor):
-    def __init__(self, uuid: str = "last_action_success") -> None:
+    def __init__(self, uuid: str = 'last_action_success') -> None:
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
@@ -66,7 +67,7 @@ class LastActionSuccessSensor(Sensor):
 
 
 class LastActionIsRandomSensor(Sensor):
-    def __init__(self, uuid: str = "last_action_is_random") -> None:
+    def __init__(self, uuid: str = 'last_action_is_random') -> None:
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
@@ -84,7 +85,7 @@ class LastActionIsRandomSensor(Sensor):
 
 
 class LastAgentLocationSensor(Sensor):
-    def __init__(self, uuid: str = "last_agent_location") -> None:
+    def __init__(self, uuid: str = 'last_agent_location') -> None:
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
@@ -99,17 +100,17 @@ class LastAgentLocationSensor(Sensor):
         **kwargs,
     ) -> np.ndarray:
         agent_position_rotation = env.get_current_agent_full_pose()
-        agent_position = agent_position_rotation["position"]
-        agent_rotation = agent_position_rotation["rotation"]
+        agent_position = agent_position_rotation['position']
+        agent_rotation = agent_position_rotation['rotation']
 
         return np.array(
             [
-                agent_position["x"],
-                agent_position["y"],
-                agent_position["z"],
-                agent_rotation["x"],
-                agent_rotation["y"],
-                agent_rotation["z"],
+                agent_position['x'],
+                agent_position['y'],
+                agent_position['z'],
+                agent_rotation['x'],
+                agent_rotation['y'],
+                agent_rotation['z'],
             ],
             dtype=np.float64,
         )
@@ -118,16 +119,16 @@ class LastAgentLocationSensor(Sensor):
 class TaskTemplatedTextSpecSensor(Sensor):
     def __init__(
         self,
-        uuid: str = "templated_task_spec",
-        str_max_len: Union[str, int] = "adaptive",
+        uuid: str = 'templated_task_spec',
+        str_max_len: Union[str, int] = 'adaptive',
     ) -> None:
-        assert isinstance(str_max_len, int) or str_max_len == "adaptive"
+        assert isinstance(str_max_len, int) or str_max_len == 'adaptive'
         self.str_max_len = str_max_len
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
     def _get_observation_space(self) -> gym.spaces.MultiDiscrete:
-        if self.str_max_len == "adaptive":
+        if self.str_max_len == 'adaptive':
             return gym.spaces.MultiDiscrete([256] * 1)
         else:
             return gym.spaces.MultiDiscrete([256] * self.str_max_len)
@@ -135,7 +136,7 @@ class TaskTemplatedTextSpecSensor(Sensor):
     @staticmethod
     def encode_observation(task_info, str_max_len: Union[str, int]):
         task_string = json_templated_task_string(task_info)
-        if str_max_len == "adaptive":
+        if str_max_len == 'adaptive':
             bytes = convert_string_to_byte(task_string, 2 * len(task_string))
             final_index = len(bytes) + 1
             for ind in reversed(range(len(bytes))):
@@ -160,7 +161,7 @@ class TaskTemplatedTextSpecSensor(Sensor):
 class TaskNaturalLanguageSpecSensor(Sensor):
     def __init__(
         self,
-        uuid: str = "task_natural_language_spec",
+        uuid: str = 'task_natural_language_spec',
         str_max_len=1000,
         dynamic_instruction: bool = False,
     ) -> None:
@@ -173,32 +174,32 @@ class TaskNaturalLanguageSpecSensor(Sensor):
         return gym.spaces.Discrete(self.str_max_len)
 
     def dynamic_change_instruction(self, task: Optional[SubTaskType], goal: str) -> str:
-        if hasattr(task, "found_target_idx"):
+        if hasattr(task, 'found_target_idx'):
             if self.dynamic_instruction:
-                goal = goal.split(" a")[0]
-                for i in range(len(task.task_info["synsets"])):
+                goal = goal.split(' a')[0]
+                for i in range(len(task.task_info['synsets'])):
                     if i not in task.found_target_idx:
-                        obj = best_lemma(task.task_info["synsets"][i])
-                        if obj == "apple":
-                            goal += " an " + obj + " and"
+                        obj = best_lemma(task.task_info['synsets'][i])
+                        if obj == 'apple':
+                            goal += ' an ' + obj + ' and'
                         else:
-                            goal += " a " + obj + " and"
+                            goal += ' a ' + obj + ' and'
                 goal = goal[:-4]
             else:
-                goal = goal.split(", in that order")[0]
+                goal = goal.split(', in that order')[0]
         return goal
 
     def get_observation(
         self, env: EnvType, task: Optional[SubTaskType], *args: Any, **kwargs: Any
     ) -> np.ndarray:
-        natural_language_spec = task.task_info["natural_language_spec"]
+        natural_language_spec = task.task_info['natural_language_spec']
         natural_language_spec = self.dynamic_change_instruction(task, natural_language_spec)
 
         return convert_string_to_byte(natural_language_spec, self.str_max_len)
 
 
 class HypotheticalTaskSuccessSensor(Sensor):
-    def __init__(self, uuid: str = "hypothetical_task_success") -> None:
+    def __init__(self, uuid: str = 'hypothetical_task_success') -> None:
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
@@ -216,7 +217,7 @@ class HypotheticalTaskSuccessSensor(Sensor):
 
 
 class MinimumTargetAlignmentSensor(Sensor):
-    def __init__(self, uuid: str = "minimum_visible_target_alignment") -> None:
+    def __init__(self, uuid: str = 'minimum_visible_target_alignment') -> None:
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
@@ -230,14 +231,14 @@ class MinimumTargetAlignmentSensor(Sensor):
         *args,
         **kwargs,
     ) -> np.ndarray:
-        if "synsets" not in task.task_info:
+        if 'synsets' not in task.task_info:
             return np.array([-1], dtype=np.float64)
-        object_type = task.task_info["synsets"][0]
+        object_type = task.task_info['synsets'][0]
         visible_target_objects = [
             obj
-            for obj in task.task_info["synset_to_object_ids"][object_type]
+            for obj in task.task_info['synset_to_object_ids'][object_type]
             if task.controller.object_is_visible_in_camera(
-                obj, which_camera="nav", maximum_distance=2
+                obj, which_camera='nav', maximum_distance=2
             )
         ]
         visible_target_alignments = [
@@ -251,7 +252,7 @@ class MinimumTargetAlignmentSensor(Sensor):
 
 
 class Visible4mTargetCountSensor(Sensor):
-    def __init__(self, uuid: str = "visible_target_4m_count") -> None:
+    def __init__(self, uuid: str = 'visible_target_4m_count') -> None:
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
@@ -265,14 +266,14 @@ class Visible4mTargetCountSensor(Sensor):
         *args,
         **kwargs,
     ) -> np.ndarray:
-        if "synsets" not in task.task_info:
+        if 'synsets' not in task.task_info:
             return np.array([0], dtype=np.float64)
-        object_type = task.task_info["synsets"][0]
+        object_type = task.task_info['synsets'][0]
         visible_target_objects = [
             obj
-            for obj in task.task_info["synset_to_object_ids"][object_type]
+            for obj in task.task_info['synset_to_object_ids'][object_type]
             if task.controller.object_is_visible_in_camera(
-                obj, which_camera="nav", maximum_distance=4
+                obj, which_camera='nav', maximum_distance=4
             )
         ]
         return np.array([len(visible_target_objects)], dtype=np.int64)
@@ -282,8 +283,8 @@ class TaskRelevantObjectBBoxSensor(Sensor):
     def __init__(
         self,
         convert_to_pixel_coords: bool = True,
-        which_camera: Literal["nav", "manip"] = "nav",
-        uuid: str = "task_relevant_object_bbox",
+        which_camera: Literal['nav', 'manip'] = 'nav',
+        uuid: str = 'task_relevant_object_bbox',
     ) -> None:
         self.convert_to_pixel_coords = convert_to_pixel_coords
         observation_space = self._get_observation_space()
@@ -300,23 +301,23 @@ class TaskRelevantObjectBBoxSensor(Sensor):
         if self.convert_to_pixel_coords:
             return gym.spaces.Dict(
                 spaces={
-                    "oids_as_bytes": gym.spaces.MultiDiscrete([256] * 10),
-                    "synset_to_oids_as_bytes": gym.spaces.MultiDiscrete([256] * 10),
-                    "min_rows": gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
-                    "max_rows": gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
-                    "min_cols": gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
-                    "max_cols": gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
+                    'oids_as_bytes': gym.spaces.MultiDiscrete([256] * 10),
+                    'synset_to_oids_as_bytes': gym.spaces.MultiDiscrete([256] * 10),
+                    'min_rows': gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
+                    'max_rows': gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
+                    'min_cols': gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
+                    'max_cols': gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
                 },
             )
         else:
             return gym.spaces.Dict(
                 spaces={
-                    "oids_as_bytes": gym.spaces.MultiDiscrete([256] * 10),
-                    "synset_to_oids_as_bytes": gym.spaces.MultiDiscrete([256] * 10),
-                    "min_xs": gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
-                    "max_xs": gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
-                    "min_ys": gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
-                    "max_ys": gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
+                    'oids_as_bytes': gym.spaces.MultiDiscrete([256] * 10),
+                    'synset_to_oids_as_bytes': gym.spaces.MultiDiscrete([256] * 10),
+                    'min_xs': gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
+                    'max_xs': gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
+                    'min_ys': gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
+                    'max_ys': gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
                 },
             )
 
@@ -339,7 +340,7 @@ class TaskRelevantObjectBBoxSensor(Sensor):
         **kwargs,
     ) -> Dict[str, np.ndarray]:
         if task.num_steps_taken() == 0:
-            if hasattr(task, "task_relevant_synset_to_oids"):
+            if hasattr(task, 'task_relevant_synset_to_oids'):
                 self.task_relevant_synset_to_objects = task.task_relevant_synset_to_oids
                 self.task_relevant_oids = task.task_relevant_oids
                 self.oids_as_bytes = task.oids_as_bytes
@@ -356,16 +357,16 @@ class TaskRelevantObjectBBoxSensor(Sensor):
 
                 self.task_relevant_oids = list(
                     sorted(
-                        set(
-                            o["objectId"]
+                        {
+                            o['objectId']
                             for objs in self.task_relevant_synset_to_objects.values()
                             for o in objs
-                        )
+                        }
                     )
                 )
 
                 task_relevant_synset_to_oids = {
-                    synset: [o["objectId"] for o in objs]
+                    synset: [o['objectId'] for o in objs]
                     for synset, objs in self.task_relevant_synset_to_objects.items()
                 }
 
@@ -392,8 +393,8 @@ class TaskRelevantObjectBBoxSensor(Sensor):
                 )
 
                 if points is not None and len(points) != 0:
-                    xs = [max(min(p["x"], 1), 0) for p in points]
-                    ys = [max(min(p["y"], 1), 0) for p in points]
+                    xs = [max(min(p['x'], 1), 0) for p in points]
+                    ys = [max(min(p['y'], 1), 0) for p in points]
                     min_x = min(xs)
                     max_x = max(xs)
                     min_y = min(ys)
@@ -423,21 +424,21 @@ class TaskRelevantObjectBBoxSensor(Sensor):
             max_rows[doesnt_have_value] = -1
             min_rows[doesnt_have_value] = -1
             return {
-                "oids_as_bytes": self.oids_as_bytes,
-                "synset_to_oids_as_bytes": self.synset_to_oids_as_bytes,
-                "min_cols": min_cols.astype(int).astype(np.float32),
-                "max_cols": max_cols.astype(int).astype(np.float32),
-                "max_rows": max_rows.astype(int).astype(np.float32),
-                "min_rows": min_rows.astype(int).astype(np.float32),
+                'oids_as_bytes': self.oids_as_bytes,
+                'synset_to_oids_as_bytes': self.synset_to_oids_as_bytes,
+                'min_cols': min_cols.astype(int).astype(np.float32),
+                'max_cols': max_cols.astype(int).astype(np.float32),
+                'max_rows': max_rows.astype(int).astype(np.float32),
+                'min_rows': min_rows.astype(int).astype(np.float32),
             }
 
         else:
             return {
-                "oids_as_bytes": self.oids_as_bytes,
-                "min_xs": np.array(min_xs, dtype=np.float32).astype(int).astype(np.float32),
-                "max_xs": np.array(max_xs, dtype=np.float32).astype(int).astype(np.float32),
-                "min_ys": np.array(min_ys, dtype=np.float32).astype(int).astype(np.float32),
-                "max_ys": np.array(max_ys, dtype=np.float32).astype(int).astype(np.float32),
+                'oids_as_bytes': self.oids_as_bytes,
+                'min_xs': np.array(min_xs, dtype=np.float32).astype(int).astype(np.float32),
+                'max_xs': np.array(max_xs, dtype=np.float32).astype(int).astype(np.float32),
+                'min_ys': np.array(min_ys, dtype=np.float32).astype(int).astype(np.float32),
+                'max_ys': np.array(max_ys, dtype=np.float32).astype(int).astype(np.float32),
             }
 
 
@@ -445,8 +446,8 @@ class SlowAccurateObjectBBoxSensor(TaskRelevantObjectBBoxSensor):
     def __init__(
         self,
         convert_to_pixel_coords: bool = True,
-        which_camera: Literal["nav", "manip"] = "nav",
-        uuid: str = "accurate_object_bbox",
+        which_camera: Literal['nav', 'manip'] = 'nav',
+        uuid: str = 'accurate_object_bbox',
     ) -> None:
         super().__init__(**prepare_locals_for_super(locals()))
         self.convert_to_pixel_coords = convert_to_pixel_coords
@@ -468,7 +469,7 @@ class SlowAccurateObjectBBoxSensor(TaskRelevantObjectBBoxSensor):
         **kwargs,
     ) -> Dict[str, np.ndarray]:
         if task.num_steps_taken() == 0:
-            if hasattr(task, "task_relevant_synset_to_oids"):
+            if hasattr(task, 'task_relevant_synset_to_oids'):
                 self.task_relevant_synset_to_objects = task.task_relevant_synset_to_oids
                 self.task_relevant_oids = task.task_relevant_oids
                 self.oids_as_bytes = task.oids_as_bytes
@@ -485,16 +486,16 @@ class SlowAccurateObjectBBoxSensor(TaskRelevantObjectBBoxSensor):
 
                 self.task_relevant_oids = list(
                     sorted(
-                        set(
-                            o["objectId"]
+                        {
+                            o['objectId']
                             for objs in self.task_relevant_synset_to_objects.values()
                             for o in objs
-                        )
+                        }
                     )
                 )
 
                 task_relevant_synset_to_oids = {
-                    synset: [o["objectId"] for o in objs]
+                    synset: [o['objectId'] for o in objs]
                     for synset, objs in self.task_relevant_synset_to_objects.items()
                 }
 
@@ -532,12 +533,12 @@ class SlowAccurateObjectBBoxSensor(TaskRelevantObjectBBoxSensor):
         min_rows = np.array(min_ys, dtype=np.float32).astype(int).astype(np.float32)
 
         return {
-            "oids_as_bytes": self.oids_as_bytes,
-            "synset_to_oids_as_bytes": self.synset_to_oids_as_bytes,
-            "min_cols": min_cols,
-            "max_cols": max_cols,
-            "max_rows": max_rows,
-            "min_rows": min_rows,
+            'oids_as_bytes': self.oids_as_bytes,
+            'synset_to_oids_as_bytes': self.synset_to_oids_as_bytes,
+            'min_cols': min_cols,
+            'max_cols': max_cols,
+            'max_rows': max_rows,
+            'min_rows': min_rows,
         }
 
 
@@ -545,8 +546,8 @@ class TaskRelevantObjectBBoxSensorOnlineEval(Sensor):
     def __init__(
         self,
         convert_to_pixel_coords: bool = True,
-        which_camera: Literal["nav", "manip"] = "nav",
-        uuid: str = "task_relevant_object_bbox",
+        which_camera: Literal['nav', 'manip'] = 'nav',
+        uuid: str = 'task_relevant_object_bbox',
         original_sensor_to_use: Optional[type(Sensor)] = TaskRelevantObjectBBoxSensor,
     ) -> None:
         observation_space = gym.spaces.Discrete(3)
@@ -573,22 +574,22 @@ class TaskRelevantObjectBBoxSensorOnlineEval(Sensor):
     ) -> np.ndarray:
         observation_dict = self.sensor_to_use.get_observation(env, task, *args, **kwargs)
 
-        num_boxes = observation_dict["min_cols"].shape[0]
+        num_boxes = observation_dict['min_cols'].shape[0]
 
         task_dict = task.task_info
-        oids = eval(convert_byte_to_string(observation_dict["oids_as_bytes"]))
+        oids = eval(convert_byte_to_string(observation_dict['oids_as_bytes']))
 
         assert len(oids) == num_boxes, "Number of oids and boxes don't match"
 
         tgt_1_ids = []
         tgt_2_ids = []
 
-        if "broad_synset_to_object_ids" in task_dict:
-            if task_dict["task_type"] == "ObjectNavMulti":
+        if 'broad_synset_to_object_ids' in task_dict:
+            if task_dict['task_type'] == 'ObjectNavMulti':
                 for idx in range(task.num_targets):
                     if idx not in task.found_target_idx:
-                        for val in task.task_info["broad_synset_to_object_ids"][
-                            task.task_info["synsets"][idx]
+                        for val in task.task_info['broad_synset_to_object_ids'][
+                            task.task_info['synsets'][idx]
                         ]:
                             tgt_1_ids.append(val)
                 # tgt_1_ids = [
@@ -598,17 +599,17 @@ class TaskRelevantObjectBBoxSensorOnlineEval(Sensor):
                 #     ]
                 # ]
             else:
-                tgt_1_ids = [val for val in task_dict["broad_synset_to_object_ids"].values()]
+                tgt_1_ids = [val for val in task_dict['broad_synset_to_object_ids'].values()]
                 tgt_1_ids = sum(tgt_1_ids, [])
 
         def parse_biggest_bbox(object_indices):
             object_indices = sorted(object_indices)
             if len(object_indices) == 0:  # both bbox_1 and bbox_2 need to have a default value
                 return np.array(EMPTY_BBOX)
-            x1 = observation_dict["min_cols"][object_indices]
-            y1 = observation_dict["min_rows"][object_indices]
-            x2 = observation_dict["max_cols"][object_indices]
-            y2 = observation_dict["max_rows"][object_indices]
+            x1 = observation_dict['min_cols'][object_indices]
+            y1 = observation_dict['min_rows'][object_indices]
+            x2 = observation_dict['max_cols'][object_indices]
+            y2 = observation_dict['max_rows'][object_indices]
             area = (y2 - y1) * (x2 - x1)
             largest_area_oids = np.argmax(area, axis=0)
             bboxes = np.array(
@@ -635,8 +636,8 @@ class BestBboxSensorOnlineEval(Sensor):
     def __init__(
         self,
         convert_to_pixel_coords: bool = True,
-        which_camera: Literal["nav", "manip"] = "nav",
-        uuid: str = "best_bbox",
+        which_camera: Literal['nav', 'manip'] = 'nav',
+        uuid: str = 'best_bbox',
         sensors_to_use: Optional[List[Sensor]] = None,
     ) -> None:
         observation_space = gym.spaces.Discrete(3)
@@ -664,13 +665,13 @@ class BestBboxSensorOnlineEval(Sensor):
             bboxes.append(
                 sensor.get_observation(env, task, *args, **kwargs)[np.newaxis, np.newaxis, :]
             )
-        assert len(self.sensor_to_use) == 2, "can easily be extended to more than 2 sensors"
+        assert len(self.sensor_to_use) == 2, 'can easily be extended to more than 2 sensors'
         bbox_to_return = get_best_of_two_bboxes(bboxes[0], bboxes[1])[0][0]
         return bbox_to_return
 
 
 class MinL2TargetDistanceSensor(Sensor):
-    def __init__(self, uuid: str = "minimum_l2_target_distance") -> None:
+    def __init__(self, uuid: str = 'minimum_l2_target_distance') -> None:
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
@@ -684,13 +685,13 @@ class MinL2TargetDistanceSensor(Sensor):
         *args,
         **kwargs,
     ) -> np.ndarray:
-        if not hasattr(task, "min_l2_distance_to_target"):
+        if not hasattr(task, 'min_l2_distance_to_target'):
             return np.array([-1], dtype=np.float64)
         return np.array([task.min_l2_distance_to_target()], dtype=np.float64)
 
 
 class LastActionStrSensor(Sensor):
-    def __init__(self, uuid: str = "last_action_str", str_max_len=200) -> None:
+    def __init__(self, uuid: str = 'last_action_str', str_max_len=200) -> None:
         self.str_max_len = str_max_len
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
@@ -709,7 +710,7 @@ class LastActionStrSensor(Sensor):
 
 
 class HouseNumberSensor(Sensor):
-    def __init__(self, uuid: str = "house_index") -> None:
+    def __init__(self, uuid: str = 'house_index') -> None:
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
@@ -723,7 +724,7 @@ class HouseNumberSensor(Sensor):
         *args,
         **kwargs,
     ) -> np.ndarray:
-        return np.array(int(task.task_info["house_index"]))
+        return np.array(int(task.task_info['house_index']))
 
 
 class GoalObjectTypeSensor(GoalObjectTypeThorSensor):
@@ -734,12 +735,12 @@ class GoalObjectTypeSensor(GoalObjectTypeThorSensor):
         *args: Any,
         **kwargs: Any,
     ) -> Any:
-        assert len(task.task_info["synsets"]) == 1
-        return self.object_type_to_ind[task.task_info["synsets"][0]]
+        assert len(task.task_info['synsets']) == 1
+        return self.object_type_to_ind[task.task_info['synsets'][0]]
 
 
 class RoomsSeenSensor(Sensor):
-    def __init__(self, uuid: str = "rooms_seen") -> None:
+    def __init__(self, uuid: str = 'rooms_seen') -> None:
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
@@ -757,7 +758,7 @@ class RoomsSeenSensor(Sensor):
 
 
 class RoomCurrentSeenSensor(Sensor):
-    def __init__(self, uuid: str = "room_current_seen") -> None:
+    def __init__(self, uuid: str = 'room_current_seen') -> None:
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
@@ -775,7 +776,7 @@ class RoomCurrentSeenSensor(Sensor):
 
 
 class CurrentAgentRoom(Sensor):
-    def __init__(self, uuid: str = "current_agent_room") -> None:
+    def __init__(self, uuid: str = 'current_agent_room') -> None:
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
 
@@ -790,7 +791,7 @@ class CurrentAgentRoom(Sensor):
         **kwargs,
     ) -> np.ndarray:
         try:
-            room_num = int(task.get_current_room().replace("room|", ""))
+            room_num = int(task.get_current_room().replace('room|', ''))
         except ValueError:
             room_num = -1
         return np.array([room_num], dtype=np.int64)
@@ -798,9 +799,9 @@ class CurrentAgentRoom(Sensor):
 
 class NumPixelsVisible(Sensor):
     def __init__(
-        self, which_camera: Literal["nav", "manip"], uuid: str = "num_pixels_visible"
+        self, which_camera: Literal['nav', 'manip'], uuid: str = 'num_pixels_visible'
     ) -> None:
-        uuid = f"{uuid}_{which_camera}"
+        uuid = f'{uuid}_{which_camera}'
         self.which_camera = which_camera
         observation_space = self._get_observation_space()
         super().__init__(**prepare_locals_for_super(locals()))
@@ -817,9 +818,9 @@ class NumPixelsVisible(Sensor):
     ) -> np.ndarray:
         num_pixels = 0
 
-        if "synsets" in task.task_info and len(task.task_info["synsets"]) == 1:
-            object_type = task.task_info["synsets"][0]
-            object_ids = task.task_info["synset_to_object_ids"][object_type]
+        if 'synsets' in task.task_info and len(task.task_info['synsets']) == 1:
+            object_type = task.task_info['synsets'][0]
+            object_ids = task.task_info['synset_to_object_ids'][object_type]
             num_pixels = 0
 
             visible_oids = env.get_visible_objects(
@@ -839,9 +840,9 @@ class NumPixelsVisible(Sensor):
 class TaskRelevantObjectBBoxSensorDeticOnlineEvalDetic(TaskRelevantObjectBBoxSensor):
     def __init__(
         self,
-        which_camera: Literal["nav", "manip"] = "nav",
+        which_camera: Literal['nav', 'manip'] = 'nav',
         convert_to_pixel_coords: bool = True,
-        uuid: str = "task_relevant_object_bbox",
+        uuid: str = 'task_relevant_object_bbox',
         gpu_device=-1,
     ) -> None:
         self.gpu_device = gpu_device
@@ -850,7 +851,7 @@ class TaskRelevantObjectBBoxSensorDeticOnlineEvalDetic(TaskRelevantObjectBBoxSen
         )
 
         self.device = (
-            self.gpu_device if (torch.cuda.is_available() and self.gpu_device != -1) else "cpu"
+            self.gpu_device if (torch.cuda.is_available() and self.gpu_device != -1) else 'cpu'
         )
         from utils.detic_utils import DeticPredictor
 
@@ -859,15 +860,15 @@ class TaskRelevantObjectBBoxSensorDeticOnlineEvalDetic(TaskRelevantObjectBBoxSen
             min_size_test=640,
             max_size_test=640,
         )
-        self.detic_predictor.vocabulary = ["apple"]  # simple for init
+        self.detic_predictor.vocabulary = ['apple']  # simple for init
 
         self.last_bbox = None
         self.last_rgb = None
 
     def get_observation(self, env: StretchController, task: AbstractSPOCTask, *args, **kwargs):
-        if self.which_camera == "nav":
+        if self.which_camera == 'nav':
             rgb = env.navigation_camera
-        elif self.which_camera == "manip":
+        elif self.which_camera == 'manip':
             rgb = env.manipulation_camera
         else:
             raise NotImplementedError
@@ -876,7 +877,7 @@ class TaskRelevantObjectBBoxSensorDeticOnlineEvalDetic(TaskRelevantObjectBBoxSen
             if np.all(self.last_rgb == rgb):
                 return self.last_bbox
 
-        lemma = best_lemma(task.task_info["synsets"][0])
+        lemma = best_lemma(task.task_info['synsets'][0])
         if lemma not in self.detic_predictor.vocabulary:
             # verify the detector is looking for the right thing (slow)
             self.detic_predictor.vocabulary = [lemma]
@@ -889,7 +890,7 @@ class TaskRelevantObjectBBoxSensorDeticOnlineEvalDetic(TaskRelevantObjectBBoxSen
 
         original_w, original_h = rgb.shape[:2]
 
-        instances = detic_results[0]["instances"]
+        instances = detic_results[0]['instances']
         boxes = instances.pred_boxes.tensor.tolist()
         scores = instances.scores.tolist()
         classes = instances.pred_classes.tolist()
@@ -905,7 +906,7 @@ class TaskRelevantObjectBBoxSensorDeticOnlineEvalDetic(TaskRelevantObjectBBoxSen
                 box.append(area)
 
             thresh = 0.5
-            if lemma in ["basketball", "vase", "houseplant", "apple", "laptop", "mug"]:
+            if lemma in ['basketball', 'vase', 'houseplant', 'apple', 'laptop', 'mug']:
                 thresh = 0.3  # default is .3 so no-op
             max_score_box, max_score, max_score_class = max(
                 zip(boxes, scores, class_strs), key=lambda x: x[1]
@@ -925,9 +926,9 @@ class TaskRelevantObjectBBoxSensorDeticOnlineEvalDetic(TaskRelevantObjectBBoxSen
 class TaskRelevantObjectBBoxSensorDummy(TaskRelevantObjectBBoxSensor):
     def __init__(
         self,
-        which_camera: Literal["nav", "manip"] = "nav",
+        which_camera: Literal['nav', 'manip'] = 'nav',
         convert_to_pixel_coords: bool = True,
-        uuid: str = "task_relevant_object_bbox",
+        uuid: str = 'task_relevant_object_bbox',
         gpu_device=-1,
     ) -> None:
         super().__init__(
@@ -939,7 +940,7 @@ class TaskRelevantObjectBBoxSensorDummy(TaskRelevantObjectBBoxSensor):
 
 
 class TimeStepSensor(Sensor):
-    def __init__(self, uuid: str = "time_step", max_time_for_random_shift=0) -> None:
+    def __init__(self, uuid: str = 'time_step', max_time_for_random_shift=0) -> None:
         observation_space = self._get_observation_space()
         self.max_time_for_random_shift = max_time_for_random_shift
         self.random_start = 0
@@ -971,7 +972,7 @@ class TimeStepSensor(Sensor):
 
 
 class TrajectorySensor(Sensor):
-    def __init__(self, uuid: str = "traj_index", max_idx: int = 4) -> None:
+    def __init__(self, uuid: str = 'traj_index', max_idx: int = 4) -> None:
         observation_space = self._get_observation_space()
         self.curr_idx = 0
         self.max_idx = max_idx

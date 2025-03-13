@@ -24,10 +24,7 @@ import torch
 import transformers
 from janus.models import MultiModalityCausalLM, VLChatProcessor, VLMImageProcessor
 
-from align_anything.datasets.janus import (
-    PreferenceBatch,
-    PreferenceTokenizedDataset,
-)
+from align_anything.datasets.janus import PreferenceBatch, PreferenceTokenizedDataset
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (

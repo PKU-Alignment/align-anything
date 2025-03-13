@@ -29,9 +29,7 @@ from align_anything.evaluation.inference.base_inference import (
     torch,
     tqdm,
 )
-from align_anything.utils.device_utils import (
-    set_device,
-)
+from align_anything.utils.device_utils import set_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,

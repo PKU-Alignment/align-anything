@@ -1,4 +1,3 @@
-
 # Copyright 2024 Allen Institute for AI
 
 # Copyright 2024-2025 Align-Anything Team. All Rights Reserved.
@@ -24,29 +23,34 @@ from open_clip.tokenizer import HFTokenizer
 from open_clip.transformer import TextTransformer
 
 from align_anything.architecture.models.transformer_models.image_encoders import *
-from align_anything.architecture.models.transformer_models.preprocessors import (
-    Preprocessor,
-    PreprocessorConfig,
-    tensor_image_preprocessor,
-    SigLipPreprocessorConfig,
-    SigLipPreprocessor,
-)
-from align_anything.architecture.models.transformer_models.text_cond_visual_encoder import (
-    PositionalEncoder,
-    TextCondMultiCameraVisualEncoder,
-    TextCondVisualEncoderConfig,
-    NonTxMultiCameraVisualEncoder,
-    NonTxVisualEncoderConfig,
-    TransformerConfig,
+from align_anything.architecture.models.transformer_models.llama_model import (
+    ModelArgs as LLAMAModelArgs,
 )
 from align_anything.architecture.models.transformer_models.llama_model import (
     TransformerDecoder as LLAMATransformerDecoder,
 )
-from align_anything.architecture.models.transformer_models.llama_model import ModelArgs as LLAMAModelArgs
+from align_anything.architecture.models.transformer_models.preprocessors import (
+    Preprocessor,
+    PreprocessorConfig,
+    SigLipPreprocessor,
+    SigLipPreprocessorConfig,
+    tensor_image_preprocessor,
+)
+from align_anything.architecture.models.transformer_models.text_cond_visual_encoder import (
+    NonTxVisualEncoderConfig,
+    PositionalEncoder,
+    TextCondMultiCameraVisualEncoder,
+    TextCondVisualEncoderConfig,
+    TransformerConfig,
+)
 from align_anything.trainers.text_video_to_action.training.offline.train_utils import load_pl_ckpt
 from align_anything.utils.utils.constants.stretch_initialization_utils import ALL_STRETCH_ACTIONS
 from align_anything.utils.utils.nn_utils import create_causal_mask, sample_action_index_from_logits
-from align_anything.utils.utils.sensor_constant_utils import is_a_visual_sensor, is_a_non_visual_sensor
+from align_anything.utils.utils.sensor_constant_utils import (
+    is_a_non_visual_sensor,
+    is_a_visual_sensor,
+)
+
 
 EarlyFusionCnnTransformerPreprocessorConfig = PreprocessorConfig
 EarlyFusionCnnTransformerPreprocessor = Preprocessor
@@ -55,7 +59,7 @@ EarlyFusionCnnTransformerPreprocessor = Preprocessor
 @dataclass
 class EarlyFusionCnnTransformerConfig:
     visual_encoder: TextCondVisualEncoderConfig = TextCondVisualEncoderConfig()
-    visual_text_encoder_class: str = "TextCondMultiCameraVisualEncoder"
+    visual_text_encoder_class: str = 'TextCondMultiCameraVisualEncoder'
     decoder: TransformerConfig = TransformerConfig(3, 512, 8)
     num_actions: int = len(ALL_STRETCH_ACTIONS)
     max_length: int = 1000
@@ -72,9 +76,9 @@ class EarlyFusionCnnTransformer(nn.Module):
         super().__init__()
         self.cfg = cfg
         assert self.cfg.visual_text_encoder_class in [
-            "TextCondMultiCameraVisualEncoder",
-            "NonTxMultiCameraVisualEncoder",
-        ], "not implemented for other classes yet"
+            'TextCondMultiCameraVisualEncoder',
+            'NonTxMultiCameraVisualEncoder',
+        ], 'not implemented for other classes yet'
 
         self.visual_encoder = globals()[self.cfg.visual_text_encoder_class](self.cfg.visual_encoder)
         if cfg.use_llama_decoder:
@@ -99,7 +103,7 @@ class EarlyFusionCnnTransformer(nn.Module):
         self.ce_loss = nn.CrossEntropyLoss(ignore_index=-1)
 
         self.input_sensors = self.cfg.visual_encoder.input_sensors
-        if "last_actions" in self.input_sensors:
+        if 'last_actions' in self.input_sensors:
             # if num_actions=20; then 0-19 are actions, 20 is for "" (start token), and 21 is for padding
             self.last_actions_embed = nn.Embedding(
                 self.cfg.num_actions + 2,
@@ -108,7 +112,7 @@ class EarlyFusionCnnTransformer(nn.Module):
             )
             self.last_actions_embed.weight.data.uniform_(-0.01, 0.01)
 
-        if "an_object_is_in_hand" in self.input_sensors:
+        if 'an_object_is_in_hand' in self.input_sensors:
             self.object_in_hand_embed = nn.Embedding(3, self.cfg.decoder.d_model)
             self.object_in_hand_embed.weight.data.uniform_(-0.01, 0.01)
 
@@ -137,9 +141,9 @@ class EarlyFusionCnnTransformer(nn.Module):
         time_ids,
         text_features=None,
     ):
-        task_relevant_object_bbox = non_visual_sensors.get("task_relevant_object_bbox", None)
+        task_relevant_object_bbox = non_visual_sensors.get('task_relevant_object_bbox', None)
         manip_task_relevant_object_bbox = non_visual_sensors.get(
-            "manip_task_relevant_object_box", None
+            'manip_task_relevant_object_box', None
         )
         visual_feats, text_feats = self.visual_encoder(
             visual_sensors,
@@ -149,13 +153,13 @@ class EarlyFusionCnnTransformer(nn.Module):
             manip_task_relevant_object_bbox,
         )
 
-        if "last_actions" in non_visual_sensors:
-            last_actions_enc = self.last_actions_embed(non_visual_sensors["last_actions"])
+        if 'last_actions' in non_visual_sensors:
+            last_actions_enc = self.last_actions_embed(non_visual_sensors['last_actions'])
             visual_feats = visual_feats + last_actions_enc
 
-        if "an_object_is_in_hand" in non_visual_sensors:
+        if 'an_object_is_in_hand' in non_visual_sensors:
             object_in_hand_enc = self.object_in_hand_embed(
-                non_visual_sensors["an_object_is_in_hand"]
+                non_visual_sensors['an_object_is_in_hand']
             )
             visual_feats = visual_feats + object_in_hand_enc
 
@@ -181,9 +185,9 @@ class EarlyFusionCnnTransformer(nn.Module):
         return logits
 
     def forward(self, batch):
-        goals = batch["goals"]
-        time_ids = batch["time_ids"]
-        padding_mask = batch["padding_mask"]
+        goals = batch['goals']
+        time_ids = batch['time_ids']
+        padding_mask = batch['padding_mask']
 
         visual_sensors = {key: obs for (key, obs) in batch.items() if is_a_visual_sensor(key)}
         non_visual_sensors = {
@@ -201,9 +205,9 @@ class EarlyFusionCnnTransformer(nn.Module):
 
         outputs = dict(**logits)
         if self.cfg.action_loss:
-            action_loss = self.compute_loss(logits["actions_logits"], batch["actions"])
-            outputs["actions_loss"] = action_loss
-            outputs["loss"] = action_loss
+            action_loss = self.compute_loss(logits['actions_logits'], batch['actions'])
+            outputs['actions_loss'] = action_loss
+            outputs['loss'] = action_loss
 
         return outputs
 
@@ -217,95 +221,95 @@ class EarlyFusionCnnTransformer(nn.Module):
         ckpt_pth=None,
     ):
         model_cfg = EarlyFusionCnnTransformerConfig()
-        model_cfg.action_loss = "action" in loss
+        model_cfg.action_loss = 'action' in loss
         model_cfg.visual_encoder.input_sensors = input_sensors
-        if model_version == "small_3" or model_version == "small":
-            model_cfg.visual_encoder.image_encoder = "Dinov2Small"
-            model_cfg.visual_encoder.text_encoder = "t5-small"
+        if model_version == 'small_3' or model_version == 'small':
+            model_cfg.visual_encoder.image_encoder = 'Dinov2Small'
+            model_cfg.visual_encoder.text_encoder = 't5-small'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(3, 512, 8)
             model_cfg.decoder = TransformerConfig(3, 512, 8)
-        elif model_version == "small_6":
-            model_cfg.visual_encoder.image_encoder = "Dinov2Small"
-            model_cfg.visual_encoder.text_encoder = "t5-small"
+        elif model_version == 'small_6':
+            model_cfg.visual_encoder.image_encoder = 'Dinov2Small'
+            model_cfg.visual_encoder.text_encoder = 't5-small'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(6, 512, 8)
             model_cfg.decoder = TransformerConfig(6, 512, 8)
-        elif model_version == "base_3":
-            model_cfg.visual_encoder.image_encoder = "Dinov2Base"
-            model_cfg.visual_encoder.text_encoder = "t5-small"
+        elif model_version == 'base_3':
+            model_cfg.visual_encoder.image_encoder = 'Dinov2Base'
+            model_cfg.visual_encoder.text_encoder = 't5-small'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(3, 512, 8)
             model_cfg.decoder = TransformerConfig(3, 512, 8)
-        elif model_version == "base_6":
-            model_cfg.visual_encoder.image_encoder = "Dinov2Base"
-            model_cfg.visual_encoder.text_encoder = "t5-small"
+        elif model_version == 'base_6':
+            model_cfg.visual_encoder.image_encoder = 'Dinov2Base'
+            model_cfg.visual_encoder.text_encoder = 't5-small'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(6, 768, 8)
             model_cfg.decoder = TransformerConfig(6, 768, 8)
-        elif model_version == "small_3_nonTxEnc":
-            model_cfg.visual_text_encoder_class = "NonTxMultiCameraVisualEncoder"
+        elif model_version == 'small_3_nonTxEnc':
+            model_cfg.visual_text_encoder_class = 'NonTxMultiCameraVisualEncoder'
             model_cfg.visual_encoder = NonTxVisualEncoderConfig()
-            model_cfg.visual_encoder.image_encoder = "Dinov2Small"
-            model_cfg.visual_encoder.text_encoder = "t5-small"
+            model_cfg.visual_encoder.image_encoder = 'Dinov2Small'
+            model_cfg.visual_encoder.text_encoder = 't5-small'
             model_cfg.visual_encoder.input_sensors = input_sensors
             model_cfg.decoder = TransformerConfig(3, 512, 8)
-        elif model_version == "siglip_base_3_nonTxEnc":
-            model_cfg.visual_text_encoder_class = "NonTxMultiCameraVisualEncoder"
+        elif model_version == 'siglip_base_3_nonTxEnc':
+            model_cfg.visual_text_encoder_class = 'NonTxMultiCameraVisualEncoder'
             model_cfg.visual_encoder = NonTxVisualEncoderConfig()
-            model_cfg.visual_encoder.image_encoder = "SigLIPBase"
-            model_cfg.visual_encoder.text_encoder = "SigLIPBase"
+            model_cfg.visual_encoder.image_encoder = 'SigLIPBase'
+            model_cfg.visual_encoder.text_encoder = 'SigLIPBase'
             model_cfg.visual_encoder.input_sensors = input_sensors
             model_cfg.decoder = TransformerConfig(3, 512, 8)
-        elif model_version == "siglip_base_3" or model_version == "siglip_3":
-            model_cfg.visual_encoder.image_encoder = "SigLIPBase"
-            model_cfg.visual_encoder.text_encoder = "SigLIPBase"
+        elif model_version == 'siglip_base_3' or model_version == 'siglip_3':
+            model_cfg.visual_encoder.image_encoder = 'SigLIPBase'
+            model_cfg.visual_encoder.text_encoder = 'SigLIPBase'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(3, 512, 8)
             model_cfg.decoder = TransformerConfig(3, 512, 8)
-        elif model_version == "siglip_base_384_3":
-            model_cfg.visual_encoder.image_encoder = "SigLIPBase384"
-            model_cfg.visual_encoder.text_encoder = "SigLIPBase384"
+        elif model_version == 'siglip_base_384_3':
+            model_cfg.visual_encoder.image_encoder = 'SigLIPBase384'
+            model_cfg.visual_encoder.text_encoder = 'SigLIPBase384'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(3, 512, 8)
             model_cfg.decoder = TransformerConfig(3, 512, 8)
-        elif model_version == "siglip_base_384_resize_3":
-            model_cfg.visual_encoder.image_encoder = "SigLIPBase384Resize"
-            model_cfg.visual_encoder.text_encoder = "SigLIPBase384Resize"
+        elif model_version == 'siglip_base_384_resize_3':
+            model_cfg.visual_encoder.image_encoder = 'SigLIPBase384Resize'
+            model_cfg.visual_encoder.text_encoder = 'SigLIPBase384Resize'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(3, 512, 8)
             model_cfg.decoder = TransformerConfig(3, 512, 8)
-        elif model_version == "siglip_base_6":
-            model_cfg.visual_encoder.image_encoder = "SigLIPBase"
-            model_cfg.visual_encoder.text_encoder = "SigLIPBase"
+        elif model_version == 'siglip_base_6':
+            model_cfg.visual_encoder.image_encoder = 'SigLIPBase'
+            model_cfg.visual_encoder.text_encoder = 'SigLIPBase'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(6, 512, 8)
             model_cfg.decoder = TransformerConfig(6, 512, 8)
-        elif model_version == "siglip_base_3_6":
-            model_cfg.visual_encoder.image_encoder = "SigLIPBase"
-            model_cfg.visual_encoder.text_encoder = "SigLIPBase"
+        elif model_version == 'siglip_base_3_6':
+            model_cfg.visual_encoder.image_encoder = 'SigLIPBase'
+            model_cfg.visual_encoder.text_encoder = 'SigLIPBase'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(3, 768, 8)
             model_cfg.decoder = TransformerConfig(6, 768, 12)
-        elif model_version == "siglip_base_6_3":
-            model_cfg.visual_encoder.image_encoder = "SigLIPBase"
-            model_cfg.visual_encoder.text_encoder = "SigLIPBase"
+        elif model_version == 'siglip_base_6_3':
+            model_cfg.visual_encoder.image_encoder = 'SigLIPBase'
+            model_cfg.visual_encoder.text_encoder = 'SigLIPBase'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(6, 768, 12)
             model_cfg.decoder = TransformerConfig(3, 768, 12)
-        elif model_version == "siglip_base_6_6":
-            model_cfg.visual_encoder.image_encoder = "SigLIPBase"
-            model_cfg.visual_encoder.text_encoder = "SigLIPBase"
+        elif model_version == 'siglip_base_6_6':
+            model_cfg.visual_encoder.image_encoder = 'SigLIPBase'
+            model_cfg.visual_encoder.text_encoder = 'SigLIPBase'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(6, 768, 12)
             model_cfg.decoder = TransformerConfig(6, 768, 12)
-        elif model_version == "siglip_base_12_12":
-            model_cfg.visual_encoder.image_encoder = "SigLIPBase"
-            model_cfg.visual_encoder.text_encoder = "SigLIPBase"
+        elif model_version == 'siglip_base_12_12':
+            model_cfg.visual_encoder.image_encoder = 'SigLIPBase'
+            model_cfg.visual_encoder.text_encoder = 'SigLIPBase'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(12, 768, 12)
             model_cfg.decoder = TransformerConfig(12, 768, 12)
-        elif model_version == "siglip_large_3":
-            model_cfg.visual_encoder.image_encoder = "SigLIPLarge"
-            model_cfg.visual_encoder.text_encoder = "SigLIPLarge"
+        elif model_version == 'siglip_large_3':
+            model_cfg.visual_encoder.image_encoder = 'SigLIPLarge'
+            model_cfg.visual_encoder.text_encoder = 'SigLIPLarge'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(3, 512, 8)
             model_cfg.decoder = TransformerConfig(3, 512, 8)
-        elif model_version == "clip_resnet_50_3":
-            model_cfg.visual_encoder.image_encoder = "ClipResNet50"
-            model_cfg.visual_encoder.text_encoder = "t5-small"
+        elif model_version == 'clip_resnet_50_3':
+            model_cfg.visual_encoder.image_encoder = 'ClipResNet50'
+            model_cfg.visual_encoder.text_encoder = 't5-small'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(3, 512, 8)
             model_cfg.decoder = TransformerConfig(3, 512, 8)
-        elif model_version == "siglip_base_3_llama":
-            model_cfg.visual_encoder.image_encoder = "SigLIPBase"
-            model_cfg.visual_encoder.text_encoder = "SigLIPBase"
+        elif model_version == 'siglip_base_3_llama':
+            model_cfg.visual_encoder.image_encoder = 'SigLIPBase'
+            model_cfg.visual_encoder.text_encoder = 'SigLIPBase'
             model_cfg.visual_encoder.fusion_xformer = TransformerConfig(3, 512, 8)
             model_cfg.decoder = TransformerConfig(3, 512, 8)
             model_cfg.use_llama_decoder = True
@@ -316,9 +320,9 @@ class EarlyFusionCnnTransformer(nn.Module):
         if ckpt_pth is not None:
             load_pl_ckpt(model, ckpt_pth)
 
-        if "siglip" in model_version.lower():
-            if "384" in model_version:
-                if "resize" in model_version.lower():
+        if 'siglip' in model_version.lower():
+            if '384' in model_version:
+                if 'resize' in model_version.lower():
                     preproc_cfg = SigLipPreprocessorConfig(
                         image_size=(384, 384),
                         model_version=model.visual_encoder.image_encoder.cfg.model,
@@ -342,8 +346,8 @@ class EarlyFusionCnnTransformer(nn.Module):
             preprocessor_type = EarlyFusionCnnTransformerPreprocessor
 
         preproc_cfg.data_augmentation = data_augmentation
-        preproc_cfg.augmentation_version = "v2"
-        preproc = preprocessor_type(cfg=preproc_cfg, device="cpu")
+        preproc_cfg.augmentation_version = 'v2'
+        preproc = preprocessor_type(cfg=preproc_cfg, device='cpu')
         return model, preproc
 
     @classmethod
@@ -357,12 +361,14 @@ class EarlyFusionCnnTransformer(nn.Module):
         data_augmentation,
         ckpt_pth=None,
     ):
-        model, preproc = cls.build_model(model_version, input_sensors, loss, data_augmentation, ckpt_pth)
+        model, preproc = cls.build_model(
+            model_version, input_sensors, loss, data_augmentation, ckpt_pth
+        )
         return EarlyFusionCnnTransformerAgent(model, preproc, device, sampling)
 
 
 class EarlyFusionCnnTransformerAgent:
-    def __init__(self, model, preprocessor, device, sampling="greedy", max_seq_len=1000):
+    def __init__(self, model, preprocessor, device, sampling='greedy', max_seq_len=1000):
         self.model = model
         self.preprocessor = preprocessor
         self.device = device
@@ -388,7 +394,7 @@ class EarlyFusionCnnTransformerAgent:
                 (0.5, 0.5, 0.5)
                 if isinstance(self.model.visual_encoder.image_encoder, SigLIP)
                 else (0.26862954, 0.26130258, 0.27577711)
-            )
+            ),
             # img_pad=self.preprocessor.cfg.img_pad,
         )
         self.cache = dict()
@@ -408,27 +414,27 @@ class EarlyFusionCnnTransformerAgent:
         }
 
         preprocessed_nonvisual_sensors = {}
-        if "last_actions" in self.model.input_sensors:
-            start_token = self.preprocessor.action2idx[""]
-            preprocessed_nonvisual_sensors["last_actions"] = (
+        if 'last_actions' in self.model.input_sensors:
+            start_token = self.preprocessor.action2idx['']
+            preprocessed_nonvisual_sensors['last_actions'] = (
                 torch.tensor(np.array([[start_token]])).to(self.device)
                 if self.curr_t == 0
-                else self.cache["last_actions"]
+                else self.cache['last_actions']
             )
 
-        if "task_relevant_object_bbox" in self.model.input_sensors:
-            preprocessed_nonvisual_sensors["task_relevant_object_bbox"] = (
+        if 'task_relevant_object_bbox' in self.model.input_sensors:
+            preprocessed_nonvisual_sensors['task_relevant_object_bbox'] = (
                 self.preprocessor.process_task_relevant_bbox([observations])
             )
 
-        if "manip_task_relevant_object_box" in self.model.input_sensors:
-            preprocessed_nonvisual_sensors["manip_task_relevant_object_box"] = (
+        if 'manip_task_relevant_object_box' in self.model.input_sensors:
+            preprocessed_nonvisual_sensors['manip_task_relevant_object_box'] = (
                 self.preprocessor.process_task_relevant_bbox([observations])
             )
 
-        if "an_object_is_in_hand" in self.model.input_sensors:
-            observations["an_object_is_in_hand"] = observations["an_object_is_in_hand"][:, 0]
-            preprocessed_nonvisual_sensors["an_object_is_in_hand"] = (
+        if 'an_object_is_in_hand' in self.model.input_sensors:
+            observations['an_object_is_in_hand'] = observations['an_object_is_in_hand'][:, 0]
+            preprocessed_nonvisual_sensors['an_object_is_in_hand'] = (
                 self.preprocessor.process_objinhand([observations])
             )
 
@@ -448,39 +454,39 @@ class EarlyFusionCnnTransformerAgent:
                 # mask = goal != 1  # siglip tokenizer pads with 1
                 # cols_to_keep = torch.any(mask, dim=0)
                 # goal = goal[:, cols_to_keep]
-                self.cache["goal"] = goal
+                self.cache['goal'] = goal
             else:
-                goal = self.preprocessor.text_preprocessor([goal_spec], return_tensors="pt")
-                self.cache["goal"] = {k: v.to(self.device) for k, v in goal.items()}
+                goal = self.preprocessor.text_preprocessor([goal_spec], return_tensors='pt')
+                self.cache['goal'] = {k: v.to(self.device) for k, v in goal.items()}
 
-            text_feats = self.model.visual_encoder.encode_text(self.cache["goal"])
-            self.cache["text_feats"] = text_feats
+            text_feats = self.model.visual_encoder.encode_text(self.cache['goal'])
+            self.cache['text_feats'] = text_feats
         else:
-            goal = self.cache["goal"]
-            text_feats = self.cache["text_feats"]
+            goal = self.cache['goal']
+            text_feats = self.cache['text_feats']
 
         embedded_features, _ = self.model.get_input_embedding_per_timestep(
-            processed_observations["visual_sensors"],
-            processed_observations["non_visual_sensors"],
+            processed_observations['visual_sensors'],
+            processed_observations['non_visual_sensors'],
             None,
             time_ids=torch.tensor([[self.curr_t]]).to(self.device),
             text_features=text_feats,
         )
 
         if self.curr_t == 0:
-            self.cache["embedded_features"] = embedded_features
+            self.cache['embedded_features'] = embedded_features
         else:
-            self.cache["embedded_features"] = torch.cat(
-                (self.cache["embedded_features"], embedded_features), dim=1
+            self.cache['embedded_features'] = torch.cat(
+                (self.cache['embedded_features'], embedded_features), dim=1
             )
 
-        decoder_input = self.cache["embedded_features"]
+        decoder_input = self.cache['embedded_features']
         if self.curr_t >= self.max_seq_len:
             decoder_input = decoder_input[:, -self.max_seq_len :]
 
         logits = self.model.decode_and_get_logits(decoder_input, text_feats, start_pos=self.curr_t)
 
-        curr_logits = logits["actions_logits"][0, -1]
+        curr_logits = logits['actions_logits'][0, -1]
         action_idx = sample_action_index_from_logits(
             curr_logits,
             self.sampling,
@@ -488,8 +494,8 @@ class EarlyFusionCnnTransformerAgent:
         )
         action = self.preprocessor.cfg.action_list[action_idx]
 
-        if "last_actions" in self.model.input_sensors:
-            self.cache["last_actions"] = action_idx.reshape(1, 1)
+        if 'last_actions' in self.model.input_sensors:
+            self.cache['last_actions'] = action_idx.reshape(1, 1)
 
         self.curr_t += 1
 

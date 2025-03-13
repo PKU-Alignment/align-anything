@@ -459,7 +459,8 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
                         )
                         progress_bar.update(1)
 
-                        if self.global_step % self.cfgs.logger_cfgs.save_interval == 0:
+                        save_interval = self.cfgs.train_cfgs.epochs * len(self.prompt_only_dataloader) // self.cfgs.logger_cfgs.save_total_limit
+                if self.global_step % save_interval == 0:
                             self.logger.print(f'Saving checkpoint at step {self.global_step} ...')
                             self.save(tag=self.global_step)
                             self.logger.print('Checkpoint saved.')

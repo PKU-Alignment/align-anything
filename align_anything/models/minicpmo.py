@@ -30,11 +30,14 @@ from align_anything.utils.multi_process import print_on_main_process
 
 
 try:
-    MODEL_NAME_OR_PATH = os.environ.get('MODEL_NAME_OR_PATH', 'openbmb/MiniCPM-o-2_6')
-    CONFIG = AutoConfig.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
-    CLASS_REF = CONFIG.auto_map['AutoModel']
-    MiniCPMO = get_class_from_dynamic_module(CLASS_REF, MODEL_NAME_OR_PATH)
-    MINICPMV_AVAILABLE = True
+    MODEL_NAME_OR_PATH = os.environ.get('MODEL_NAME_OR_PATH')
+    if MODEL_NAME_OR_PATH is None:
+        MINICPMV_AVAILABLE = False
+    else:
+        CONFIG = AutoConfig.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
+        CLASS_REF = CONFIG.auto_map['AutoModel']
+        MiniCPMO = get_class_from_dynamic_module(CLASS_REF, MODEL_NAME_OR_PATH)
+        MINICPMV_AVAILABLE = True
 
 except ImportError:
     print_on_main_process(

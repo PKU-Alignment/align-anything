@@ -46,5 +46,5 @@ deepspeed \
      --per_device_train_batch_size 1 \
      --gradient_accumulation_steps 1 \
      --output_dir ${OUTPUT_DIR} \
-     --save_interval 20000 \
+     --save_total_limit 3 \
      --epochs 5

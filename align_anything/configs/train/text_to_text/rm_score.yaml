@@ -16,7 +16,7 @@
 # The training configurations
 train_cfgs:
   # The deepspeed configuration
-  ds_cfgs: ds_z0_config.json
+  ds_cfgs: ds_z3_config.json
   # Number of training epochs
   epochs: 3
   # Seed for random number generator
@@ -92,7 +92,7 @@ logger_cfgs:
   # The directory to cache the downloaded model
   cache_dir: null
   # The interval of saving models
-  save_interval: 100000
+  save_total_limit: 1
 # The model configurations
 model_cfgs:
   # Pretrained model name or path

@@ -22,9 +22,7 @@ from agent.llms.base_api import APITemplateParser
 from agent.llms.base_llm import BaseModel
 from agent.schema import ModelStatusCode
 
-from align_anything.utils.device_utils import (
-    get_current_device,
-)
+from align_anything.utils.device_utils import get_current_device
 
 
 logger = logging.getLogger(__name__)

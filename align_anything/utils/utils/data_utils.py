@@ -32,9 +32,9 @@ from align_anything.utils.utils.string_utils import (
 
 
 def read_jsonlgz(path: str, max_lines: Optional[int] = None) -> List[bytes]:
-    with gzip.open(path, "r") as f:
+    with gzip.open(path, 'r') as f:
         lines = []
-        for line in tqdm(f, desc=f"Loading {path}"):
+        for line in tqdm(f, desc=f'Loading {path}'):
             lines.append(line)
             if max_lines is not None and len(lines) >= max_lines:
                 break
@@ -68,7 +68,7 @@ class LazyJsonDataset:
 
     def __repr__(self):
         """Return a string representation of the dataset."""
-        return "LazyJsonDataset(num_samples={}, cached_samples={})".format(
+        return 'LazyJsonDataset(num_samples={}, cached_samples={})'.format(
             len(self), len(self.cached_data)
         )
 
@@ -79,7 +79,7 @@ class LazyJsonDataset:
                 self.cached_data[i] = json.loads(x)
             yield self.cached_data[i]
 
-    def select(self, indices: Sequence[int]) -> "LazyJsonDataset":
+    def select(self, indices: Sequence[int]) -> 'LazyJsonDataset':
         """Return a new dataset containing only the given indices."""
         return LazyJsonDataset(
             data=[self.data[i] for i in indices],
@@ -94,30 +94,30 @@ class LazyJsonHouses(LazyJsonDataset):
 
     def __repr__(self):
         """Return a string representation of the dataset."""
-        return "LazyJsonHouses(num_houses={}, cached_houses={})".format(
+        return 'LazyJsonHouses(num_houses={}, cached_houses={})'.format(
             len(self), len(self.cached_data)
         )
 
-    def select(self, indices: Sequence[int]) -> "LazyJsonHouses":
+    def select(self, indices: Sequence[int]) -> 'LazyJsonHouses':
         """Return a new dataset containing only the given indices."""
         return LazyJsonHouses(
             data=[self.data[i] for i in indices],
         )
 
     @staticmethod
-    def from_jsonlgz(path: str, max_houses: Optional[int] = None) -> "LazyJsonHouses":
+    def from_jsonlgz(path: str, max_houses: Optional[int] = None) -> 'LazyJsonHouses':
         """Load the houses from a .jsonl.gz file."""
         return LazyJsonHouses(data=read_jsonlgz(path=path, max_lines=max_houses))
 
     @staticmethod
     def from_dir(
         house_dir: str,
-        subset: Literal["train", "val", "test"],
+        subset: Literal['train', 'val', 'test'],
         max_houses: Optional[int] = None,
-    ) -> "LazyJsonHouses":
+    ) -> 'LazyJsonHouses':
         """Load the houses from a directory containing {subset}.jsonl.gz files."""
         return LazyJsonHouses.from_jsonlgz(
-            path=os.path.join(house_dir, f"{subset}.jsonl.gz"),
+            path=os.path.join(house_dir, f'{subset}.jsonl.gz'),
             max_houses=max_houses,
         )
 
@@ -130,30 +130,30 @@ class LazyJsonTaskSpecs(LazyJsonDataset):
 
     def __repr__(self):
         """Return a string representation of the dataset."""
-        return "LazyJsonTaskSpecs(num_tasks={}, cached_tasks={})".format(
+        return 'LazyJsonTaskSpecs(num_tasks={}, cached_tasks={})'.format(
             len(self), len(self.cached_data)
         )
 
-    def select(self, indices: Sequence[int]) -> "LazyJsonHouses":
+    def select(self, indices: Sequence[int]) -> 'LazyJsonHouses':
         """Return a new dataset containing only the given indices."""
         return LazyJsonTaskSpecs(
             data=[self.data[i] for i in indices],
         )
 
     @staticmethod
-    def from_jsonlgz(path: str, max_task_specs: Optional[int] = None) -> "LazyJsonTaskSpecs":
+    def from_jsonlgz(path: str, max_task_specs: Optional[int] = None) -> 'LazyJsonTaskSpecs':
         """Load the tasks from a .jsonl.gz file."""
         return LazyJsonTaskSpecs(data=read_jsonlgz(path=path, max_lines=max_task_specs))
 
     @staticmethod
     def from_dir(
         task_spec_dir: str,
-        subset: Literal["train", "val", "test"],
+        subset: Literal['train', 'val', 'test'],
         max_task_specs: Optional[int] = None,
-    ) -> "LazyJsonTaskSpecs":
+    ) -> 'LazyJsonTaskSpecs':
         """Load the task specs from a directory containing {subset}.jsonl.gz files."""
         return LazyJsonTaskSpecs.from_jsonlgz(
-            path=os.path.join(task_spec_dir, f"{subset}.jsonl.gz"),
+            path=os.path.join(task_spec_dir, f'{subset}.jsonl.gz'),
             max_task_specs=max_task_specs,
         )
 
@@ -163,20 +163,20 @@ def load_hdf5_sensor(path):
         return []
 
     data = []
-    with h5py.File(path, "r") as d:
+    with h5py.File(path, 'r') as d:
         for k in d.keys():
             j = json_templated_spec_to_dict(
-                convert_byte_to_string(d[k]["templated_task_spec"][0, :])
+                convert_byte_to_string(d[k]['templated_task_spec'][0, :])
             )
-            j["house_index"] = int(d[k]["house_index"][0])
-            last_agent_location = d[k]["last_agent_location"][0]
-            j["agent_starting_position"] = [
+            j['house_index'] = int(d[k]['house_index'][0])
+            last_agent_location = d[k]['last_agent_location'][0]
+            j['agent_starting_position'] = [
                 last_agent_location[0],
                 last_agent_location[1],
                 last_agent_location[2],
             ]
-            j["agent_y_rotation"] = last_agent_location[4]
-            j["natural_language_spec"] = get_natural_language_spec(j["task_type"], j)
+            j['agent_y_rotation'] = last_agent_location[4]
+            j['natural_language_spec'] = get_natural_language_spec(j['task_type'], j)
             data.append(j)
     return data
 
@@ -210,7 +210,7 @@ class Hdf5TaskSpecs:
 
             # select paths for the current process
             paths = [
-                f"{self.subset_dir}/{subdir}/hdf5_sensors.hdf5"
+                f'{self.subset_dir}/{subdir}/hdf5_sensors.hdf5'
                 for i, subdir in enumerate(subdirs)
                 if i % self.total_procs == self.proc_id
             ]
@@ -224,8 +224,8 @@ class Hdf5TaskSpecs:
     def read_hdf5_sensors(self, paths) -> List[Dict]:
         data = []
         desc = (
-            f"[proc: {self.proc_id}/{self.total_procs}] "
-            f"Loading hdf5_sensors.hdf5 files from {self.subset_dir}"
+            f'[proc: {self.proc_id}/{self.total_procs}] '
+            f'Loading hdf5_sensors.hdf5 files from {self.subset_dir}'
         )
         for path in tqdm(paths, desc=desc):
             data.extend(load_hdf5_sensor(path))
@@ -242,7 +242,7 @@ class Hdf5TaskSpecs:
 
     def __repr__(self):
         """Return a string representation of the dataset."""
-        return "Hdf5TaskSpecs(num_samples={},proc_id={},total_procs={})".format(
+        return 'Hdf5TaskSpecs(num_samples={},proc_id={},total_procs={})'.format(
             len(self), self.proc_id, self.total_procs
         )
 
@@ -251,7 +251,7 @@ class Hdf5TaskSpecs:
         for i, x in enumerate(self.data):
             yield x
 
-    def select(self, indices: Sequence[int]) -> "Hdf5TaskSpecs":
+    def select(self, indices: Sequence[int]) -> 'Hdf5TaskSpecs':
         """Return a new dataset containing only the given indices."""
         return Hdf5TaskSpecs(
             subset_dir=self.subset_dir,
@@ -262,12 +262,12 @@ class Hdf5TaskSpecs:
 
     def from_dataset_dir(
         dataset_dir: str,
-        subset: Literal["train", "val", "test"],
+        subset: Literal['train', 'val', 'test'],
         proc_id: Optional[int] = None,
         total_procs: Optional[int] = None,
         max_house_id: Optional[int] = None,
         max_task_specs: Optional[int] = None,
-    ) -> "Hdf5TaskSpecs":
+    ) -> 'Hdf5TaskSpecs':
         """Load the tasks from a directory containing {dataset_dir}/{subset}/*/hdf5_sensors.hdf5 files."""
         return Hdf5TaskSpecs(
             subset_dir=os.path.join(dataset_dir, subset),
@@ -278,12 +278,12 @@ class Hdf5TaskSpecs:
         )
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     from utils.constants.objaverse_data_dirs import OBJAVERSE_HOUSES_DIR
 
     houses = LazyJsonHouses.from_dir(
         OBJAVERSE_HOUSES_DIR,
-        subset="train",
+        subset='train',
         max_houses=10,
     )
     print(houses)
@@ -293,7 +293,7 @@ if __name__ == "__main__":
     #     max_task_specs=10,
     # )
     task_specs = Hdf5TaskSpecs.from_dataset_dir(
-        "/root/vida_datasets/pointing_data/GoNearPoint", "train", proc_id=2, total_procs=48
+        '/root/vida_datasets/pointing_data/GoNearPoint', 'train', proc_id=2, total_procs=48
     )
 
     print(task_specs)

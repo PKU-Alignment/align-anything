@@ -16,12 +16,12 @@
 # ==============================================================================
 
 
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
+from allenact.utils.system import get_logger
 from torch.distributions.utils import lazy_property
 from tqdm import tqdm
 
-from allenact.utils.system import get_logger
 from utils.data_utils import LazyJsonHouses, LazyJsonTaskSpecs
 
 
@@ -42,30 +42,30 @@ class TaskSpecPartitioner:
 
         if self.total_processes > len(self.houses):
             raise RuntimeError(
-                f"Cannot have `total_processes > len(houses)`"
-                f" ({self.total_processes} > {len(self.houses)})."
+                f'Cannot have `total_processes > len(houses)`'
+                f' ({self.total_processes} > {len(self.houses)}).'
             )
         elif len(self.houses) % self.total_processes != 0:
             if self.process_ind == 0:  # Only print warning once
                 get_logger().warning(
-                    f"Number of houses {len(self.houses)} is not cleanly divisible by "
-                    f"the number of processes ({self.total_processes}). "
-                    f"So, not all processes will be fed the same number of houses."
+                    f'Number of houses {len(self.houses)} is not cleanly divisible by '
+                    f'the number of processes ({self.total_processes}). '
+                    f'So, not all processes will be fed the same number of houses.'
                 )
 
     @lazy_property
     def house_inds_for_curr_process(self) -> List[int]:
         """Returns houses and house_inds for the current process"""
-        desc = f"Selecting house indices for process {self.process_ind}"
+        desc = f'Selecting house indices for process {self.process_ind}'
         if self.max_houses is None:
             house_inds = [
-                task_spec["house_index"] for task_spec in tqdm(self.task_specs, desc=desc)
+                task_spec['house_index'] for task_spec in tqdm(self.task_specs, desc=desc)
             ]
         else:
             house_inds = [
-                task_spec["house_index"]
+                task_spec['house_index']
                 for task_spec in tqdm(self.task_specs, desc=desc)
-                if task_spec["house_index"] < self.max_houses
+                if task_spec['house_index'] < self.max_houses
             ]
 
         house_inds_for_curr_process = [
@@ -83,10 +83,10 @@ class TaskSpecPartitioner:
     def task_specs_for_curr_process(self) -> LazyJsonTaskSpecs:
         """Returns tasks for the current process"""
         unique_house_inds = set(self.house_inds_for_curr_process)
-        desc = f"Selecting task specs for process {self.process_ind}"
+        desc = f'Selecting task specs for process {self.process_ind}'
         task_specs_for_curr_process = [
             task_spec
             for task_spec in tqdm(self.task_specs, desc=desc)
-            if task_spec["house_index"] in unique_house_inds
+            if task_spec['house_index'] in unique_house_inds
         ]
         return task_specs_for_curr_process

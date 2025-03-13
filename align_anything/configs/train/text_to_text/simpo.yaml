@@ -16,6 +16,11 @@
 
 # The training configurations
 train_cfgs:
+  # Whether to save the model checkpoint
+  # if `False`, only save the 16-bits model
+  save_checkpoint: True
+  # Whether to load the model from checkpoint
+  load_checkpoint: False
   # The deepspeed configuration
   ds_cfgs: ds_z3_config.json
   # Number of training epochs
@@ -23,9 +28,9 @@ train_cfgs:
   # Seed for random number generator
   seed: 42
   # Batch size per device for training
-  per_device_train_batch_size: 4
+  per_device_train_batch_size: 1
   # Batch size per device for evaluation
-  per_device_eval_batch_size: 4
+  per_device_eval_batch_size: 1
   # The number of gradient accumulation steps
   gradient_accumulation_steps: 1
   # Whether to use gradient checkpointing
@@ -97,7 +102,7 @@ logger_cfgs:
   # The directory to cache the downloaded model
   cache_dir: null
   # The interval of saving models
-  save_interval: 100000
+  save_total_limit: 1
 # The model configurations
 model_cfgs:
   # Pretrained model name or path

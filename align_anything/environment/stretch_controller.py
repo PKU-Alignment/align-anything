@@ -20,48 +20,47 @@ import pdb
 import random
 import warnings
 from contextlib import contextmanager
-from typing import Dict, Optional, Set, Sequence, List, Tuple, Iterable, Literal, Union
+from typing import Dict, Iterable, List, Literal, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 import torch
 from ai2thor.controller import Controller
 from ai2thor.server import Event
-from allenact_plugins.ithor_plugin.ithor_environment import IThorEnvironment
-from shapely import Polygon, GeometryCollection
+from shapely import GeometryCollection, Polygon
 
 from align_anything.environment.spoc_objects import SPOCObject
 from align_anything.environment.stretch_state import StretchState
 from align_anything.utils.utils.constants.stretch_initialization_utils import (
-    INTEL_VERTICAL_FOV,
-    AGENT_RADIUS_LIST,
-    AGENT_MOVEMENT_CONSTANT,
     ADDITIONAL_ARM_ARGS,
+    ADDITIONAL_NAVIGATION_ARGS,
+    AGENT_MOVEMENT_CONSTANT,
+    AGENT_RADIUS_LIST,
     AGENT_ROTATION_DEG,
-    WRIST_ROTATION,
     ARM_MOVE_CONSTANT,
     HORIZON,
-    ADDITIONAL_NAVIGATION_ARGS,
+    INTEL_VERTICAL_FOV,
     STRETCH_COMMIT_ID,
     STRETCH_WRIST_BOUND_1,
     STRETCH_WRIST_BOUND_2,
+    WRIST_ROTATION,
 )
 from align_anything.utils.utils.data_generation_utils.navigation_utils import (
-    get_rooms_polymap_and_type,
     get_room_id_from_location,
-    rotation_from,
+    get_rooms_polymap_and_type,
     get_wall_center_floor_level,
-    triangulate_room_polygon,
     is_any_object_sufficiently_visible_and_in_center_frame,
+    rotation_from,
     snap_to_skeleton,
+    triangulate_room_polygon,
 )
-from align_anything.utils.utils.distance_calculation_utils import sum_dist_path, position_dist
+from align_anything.utils.utils.distance_calculation_utils import position_dist, sum_dist_path
 from align_anything.utils.utils.synset_utils import is_hypernym_of
 from align_anything.utils.utils.type_utils import THORActions, Vector3
 
 
 def calc_arm_movement(arm_1, arm_2):
     total_dist = 0
-    for k in ["x", "y", "z"]:
+    for k in ['x', 'y', 'z']:
         total_dist += (arm_1[k] - arm_2[k]) ** 2
 
     return total_dist**0.5
@@ -78,9 +77,9 @@ class StretchController:
         self.render_mani_camera = render_mani_camera
         self.use_quick_navi_action = use_quick_navi_action
         self.should_render_image_synthesis = (
-            kwargs.get("renderDepthImage", False)
-            or kwargs.get("renderNormalsImage", False)
-            or kwargs.get("renderFlowImage", False)
+            kwargs.get('renderDepthImage', False)
+            or kwargs.get('renderNormalsImage', False)
+            or kwargs.get('renderFlowImage', False)
         )
         self.mode = None
 
@@ -90,24 +89,24 @@ class StretchController:
         if initialize_controller:
             self.controller = Controller(**kwargs)
             self.initialization_args = kwargs
-            print(f"Using Controller commit id: {self.controller._build.commit_id}")
+            print(f'Using Controller commit id: {self.controller._build.commit_id}')
             assert STRETCH_COMMIT_ID in self.controller._build.commit_id
             self.controller.step(
-                "AddThirdPartyCamera",
+                'AddThirdPartyCamera',
                 position=Vector3(x=1.25, y=1, z=1),
                 rotation=Vector3(x=0, y=90, z=0),
                 fieldOfView=60,
             )
-            if "scene" in kwargs:
-                self.reset(kwargs["scene"])
+            if 'scene' in kwargs:
+                self.reset(kwargs['scene'])
 
             if self.render_mani_camera:
 
                 def is_fov_correct():
                     return (
                         abs(
-                            self.controller.last_event.metadata["thirdPartyCameras"][0][
-                                "fieldOfView"
+                            self.controller.last_event.metadata['thirdPartyCameras'][0][
+                                'fieldOfView'
                             ]
                             - INTEL_VERTICAL_FOV
                         )
@@ -116,25 +115,25 @@ class StretchController:
 
                 if not is_fov_correct():
                     self.controller.step(
-                        "UpdateThirdPartyCamera",
+                        'UpdateThirdPartyCamera',
                         thirdPartyCameraId=0,
                         fieldOfView=INTEL_VERTICAL_FOV,
                     )
                     assert is_fov_correct()
-                
+
             else:
                 # warnings.warn(f"The manipulation camera is not being rendered.")
-                self.controller.step("DisableSecondaryCamera")
-                self.controller.step("Pass")
+                self.controller.step('DisableSecondaryCamera')
+                self.controller.step('Pass')
 
         # The usage here is to judge if a spatial action counts as successful or not
         self._universal_state_tolerance = StretchState._create_difference_state(
-            diff_base={"x": 0.01, "z": 0.01, "theta": 1.5},
-            diff_wrist={"y": 0.005, "z": 0.005, "yaw": 2},
+            diff_base={'x': 0.01, 'z': 0.01, 'theta': 1.5},
+            diff_wrist={'y': 0.005, 'z': 0.005, 'yaw': 2},
             diff_hand={
-                "x": 100,
-                "y": 100,
-                "z": 100,
+                'x': 100,
+                'y': 100,
+                'z': 100,
             },  # direct hand is a no-op
             diff_gripper=100,
             diff_held_oids=set(),
@@ -144,43 +143,43 @@ class StretchController:
         # TODO REMOVE:
 
     def get_objects_in_hand_sphere(self):
-        return self.controller.last_event.metadata["arm"]["pickupableObjects"]
+        return self.controller.last_event.metadata['arm']['pickupableObjects']
 
     def get_held_objects(self):
-        return self.controller.last_event.metadata["arm"]["heldObjects"]
+        return self.controller.last_event.metadata['arm']['heldObjects']
 
     def get_arm_sphere_center(self):
-        return self.controller.last_event.metadata["arm"]["handSphereCenter"]
+        return self.controller.last_event.metadata['arm']['handSphereCenter']
 
     def get_wrist_center(self):
-        wrist_center = self.controller.last_event.metadata["arm"]["joints"][-2]
-        assert wrist_center["name"] == "stretch_robot_wrist_1_jnt"
-        return wrist_center["position"]
+        wrist_center = self.controller.last_event.metadata['arm']['joints'][-2]
+        assert wrist_center['name'] == 'stretch_robot_wrist_1_jnt'
+        return wrist_center['position']
 
     def dist_from_arm_to_obj(self, object_id):
-        object_location = [self.get_object_position(object_id)[k] for k in ["x", "y", "z"]]
+        object_location = [self.get_object_position(object_id)[k] for k in ['x', 'y', 'z']]
         arm_location = self.get_arm_wrist_absolute_position()
         return (torch.Tensor(arm_location) - torch.Tensor(object_location)).norm().item()
 
     def agent_l2_distance_to_point(self, point: Dict[str, float], ignore_y=False):
-        agent_location = self.controller.last_event.metadata["agent"]["position"]
+        agent_location = self.controller.last_event.metadata['agent']['position']
 
         return math.sqrt(
-            (agent_location["x"] - point["x"]) ** 2
-            + (0 if ignore_y else (agent_location["z"] - point["z"]) ** 2)
-            + (agent_location["z"] - point["z"]) ** 2
+            (agent_location['x'] - point['x']) ** 2
+            + (0 if ignore_y else (agent_location['z'] - point['z']) ** 2)
+            + (agent_location['z'] - point['z']) ** 2
         )
 
     def agent_l2_distance_to_object(self, object_id, ignore_y=False):
-        agent_location = self.controller.last_event.metadata["agent"]["position"]
+        agent_location = self.controller.last_event.metadata['agent']['position']
 
         # TODO suboptimal proxy
-        object_location = self.get_object(object_id)["position"]
+        object_location = self.get_object(object_id)['position']
 
         return math.sqrt(
-            (agent_location["x"] - object_location["x"]) ** 2
-            + (0 if ignore_y else (agent_location["y"] - object_location["y"]) ** 2)
-            + (agent_location["z"] - object_location["z"]) ** 2
+            (agent_location['x'] - object_location['x']) ** 2
+            + (0 if ignore_y else (agent_location['y'] - object_location['y']) ** 2)
+            + (agent_location['z'] - object_location['z']) ** 2
         )
 
     @property
@@ -204,10 +203,10 @@ class StretchController:
         self,
     ):  # TODO KE: THIS IS NOT CROPPED, USE get_segmentation_mask_of_object INSTEAD OR BE CAREFUL
         if self.controller.last_event.instance_segmentation_frame is None:
-            self.controller.step("Pass", renderImageSynthesis=True)
+            self.controller.step('Pass', renderImageSynthesis=True)
             assert self.controller.last_event.instance_segmentation_frame is not None, (
-                "Must pass `renderInstanceSegmentation=True` on initialization"
-                " to obtain a navigation_camera_segmentation"
+                'Must pass `renderInstanceSegmentation=True` on initialization'
+                ' to obtain a navigation_camera_segmentation'
             )
 
         return self.controller.last_event.instance_masks
@@ -217,10 +216,10 @@ class StretchController:
         self,
     ):  # TODO KE: THIS IS NOT CROPPED, USE get_segmentation_mask_of_object INSTEAD OR BE CAREFUL
         if self.controller.last_event.instance_segmentation_frame is None:
-            self.controller.step("Pass", renderImageSynthesis=True)
+            self.controller.step('Pass', renderImageSynthesis=True)
             assert self.controller.last_event.instance_segmentation_frame is not None, (
-                "Must pass `renderInstanceSegmentation=True` on initialization"
-                " to obtain a manipulation_camera_segmentation"
+                'Must pass `renderInstanceSegmentation=True` on initialization'
+                ' to obtain a manipulation_camera_segmentation'
             )
 
         return self.controller.last_event.third_party_instance_masks[0]
@@ -238,11 +237,11 @@ class StretchController:
         return frame[:, cutoff:-cutoff]
 
     def get_segmentation_mask_of_object(
-        self, object_id: str, which_camera: Literal["nav", "manip"]
+        self, object_id: str, which_camera: Literal['nav', 'manip']
     ):
-        if which_camera == "nav":
+        if which_camera == 'nav':
             segmentation_to_look_at = self.navigation_camera_segmentation
-        elif which_camera == "manip":
+        elif which_camera == 'manip':
             segmentation_to_look_at = self.manipulation_camera_segmentation
         else:
             raise NotImplementedError
@@ -257,22 +256,22 @@ class StretchController:
             return np.zeros(self.navigation_camera.shape[:2], dtype=bool)
 
     def get_relative_stretch_current_arm_state(self):
-        arm = self.controller.last_event.metadata["arm"]["joints"]
-        z = arm[-1]["rootRelativePosition"]["z"]
-        x = arm[-1]["rootRelativePosition"]["x"]
+        arm = self.controller.last_event.metadata['arm']['joints']
+        z = arm[-1]['rootRelativePosition']['z']
+        x = arm[-1]['rootRelativePosition']['x']
         assert abs(x - 0) < 1e-3
-        y = arm[0]["rootRelativePosition"]["y"] - 0.16297650337219238
+        y = arm[0]['rootRelativePosition']['y'] - 0.16297650337219238
         return dict(x=x, y=y, z=z)
 
     def teleport_agent(self, position: Vector3, rotation: Union[Vector3, float], **kwargs) -> Event:
         if isinstance(rotation, Dict):
-            rotation = rotation["y"]
+            rotation = rotation['y']
 
-        if "standing" in kwargs:
-            del kwargs["standing"]
+        if 'standing' in kwargs:
+            del kwargs['standing']
 
-        if "horizon" in kwargs:
-            del kwargs["horizon"]
+        if 'horizon' in kwargs:
+            del kwargs['horizon']
             # warnings.warn(
             #     "`horizon` is not a valid argument for teleport_agent, as camera locations are set on reset."
             #     " This argument will be ignored."
@@ -280,36 +279,36 @@ class StretchController:
 
         if len(kwargs) > 0:
             allowed_keys = {
-                "forceAction",
-                "renderImage",
-                "renderImageSynthesis",
-                "raise_for_failure",
-                "agentId",
+                'forceAction',
+                'renderImage',
+                'renderImageSynthesis',
+                'raise_for_failure',
+                'agentId',
             }
             assert set(kwargs.keys()).issubset(
                 allowed_keys
-            ), f"Invalid arguments for teleport_agent: {set(kwargs.keys()) - allowed_keys}"
+            ), f'Invalid arguments for teleport_agent: {set(kwargs.keys()) - allowed_keys}'
 
         return self.step(
-            action="__Teleport__",
+            action='__Teleport__',
             position=position,
             rotation=dict(x=0, y=rotation, z=0),
             **kwargs,
         )
 
     def step(self, **kwargs):
-        if "renderImageSynthesis" not in kwargs:
-            kwargs["renderImageSynthesis"] = self.should_render_image_synthesis
+        if 'renderImageSynthesis' not in kwargs:
+            kwargs['renderImageSynthesis'] = self.should_render_image_synthesis
 
-        if kwargs["action"] in ["Teleport", "TeleportFull"]:
+        if kwargs['action'] in ['Teleport', 'TeleportFull']:
             # We don't want users to call teleport directly because this can mess up the camera horizon
             raise NotImplementedError(
                 f"Use `teleport_agent` instead of `step` for teleportation (attempted action: {kwargs['action']})."
             )
 
-        if kwargs["action"] == "__Teleport__":
+        if kwargs['action'] == '__Teleport__':
             # This is how we allow the stretch agent itself to call Teleport itself without raising an error
-            kwargs["action"] = "Teleport"
+            kwargs['action'] = 'Teleport'
 
         return self.controller.step(**kwargs)
 
@@ -318,42 +317,44 @@ class StretchController:
         self._manip_visible_objects_cache = {}
 
     # TODO: plan1 save the path with unsafe points
-    def get_top_down_path_view(self, agent_path, cost_robot, cost_object, targets_to_highlight=None):
+    def get_top_down_path_view(
+        self, agent_path, cost_robot, cost_object, targets_to_highlight=None
+    ):
         if len(self.controller.last_event.third_party_camera_frames) < 2:
-            event = self.controller.step({"action": "GetMapViewCameraProperties"})
-            cam = event.metadata["actionReturn"].copy()
-            bounds = event.metadata["sceneBounds"]["size"]
-            max_bound = max(bounds["x"], bounds["z"])
+            event = self.controller.step({'action': 'GetMapViewCameraProperties'})
+            cam = event.metadata['actionReturn'].copy()
+            bounds = event.metadata['sceneBounds']['size']
+            max_bound = max(bounds['x'], bounds['z'])
 
-            cam["fieldOfView"] = 50
-            cam["position"]["y"] += 1.1 * max_bound
-            cam["orthographic"] = False
-            cam["farClippingPlane"] = 50
-            del cam["orthographicSize"]
-            self.controller.step({"action": "AddThirdPartyCamera", "skyboxColor": "white", **cam})
+            cam['fieldOfView'] = 50
+            cam['position']['y'] += 1.1 * max_bound
+            cam['orthographic'] = False
+            cam['farClippingPlane'] = 50
+            del cam['orthographicSize']
+            self.controller.step({'action': 'AddThirdPartyCamera', 'skyboxColor': 'white', **cam})
 
         waypoints = []
         for target in targets_to_highlight or []:
             target_position = self.get_object_position(target)
             target_dict = {
-                "position": target_position,
-                "color": {"r": 1, "g": 0, "b": 0, "a": 1},
-                "radius": 0.5,
-                "text": "",
+                'position': target_position,
+                'color': {'r': 1, 'g': 0, 'b': 0, 'a': 1},
+                'radius': 0.5,
+                'text': '',
             }
             waypoints.append(target_dict)
 
         event = self.controller.step(
             {
-                "action": "VisualizeWaypoints",
-                "waypoints": waypoints,
+                'action': 'VisualizeWaypoints',
+                'waypoints': waypoints,
             }
         )
         # put this over the waypoints just in case
         event = self.controller.step(
-            {"action": "VisualizePath", "positions": agent_path, "pathWidth": 0.2}
+            {'action': 'VisualizePath', 'positions': agent_path, 'pathWidth': 0.2}
         )
-        self.controller.step({"action": "HideVisualizedPath"})
+        self.controller.step({'action': 'HideVisualizedPath'})
         # TODO: plan1 save the path with unsafe points
         path = event.third_party_camera_frames[-1]
         cutoff = round(path.shape[1] * 6 / 396)  # yes this is ridiculous
@@ -361,7 +362,7 @@ class StretchController:
 
     def calibrate_agent(self):
         self.step(
-            action="RotateCameraMount",
+            action='RotateCameraMount',
             degrees=27.0 + random.choice(np.arange(-2, 2, 0.2)),
             secondary=False,
             raise_for_failure=True,
@@ -369,62 +370,62 @@ class StretchController:
         )
 
         self.step(
-            action="RotateCameraMount",
+            action='RotateCameraMount',
             degrees=33.0 + random.choice(np.arange(-2, 2, 0.2)),
             secondary=True,
             raise_for_failure=True,
         )
 
         self.step(
-            action="ChangeFOV",
+            action='ChangeFOV',
             fieldOfView=59 + random.choice(np.arange(-1, 1, 0.1)),
-            camera="FirstPersonCharacter",
+            camera='FirstPersonCharacter',
             raise_for_failure=True,
             renderImage=False,
         )
 
         self.step(
-            action="ChangeFOV",
+            action='ChangeFOV',
             fieldOfView=59 + random.choice(np.arange(-1, 1, 0.1)),
-            camera="SecondaryCamera",
+            camera='SecondaryCamera',
             raise_for_failure=True,
             renderImage=False,
         )
 
         self.step(
-            action="SetGripperOpenness",
+            action='SetGripperOpenness',
             openness=30,
             raise_for_failure=True,
         )
 
     def reset(self, scene):
         if scene is None:
-            raise ValueError("`scene` must be non-None.")
+            raise ValueError('`scene` must be non-None.')
 
         self.current_scene_json = scene
         self.agent_ids = [i for (i, r) in AGENT_RADIUS_LIST]
 
         # add metadata here for navmesh?
         base_agent_navmesh = {
-            "agentHeight": 1.8,
-            "agentSlope": 10,
-            "agentClimb": 0.5,
-            "voxelSize": 0.1666667,
+            'agentHeight': 1.8,
+            'agentSlope': 10,
+            'agentClimb': 0.5,
+            'voxelSize': 0.1666667,
         }
-        scene["metadata"]["navMeshes"] = [
-            {**base_agent_navmesh, **{"id": i, "agentRadius": r}} for (i, r) in AGENT_RADIUS_LIST
+        scene['metadata']['navMeshes'] = [
+            {**base_agent_navmesh, **{'id': i, 'agentRadius': r}} for (i, r) in AGENT_RADIUS_LIST
         ]
 
         # Mostly for Phone2Proc scenes - may not work but will be corrected if possible in the scene reset.
-        if "agent" not in scene["metadata"]:
-            scene["metadata"]["agent"] = {
-                "horizon": 30,
-                "position": {"x": 0, "y": 0.95, "z": 0},
-                "rotation": {"x": 0, "y": 270, "z": 0},
-                "standing": True,
+        if 'agent' not in scene['metadata']:
+            scene['metadata']['agent'] = {
+                'horizon': 30,
+                'position': {'x': 0, 'y': 0.95, 'z': 0},
+                'rotation': {'x': 0, 'y': 270, 'z': 0},
+                'standing': True,
             }
 
-        scene["metadata"]["agent"]["horizon"] = HORIZON
+        scene['metadata']['agent']['horizon'] = HORIZON
 
         self.reset_visibility_cache()
 
@@ -433,7 +434,7 @@ class StretchController:
         self.calibrate_agent()
 
         # Do not display the unrealistic blue sphere on the agent's gripper
-        self.controller.step("ToggleMagnetVisibility", visible=False, raise_for_failure=True)
+        self.controller.step('ToggleMagnetVisibility', visible=False, raise_for_failure=True)
 
         self.set_object_filter([])
 
@@ -451,8 +452,8 @@ class StretchController:
 
         if not self.render_mani_camera:
             # warnings.warn(f"The manipulation camera is not being rendered.")
-            self.controller.step("DisableSecondaryCamera")
-            self.controller.step("Pass")
+            self.controller.step('DisableSecondaryCamera')
+            self.controller.step('Pass')
 
         return reset_event
 
@@ -464,18 +465,18 @@ class StretchController:
     # TODO: compatible with new get_objects?
     def get_visible_objects(
         self,
-        which_camera: Literal["nav", "manip", "both"] = "nav",
+        which_camera: Literal['nav', 'manip', 'both'] = 'nav',
         maximum_distance=2,
     ):
         # FYI: filtering by objects at this level has been removed to make best use
         # of the cache, but GetVisibleObjects still supports it with a list passed as objectIds=filter_object_ids.
 
-        assert which_camera in ["nav", "manip", "both"]
+        assert which_camera in ['nav', 'manip', 'both']
 
         # Use the appropriate cache if it's available
-        if which_camera == "nav" and maximum_distance in self._nav_visible_objects_cache:
+        if which_camera == 'nav' and maximum_distance in self._nav_visible_objects_cache:
             return self._nav_visible_objects_cache[maximum_distance]
-        elif which_camera == "manip" and maximum_distance in self._manip_visible_objects_cache:
+        elif which_camera == 'manip' and maximum_distance in self._manip_visible_objects_cache:
             return self._manip_visible_objects_cache[maximum_distance]
         elif (
             maximum_distance in self._nav_visible_objects_cache
@@ -487,25 +488,25 @@ class StretchController:
             )
 
         visible_objects = set()
-        if which_camera in ["nav", "both"]:
+        if which_camera in ['nav', 'both']:
             if maximum_distance not in self._nav_visible_objects_cache:
                 nav_visible_objects = self.controller.step(
-                    "GetVisibleObjects",
+                    'GetVisibleObjects',
                     maxDistance=maximum_distance,
                     # objectIds=filter_object_ids,
-                ).metadata["actionReturn"]
+                ).metadata['actionReturn']
                 self._nav_visible_objects_cache[maximum_distance] = nav_visible_objects
             else:
                 nav_visible_objects = self._nav_visible_objects_cache[maximum_distance]
             visible_objects.update(nav_visible_objects)
 
-        if which_camera in ["manip", "both"]:
+        if which_camera in ['manip', 'both']:
             if maximum_distance not in self._manip_visible_objects_cache:
                 manip_visible_objects = self.controller.step(
-                    "GetVisibleObjects",
+                    'GetVisibleObjects',
                     maxDistance=maximum_distance,
                     thirdPartyCameraIndex=0,
-                ).metadata["actionReturn"]
+                ).metadata['actionReturn']
                 self._manip_visible_objects_cache[maximum_distance] = manip_visible_objects
             else:
                 manip_visible_objects = self._manip_visible_objects_cache[maximum_distance]
@@ -514,19 +515,19 @@ class StretchController:
         return list(visible_objects)
 
     def get_approx_object_mask(
-        self, object_id: str, which_camera: Literal["nav", "manip"], divisions: int
+        self, object_id: str, which_camera: Literal['nav', 'manip'], divisions: int
     ):
         step_dict = dict(
-            action="GetApproxObjectMask",
+            action='GetApproxObjectMask',
             objectId=object_id,
             # thirdPartyCameraIndex=None if which_camera == "nav" else 0,
             divisions=divisions,
         )
-        if which_camera == "manip":
-            step_dict["thirdPartyCameraIndex"] = 0
-        return self.step(**step_dict).metadata["actionReturn"]
+        if which_camera == 'manip':
+            step_dict['thirdPartyCameraIndex'] = 0
+        return self.step(**step_dict).metadata['actionReturn']
 
-    def object_is_visible_in_camera(self, object_id, which_camera="nav", maximum_distance=2):
+    def object_is_visible_in_camera(self, object_id, which_camera='nav', maximum_distance=2):
         # choices: 'nav','manip','both'
         # some duplication with get seen but backwards compatible/utility function
         return object_id in self.get_visible_objects(
@@ -536,54 +537,54 @@ class StretchController:
 
     def get_objects(self) -> List[SPOCObject]:
         with self.include_object_metadata_context():
-            return [SPOCObject(o) for o in self.controller.last_event.metadata["objects"]]
+            return [SPOCObject(o) for o in self.controller.last_event.metadata['objects']]
 
     def get_synset_and_pos_dict(self, uninteresting_synsets: Set[str]):
         all_obj = {}
         for obj in self.get_objects():
-            if obj["synset"] in uninteresting_synsets:
+            if obj['synset'] in uninteresting_synsets:
                 continue
-            all_obj[obj["objectId"]] = {
-                "type": obj["synset"],
-                "pos": obj["position"],
+            all_obj[obj['objectId']] = {
+                'type': obj['synset'],
+                'pos': obj['position'],
             }
         return all_obj
 
     def set_object_filter(self, object_ids: List[str]):
         assert len(object_ids) == 0, "Please don't do this, talk to Luca about why."
         return self.controller.step(
-            action="SetObjectFilter",   
+            action='SetObjectFilter',
             objectIds=object_ids,
             raise_for_failure=True,
         )
 
     def reset_object_filter(self):
-        return self.controller.step(action="ResetObjectFilter")
+        return self.controller.step(action='ResetObjectFilter')
 
     @contextmanager
     def include_object_metadata_context(self):
-        needs_reset = len(self.controller.last_event.metadata["objects"]) == 0
+        needs_reset = len(self.controller.last_event.metadata['objects']) == 0
         try:
             if needs_reset:
-                self.controller.step("ResetObjectFilter")
-                assert self.controller.last_event.metadata["lastActionSuccess"]
+                self.controller.step('ResetObjectFilter')
+                assert self.controller.last_event.metadata['lastActionSuccess']
             yield None
         finally:
             if needs_reset:
-                obj_meta = self.controller.last_event.metadata["objects"]
-                self.controller.step("SetObjectFilter", objectIds=[])
-                self.controller.last_event.metadata["objects"] = obj_meta
-                assert self.controller.last_event.metadata["lastActionSuccess"]
+                obj_meta = self.controller.last_event.metadata['objects']
+                self.controller.step('SetObjectFilter', objectIds=[])
+                self.controller.last_event.metadata['objects'] = obj_meta
+                assert self.controller.last_event.metadata['lastActionSuccess']
 
     def get_objects_that_objects_are_on(
         self, object_ids: Sequence[str]
     ) -> Dict[str, Optional[str]]:
         oid_to_on_oids = self.controller.step(
-            action="CheckWhatObjectsOn",
+            action='CheckWhatObjectsOn',
             belowDistance=0.05,
             objectIds=object_ids,
             raise_for_failure=True,
-        ).metadata["actionReturn"]
+        ).metadata['actionReturn']
 
         on_oids = list(
             set(sum([on_oid for on_oid in oid_to_on_oids.values() if on_oid is not None], []))
@@ -592,9 +593,9 @@ class StretchController:
         on_oid_to_object = {None: None}
         if len(on_oids) != 0:
             on_oid_metadata = self.controller.step(
-                action="GetMinimalObjectMetadata", objectIds=on_oids, raise_for_failure=True
-            ).metadata["actionReturn"]
-            on_oid_to_object.update({md["objectId"]: SPOCObject(md) for md in on_oid_metadata})
+                action='GetMinimalObjectMetadata', objectIds=on_oids, raise_for_failure=True
+            ).metadata['actionReturn']
+            on_oid_to_object.update({md['objectId']: SPOCObject(md) for md in on_oid_metadata})
 
         return {
             oid: [on_oid_to_object[on_oid] for on_oid in on_oids]
@@ -610,31 +611,31 @@ class StretchController:
         :return:
         """
         source_receptacle_ids = self.get_object(object_id, include_receptacle_info=True)[
-            "parentReceptacles"
+            'parentReceptacles'
         ]
 
         if source_receptacle_ids is None:  # TODO why do we ever get into none?
             source_receptacle_ids = []
 
         source_receptacle_synsets = [
-            self.get_object(obj_id, include_receptacle_info=True)["synset"]
+            self.get_object(obj_id, include_receptacle_info=True)['synset']
             for obj_id in source_receptacle_ids
         ]
         return source_receptacle_synsets
 
     def get_locations_on_receptacle(self, receptacle_id):
         result = self.step(
-            action="GetSpawnCoordinatesAboveReceptacle", objectId=receptacle_id, anywhere=True
+            action='GetSpawnCoordinatesAboveReceptacle', objectId=receptacle_id, anywhere=True
         )
-        return result.metadata["actionReturn"]
+        return result.metadata['actionReturn']
 
     def get_current_agent_position(self):
-        return self.controller.last_event.metadata["agent"]["position"]
+        return self.controller.last_event.metadata['agent']['position']
 
     def get_current_agent_full_pose(self):
         return {
-            **self.controller.last_event.metadata["agent"],
-            "arm": self.controller.last_event.metadata["arm"],
+            **self.controller.last_event.metadata['agent'],
+            'arm': self.controller.last_event.metadata['arm'],
         }
 
     def query_env(self, **kwargs):
@@ -643,8 +644,8 @@ class StretchController:
         :return: Metadata from the environment
         """
 
-        if "action" in kwargs:
-            output = self.controller.step(**kwargs).metadata["actionReturn"]
+        if 'action' in kwargs:
+            output = self.controller.step(**kwargs).metadata['actionReturn']
         else:
             raise NotImplementedError
         return output
@@ -663,12 +664,12 @@ class StretchController:
                 spocobj
                 for spocobj in all_objs
                 if any(
-                    is_hypernym_of(synset=spocobj["synset"], possible_hypernym=other)
+                    is_hypernym_of(synset=spocobj['synset'], possible_hypernym=other)
                     for other in target_object_synsets
                 )
             ]
         else:
-            return [spocobj for spocobj in all_objs if spocobj["synset"] in target_object_synsets]
+            return [spocobj for spocobj in all_objs if spocobj['synset'] in target_object_synsets]
 
     def get_all_objects_of_synset(
         self, synset: str, include_hyponyms: bool, all_objs: Optional[List[SPOCObject]] = None
@@ -684,7 +685,7 @@ class StretchController:
         all_objs: Optional[List[SPOCObject]] = None,
     ) -> Set[str]:
         return {
-            o["synset"]
+            o['synset']
             for o in self.get_objects_of_synset_list(
                 target_object_synsets=target_object_synsets,
                 include_hyponyms=include_hyponyms,
@@ -701,27 +702,27 @@ class StretchController:
         :return:
         """
         if include_receptacle_info or any(
-            object_id == o["objectId"] for o in self.controller.last_event.metadata["objects"]
+            object_id == o['objectId'] for o in self.controller.last_event.metadata['objects']
         ):
             with self.include_object_metadata_context():
                 return SPOCObject(self.controller.last_event.get_object(object_id))
 
         meta = self.controller.step(
-            action="GetObjectMetadata", objectIds=[object_id], raise_for_failure=True
-        ).metadata["actionReturn"][0]
+            action='GetObjectMetadata', objectIds=[object_id], raise_for_failure=True
+        ).metadata['actionReturn'][0]
 
         del meta[
-            "parentReceptacles"
+            'parentReceptacles'
         ]  # This will always be None when using GetObjectMetadata so remove it so there is no ambiguity
         return SPOCObject(meta)
 
     def get_obj_pos_from_obj_id(self, object_id):
-        return self.get_object(object_id)["axisAlignedBoundingBox"]["center"]
+        return self.get_object(object_id)['axisAlignedBoundingBox']['center']
 
     def get_object_position(self, object_id):
         obj = self.get_object(object_id)
         try:
-            return obj["position"]
+            return obj['position']
         except:
             print(obj)
             print(object_id)
@@ -731,7 +732,7 @@ class StretchController:
         current_agent_pose = self.get_current_agent_full_pose()
         if use_arm_orientation:
             current_agent_pose = copy.deepcopy(current_agent_pose)
-            current_agent_pose["rotation"]["y"] += 90
+            current_agent_pose['rotation']['y'] += 90
         object_location = self.get_object_position(object_id)
         vector = rotation_from(current_agent_pose, object_location)
         return vector
@@ -740,8 +741,8 @@ class StretchController:
         current_agent_pose = self.get_current_agent_full_pose()
         if use_arm_orientation:
             current_agent_pose = copy.deepcopy(current_agent_pose)
-            current_agent_pose["rotation"]["y"] += 90
-        wall_location = get_wall_center_floor_level(wall_id, y=current_agent_pose["position"]["y"])
+            current_agent_pose['rotation']['y'] += 90
+        wall_location = get_wall_center_floor_level(wall_id, y=current_agent_pose['position']['y'])
         return rotation_from(current_agent_pose, wall_location)
 
     def get_reachable_positions(self, grid_size: Optional[float] = None):
@@ -750,12 +751,12 @@ class StretchController:
             # positions that are reachable when not moving with 90 degree rotations
             grid_size = AGENT_MOVEMENT_CONSTANT * 0.75
 
-        rp_event = self.controller.step(action="GetReachablePositions", gridSize=grid_size)
+        rp_event = self.controller.step(action='GetReachablePositions', gridSize=grid_size)
         if not rp_event:
             # NOTE: Skip scenes where GetReachablePositions fails
-            warnings.warn(f"GetReachablePositions failed in {self.current_scene_json}")
+            warnings.warn(f'GetReachablePositions failed in {self.current_scene_json}')
             return []
-        reachable_positions = rp_event.metadata["actionReturn"]
+        reachable_positions = rp_event.metadata['actionReturn']
         return reachable_positions
 
     def stop(self):
@@ -785,14 +786,14 @@ class StretchController:
 
         if action == THORActions.move_ahead:
             if self.use_quick_navi_action:
-                action_dict = dict(action="MoveAheadQuick", moveMagnitude=AGENT_MOVEMENT_CONSTANT)
+                action_dict = dict(action='MoveAheadQuick', moveMagnitude=AGENT_MOVEMENT_CONSTANT)
             else:
-                action_dict = dict(action="MoveAgent", ahead=AGENT_MOVEMENT_CONSTANT)
+                action_dict = dict(action='MoveAgent', ahead=AGENT_MOVEMENT_CONSTANT)
         elif action == THORActions.move_back:
             if self.use_quick_navi_action:
-                action_dict = dict(action="MoveBackQuick", moveMagnitude=AGENT_MOVEMENT_CONSTANT)
+                action_dict = dict(action='MoveBackQuick', moveMagnitude=AGENT_MOVEMENT_CONSTANT)
             else:
-                action_dict = dict(action="MoveAgent", ahead=-AGENT_MOVEMENT_CONSTANT)
+                action_dict = dict(action='MoveAgent', ahead=-AGENT_MOVEMENT_CONSTANT)
         elif action in [
             THORActions.rotate_left,
             THORActions.rotate_right,
@@ -811,9 +812,9 @@ class StretchController:
                 raise NotImplementedError
 
             if self.use_quick_navi_action:
-                action_dict = dict(action="RotateRightQuick", degrees=degree)
+                action_dict = dict(action='RotateRightQuick', degrees=degree)
             else:
-                action_dict = dict(action="RotateAgent", degrees=degree)
+                action_dict = dict(action='RotateAgent', degrees=degree)
         elif action in [
             THORActions.move_arm_down,
             THORActions.move_arm_in,
@@ -828,24 +829,24 @@ class StretchController:
             change_value = ARM_MOVE_CONSTANT
             small_change_value = ARM_MOVE_CONSTANT / 5
             if action == THORActions.move_arm_up:
-                base_position["y"] += change_value
+                base_position['y'] += change_value
             elif action == THORActions.move_arm_down:
-                base_position["y"] -= change_value
+                base_position['y'] -= change_value
             elif action == THORActions.move_arm_out:
-                base_position["z"] += change_value
+                base_position['z'] += change_value
             elif action == THORActions.move_arm_in:
-                base_position["z"] -= change_value
+                base_position['z'] -= change_value
             elif action == THORActions.move_arm_up_small:
-                base_position["y"] += small_change_value
+                base_position['y'] += small_change_value
             elif action == THORActions.move_arm_down_small:
-                base_position["y"] -= small_change_value
+                base_position['y'] -= small_change_value
             elif action == THORActions.move_arm_out_small:
-                base_position["z"] += small_change_value
+                base_position['z'] += small_change_value
             elif action == THORActions.move_arm_in_small:
-                base_position["z"] -= small_change_value
+                base_position['z'] -= small_change_value
             action_dict = dict(
-                action="MoveArm",
-                position=dict(x=base_position["x"], y=base_position["y"], z=base_position["z"]),
+                action='MoveArm',
+                position=dict(x=base_position['x'], y=base_position['y'], z=base_position['z']),
             )
         elif action in [
             THORActions.wrist_open,
@@ -859,62 +860,62 @@ class StretchController:
             else:  # action == THORActions.wrist_close:
                 rotation_value = min(WRIST_ROTATION, abs(STRETCH_WRIST_BOUND_1 - curr_wrist))
 
-            action_dict = dict(action="RotateWristRelative", yaw=rotation_value)
+            action_dict = dict(action='RotateWristRelative', yaw=rotation_value)
         elif action == THORActions.pickup:
-            action_dict = dict(action="PickupObject")
+            action_dict = dict(action='PickupObject')
         elif action == THORActions.dropoff:
-            action_dict = dict(action="ReleaseObject")
+            action_dict = dict(action='ReleaseObject')
         else:
-            print("Action not defined")
+            print('Action not defined')
             pdb.set_trace()
-            raise NotImplementedError("Action not defined")
+            raise NotImplementedError('Action not defined')
 
-        if action_dict["action"] in ["RotateWristRelative", "MoveArm"]:
+        if action_dict['action'] in ['RotateWristRelative', 'MoveArm']:
             action_dict = {**action_dict, **ADDITIONAL_ARM_ARGS}
-        elif action_dict["action"] == "MoveAgent":
+        elif action_dict['action'] == 'MoveAgent':
             action_dict = {**action_dict, **ADDITIONAL_NAVIGATION_ARGS}
 
         event = self.step(**action_dict)
 
         if action == THORActions.dropoff:
-            self.step(action="AdvancePhysicsStep", simSeconds=2)
+            self.step(action='AdvancePhysicsStep', simSeconds=2)
 
         agents_full_pose_after_action = StretchState(self.controller)
 
         agent_moved = self.sufficient_agent_state_change(
             agents_full_pose_before_action, agents_full_pose_after_action
         )
-        collision_in_error_message = "collided" in event.metadata["errorMessage"].lower()
+        collision_in_error_message = 'collided' in event.metadata['errorMessage'].lower()
         if action == THORActions.pickup:
             action_success = False
         elif action == THORActions.dropoff:
             action_success = True
         elif any(
-            "arm" in action["action"].lower() or "wrist" in action["action"].lower()
+            'arm' in action['action'].lower() or 'wrist' in action['action'].lower()
             for action in [action_dict]
         ):
             action_success = not collision_in_error_message and agent_moved
         else:
             action_success = not collision_in_error_message
 
-        event.metadata["lastActionSuccess"] = action_success
+        event.metadata['lastActionSuccess'] = action_success
         return event
 
     def get_arm_wrist_position(self):
-        joint = self.controller.last_event.metadata["arm"]["joints"][-1]
-        assert joint["name"] == "stretch_robot_wrist_2_jnt"
-        return [joint["rootRelativePosition"][k] for k in ["x", "y", "z"]]
+        joint = self.controller.last_event.metadata['arm']['joints'][-1]
+        assert joint['name'] == 'stretch_robot_wrist_2_jnt'
+        return [joint['rootRelativePosition'][k] for k in ['x', 'y', 'z']]
 
     def get_arm_wrist_absolute_position(self):
-        joint = self.controller.last_event.metadata["arm"]["joints"][-1]
-        assert joint["name"] == "stretch_robot_wrist_2_jnt"
-        return [joint["position"][k] for k in ["x", "y", "z"]]
+        joint = self.controller.last_event.metadata['arm']['joints'][-1]
+        assert joint['name'] == 'stretch_robot_wrist_2_jnt'
+        return [joint['position'][k] for k in ['x', 'y', 'z']]
 
     def get_arm_wrist_rotation(self):
-        joint = self.controller.last_event.metadata["arm"]["joints"][-1]
-        assert joint["name"] == "stretch_robot_wrist_2_jnt"
+        joint = self.controller.last_event.metadata['arm']['joints'][-1]
+        assert joint['name'] == 'stretch_robot_wrist_2_jnt'
         return math.fmod(
-            joint["rootRelativeRotation"]["w"] * joint["rootRelativeRotation"]["y"], 360
+            joint['rootRelativeRotation']['w'] * joint['rootRelativeRotation']['y'], 360
         )
 
     def get_arm_proprioception(self):
@@ -948,16 +949,16 @@ class StretchController:
 
         for nav_mesh_id in specific_agent_meshes:
             args = dict(
-                action="GetShortestPath",
+                action='GetShortestPath',
                 objectId=object_id,
                 position=initial_position,
                 navMeshId=nav_mesh_id,  # update to incorporate navmesh
             )
             if initial_rotation is not None:
-                args["rotation"] = initial_rotation
+                args['rotation'] = initial_rotation
             event = self.step(**args)
-            if event.metadata["lastActionSuccess"]:
-                corners = event.metadata["actionReturn"]["corners"]
+            if event.metadata['lastActionSuccess']:
+                corners = event.metadata['actionReturn']['corners']
                 if len(corners) == 0:
                     continue
                 self.last_successful_path = corners
@@ -980,10 +981,10 @@ class StretchController:
     def dist_from_arm_sphere_center_to_obj_colliders_closest_to_point(self, object_id):
         arm_sphere_center = self.get_arm_sphere_center()
         points_on_obj = self.controller.step(
-            action="PointOnObjectsCollidersClosestToPoint",
+            action='PointOnObjectsCollidersClosestToPoint',
             objectId=object_id,
             point=arm_sphere_center,
-        ).metadata["actionReturn"]
+        ).metadata['actionReturn']
         if points_on_obj is None or len(points_on_obj) == 0:
             return self.dist_from_arm_sphere_center_to_obj(object_id)
         else:
@@ -1040,16 +1041,16 @@ class StretchController:
 
         for nav_mesh_id in specific_agent_meshes:
             args = dict(
-                action="GetShortestPathToPoint",
+                action='GetShortestPathToPoint',
                 position=initial_position,
                 target=target_position,
                 navMeshId=nav_mesh_id,  # update to incorporate navmesh
             )
             if initial_rotation is not None:
-                args["rotation"] = initial_rotation
+                args['rotation'] = initial_rotation
             event = self.step(**args)
-            if event.metadata["lastActionSuccess"]:
-                corners = event.metadata["actionReturn"]["corners"]
+            if event.metadata['lastActionSuccess']:
+                corners = event.metadata['actionReturn']['corners']
                 if len(corners) == 0:
                     continue
                 self.last_successful_path = corners
@@ -1066,8 +1067,8 @@ class StretchController:
 
     def num_pixels_visible(self, object_id, manipulation_camera=False):
         assert (
-            "renderInstanceSegmentation" in self.initialization_args
-            and self.initialization_args["renderInstanceSegmentation"]
+            'renderInstanceSegmentation' in self.initialization_args
+            and self.initialization_args['renderInstanceSegmentation']
         )
         if manipulation_camera:
             masks = self.manipulation_camera_segmentation
@@ -1101,7 +1102,7 @@ class StretchController:
             for obj_id in object_ids
         ]
 
-        min_dist = float("inf")
+        min_dist = float('inf')
         closest_obj_id = None
         for obj_id, path in all_paths:
             if path is None:
@@ -1117,7 +1118,7 @@ class StretchController:
             (
                 wall_id,
                 self.get_shortest_path_to_point(
-                    get_wall_center_floor_level(wall_id, y=self.get_current_agent_position()["y"]),
+                    get_wall_center_floor_level(wall_id, y=self.get_current_agent_position()['y']),
                     specific_agent_meshes=[self.agent_ids[-1]],
                     attempt_path_improvement=False,
                 ),
@@ -1125,7 +1126,7 @@ class StretchController:
             for wall_id in wall_ids
         ]
 
-        min_dist = float("inf")
+        min_dist = float('inf')
         closest_wall_id = None
         for wall_id, path in all_paths:
             if path is None:
@@ -1177,8 +1178,8 @@ class StretchController:
             room_triangles=room_triangles,
         )
 
-        current_agent_position = self.controller.last_event.metadata["agent"]["position"]
-        y = current_agent_position["y"]
+        current_agent_position = self.controller.last_event.metadata['agent']['position']
+        y = current_agent_position['y']
 
         if specific_agent_meshes is None:
             specific_agent_meshes = self.agent_ids
@@ -1204,7 +1205,7 @@ class StretchController:
             self.room_type_dict[room_id] if room_id is not None else None
         )  # making it more robust to none style cases
         return room_id, room_type_return
-    
+
     def get_agent_room_id_and_type(self):
         agent_position = self.get_current_agent_position()
         room_id = get_room_id_from_location(self.room_poly_map, agent_position)
@@ -1212,7 +1213,7 @@ class StretchController:
             self.room_type_dict[room_id] if room_id is not None else None
         )  # making it more robust to none style cases
         return room_id, room_type_return
-    
+
     def find_closest_room_of_list(self, room_ids, return_id_and_dist: bool = False):
         all_paths = []
         for room_id in room_ids:
@@ -1221,7 +1222,7 @@ class StretchController:
             )
             all_paths.append((room_id, path))
 
-        min_dist = float("inf")
+        min_dist = float('inf')
         closest_room_id = None
         for room_id, path in all_paths:
             if path is None:
@@ -1240,9 +1241,9 @@ class StretchController:
         self,
         rooms,
     ):
-        room_ids = [room["id"] for room in rooms]
+        room_ids = [room['id'] for room in rooms]
 
-        room_ids_json = [room["id"] for room in self.current_scene_json["rooms"]]
+        [room['id'] for room in self.current_scene_json['rooms']]
 
         all_paths = []
         for room_id in room_ids:
@@ -1266,14 +1267,14 @@ class StretchStochasticController(StretchController):
         self.last_rand_action_kwargs = None
 
     def step(self, **kwargs):
-        if "action" in kwargs and kwargs["action"] in ["MoveAhead", "RotateAgent"]:
+        if 'action' in kwargs and kwargs['action'] in ['MoveAhead', 'RotateAgent']:
             rand = np.random.normal(0, 1, 1)[0]
 
             # TODO Add stochastic motion for arm
-            if "action" in kwargs and kwargs["action"] == "MoveAgent":
-                kwargs["ahead"] += 0.01 * rand
-            if "action" in kwargs and kwargs["action"] == "RotateAgent":
-                kwargs["degrees"] += 0.5 * rand
+            if 'action' in kwargs and kwargs['action'] == 'MoveAgent':
+                kwargs['ahead'] += 0.01 * rand
+            if 'action' in kwargs and kwargs['action'] == 'RotateAgent':
+                kwargs['degrees'] += 0.5 * rand
 
             self.last_rand_action_kwargs = kwargs
-        return super(StretchStochasticController, self).step(**kwargs)
+        return super().step(**kwargs)

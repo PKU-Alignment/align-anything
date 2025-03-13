@@ -325,8 +325,8 @@ class InternLMAttention(nn.Module):
 
         if (self.head_dim * self.num_heads) != self.hidden_size:
             raise ValueError(
-                f"hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}"
-                f" and `num_heads`: {self.num_heads})."
+                f'hidden_size must be divisible by num_heads (got `hidden_size`: {self.hidden_size}'
+                f' and `num_heads`: {self.num_heads}).'
             )
         self.q_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=config.bias)
         self.k_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=config.bias)
@@ -404,14 +404,14 @@ class InternLMAttention(nn.Module):
 
         if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
             raise ValueError(
-                f"Attention weights should be of size {(bsz, self.num_heads, q_len, kv_seq_len)}, but is"
-                f" {attn_weights.size()}"
+                f'Attention weights should be of size {(bsz, self.num_heads, q_len, kv_seq_len)}, but is'
+                f' {attn_weights.size()}'
             )
 
         if attention_mask is not None:
             if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
                 raise ValueError(
-                    f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}"
+                    f'Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}'
                 )
             attn_weights = attn_weights + attention_mask
             attn_weights = torch.max(
@@ -426,8 +426,8 @@ class InternLMAttention(nn.Module):
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
-                f"`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is"
-                f" {attn_output.size()}"
+                f'`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is'
+                f' {attn_output.size()}'
             )
 
         attn_output = attn_output.transpose(1, 2)

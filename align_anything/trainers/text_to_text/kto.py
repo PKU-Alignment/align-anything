@@ -30,11 +30,7 @@ from tqdm import tqdm
 from align_anything.datasets.text_to_text.preference import PreferenceBatch
 from align_anything.datasets.text_to_text.supervised import UnmatchedSupervisedDataset
 from align_anything.trainers.text_to_text.dpo import DPOTrainer
-from align_anything.utils.device_utils import (
-    get_current_device,
-    torch_gc,
-    torch_set_device,
-)
+from align_anything.utils.device_utils import get_current_device, torch_gc, torch_set_device
 from align_anything.utils.multi_process import (
     get_all_reduce_mean,
     get_current_device,
@@ -232,7 +228,12 @@ class KTOTrainer(DPOTrainer):
                 info['train/epoch'] = self.global_step / len(self.train_dataloader)
                 self.logger.log(info, step=self.global_step)
 
-                if self.global_step % self.cfgs.logger_cfgs.save_interval == 0:
+                save_interval = (
+                    self.cfgs.train_cfgs.epochs
+                    * len(self.train_dataloader)
+                    // self.cfgs.logger_cfgs.save_total_limit
+                )
+                if self.global_step % save_interval == 0:
                     self.logger.print(f'Saving checkpoint at step {self.global_step} ...')
                     self.save(tag=self.global_step)
                     self.logger.print('Checkpoint saved.')
