@@ -79,6 +79,21 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 * **[2024.10.10]** We contributed to the evaluation of new modalities, particularly the performance assessment of text-video-to-text models.
 
 * **[2024.08.29]** 💡💡💡 We supported learning from language feedback (different from binary feedback). For more details, see [lang-feedback](https://github.com/PKU-Alignment/align-anything/tree/main/projects/lang_feedback).
+<details><summary>More News</summary>
+
+* **[2024.10.10]** We support SFT for `Any -> Any` modality models Emu3.
+* **[2024.09.24]** We support SFT, DPO, RM and PPO for `Text + Video -> Text` modality models.
+* **[2024.09.13]** We support SFT, DPO, RM and PPO for `Text + Audio -> Text` modality models.
+* **[2024.08.17]** We support DPO and PPO for `Text+Image -> Text+Image` modality models.
+* **[2024.08.15]** We support a new function in the evaluation module: the `models_pk` script in [here](./scripts/models_pk.sh), which enables comparing the performance of two models across different benchmarks.
+* **[2024.08.06]** We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
+* **[2024.08.06]** We support `Text+Image -> Text+Image` modality for the SFT trainer and Chameleon models.
+* **[2024.07.23]** We support `Text -> Image`, `Text -> Audio`, and `Text -> Video` modalities for the SFT trainer and DPO trainer.
+* **[2024.07.22]** We support the **Chameleon** model for the SFT trainer and DPO trainer!
+* **[2024.07.17]** We open-source the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
+* **[2024.07.14]** We open-source the align-anything framework.
+
+</details>
 
 <details><summary>More News</summary>
 
@@ -187,8 +202,8 @@ NOTE: The current test environment for Ascend is:
      To get started with the pre-configured environment, you can use the `setup_docker.sh` script located in the `./scripts` directory to pull the Docker image and create a container with all necessary environments set up:
 
        ```
-     cd scripts
-     bash setup_docker.sh
+       cd scripts
+       bash setup_docker.sh
        ```
 
      This will automatically pull the Docker image and create a Docker container where all the dependencies and configurations for running the framework are already set up.
