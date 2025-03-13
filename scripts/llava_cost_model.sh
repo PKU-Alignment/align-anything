@@ -38,7 +38,7 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
     --master_port ${MASTER_PORT} \
-    --module align_anything.trainers.text_image_to_text.cm \
+    --module align_anything.trainers.text_image_to_text.cost_model \
     --model_name_or_path ${MODEL_NAME_OR_PATH} \
     --train_datasets ${TRAIN_DATASETS} \
     --train_template ${TRAIN_TEMPLATE} \

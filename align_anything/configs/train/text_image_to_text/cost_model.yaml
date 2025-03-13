@@ -98,7 +98,7 @@ logger_cfgs:
   # Project name for logging
   log_project: align-anything
   # Run name for logging
-  log_run_name: cm
+  log_run_name: cost_model
   # Output directory name
   output_dir: null
   # The directory to cache the downloaded model
