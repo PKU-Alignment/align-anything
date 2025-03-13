@@ -188,6 +188,10 @@ class GRPOTrainer(RLTrainerBase):
             ds_cfgs=self.ds_eval_cfgs,
         )
         self.reward_model.eval()
+
+        # load the checkpoint if specified
+        if self.cfgs.train_cfgs.load_checkpoint:
+            self.actor_model.load_checkpoint(load_dir=self.cfgs.model_cfgs.actor_model_name_or_path)
         # setup the gradient checkpointing
         if self.cfgs.train_cfgs.actor_gradient_checkpointing and not self.lora_enabled:
             self.actor_model.gradient_checkpointing_enable()
@@ -326,10 +330,9 @@ class GRPOTrainer(RLTrainerBase):
 
     def train(self) -> None:
         """Training main loop"""
-
         self.logger.print('***** Running GRPO training *****')
 
-        total_training_steps = self.cfgs.train_cfgs.total_training_steps
+        total_training_steps = self.total_training_steps
         progress_bar = tqdm(
             total=total_training_steps,
             desc=f'Training 1/{self.cfgs.train_cfgs.epochs} epoch',
@@ -337,13 +340,22 @@ class GRPOTrainer(RLTrainerBase):
             leave=True,
             disable=not is_main_process(),
         )
+        progress_bar.update(self.global_step)
 
         if self.cfgs.data_cfgs.eval_datasets:
-            self.logger.print('\n***** Evaluating at the beginning *****')
             self.eval()
 
-        for epoch in range(int(self.cfgs.train_cfgs.epochs)):
-            for prompt_batch in self.prompt_only_dataloader:
+        remain_epoch = self.cfgs.train_cfgs.epochs - (
+            self.global_step // len(self.prompt_only_dataloader)
+        )
+
+        start_batch_idx = self.global_step % len(self.prompt_only_dataloader)
+
+        for epoch in range(int(remain_epoch)):
+            for batch_idx, prompt_batch in enumerate(self.prompt_only_dataloader):
+                if epoch == 0 and batch_idx < start_batch_idx:
+                    continue
+
                 train_info = self.train_step(prompt_batch)
                 self.global_step += 1
 
@@ -355,7 +367,7 @@ class GRPOTrainer(RLTrainerBase):
 
                 save_interval = (
                     self.cfgs.train_cfgs.epochs
-                    * len(self.train_dataloader)
+                    * len(self.prompt_only_dataloader)
                     // self.cfgs.logger_cfgs.save_total_limit
                 )
                 if self.global_step % save_interval == 0:

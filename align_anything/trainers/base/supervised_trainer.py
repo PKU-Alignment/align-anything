@@ -262,8 +262,11 @@ class SupervisedTrainerBase:
             lr_scheduler=lr_scheduler,
             dist_init_required=True,
         )
+
+        # load the checkpoint if specified
         if self.cfgs.train_cfgs.load_checkpoint:
             self.model.load_checkpoint(load_dir=self.cfgs.model_cfgs.model_name_or_path)
+        # setup the gradient checkpointing
         if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_enabled:
             self.model.gradient_checkpointing_enable()
 

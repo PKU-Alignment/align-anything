@@ -65,6 +65,8 @@ class RLTrainerBase:
             log_run_name=f'{logger_cfgs.log_run_name}-{self.cfgs.data_cfgs.train_datasets}-{time}',
             config=namedtuple_to_dict(self.cfgs),
         )
+        if self.cfgs.train_cfgs.load_checkpoint:
+            self.global_step = int(self.cfgs.model_cfgs.model_name_or_path.split('slice_')[-1])
 
     @abstractmethod
     def init_models(self) -> None:
@@ -347,6 +349,8 @@ class RLTrainerBase:
             if zero_stage >= 2:
                 save_file_name = 'pytorch_model.bin'
                 model.save_16bit_model(output_dir, save_filename=save_file_name)
+                if self.cfgs.train_cfgs.save_checkpoint:
+                    model.save_checkpoint(output_dir)
             else:
                 if is_main_process():
                     model_to_save.save_pretrained(output_dir, is_main_process=True)

@@ -28,9 +28,9 @@ train_cfgs:
   # Seed for random number generator
   seed: 42
   # Batch size per device for training
-  per_device_train_batch_size: 4
+  per_device_train_batch_size: 1
   # Batch size per device for evaluation
-  per_device_eval_batch_size: 4
+  per_device_eval_batch_size: 1
   # Batch size per device for kl calculation
   per_device_kl_batch_size: 64
   # The number of gradient accumulation steps

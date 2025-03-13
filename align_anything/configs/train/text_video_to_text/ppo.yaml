@@ -22,11 +22,11 @@ train_cfgs:
   # Seed for random number generator
   seed: 42
   # Batch size per device for training
-  per_device_prompt_batch_size: 2
+  per_device_prompt_batch_size: 1
   # Batch size per device for training
-  per_device_train_batch_size: 2
+  per_device_train_batch_size: 1
   # Batch size per device for evauation
-  per_device_eval_batch_size: 2
+  per_device_eval_batch_size: 1
   # The number of gradient accumulation steps
   gradient_accumulation_steps: 1
   # Whether to use gradient checkpointing for the actor model
