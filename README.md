@@ -231,6 +231,14 @@ cd scripts
 bash llava_dpo.sh
 ```
 
+
+#### Training on Slurm
+> We fully supports seamless migration to Slurm. If you plan to run training on a Slurm-managed cluster, we invite you to use our example Slurm training script:
+>```bash
+>cd scripts
+>bash slurm_llava_dpo.sh
+>```
+>This script is pre-configured with suitable Slurm parameters. You only need to adjust the settings (such as the `job name`, `partition`, `account`, `path` and `resource allocations`) to match your cluster configuration.
 ### Evaluation
 
 After training, you can evaluate the model by running the `scripts/llava_eval.sh` script.
