@@ -30,11 +30,7 @@ from transformers.integrations.deepspeed import HfDeepSpeedConfig
 from align_anything.datasets.text_to_text.preference import PreferenceBatch, PreferenceDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.base import SupervisedTrainerBase
-from align_anything.utils.device_utils import (
-    get_current_device,
-    torch_gc,
-    torch_set_device,
-)
+from align_anything.utils.device_utils import get_current_device, torch_gc, torch_set_device
 from align_anything.utils.multi_process import (
     get_all_reduce_mean,
     get_current_device,
@@ -274,14 +270,27 @@ class RMTrainer(SupervisedTrainerBase):
             leave=True,
             disable=not is_main_process(),
         )
+        progress_bar.update(self.global_step)
 
         if self.cfgs.data_cfgs.eval_datasets:
             self.logger.log(self.eval(), step=0)
 
-        for epoch in range(int(self.cfgs.train_cfgs.epochs)):
-            self.model.train()
+        remain_epoch = self.cfgs.train_cfgs.epochs - (
+            self.global_step // len(self.train_dataloader)
+        )
 
-            for batch in self.train_dataloader:
+        start_batch_idx = self.global_step % len(self.train_dataloader)
+
+        for epoch in range(int(remain_epoch)):
+            self.model.train()
+            progress_bar.set_description(
+                f'Resuming from checkpoint {epoch + 1}/{self.cfgs.train_cfgs.epochs} epoch '
+            )
+
+            for batch_idx, batch in enumerate(self.train_dataloader):
+                if epoch == 0 and batch_idx < start_batch_idx:
+                    continue
+
                 info = self.train_step(batch)
                 torch_gc()
 
@@ -295,7 +304,12 @@ class RMTrainer(SupervisedTrainerBase):
                 info['train/epoch'] = self.global_step / len(self.train_dataloader)
                 self.logger.log(info, step=self.global_step)
 
-                if self.global_step % self.cfgs.logger_cfgs.save_interval == 0:
+                save_interval = (
+                    self.cfgs.train_cfgs.epochs
+                    * len(self.train_dataloader)
+                    // self.cfgs.logger_cfgs.save_total_limit
+                )
+                if self.global_step % save_interval == 0:
                     self.logger.print(f'Saving checkpoint at step {self.global_step} ...')
                     self.save(tag=self.global_step)
                     self.logger.print('Checkpoint saved.')

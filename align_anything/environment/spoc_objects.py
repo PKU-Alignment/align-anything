@@ -15,19 +15,19 @@
 # limitations under the License.
 # ==============================================================================
 import json
-from typing import Dict, Any
+from typing import Any, Dict
 
 from torch.distributions.utils import lazy_property
 
 from align_anything.utils.utils.constants.object_constants import (
-    AI2THOR_OBJECT_TYPE_TO_WORDNET_SYNSET,
     AI2THOR_OBJECT_TYPE_TO_MOST_SPECIFIC_WORDNET_LEMMA,
+    AI2THOR_OBJECT_TYPE_TO_WORDNET_SYNSET,
 )
 from align_anything.utils.utils.objaverse_annotation import get_objaverse_annotations
 
 
 class SPOCObject(dict):
-    _ALWAYS_KEYS = {"isObjaverse", "synset", "lemma"}
+    _ALWAYS_KEYS = {'isObjaverse', 'synset', 'lemma'}
 
     def __init__(self, thor_obj: Dict[str, Any]):
         super().__init__()
@@ -36,17 +36,17 @@ class SPOCObject(dict):
 
     @lazy_property
     def is_objaverse(self):
-        return self._thor_obj["assetId"] in get_objaverse_annotations()
+        return self._thor_obj['assetId'] in get_objaverse_annotations()
 
     @lazy_property
     def annotation(self):
         if self.is_objaverse:
-            return get_objaverse_annotations()[self._thor_obj["assetId"]]
+            return get_objaverse_annotations()[self._thor_obj['assetId']]
         return {}
 
     def __getitem__(self, item):
-        if self.is_objaverse and item == "objectType" and self._thor_obj[item] == "Undefined":
-            return self._thor_obj["objectId"].split("|")[0]
+        if self.is_objaverse and item == 'objectType' and self._thor_obj[item] == 'Undefined':
+            return self._thor_obj['objectId'].split('|')[0]
 
         if item in self._thor_obj:
             return self._thor_obj[item]
@@ -54,33 +54,33 @@ class SPOCObject(dict):
         if item in self._cache:
             return self._cache[item]
 
-        if item == "isObjaverse":
+        if item == 'isObjaverse':
             return self.is_objaverse
 
-        if item == "synset":
+        if item == 'synset':
             if self.is_objaverse:
-                self._cache[item] = self.annotation["synset"]
+                self._cache[item] = self.annotation['synset']
             else:
                 self._cache[item] = AI2THOR_OBJECT_TYPE_TO_WORDNET_SYNSET[
-                    self._thor_obj["objectType"]
+                    self._thor_obj['objectType']
                 ]
 
-        elif item == "lemma":
+        elif item == 'lemma':
             if self.is_objaverse:
-                self._cache[item] = self.annotation["most_specific_lemma"]
+                self._cache[item] = self.annotation['most_specific_lemma']
             else:
                 self._cache[item] = AI2THOR_OBJECT_TYPE_TO_MOST_SPECIFIC_WORDNET_LEMMA[
-                    self._thor_obj["objectType"]
+                    self._thor_obj['objectType']
                 ]
 
         elif item in self.annotation:
             self._cache[item] = self.annotation[item]
 
-        elif not self.is_objaverse and item == "description":
+        elif not self.is_objaverse and item == 'description':
             self._cache[item] = f"undescribed THOR item, type {self._thor_obj['objectType']}"
 
         else:
-            raise ValueError(f"Unknown key {item}")
+            raise ValueError(f'Unknown key {item}')
 
         return self._cache[item]
 
@@ -104,8 +104,7 @@ class SPOCObject(dict):
         return map(self.__getitem__, self.keys())
 
     def __iter__(self):
-        for key in self.keys():
-            yield key
+        yield from self.keys()
 
     def items(self):
         for key in self.keys():
@@ -128,16 +127,16 @@ class SPOCObject(dict):
 
     def __str__(self):
         return json.dumps(
-            {**self._thor_obj, **self._cache, "isObjaverse": self.is_objaverse}, indent=2
+            {**self._thor_obj, **self._cache, 'isObjaverse': self.is_objaverse}, indent=2
         )
 
     # noinspection PyStatementEffect
     def __repr__(self):
         return (
-            f"SPOCObject(dict("
+            f'SPOCObject(dict('
             f"objectId='{self['objectId']}',"
             f" objectType='{self['objectType']}',"
             f" assetId='{self['assetId']}',"
             f" isObjaverse={self['isObjaverse']},"
-            f"))"
+            f'))'
         )

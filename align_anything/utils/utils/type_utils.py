@@ -20,14 +20,14 @@ import sys
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
-try:
-    from typing import Literal, TypedDict
-except ImportError:
-    from typing_extensions import Literal, TypedDict
 
-from attrs import define
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 
 from allenact.base_abstractions.sensor import Sensor
+from attrs import define
 
 
 class Vector3(TypedDict):
@@ -71,25 +71,25 @@ class AbstractTaskArgs(TypedDict):
 
 
 class THORActions:
-    move_ahead = "m"
-    move_back = "b"
-    rotate_right = "r"
-    rotate_left = "l"
-    rotate_right_small = "rs"
-    rotate_left_small = "ls"
-    done = "end"
-    move_arm_up = "yp"
-    move_arm_up_small = "yps"
-    move_arm_down = "ym"
-    move_arm_down_small = "yms"
-    move_arm_out = "zp"
-    move_arm_out_small = "zps"
-    move_arm_in = "zm"
-    move_arm_in_small = "zms"
-    wrist_open = "wp"
-    wrist_close = "wm"
-    pickup = "p"
-    dropoff = "d"
+    move_ahead = 'm'
+    move_back = 'b'
+    rotate_right = 'r'
+    rotate_left = 'l'
+    rotate_right_small = 'rs'
+    rotate_left_small = 'ls'
+    done = 'end'
+    move_arm_up = 'yp'
+    move_arm_up_small = 'yps'
+    move_arm_down = 'ym'
+    move_arm_down_small = 'yms'
+    move_arm_out = 'zp'
+    move_arm_out_small = 'zps'
+    move_arm_in = 'zm'
+    move_arm_in_small = 'zms'
+    wrist_open = 'wp'
+    wrist_close = 'wm'
+    pickup = 'p'
+    dropoff = 'd'
     ARM_ACTIONS = [
         move_arm_in,
         move_arm_out,
@@ -110,7 +110,7 @@ class THORActions:
         rotate_right_small,
         rotate_left_small,
     ]
-    sub_done = "sub_done"
+    sub_done = 'sub_done'
 
     @classmethod
     def get_action_name(cls, short_string):
@@ -125,7 +125,7 @@ REGISTERED_TASK_PARAMS: Dict[str, List[str]] = {}
 if sys.version_info >= (3, 9):
 
     def get_required_keys(cls):
-        return getattr(cls, "__required_keys__", [])
+        return getattr(cls, '__required_keys__', [])
 
 else:
 
@@ -261,7 +261,6 @@ class GoToPoint(TypedDict):
     location_type: str
     goal_in_camera_2d_first_step: Tuple[float, float]
     goal_in_world_3d: Dict[str, float]
-    pass
 
 
 @register_task_specific_params
@@ -271,18 +270,17 @@ class GoNearPoint(TypedDict):
     possible_points_on_target_in_first_frame: List[Tuple[float, float]]
     object_type: str
     object_id: str
-    pass
 
 
 def get_task_relevant_synsets(task_spec: Dict[str, Any]) -> List[str]:
     """Given an input task spec, returns a list of all synsets relevant to that task's success."""
     synsets = set()
     for k, v in task_spec.items():
-        if "synset" in k:
-            if k.endswith("synset_to_object_ids"):
+        if 'synset' in k:
+            if k.endswith('synset_to_object_ids'):
                 assert isinstance(v, Dict)
                 synsets.update(v.keys())
-            elif k in ["synsets", "reference_synsets"]:
+            elif k in ['synsets', 'reference_synsets']:
                 assert isinstance(v, Sequence)
                 synsets.update(v)
             else:

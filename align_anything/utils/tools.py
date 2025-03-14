@@ -45,10 +45,7 @@ from torchvision.transforms import InterpolationMode
 from transformers import PreTrainedTokenizerBase, ProcessorMixin
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
 
-from align_anything.utils.device_utils import (
-    get_current_device,
-    manual_seed_all,
-)
+from align_anything.utils.device_utils import get_current_device, manual_seed_all
 from align_anything.utils.multi_process import print_on_main_process
 
 

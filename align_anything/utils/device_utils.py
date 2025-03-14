@@ -102,8 +102,8 @@ def torch_gc() -> None:
 
     This function performs two key steps:
     1. Invokes Python's garbage collector (`gc.collect()`) to reclaim memory from unreachable objects.
-    2. Clears cached memory on the respective hardware device by calling the appropriate 
-       PyTorch API (`torch.xpu.empty_cache()`, `torch.npu.empty_cache()`, `torch.mps.empty_cache()`, 
+    2. Clears cached memory on the respective hardware device by calling the appropriate
+       PyTorch API (`torch.xpu.empty_cache()`, `torch.npu.empty_cache()`, `torch.mps.empty_cache()`,
     """
     gc.collect()
     if is_torch_xpu_available():

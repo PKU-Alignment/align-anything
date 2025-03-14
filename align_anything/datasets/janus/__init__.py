@@ -15,5 +15,5 @@
 """Dataset classes for any to text training."""
 
 
-from align_anything.datasets.janus.supervised import *
 from align_anything.datasets.janus.preference import *
+from align_anything.datasets.janus.supervised import *

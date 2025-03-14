@@ -22,9 +22,7 @@ import gradio as gr
 import torch
 
 from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.utils.device_utils import (
-    get_current_device,
-)
+from align_anything.utils.device_utils import get_current_device
 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))

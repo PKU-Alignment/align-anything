@@ -10,7 +10,7 @@
 |**AlignVLA**| <img src="../../../assets/text_video_to_action/safevideo1.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="../../../assets/text_video_to_action/safevideo2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="../../../assets/text_video_to_action/safevideo3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="../../../assets/text_video_to_action/safevideo4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
 > Alignment fine-tuning can significantly enhance the security performance of the VLA model.
 
-## Setting up the Python environment 
+## Setting up the Python environment
 
 Currently only supports Python 3.10
 ```bash
@@ -21,7 +21,7 @@ pip install --extra-index-url https://miropsota.github.io/torch_packages_builder
 ```
 
 
-## Data 
+## Data
 
 ### Downloading the training data
 

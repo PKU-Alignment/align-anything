@@ -36,5 +36,5 @@ deepspeed \
      --train_datasets ${TRAIN_DATASETS} \
      --train_data_files ${TRAIN_DATA_FILES} \
      --output_dir ${OUTPUT_DIR} \
-     --save_interval 1000 \
+     --save_total_limit 3 \
      --epochs 2

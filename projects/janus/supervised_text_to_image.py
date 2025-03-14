@@ -24,10 +24,7 @@ from janus.models import MultiModalityCausalLM, VLChatProcessor, VLMImageProcess
 from PIL import Image
 from tqdm import tqdm
 
-from align_anything.utils.device_utils import (
-    set_device,
-    torch_gc,
-)
+from align_anything.utils.device_utils import set_device, torch_gc
 
 
 ignore_index = -100
@@ -41,7 +38,7 @@ def load_image(image_path: str):
             image = Image.open(image_path).convert('RGB')
         return image
     except Exception as e:
-        print(f"Error occured when dealing with {image_path}: {e}")
+        print(f'Error occured when dealing with {image_path}: {e}')
         raise Exception
 
 
@@ -91,16 +88,16 @@ def tokenize_sample(vl_chat_processor, vl_gpt, vl_image_processor, formatted_sam
 
 def process_data(gpu, chunk, model_path, output_paths, cache_path):
     device = set_device(gpu)
-    print(f"Initializing Model on {device}")
+    print(f'Initializing Model on {device}')
     vl_chat_processor = VLChatProcessor.from_pretrained(model_path, device=device)
     vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
     vl_gpt = vl_gpt.to(torch.bfloat16).eval()
     vl_image_processor = VLMImageProcessor.from_pretrained(model_path, device=device)
 
-    print(f"Finished Initializing Model on {device}")
+    print(f'Finished Initializing Model on {device}')
 
     local_output_paths = []
-    for piece in tqdm(chunk, desc=f"Processing on GPU {gpu}"):
+    for piece in tqdm(chunk, desc=f'Processing on GPU {gpu}'):
         formatted_sample = format_sample_janus(piece, vl_chat_processor)
         sample = tokenize_sample(vl_chat_processor, vl_gpt, vl_image_processor, formatted_sample)
         file_name = str(uuid.uuid4()) + '.pt'
@@ -111,7 +108,7 @@ def process_data(gpu, chunk, model_path, output_paths, cache_path):
         torch_gc()
 
     output_paths.extend(local_output_paths)
-    print(f"Processed {len(local_output_paths)} samples on GPU {gpu}")
+    print(f'Processed {len(local_output_paths)} samples on GPU {gpu}')
 
 
 def main():
@@ -143,7 +140,7 @@ def main():
     output_paths = mp.Manager().list()  # For collecting results from multiple processes
 
     target = input_data  # add to_list() if you acquire the dataset from load_dataset
-    print(f"Full Length: {len(target)}")
+    print(f'Full Length: {len(target)}')
     chunks = [target[i::num_processes] for i in range(num_processes)]
 
     processes = []
@@ -166,7 +163,7 @@ def main():
         all_data.append(data)
 
     torch.set_printoptions(threshold=torch.inf)
-    print(f"Effective Length: {len(all_data)}")
+    print(f'Effective Length: {len(all_data)}')
 
     torch.save(all_data, output_path)
 

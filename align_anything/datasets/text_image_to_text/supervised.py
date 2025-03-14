@@ -81,6 +81,7 @@ class SupervisedDataset(Dataset):
             data_files=data_files if data_files and data_files != 'None' else None,
             *optional_args,
             trust_remote_code=True,
+            num_proc=16,
         )
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))

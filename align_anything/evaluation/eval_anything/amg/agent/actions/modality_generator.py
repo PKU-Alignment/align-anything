@@ -21,9 +21,7 @@ from diffusers import (
 # from tango import Tango
 from diffusers.utils import export_to_video
 
-from align_anything.utils.device_utils import (
-    get_current_device,
-)
+from align_anything.utils.device_utils import get_current_device
 
 
 class ImageFLUXPipeline(BaseDiffusionModelPipeline):

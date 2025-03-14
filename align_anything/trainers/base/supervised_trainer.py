@@ -73,6 +73,8 @@ class SupervisedTrainerBase:
             log_run_name=f'{logger_cfgs.log_run_name}-{self.cfgs.data_cfgs.train_datasets}-{time}',
             config=namedtuple_to_dict(self.cfgs),
         )
+        if self.cfgs.train_cfgs.load_checkpoint:
+            self.global_step = int(self.cfgs.model_cfgs.model_name_or_path.split('slice_')[-1])
 
     def get_dataloaders(self, train_data_dtype, eval_data_dtype) -> None:
         """Get the dataloaders based on data_dtype."""
@@ -260,6 +262,11 @@ class SupervisedTrainerBase:
             lr_scheduler=lr_scheduler,
             dist_init_required=True,
         )
+
+        # load the checkpoint if specified
+        if self.cfgs.train_cfgs.load_checkpoint:
+            self.model.load_checkpoint(load_dir=self.cfgs.model_cfgs.model_name_or_path)
+        # setup the gradient checkpointing
         if self.cfgs.train_cfgs.gradient_checkpointing and not self.lora_enabled:
             self.model.gradient_checkpointing_enable()
 
@@ -324,10 +331,34 @@ class SupervisedTrainerBase:
             self.logger.print('\n***** Evaluating at the beginning *****')
             self.logger.log(self.eval(), step=0)
 
+        batch_idx = 0
+        flag = False
+        lr = self.model.optimizer.param_groups[0]['lr']
+
         for epoch in range(int(self.cfgs.train_cfgs.epochs)):
+
+            # update the progress bar if we are resuming from a checkpoint
+            currect_epoch = self.global_step // len(self.train_dataloader)
+            if currect_epoch > epoch and not flag:
+                batch_idx += len(self.train_dataloader)
+                progress_bar.update(len(self.train_dataloader))
+                continue
+
             self.model.train()
 
             for batch in self.train_dataloader:
+
+                if self.global_step > batch_idx and not flag:
+                    progress_bar.update(1)
+                    batch_idx += 1
+                    progress_bar.set_description(
+                        f'Training {epoch + 1}/{self.cfgs.train_cfgs.epochs} epoch ' f'(loss 0.000',
+                        f'lr {lr:.4f}',
+                    )
+                    continue
+                else:
+                    flag = True
+
                 info = self.train_step(batch)
                 torch.cuda.empty_cache()
 
@@ -340,8 +371,12 @@ class SupervisedTrainerBase:
 
                 info['train/epoch'] = self.global_step / len(self.train_dataloader)
                 self.logger.log(info, step=self.global_step)
-
-                if self.global_step % self.cfgs.logger_cfgs.save_interval == 0:
+                save_interval = (
+                    self.cfgs.train_cfgs.epochs
+                    * len(self.train_dataloader)
+                    // self.cfgs.logger_cfgs.save_total_limit
+                )
+                if self.global_step % save_interval == 0:
                     self.logger.print(f'Saving checkpoint at step {self.global_step} ...')
                     self.save(tag=self.global_step)
                     self.logger.print('Checkpoint saved.')
@@ -397,6 +432,8 @@ class SupervisedTrainerBase:
             if zero_stage >= 2:
                 save_file_name = 'pytorch_model.bin'
                 model.save_16bit_model(output_dir, save_filename=save_file_name)
+                if self.cfgs.train_cfgs.save_checkpoint:
+                    model.save_checkpoint(output_dir)
             else:
                 if is_main_process():
                     model_to_save.save_pretrained(output_dir, is_main_process=True)

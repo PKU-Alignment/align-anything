@@ -21,7 +21,8 @@ import ai2thor.fifo_server
 from align_anything.utils.utils.constants.objaverse_data_dirs import OBJAVERSE_ASSETS_DIR
 from align_anything.utils.utils.type_utils import THORActions
 
-STRETCH_COMMIT_ID = "966bd7758586e05d18f6181f459c0e90ba318bec"
+
+STRETCH_COMMIT_ID = '966bd7758586e05d18f6181f459c0e90ba318bec'
 
 try:
     from ai2thor.hooks.procedural_asset_hook import (
@@ -31,9 +32,9 @@ try:
     )
 except ImportError:
     raise ImportError(
-        "Cannot import `ProceduralAssetHookRunner`. Please install the appropriate version of ai2thor:\n"
-        f"```\npip install --extra-index-url https://ai2thor-pypi.allenai.org"
-        f" ai2thor==0+{STRETCH_COMMIT_ID}\n```"
+        'Cannot import `ProceduralAssetHookRunner`. Please install the appropriate version of ai2thor:\n'
+        f'```\npip install --extra-index-url https://ai2thor-pypi.allenai.org'
+        f' ai2thor==0+{STRETCH_COMMIT_ID}\n```'
     )
 
 AGENT_ROTATION_DEG = 30
@@ -64,18 +65,18 @@ class ProceduralAssetHookRunnerResetOnNewHouse(ProceduralAssetHookRunner):
     def Initialize(self, action, controller):
         if self.asset_limit > 0:
             return controller.step(
-                action="DeleteLRUFromProceduralCache", assetLimit=self.asset_limit
+                action='DeleteLRUFromProceduralCache', assetLimit=self.asset_limit
             )
 
     def CreateHouse(self, action, controller):
-        house = action["house"]
-        asset_ids = get_all_asset_ids_recursively(house["objects"], [])
+        house = action['house']
+        asset_ids = get_all_asset_ids_recursively(house['objects'], [])
         asset_ids_set = set(asset_ids)
         if not asset_ids_set.issubset(self.last_asset_id_set):
-            controller.step(action="DeleteLRUFromProceduralCache", assetLimit=0)
+            controller.step(action='DeleteLRUFromProceduralCache', assetLimit=0)
             self.last_asset_id_set = set(asset_ids)
 
-        if STRETCH_COMMIT_ID == "5e43486351ac6339c399c199e601c9dd18daecc3":
+        if STRETCH_COMMIT_ID == '5e43486351ac6339c399c199e601c9dd18daecc3':
             return create_assets_if_not_exist(
                 controller=controller,
                 asset_ids=asset_ids,
@@ -113,7 +114,7 @@ STRETCH_ENV_ARGS = dict(
     width=INTEL_CAMERA_WIDTH,
     height=INTEL_CAMERA_HEIGHT,
     visibilityDistance=MAXIMUM_DISTANCE_ARM_FROM_AGENT_CENTER,
-    visibilityScheme="Distance",
+    visibilityScheme='Distance',
     fieldOfView=INTEL_VERTICAL_FOV,
     server_class=ai2thor.fifo_server.FifoServer,
     useMassThreshold=False,
@@ -121,7 +122,7 @@ STRETCH_ENV_ARGS = dict(
     autoSimulation=False,
     autoSyncTransforms=True,
     renderInstanceSegmentation=True,
-    agentMode="stretch",
+    agentMode='stretch',
     renderDepthImage=SAVE_DEPTH,
     cameraNearPlane=0.01,  # VERY VERY IMPORTANT
     branch=None,  # IMPORTANT do not use branch
@@ -135,28 +136,28 @@ STRETCH_ENV_ARGS = dict(
 )
 
 assert (
-    STRETCH_ENV_ARGS.get("branch") is None and STRETCH_ENV_ARGS["commit_id"] is not None
-), "Should always specify the commit id and not the branch."
+    STRETCH_ENV_ARGS.get('branch') is None and STRETCH_ENV_ARGS['commit_id'] is not None
+), 'Should always specify the commit id and not the branch.'
 
 
 ADDITIONAL_ARM_ARGS = {
-    "returnToStart": True,
-    "speed": 1,
+    'returnToStart': True,
+    'speed': 1,
 }
 
 ADDITIONAL_NAVIGATION_ARGS = {
     **ADDITIONAL_ARM_ARGS,
-    "returnToStart": False,
+    'returnToStart': False,
 }
 
 STRETCH_WRIST_BOUND_1 = 75
 STRETCH_WRIST_BOUND_2 = -260
 
-if os.getenv("ACTION_DICT") is not None:
+if os.getenv('ACTION_DICT') is not None:
     import json
 
-    assert os.path.exists(os.getenv("ACTION_DICT"))
-    ALL_STRETCH_ACTIONS = list(json.load(open(os.getenv("ACTION_DICT"), "r")).keys())
+    assert os.path.exists(os.getenv('ACTION_DICT'))
+    ALL_STRETCH_ACTIONS = list(json.load(open(os.getenv('ACTION_DICT'))).keys())
 else:
     ALL_STRETCH_ACTIONS = [
         THORActions.move_ahead,
@@ -186,89 +187,89 @@ else:
 # actions = [move ahead, move back, left , right, done,...]
 
 stretch_long_names = {
-    THORActions.move_ahead: "move_ahead",
-    THORActions.rotate_right: "rotate_right",
-    THORActions.rotate_left: "rotate_left",
-    THORActions.move_back: "move_back",
-    THORActions.done: "done",
-    THORActions.sub_done: "sub_done",
-    THORActions.rotate_left_small: "rotate_left_small",
-    THORActions.rotate_right_small: "rotate_right_small",
-    THORActions.pickup: "pickup",
-    THORActions.dropoff: "dropoff",
-    THORActions.move_arm_in: "move_arm_in",
-    THORActions.move_arm_out: "move_arm_out",
-    THORActions.move_arm_up: "move_arm_up",
-    THORActions.move_arm_down: "move_arm_down",
-    THORActions.wrist_open: "wrist_open",
-    THORActions.wrist_close: "wrist_close",
-    THORActions.move_arm_down_small: "move_arm_down_small",
-    THORActions.move_arm_in_small: "move_arm_in_small",
-    THORActions.move_arm_out_small: "move_arm_out_small",
-    THORActions.move_arm_up_small: "move_arm_up_small",
+    THORActions.move_ahead: 'move_ahead',
+    THORActions.rotate_right: 'rotate_right',
+    THORActions.rotate_left: 'rotate_left',
+    THORActions.move_back: 'move_back',
+    THORActions.done: 'done',
+    THORActions.sub_done: 'sub_done',
+    THORActions.rotate_left_small: 'rotate_left_small',
+    THORActions.rotate_right_small: 'rotate_right_small',
+    THORActions.pickup: 'pickup',
+    THORActions.dropoff: 'dropoff',
+    THORActions.move_arm_in: 'move_arm_in',
+    THORActions.move_arm_out: 'move_arm_out',
+    THORActions.move_arm_up: 'move_arm_up',
+    THORActions.move_arm_down: 'move_arm_down',
+    THORActions.wrist_open: 'wrist_open',
+    THORActions.wrist_close: 'wrist_close',
+    THORActions.move_arm_down_small: 'move_arm_down_small',
+    THORActions.move_arm_in_small: 'move_arm_in_small',
+    THORActions.move_arm_out_small: 'move_arm_out_small',
+    THORActions.move_arm_up_small: 'move_arm_up_small',
 }
 
-if os.getenv("LONG_ACTION_NAME") is not None and bool(int(os.getenv("LONG_ACTION_NAME"))):
+if os.getenv('LONG_ACTION_NAME') is not None and bool(int(os.getenv('LONG_ACTION_NAME'))):
     ALL_STRETCH_ACTIONS = [stretch_long_names[short_name] for short_name in ALL_STRETCH_ACTIONS]
 
 robot_action_mapping = {
     THORActions.move_ahead: {
-        "action": "MoveAgent",
-        "args": {"move_scalar": AGENT_MOVEMENT_CONSTANT},
+        'action': 'MoveAgent',
+        'args': {'move_scalar': AGENT_MOVEMENT_CONSTANT},
     },
     THORActions.move_back: {
-        "action": "MoveAgent",
-        "args": {"move_scalar": -AGENT_MOVEMENT_CONSTANT},
+        'action': 'MoveAgent',
+        'args': {'move_scalar': -AGENT_MOVEMENT_CONSTANT},
     },
     THORActions.rotate_right: {
-        "action": "RotateAgent",
-        "args": {"move_scalar": AGENT_ROTATION_DEG},
+        'action': 'RotateAgent',
+        'args': {'move_scalar': AGENT_ROTATION_DEG},
     },
     THORActions.rotate_left: {
-        "action": "RotateAgent",
-        "args": {"move_scalar": -AGENT_ROTATION_DEG},
+        'action': 'RotateAgent',
+        'args': {'move_scalar': -AGENT_ROTATION_DEG},
     },
     THORActions.rotate_right_small: {
-        "action": "RotateAgent",
-        "args": {"move_scalar": AGENT_ROTATION_DEG / 5},
+        'action': 'RotateAgent',
+        'args': {'move_scalar': AGENT_ROTATION_DEG / 5},
     },
     THORActions.rotate_left_small: {
-        "action": "RotateAgent",
-        "args": {"move_scalar": -AGENT_ROTATION_DEG / 5},
+        'action': 'RotateAgent',
+        'args': {'move_scalar': -AGENT_ROTATION_DEG / 5},
     },
-    THORActions.done: {"action": "Pass", "args": {}},
-    THORActions.sub_done: {"action": "Pass", "args": {}},
-    THORActions.move_arm_up: {"action": "MoveArmBase", "args": {"move_scalar": ARM_MOVE_CONSTANT}},
+    THORActions.done: {'action': 'Pass', 'args': {}},
+    THORActions.sub_done: {'action': 'Pass', 'args': {}},
+    THORActions.move_arm_up: {'action': 'MoveArmBase', 'args': {'move_scalar': ARM_MOVE_CONSTANT}},
     THORActions.move_arm_up_small: {
-        "action": "MoveArmBase",
-        "args": {"move_scalar": ARM_MOVE_CONSTANT / 5},
+        'action': 'MoveArmBase',
+        'args': {'move_scalar': ARM_MOVE_CONSTANT / 5},
     },
     THORActions.move_arm_down: {
-        "action": "MoveArmBase",
-        "args": {"move_scalar": -ARM_MOVE_CONSTANT},
+        'action': 'MoveArmBase',
+        'args': {'move_scalar': -ARM_MOVE_CONSTANT},
     },
     THORActions.move_arm_down_small: {
-        "action": "MoveArmBase",
-        "args": {"move_scalar": -ARM_MOVE_CONSTANT / 5},
+        'action': 'MoveArmBase',
+        'args': {'move_scalar': -ARM_MOVE_CONSTANT / 5},
     },
     THORActions.move_arm_out: {
-        "action": "MoveArmExtension",
-        "args": {"move_scalar": ARM_MOVE_CONSTANT},
+        'action': 'MoveArmExtension',
+        'args': {'move_scalar': ARM_MOVE_CONSTANT},
     },
     THORActions.move_arm_out_small: {
-        "action": "MoveArmExtension",
-        "args": {"move_scalar": ARM_MOVE_CONSTANT / 5},
+        'action': 'MoveArmExtension',
+        'args': {'move_scalar': ARM_MOVE_CONSTANT / 5},
     },
     THORActions.move_arm_in: {
-        "action": "MoveArmExtension",
-        "args": {"move_scalar": -ARM_MOVE_CONSTANT},
+        'action': 'MoveArmExtension',
+        'args': {'move_scalar': -ARM_MOVE_CONSTANT},
     },
     THORActions.move_arm_in_small: {
-        "action": "MoveArmExtension",
-        "args": {"move_scalar": -ARM_MOVE_CONSTANT / 5},
+        'action': 'MoveArmExtension',
+        'args': {'move_scalar': -ARM_MOVE_CONSTANT / 5},
     },
-    THORActions.wrist_open: {"action": "MoveWrist", "args": {"move_scalar": -WRIST_ROTATION}},
-    THORActions.wrist_close: {"action": "MoveWrist", "args": {"move_scalar": WRIST_ROTATION}},
-    THORActions.pickup: {"action": "GraspTo", "args": {"move_to": -10}},
-    THORActions.dropoff: {"action": "GraspTo", "args": {"move_to": 30}},
+    THORActions.wrist_open: {'action': 'MoveWrist', 'args': {'move_scalar': -WRIST_ROTATION}},
+    THORActions.wrist_close: {'action': 'MoveWrist', 'args': {'move_scalar': WRIST_ROTATION}},
+    THORActions.pickup: {'action': 'GraspTo', 'args': {'move_to': -10}},
+    THORActions.dropoff: {'action': 'GraspTo', 'args': {'move_to': 30}},
 }

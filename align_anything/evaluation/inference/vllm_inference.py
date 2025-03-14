@@ -21,8 +21,8 @@ from typing import Any, Dict, List
 from vllm import LLM, SamplingParams
 
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
-from align_anything.utils.tools import requestoutput_to_dict
 from align_anything.utils.device_utils import get_device_count
+from align_anything.utils.tools import requestoutput_to_dict
 
 
 def update_results(

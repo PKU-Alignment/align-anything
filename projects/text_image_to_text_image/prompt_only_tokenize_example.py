@@ -29,10 +29,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, ChameleonProcessor
 
 from align_anything.models.chameleon_model import AccustomedChameleonModel
-from align_anything.utils.device_utils import (
-    set_device,
-    torch_gc,
-)
+from align_anything.utils.device_utils import set_device, torch_gc
 
 
 ALLOWED_ATTRIBUTES = ['split_token']

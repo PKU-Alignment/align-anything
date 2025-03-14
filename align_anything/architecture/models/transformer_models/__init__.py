@@ -1,4 +1,3 @@
-
 # Copyright 2024 Allen Institute for AI
 
 # Copyright 2024-2025 Align-Anything Team. All Rights Reserved.
@@ -20,7 +19,8 @@
 from .early_fusion_gru_models import EarlyFusionCnnRNN
 from .early_fusion_tsfm_models import EarlyFusionCnnTransformer
 
+
 REGISTERED_MODELS = {
-    "EarlyFusionCnnTransformer": EarlyFusionCnnTransformer,
-    "EarlyFusionCnnRNN": EarlyFusionCnnRNN,
+    'EarlyFusionCnnTransformer': EarlyFusionCnnTransformer,
+    'EarlyFusionCnnRNN': EarlyFusionCnnRNN,
 }

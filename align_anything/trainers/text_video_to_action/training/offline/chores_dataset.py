@@ -34,7 +34,6 @@ from align_anything.utils.utils.string_utils import (
     json_templated_spec_to_dict,
     json_templated_to_NL_spec,
 )
-from align_anything.utils.utils.visualization_utils import add_bbox_sequence_to_frame_sequence
 
 
 class ChoresDataReader:
@@ -46,14 +45,14 @@ class ChoresDataReader:
         self.max_samples = max_samples
         self.seed = seed
         self.house_id_to_sub_house_id_json = os.path.join(
-            data_dir, f"house_id_to_sub_house_id_{self.subset}.json"
+            data_dir, f'house_id_to_sub_house_id_{self.subset}.json'
         )
 
-        self.dataset_version = self.data_dir.split("/")[-1].split("_")[-1]
+        self.dataset_version = self.data_dir.split('/')[-1].split('_')[-1]
 
     def load_samples_for_proc_idx(self, proc_idx: int):
         # select house files based on the process id
-        with open(self.house_id_to_sub_house_id_json, "r") as f:
+        with open(self.house_id_to_sub_house_id_json) as f:
             house_id_to_sub_house_id = json.load(f)
 
         house_ids = sorted(list(house_id_to_sub_house_id.keys()))
@@ -67,18 +66,18 @@ class ChoresDataReader:
 
         # read samples from all the houses w/o reading in the sensors from hdf5
         print(
-            f"Reading samples from {self.data_dir}/{self.subset} with process {proc_idx}/{self.num_procs}"
+            f'Reading samples from {self.data_dir}/{self.subset} with process {proc_idx}/{self.num_procs}'
         )
         samples = []
         for house_id in tqdm(house_ids):
             house_dir = os.path.join(self.data_dir, self.subset, house_id)
             for sub_house_id in house_id_to_sub_house_id[house_id]:
-                sample_id = f"house={house_id},sub_house_id={sub_house_id}"
-                sensors_path = os.path.join(house_dir, "hdf5_sensors.hdf5")
+                sample_id = f'house={house_id},sub_house_id={sub_house_id}'
+                sensors_path = os.path.join(house_dir, 'hdf5_sensors.hdf5')
                 nav_cam_video = os.path.join(
-                    house_dir, f"raw_navigation_camera__{sub_house_id}.mp4"
+                    house_dir, f'raw_navigation_camera__{sub_house_id}.mp4'
                 )
-                manip_cam_video = nav_cam_video.replace("navigation", "manipulation")
+                manip_cam_video = nav_cam_video.replace('navigation', 'manipulation')
                 samples.append(
                     dict(
                         sample_id=sample_id,
@@ -109,64 +108,64 @@ class ChoresDataReader:
         if additional_sensor_keys is None:
             additional_sensor_keys = []
 
-        with h5py.File(sensors_path, "r") as f:
+        with h5py.File(sensors_path, 'r') as f:
             grp = f[sub_house_id]
             sensor_keys = [
-                "last_action_str",
-                "initial_agent_location",
-                "templated_task_spec",
+                'last_action_str',
+                'initial_agent_location',
+                'templated_task_spec',
             ] + additional_sensor_keys
 
             sensors = dict()
-            task_dict = convert_byte_to_string(grp["templated_task_spec"][0], None)
+            task_dict = convert_byte_to_string(grp['templated_task_spec'][0], None)
             task_dict = json_templated_spec_to_dict(task_dict)
 
             for k in sensor_keys:
-                if k == "initial_agent_location":
-                    sensors[k] = grp["last_agent_location"][0]
-                elif k == "last_action_str":
+                if k == 'initial_agent_location':
+                    sensors[k] = grp['last_agent_location'][0]
+                elif k == 'last_action_str':
                     sensors[k] = [convert_byte_to_string(row, None) for row in grp[k]]
-                elif k == "last_actions":
+                elif k == 'last_actions':
                     # last_actions are created from last_action_str which is always returned
                     continue
-                elif k == "templated_task_spec":
+                elif k == 'templated_task_spec':
                     sensors[k] = convert_byte_to_string(grp[k][0], None)
-                elif k == "visible_target_4m_count":
+                elif k == 'visible_target_4m_count':
                     sensors[k] = grp[k][:, 0]
-                elif k in ["rooms_seen", "room_current_seen"]:
+                elif k in ['rooms_seen', 'room_current_seen']:
                     sensors[k] = grp[k][:-1]
-                    sensors[f"{k}_output"] = grp[k][1:]
-                elif k == "an_object_is_in_hand":
+                    sensors[f'{k}_output'] = grp[k][1:]
+                elif k == 'an_object_is_in_hand':
                     if k in grp:
                         sensors[k] = grp[k][:, 0]
                     else:
-                        sensors[k] = np.zeros(len(sensors["last_action_str"]))
+                        sensors[k] = np.zeros(len(sensors['last_action_str']))
                     assert np.all(sensors[k] <= 1)
-                elif k == "relative_arm_location_metadata":
+                elif k == 'relative_arm_location_metadata':
                     sensors[k] = grp[k][:]
                 elif k in [
-                    "nav_task_relevant_object_bbox",
-                    "manip_task_relevant_object_bbox",
-                    "nav_accurate_object_bbox",
-                    "manip_accurate_object_bbox",
+                    'nav_task_relevant_object_bbox',
+                    'manip_task_relevant_object_bbox',
+                    'nav_accurate_object_bbox',
+                    'manip_accurate_object_bbox',
                 ]:
-                    if task_dict["task_type"] == "RoomVisit":
-                        seq_len = len(sensors["last_action_str"])
+                    if task_dict['task_type'] == 'RoomVisit':
+                        seq_len = len(sensors['last_action_str'])
                         sensors[k] = np.zeros((seq_len, 10))
                         sensors[k][:, :4] = 1000
                         sensors[k][:, 5:9] = 1000
                         continue
-                    num_boxes = grp[k]["min_cols"].shape[1]
+                    num_boxes = grp[k]['min_cols'].shape[1]
 
-                    oids = eval(convert_byte_to_string(grp[k]["oids_as_bytes"][0]))
+                    oids = eval(convert_byte_to_string(grp[k]['oids_as_bytes'][0]))
                     assert len(oids) == num_boxes, "Number of oids and boxes don't match"
 
                     tgt_1_ids = []
                     tgt_2_ids = []
 
-                    if "broad_synset_to_object_ids" in task_dict:
+                    if 'broad_synset_to_object_ids' in task_dict:
                         tgt_1_ids = [
-                            val for val in task_dict["broad_synset_to_object_ids"].values()
+                            val for val in task_dict['broad_synset_to_object_ids'].values()
                         ]
                         tgt_1_ids = sum(tgt_1_ids, [])
 
@@ -175,13 +174,13 @@ class ChoresDataReader:
                         if (
                             len(object_indices) == 0
                         ):  # both bbox_1 and bbox_2 need to have a default value
-                            res = np.zeros((len(grp[k]["min_cols"]), 5))
+                            res = np.zeros((len(grp[k]['min_cols']), 5))
                             res[:, :4] = 1000  # res[:, 4] = 0 by default
                             return res
-                        x1 = grp[k]["min_cols"][:, object_indices].astype(int).astype(np.float32)
-                        y1 = grp[k]["min_rows"][:, object_indices].astype(int).astype(np.float32)
-                        x2 = grp[k]["max_cols"][:, object_indices].astype(int).astype(np.float32)
-                        y2 = grp[k]["max_rows"][:, object_indices].astype(int).astype(np.float32)
+                        x1 = grp[k]['min_cols'][:, object_indices].astype(int).astype(np.float32)
+                        y1 = grp[k]['min_rows'][:, object_indices].astype(int).astype(np.float32)
+                        x2 = grp[k]['max_cols'][:, object_indices].astype(int).astype(np.float32)
+                        y2 = grp[k]['max_rows'][:, object_indices].astype(int).astype(np.float32)
                         if np.any(x1 > x2):
                             x1, x2 = x2, x1
                         if np.any(y1 > y2):
@@ -210,12 +209,12 @@ class ChoresDataReader:
                     sensors[k] = bbox_to_return
 
                 else:
-                    raise NotImplementedError(f"Sensor {k} not implemented")
+                    raise NotImplementedError(f'Sensor {k} not implemented')
 
         return sensors
 
     def load_video(self, video_path):
-        return read_video(video_path, pts_unit="sec")[0]
+        return read_video(video_path, pts_unit='sec')[0]
 
 
 class ChoresDataset(Dataset):
@@ -228,7 +227,7 @@ class ChoresDataset(Dataset):
         max_samples=None,
         load_frames=True,
         sliding_window=None,
-        input_sensors=("raw_navigation_camera",),
+        input_sensors=('raw_navigation_camera',),
         reduce_action_redundancy=False,
     ):
         self.data_dir = data_dir
@@ -243,7 +242,7 @@ class ChoresDataset(Dataset):
 
         assert (
             not self.reduce_action_redundancy
-        ) or subset == "train", "Reducing action redundancy is currently only supported for train."
+        ) or subset == 'train', 'Reducing action redundancy is currently only supported for train.'
 
         self.prob_sample_last_steps = 0
 
@@ -322,11 +321,11 @@ class ChoresDataset(Dataset):
         sample = deepcopy(self.samples[i])
 
         sensors = self.reader.read_sensors(
-            sample["sensors_path"], sample["sub_house_id"], self.non_visual_sensors
+            sample['sensors_path'], sample['sub_house_id'], self.non_visual_sensors
         )
 
         # throw out the first action (null action)
-        actions = sensors["last_action_str"][1:]
+        actions = sensors['last_action_str'][1:]
         original_actions_len = len(actions)
 
         select_indices = self.select_window_slice(original_actions_len)
@@ -335,7 +334,7 @@ class ChoresDataset(Dataset):
         actions = np.array(actions)[select_indices]
 
         # Randomly shift the time indices for training
-        if self.reader.subset == "train":
+        if self.reader.subset == 'train':
             time_ids = time_ids + random.randint(0, max(1000 - time_ids.shape[0], 0))
 
         input_sensors = {}
@@ -348,20 +347,20 @@ class ChoresDataset(Dataset):
                 original_frames_len = len(frames)
                 frames = frames[select_indices]
                 msg = (
-                    "frames and actions do not match for sample id "
-                    + sample["sample_id"]
+                    'frames and actions do not match for sample id '
+                    + sample['sample_id']
                     + sample[sensor_name]
                 )
                 try:
                     assert original_frames_len == original_actions_len, print(
                         msg,
-                        "original_frame",
+                        'original_frame',
                         original_frames_len,
-                        "original actions",
+                        'original actions',
                         original_actions_len,
                     )  # KE: This is really important please do not remove
                 except Exception as e:
-                    print("In Lengths not equal")
+                    print('In Lengths not equal')
                     print(str(e))
                     print(traceback.format_exc())
                     print(msg)
@@ -369,19 +368,19 @@ class ChoresDataset(Dataset):
                 input_sensors[sensor_name] = frames
                 # If dimensions of the video are off just throw out this sample and print a warning
                 if frames.shape[1] != 224 or frames.shape[2] != 384:
-                    print("Video dimensions are not 224x384, throwing out this sample")
-                    print("instead they are", frames.shape)
-                    print("sample path ", sample[sensor_name])
+                    print('Video dimensions are not 224x384, throwing out this sample')
+                    print('instead they are', frames.shape)
+                    print('sample path ', sample[sensor_name])
                     return None
 
             for sensor_name in self.non_visual_sensors:
-                if sensor_name in ["rooms_seen", "room_current_seen"]:
+                if sensor_name in ['rooms_seen', 'room_current_seen']:
                     input_sensors[sensor_name] = sensors[sensor_name][select_indices]
-                    output_sensors[f"{sensor_name}_output"] = sensors[f"{sensor_name}_output"][
+                    output_sensors[f'{sensor_name}_output'] = sensors[f'{sensor_name}_output'][
                         select_indices
                     ]
-                elif sensor_name == "last_actions":
-                    input_sensors[sensor_name] = np.array(sensors["last_action_str"][:-1])[
+                elif sensor_name == 'last_actions':
+                    input_sensors[sensor_name] = np.array(sensors['last_action_str'][:-1])[
                         select_indices
                     ]
 
@@ -393,24 +392,24 @@ class ChoresDataset(Dataset):
 
                     if (
                         sensor_name
-                        in ["nav_task_relevant_object_bbox", "manip_task_relevant_object_bbox"]
+                        in ['nav_task_relevant_object_bbox', 'manip_task_relevant_object_bbox']
                         and self.add_boxes_to_img
                     ):
                         raise NotImplementedError(
-                            "not working this needs to be changed to cover both boxes"
+                            'not working this needs to be changed to cover both boxes'
                         )
 
-        sample["observations"] = dict(
+        sample['observations'] = dict(
             **input_sensors,
             **output_sensors,
             actions=actions,
-            goal=json_templated_to_NL_spec(sensors["templated_task_spec"]),  # [0]),
+            goal=json_templated_to_NL_spec(sensors['templated_task_spec']),  # [0]),
             time_ids=time_ids,
-            initial_agent_location=sensors["initial_agent_location"],
-            templated_task_type=sensors["templated_task_spec"],
+            initial_agent_location=sensors['initial_agent_location'],
+            templated_task_type=sensors['templated_task_spec'],
         )
 
-        sample["prob_sample_last_steps"] = self.prob_sample_last_steps
+        sample['prob_sample_last_steps'] = self.prob_sample_last_steps
         return sample
 
 
@@ -422,7 +421,7 @@ class ChoresMultitaskDataset(Dataset):
 
         self.datasets = []
         for name in self.dataset_names:
-            print(f"Loading dataset: {name}")
+            print(f'Loading dataset: {name}')
             data_dir = os.path.join(base_data_dir, name)
             self.datasets.append(ChoresDataset(data_dir, **kwargs))
 
@@ -443,7 +442,7 @@ class ChoresMultitaskDataset(Dataset):
         self, init_prob, final_prob, num_workers=4, num_gpu_per_node=1, num_node=1
     ):
         if num_gpu_per_node == 0:
-            assert platform.system() == "Darwin"
+            assert platform.system() == 'Darwin'
             num_gpu_per_node = 1
 
         self.curr_prob_sample_last_steps = init_prob

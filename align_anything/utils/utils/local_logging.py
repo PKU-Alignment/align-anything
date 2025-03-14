@@ -18,17 +18,17 @@
 
 import json
 import os
-from typing import Any, Optional, List
+from typing import Any, List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageDraw, ImageFont
 from ai2thor.controller import Controller
 from allenact.base_abstractions.sensor import Sensor
 from moviepy.editor import ImageSequenceClip
-
+from PIL import Image, ImageDraw, ImageFont
 from tasks.abstract_task import AbstractSPOCTask
+
 from align_anything.utils.utils.constants.stretch_initialization_utils import stretch_long_names
 
 
@@ -49,7 +49,7 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
 
         # NOTE: Create top-down trajectory path visualization
         agent_path = [
-            dict(x=p["x"], y=0.25, z=p["z"]) for p in task._metrics["task_info"]["followed_path"]
+            dict(x=p['x'], y=0.25, z=p['z']) for p in task._metrics['task_info']['followed_path']
         ]
         # if len(env.last_event.third_party_camera_frames) < 1:
         #     event = env.step({"action": "GetMapViewCameraProperties"})
@@ -65,42 +65,42 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
         # this is the connection to the task id sensor
         df = pd.read_csv(
             f"output/ac-data/{task.task_info['id']}.txt",
-            names=list(task.action_names) + ["EstimatedValue"],  #
+            names=list(task.action_names) + ['EstimatedValue'],  #
         )
 
-        ep_length = task._metrics["ep_length"]
+        ep_length = task._metrics['ep_length']
 
         # get returns from each step
         returns = []
 
-        if "rewards" in task.task_info:
-            for r in reversed(task.task_info["rewards"]):
+        if 'rewards' in task.task_info:
+            for r in reversed(task.task_info['rewards']):
                 if len(returns) == 0:
                     returns.append(r)
                 else:
                     returns.append(r + returns[-1] * 0.99)  # gamma value
             returns = returns[::-1]
         else:
-            returns = [None] * len(task.task_info["action_successes"])
+            returns = [None] * len(task.task_info['action_successes'])
 
         video_frames = []
-        for step in range(task._metrics["ep_length"] + 1):
+        for step in range(task._metrics['ep_length'] + 1):
             is_first_frame = step == 0
-            is_last_frame = step == task._metrics["ep_length"]
+            is_last_frame = step == task._metrics['ep_length']
 
-            if task.observation_history[step]["rgb"].dtype == np.uint8:
-                unnormalized_frame = task.observation_history[step]["rgb"]
+            if task.observation_history[step]['rgb'].dtype == np.uint8:
+                unnormalized_frame = task.observation_history[step]['rgb']
                 agent_frame = np.array(Image.fromarray(unnormalized_frame))
             else:
-                unnormalized_frame = unnormalize_image(task.observation_history[step]["rgb"])
+                unnormalized_frame = unnormalize_image(task.observation_history[step]['rgb'])
                 agent_frame = np.array(
                     Image.fromarray((unnormalized_frame * 255).astype(np.uint8)).resize((224, 224))
                 )
 
             frame_number = step
 
-            if "dist_to_target" in task.task_info:
-                dist_to_target = task.task_info["dist_to_target"][step]
+            if 'dist_to_target' in task.task_info:
+                dist_to_target = task.task_info['dist_to_target'][step]
             else:
                 dist_to_target = np.inf
 
@@ -109,9 +109,9 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
                 last_reward = None
                 return_value = None
             else:
-                last_action_success = task.task_info["action_successes"][step - 1]
-                if "rewards" in task.task_info:
-                    last_reward = task.task_info["rewards"][step - 1]
+                last_action_success = task.task_info['action_successes'][step - 1]
+                if 'rewards' in task.task_info:
+                    last_reward = task.task_info['rewards'][step - 1]
                     return_value = returns[step - 1]
                 else:
                     last_reward = None
@@ -126,7 +126,7 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
                 action_dist = policy_critic_value[: len(task.action_names)]
                 critic_value = policy_critic_value[-1]
 
-                taken_action = task.task_info["taken_actions"][step]
+                taken_action = task.task_info['taken_actions'][step]
 
             video_frame = self.get_video_frame(
                 agent_frame=agent_frame,
@@ -146,7 +146,7 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
         for _ in range(9):
             video_frames.append(video_frames[-1])
 
-        task_success = "Success" if task._metrics["success"] else "Failure"
+        task_success = 'Success' if task._metrics['success'] else 'Failure'
 
         traj_info_dir = f"output/trajectories/{task_success}/{task.task_info['id']}"
 
@@ -156,25 +156,25 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
         # os.makedirs(os.path.join(traj_info_dir, "Failure"), exist_ok=True)
 
         imsn = ImageSequenceClip([frame for frame in video_frames], fps=10)
-        imsn.write_videofile(os.path.join(traj_info_dir, "frames.mp4"))
+        imsn.write_videofile(os.path.join(traj_info_dir, 'frames.mp4'))
         # imsn.write_videofile(f"output/trajectories/{task.task_info['id']}/frames.mp4")
 
         # save the top-down path
-        Image.fromarray(path).save(os.path.join(traj_info_dir, "path.png"))
+        Image.fromarray(path).save(os.path.join(traj_info_dir, 'path.png'))
         # Image.fromarray(path).save(f"output/trajectories/{task.task_info['id']}/path.png")
 
         # save the value function over time
         fig, ax = plt.subplots()
         estimated_values = df.EstimatedValue.to_numpy()
-        ax.plot(estimated_values, label="Critic Estimated Value")
-        ax.plot(returns, label="Return")
-        ax.set_ylabel("Value")
-        ax.set_xlabel("Time Step")
-        ax.set_title("Value Function over Time")
+        ax.plot(estimated_values, label='Critic Estimated Value')
+        ax.plot(returns, label='Return')
+        ax.set_ylabel('Value')
+        ax.set_xlabel('Time Step')
+        ax.set_title('Value Function over Time')
         ax.legend()
         fig.savefig(
-            os.path.join(traj_info_dir, "value_fn.svg"),
-            bbox_inches="tight",
+            os.path.join(traj_info_dir, 'value_fn.svg'),
+            bbox_inches='tight',
         )
         # fig.savefig(
         #     f"output/trajectories/{task.task_info['id']}/value_fn.svg",
@@ -183,29 +183,29 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
         plt.clf()
 
         task_out = {
-            "id": task.task_info["id"],
-            "task_type": task.task_info["task_type"],
+            'id': task.task_info['id'],
+            'task_type': task.task_info['task_type'],
             # "spl": task._metrics["spl"],
-            "success": task._metrics["success"],
+            'success': task._metrics['success'],
             # "finalDistance": task.task_info["dist_to_target"][-1],
             # "initialDistance": task.task_info["dist_to_target"][0],
             # "minDistance": min(task.task_info["dist_to_target"]),
-            "episodeLength": task._metrics["ep_length"],
-            "confidence": (
-                None if task.task_info["taken_actions"][-1] != "End" else df.End.to_list()[-1]
+            'episodeLength': task._metrics['ep_length'],
+            'confidence': (
+                None if task.task_info['taken_actions'][-1] != 'End' else df.End.to_list()[-1]
             ),
-            "failedActions": len([s for s in task.task_info["action_successes"] if not s]),
-            "targetObjectType": task.task_info["target_object_type"],
-            "numTargetObjects": len(task.task_info["target_object_ids"]),
+            'failedActions': len([s for s in task.task_info['action_successes'] if not s]),
+            'targetObjectType': task.task_info['target_object_type'],
+            'numTargetObjects': len(task.task_info['target_object_ids']),
             # "mirrored": task.task_info["mirrored"],
-            "scene": {
-                "name": task.task_info["house_index"],
-                "split": "train",
-                "rooms": 1,
+            'scene': {
+                'name': task.task_info['house_index'],
+                'split': 'train',
+                'rooms': 1,
             },
         }
 
-        with open(os.path.join(traj_info_dir, "data.json"), "w") as f:
+        with open(os.path.join(traj_info_dir, 'data.json'), 'w') as f:
             # with open(f"output/trajectories/{task.task_info['id']}/data.json", "w") as f:
             json.dump(
                 task_out,
@@ -213,9 +213,9 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
             )
 
         return {
-            "observations": task.observation_history,
-            "path": [path],  # path,
-            "frames_with_logits": video_frames,
+            'observations': task.observation_history,
+            'path': [path],  # path,
+            'frames_with_logits': video_frames,
             **task._metrics,
         }
 
@@ -225,7 +225,7 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
         frame_number: int,
     ) -> np.array:
         agent_height, agent_width, ch = aggregate_map.shape
-        font_to_use = "./Arial.ttf"  # possibly need a full path here
+        font_to_use = './Arial.ttf'  # possibly need a full path here
         full_font_load = ImageFont.truetype(font_to_use, 8)
 
         IMAGE_BORDER = 3
@@ -243,7 +243,7 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
             (IMAGE_BORDER * 1.1, IMAGE_BORDER * 1),
             str(frame_number),
             font=full_font_load,  # ImageFont.truetype(font_to_use, 25),
-            fill="black",
+            fill='black',
         )
 
         return np.array(text_image)
@@ -264,7 +264,7 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
     ) -> np.array:
         agent_height, agent_width, ch = agent_frame.shape
 
-        font_to_use = "Arial.ttf"  # possibly need a full path here
+        font_to_use = 'Arial.ttf'  # possibly need a full path here
         full_font_load = ImageFont.truetype(font_to_use, 14)
 
         IMAGE_BORDER = 25
@@ -295,8 +295,8 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
                         ),
                         stretch_long_names[action],
                         font=ImageFont.truetype(font_to_use, 10),
-                        fill="gray" if action != taken_action else "black",
-                        anchor="rm",
+                        fill='gray' if action != taken_action else 'black',
+                        anchor='rm',
                     )
                     img_draw.rectangle(
                         (
@@ -305,8 +305,8 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
                             IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 5) + int(100 * prob),
                             (TEXT_OFFSET_V + 5) + i * 10,
                         ),
-                        outline="blue",
-                        fill="blue",
+                        outline='blue',
+                        fill='blue',
                     )
                 else:
                     img_draw.text(
@@ -316,8 +316,8 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
                         ),
                         stretch_long_names[action],
                         font=ImageFont.truetype(font_to_use, 10),
-                        fill="gray" if action != taken_action else "black",
-                        anchor="rm",
+                        fill='gray' if action != taken_action else 'black',
+                        anchor='rm',
                     )
                     img_draw.rectangle(
                         (
@@ -329,105 +329,105 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
                             + int(100 * prob),
                             (TEXT_OFFSET_V + 5) + (i - 10) * 10,
                         ),
-                        outline="blue",
-                        fill="blue",
+                        outline='blue',
+                        fill='blue',
                     )
 
         img_draw.text(
             (IMAGE_BORDER * 1.1, IMAGE_BORDER * 1),
             str(frame_number),
             font=full_font_load,  # ImageFont.truetype(font_to_use, 25),
-            fill="white",
+            fill='white',
         )
 
         oset = -10
         if last_reward is not None:
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 175 + oset),
-                "Last Reward:",
+                'Last Reward:',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="gray",
-                anchor="rm",
+                fill='gray',
+                anchor='rm',
             )
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 175 + oset),
-                " " + ("+" if last_reward > 0 else "") + str(last_reward),
+                ' ' + ('+' if last_reward > 0 else '') + str(last_reward),
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="gray",
-                anchor="lm",
+                fill='gray',
+                anchor='lm',
             )
 
         oset = 10
         if critic_value is not None:
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 175 + oset),
-                "Critic Value:",
+                'Critic Value:',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="gray",
-                anchor="rm",
+                fill='gray',
+                anchor='rm',
             )
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 175 + oset),
-                " " + ("+" if critic_value > 0 else "") + str(critic_value),
+                ' ' + ('+' if critic_value > 0 else '') + str(critic_value),
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="gray",
-                anchor="lm",
+                fill='gray',
+                anchor='lm',
             )
 
         if return_value is not None:
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 195 + oset),
-                "Return:",
+                'Return:',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="gray",
-                anchor="rm",
+                fill='gray',
+                anchor='rm',
             )
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 195 + oset),
-                " " + ("+" if return_value > 0 else "") + str(return_value),
+                ' ' + ('+' if return_value > 0 else '') + str(return_value),
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="gray",
-                anchor="lm",
+                fill='gray',
+                anchor='lm',
             )
 
         if last_action_success is not None:
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 235),
-                "Last Action:",
+                'Last Action:',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="gray",
-                anchor="rm",
+                fill='gray',
+                anchor='rm',
             )
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 235),
-                " Success" if last_action_success else " Failure",
+                ' Success' if last_action_success else ' Failure',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="green" if last_action_success else "red",
-                anchor="lm",
+                fill='green' if last_action_success else 'red',
+                anchor='lm',
             )
 
-        if taken_action == "manual override":
+        if taken_action == 'manual override':
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H + 50, TEXT_OFFSET_V + 5 * 20),
-                "Manual Override",
+                'Manual Override',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="red",
-                anchor="rm",
+                fill='red',
+                anchor='rm',
             )
 
         img_draw.text(
             (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 145),
-            "Target Dist:",
+            'Target Dist:',
             font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-            fill="gray",
-            anchor="rm",
+            fill='gray',
+            anchor='rm',
         )
         img_draw.text(
             (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 145),
-            f" {dist_to_target}m",
+            f' {dist_to_target}m',
             font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-            fill="gray",
-            anchor="lm",
+            fill='gray',
+            anchor='lm',
         )
 
         lower_offset = 10
@@ -440,8 +440,8 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
                 IMAGE_BORDER + agent_width,
                 agent_height + IMAGE_BORDER + progress_bar_height + lower_offset,
             ),
-            outline="lightgray",
-            fill="lightgray",
+            outline='lightgray',
+            fill='lightgray',
         )
         img_draw.rectangle(
             (
@@ -450,8 +450,8 @@ class LocalLoggingSensor(Sensor[Controller, AbstractSPOCTask]):
                 IMAGE_BORDER + int(frame_number * agent_width / ep_length),
                 agent_height + IMAGE_BORDER + progress_bar_height + lower_offset,
             ),
-            outline="blue",
-            fill="blue",
+            outline='blue',
+            fill='blue',
         )
 
         return np.array(text_image)
@@ -471,14 +471,14 @@ class WandbLoggingSensor(LocalLoggingSensor):
 
         # NOTE: Create top-down trajectory path visualization
         agent_path = [
-            dict(x=p["x"], y=0.25, z=p["z"]) for p in task._metrics["task_info"]["followed_path"]
+            dict(x=p['x'], y=0.25, z=p['z']) for p in task._metrics['task_info']['followed_path']
         ]
 
         path = env.get_top_down_path_view(agent_path)
 
         return {
-            "observations": task.observation_history,
-            "path": [path],  # path,
+            'observations': task.observation_history,
+            'path': [path],  # path,
             # "frames_with_logits": video_frames,
             **task._metrics,
         }

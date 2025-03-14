@@ -21,9 +21,7 @@ from diffusers import CogVideoXPipeline
 from diffusers.utils import export_to_video
 from tqdm import tqdm
 
-from align_anything.utils.device_utils import (
-    get_current_device,
-)
+from align_anything.utils.device_utils import get_current_device
 from datasets import load_dataset
 
 

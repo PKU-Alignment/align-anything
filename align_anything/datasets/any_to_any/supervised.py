@@ -70,7 +70,7 @@ class SupervisedDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        self.raw_data = raw_data_duplicated = load_dataset(
+        self.raw_data = load_dataset(
             path,
             name=name,
             split=split,

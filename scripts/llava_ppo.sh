@@ -51,5 +51,5 @@ deepspeed \
     --ptx_template ${PTX_TEMPLATE} \
     --ptx_split ${PTX_SPLIT} \
     --output_dir ${OUTPUT_DIR} \
-    --save_interval 1000 \
+    --save_total_limit 3 \
     --epochs 2

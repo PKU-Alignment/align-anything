@@ -21,16 +21,17 @@ from typing import Tuple
 import numpy as np
 import torch
 
+
 BBOX_DIST_THRESHOLD = 0.1
 
 
 def get_box_from_object(obj, verbose=False):
-    if obj.get("objectOrientedBoundingBox") is not None:
-        box = obj["objectOrientedBoundingBox"]["cornerPoints"]
+    if obj.get('objectOrientedBoundingBox') is not None:
+        box = obj['objectOrientedBoundingBox']['cornerPoints']
     else:
         if verbose:
             print(f"Using axisAlignedBoundingBox for {obj['objectId']} ({obj['synset']})")
-        box = obj["axisAlignedBoundingBox"]["cornerPoints"]
+        box = obj['axisAlignedBoundingBox']['cornerPoints']
 
     return np.array(box)
 
@@ -44,7 +45,7 @@ def get_basis_for_3d_box_from_bbox_corners(bbox_corners) -> Tuple[np.ndarray, np
     v0_mag = magnitudes1[v0_ind]
 
     if v0_mag < 1e-8:
-        raise RuntimeError(f"Could not find basis for {bbox_corners}")
+        raise RuntimeError(f'Could not find basis for {bbox_corners}')
 
     v0 = without_first[np.argmin(magnitudes1)] / v0_mag
 
@@ -58,7 +59,7 @@ def get_basis_for_3d_box_from_bbox_corners(bbox_corners) -> Tuple[np.ndarray, np
     inds_orth_to_v0_and_v1 = np.where(orth_to_v0 & orth_to_v1)[0]
 
     if len(inds_orth_to_v0_and_v1) != 1:
-        raise RuntimeError(f"Could not find basis for {bbox_corners}")
+        raise RuntimeError(f'Could not find basis for {bbox_corners}')
 
     v2_ind = inds_orth_to_v0_and_v1[0]
     v2 = without_first[v2_ind, :] / magnitudes1[v2_ind]
