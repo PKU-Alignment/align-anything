@@ -1836,3 +1836,180 @@ class OpenAQA:
             'conversation': conversation,
             'prompt': conversation[:-1],
         }
+
+
+@register_template('SafeRLHF_V_Reward')
+class SafeRLHF_V_Reward(BaseFormatter):
+    system_prompt: str = ''
+
+    def format_preference_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+        better_id = int(raw_sample['more_helpful_response_id'])
+        worse_id = 2 if better_id == 1 else 1
+
+        if better_id not in [1, 2] or worse_id not in [1, 2]:
+            return [], [], {}
+
+        raw_better_response = raw_sample[f'response_{better_id}']
+        raw_worse_response = raw_sample[f'response_{worse_id}']
+        prompt = raw_sample['question']
+        image = raw_sample['image']
+        better_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_better_response}]},
+        ]
+        worse_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_worse_response}]},
+        ]
+
+        meta_info = {
+            'image': image,
+            'better_response': raw_better_response,
+            'worse_response': raw_worse_response,
+        }
+
+        return better_conversation, worse_conversation, meta_info
+
+    def format_prompt_only_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['question']
+        image = raw_sample['image']
+
+        return [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+        ], {'image': image}
+
+    def format_supervised_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['prompt']
+        answer = raw_sample['response']
+        image = raw_sample['image']
+
+        return [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {'image': image}
+
+    def check_validation(self, raw_sample: dict[str, Any]) -> bool:
+        better_id = int(raw_sample['more_helpful_response_id'])
+        worse_id = 2 if better_id == 1 else 1
+        return better_id in [1, 2] and worse_id in [1, 2]
+
+
+@register_template('SafeRLHF_V_Cost')
+class SafeRLHF_V_Cost(BaseFormatter):
+    system_prompt: str = ''
+
+    def format_preference_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+        worse_id = int(raw_sample['safer_response_id'])
+        better_id = 2 if worse_id == 1 else 1
+
+        if better_id not in [1, 2] or worse_id not in [1, 2]:
+            return [], [], {}
+
+        raw_better_response = raw_sample[f'response_{better_id}']
+        raw_worse_response = raw_sample[f'response_{worse_id}']
+        prompt = raw_sample['question']
+        image = raw_sample['image']
+        better_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_better_response}]},
+        ]
+        worse_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_worse_response}]},
+        ]
+
+        is_better_safe = raw_sample[f'response_{better_id}_harmless_rate'] * (-1)
+        is_worse_safe = raw_sample[f'response_{worse_id}_harmless_rate'] * (-1)
+
+        meta_info = {
+            'image': image,
+            'better_response': raw_better_response,
+            'worse_response': raw_worse_response,
+            'is_better_safe': is_better_safe,
+            'is_worse_safe': is_worse_safe,
+        }
+
+        return better_conversation, worse_conversation, meta_info
+
+    def format_prompt_only_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['question']
+        image = raw_sample['image']
+
+        return [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+        ], {'image': image}
+
+    def format_supervised_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['prompt']
+        answer = raw_sample['response']
+        image = raw_sample['image']
+
+        return [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {'image': image}
+
+    def check_validation(self, raw_sample: dict[str, Any]) -> bool:
+        better_id = int(raw_sample['safer_response_id'])
+        worse_id = 2 if better_id == 1 else 1
+        return better_id in [1, 2] and worse_id in [1, 2]
