@@ -54,6 +54,10 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 * **`Coming Soon`** ⚡️⚡️⚡️ We plan to separate the evaluation component from align-anything and establish eval-anything as a dedicated repository for large-scale evaluation of any-to-any models. Meanwhile, align-anything will remain focused on the post-training alignment of any-to-any models.
 
+* **[2025.03.15]** 📜📜📜 We release the tutorial for extending modality from `text-to-text` to `text-image-to-text` models. Check out the [cookbook_en](./cookbooks/en/modality_scaling.ipynb) (for English) and [cookbook_zh](./cookbooks/zh/modality_scaling.ipynb) (for Chinese).
+
+  > We will release other tutorials in the future. Stay tuned! 😊
+
 * **[2025.03.15]**  We have supported seamless migration to Slurm clusters! Check out our example [here](#training-on-slurm) to get started.
 
 * **[2025.03.14]** 🛠️🛠️🛠️ We have supported Safe RLHF-V for `Text + Image -> Text` modality models.
