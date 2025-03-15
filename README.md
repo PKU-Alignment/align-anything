@@ -235,7 +235,7 @@ bash llava_dpo.sh
 
 
 #### Training on Slurm
-> We fully supports seamless migration to Slurm. If you plan to run training on a Slurm-managed cluster, we invite you to use our example Slurm training script:
+> We fully support seamless migration to Slurm. If you plan to run training on a Slurm-managed cluster, we invite you to use our example Slurm training script:
 >```bash
 >cd scripts
 >bash slurm_llava_dpo.sh
