@@ -36,7 +36,7 @@ def load_image(image_path: str):
             image = Image.open(image_path).convert('RGB')
         return image
     except Exception as e:
-        print(f'Error occured when dealing with {image_path}: {e}')
+        print(f'Error occurred when dealing with {image_path}: {e}')
         raise Exception
 
 

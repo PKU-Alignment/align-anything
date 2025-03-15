@@ -2013,7 +2013,8 @@ class SafeRLHF_V_Cost(BaseFormatter):
         better_id = int(raw_sample['safer_response_id'])
         worse_id = 2 if better_id == 1 else 1
         return better_id in [1, 2] and worse_id in [1, 2]
-    
+
+
 @register_template('LLaVA_Pretrain')
 class LLaVA_Pretrain(BaseFormatter):
     system_prompt: str = ''

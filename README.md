@@ -182,7 +182,7 @@ NOTE: The current test environment for Ascend is:
   <summary>Install ascend dependencies using our docker image</summary>
 
 
-  1. **Current Ascend Machine Environment Configuration**  
+  1. **Current Ascend Machine Environment Configuration**
      The current environment configuration for the Ascend Machine is as follows:
 
      ```
@@ -204,7 +204,7 @@ NOTE: The current test environment for Ascend is:
      - Package Version: 23.0.7
      ```
 
-  2. **Create the Docker Container**  
+  2. **Create the Docker Container**
      To get started with the pre-configured environment, you can use the `setup_docker.sh` script located in the `./scripts` directory to pull the Docker image and create a container with all necessary environments set up:
 
        ```
@@ -214,7 +214,7 @@ NOTE: The current test environment for Ascend is:
 
      This will automatically pull the Docker image and create a Docker container where all the dependencies and configurations for running the framework are already set up.
 
-  3. **Warning**  
+  3. **Warning**
      **Environment Compatibility**: The environment mentioned above is tested and verified to work. If you attempt to run the setup on other environments, you may encounter issues. In such cases, you will need to perform debugging and adjustments yourself to ensure compatibility with your specific environment.
 
 </details>

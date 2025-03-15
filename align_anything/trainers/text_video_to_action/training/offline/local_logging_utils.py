@@ -178,7 +178,6 @@ class LocalWandb:
     def download_artifact(self, artifact_name, save_dir):
         assert os.path.exists(save_dir)
 
-
     def log_artifact(self, artifact: wandb.Artifact, aliases):
         for file, info in artifact._added_local_paths.items():
             command = f'cp {file} {self.full_dir}'
@@ -202,7 +201,6 @@ class LocalWandb:
 
     def log(self, dict_to_log, step=None):
         self.write_logs(dict_to_log, step)
-
 
 
 class LocalTable:
