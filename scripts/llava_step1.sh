@@ -15,6 +15,9 @@
 # limitations under the License.
 # ==============================================================================
 
+# This script is used to train the LLaVA model
+# based on the cookbook: cookbooks/en(or zh)/modality_scaling.ipynb
+
 # Initialize variables
 MODEL_NAME_OR_PATH="/PATH/TO/YOUR/MLLMs"
 TRAIN_DATASETS="/PATH/TO/YOUR/liuhaotian/LLaVA-Pretrain"
@@ -25,6 +28,8 @@ OUTPUT_DIR="../outputs/llava_step1" # output dir
 
 # For wandb online logging
 export WANDB_API_KEY=""
+
+export COCO_DATA_DIR="/PATH/TO/YOUR/COCO_DATA_DIR" # the dir where you save the unzipped COCO images
 
 # Source the setup script
 source ./setup.sh
