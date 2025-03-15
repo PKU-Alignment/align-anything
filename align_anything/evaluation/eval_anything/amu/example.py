@@ -35,7 +35,7 @@ def main():
         'PKU-Alignment/EvalAnything-AMU', name='image', split='test', trust_remote_code=True
     )
 
-    catagories = ['perception', 'reasoning', 'instruction-following', 'safety']
+    categories = ['perception', 'reasoning', 'instruction-following', 'safety']
 
     save_dir = os.path.join('amu')
     os.makedirs(save_dir, exist_ok=True)
@@ -55,12 +55,12 @@ def main():
     eval_results = gpt_eval(results)
 
     amu_score = {}
-    for category in catagories:
+    for category in categories:
         amu_score[category] = [
             result['score'] for result in eval_results if result['evaluation_dimension'] == category
         ]
 
-    for category in catagories:
+    for category in categories:
         amu_score[category] = np.mean(amu_score[category])
     amu_score['all'] = np.mean([score for score in amu_score.values()])
 

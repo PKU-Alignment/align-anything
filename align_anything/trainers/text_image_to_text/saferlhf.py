@@ -15,23 +15,27 @@
 """Trainer for Safe RLHF training."""
 
 
-import itertools
 import argparse
 import copy
+import itertools
 import os
 import sys
-import numpy as np
 from collections import deque
 from typing import Any
+
 import deepspeed
+import numpy as np
 import torch
 import torch.distributed as dist
 from tqdm import tqdm
 from transformers import GenerationConfig
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from typing import Any
-from align_anything.datasets.text_image_to_text import PromptOnlyBatch, PromptOnlyDataset, SupervisedDataset
+from align_anything.datasets.text_image_to_text import (
+    PromptOnlyBatch,
+    PromptOnlyDataset,
+    SupervisedDataset,
+)
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.ppo import PPOTrainer as PPOTextTrainer
 from align_anything.utils.multi_process import (
@@ -47,18 +51,19 @@ from align_anything.utils.tools import (
     gather_log_probabilities,
     is_same_tokenizer,
     masked_mean,
-    read_cfgs,
-    seed_everything,
-    update_dict,
-    remove_pad_tokens,
+    move_padding_left,
     prepare_ds_eval_cfgs,
     prepare_ds_train_cfgs,
-    move_padding_left,
+    read_cfgs,
+    remove_pad_tokens,
+    seed_everything,
+    update_dict,
 )
+
 
 class SafeRLHFVTrainer(PPOTextTrainer):
     """Trainer base class for Safe RLHF-V training."""
-    
+
     def __init__(self, cfgs, ds_cfgs) -> None:
         """Initialize trainer."""
         self.cfgs = cfgs
@@ -76,7 +81,7 @@ class SafeRLHFVTrainer(PPOTextTrainer):
             self.infer_batch = self.actor_model.infer_batch
         if hasattr(self.reward_model, 'infer_batch'):
             self.reward_infer_batch = self.reward_model.infer_batch
-        
+
         dist.barrier()
         self.init_datasets()
         dist.barrier()
@@ -97,7 +102,7 @@ class SafeRLHFVTrainer(PPOTextTrainer):
         self.lambda_update_delay_steps = self.cfgs.train_cfgs.lambda_update_delay_steps
         self.episode_cost_window_size = self.cfgs.train_cfgs.episode_cost_window_size
         self.threshold = self.cfgs.train_cfgs.threshold
-        
+
         self.log_lambda = torch.nn.Parameter(
             torch.tensor(np.log(self.lambda_init), device=get_current_device()),
             requires_grad=True,
@@ -105,7 +110,6 @@ class SafeRLHFVTrainer(PPOTextTrainer):
         self.log_lambda_optimizer = torch.optim.SGD([self.log_lambda], lr=self.lambda_lr)
         self.log_lambda_max = np.log(self.lambda_max) if self.lambda_max else None
         self.episode_costs = deque(maxlen=self.episode_cost_window_size)
-
 
     def init_deepspeed_engines_with_cost_model(self) -> None:
         """Initialize DeepSpeed engines."""
@@ -179,13 +183,14 @@ class SafeRLHFVTrainer(PPOTextTrainer):
     def init_engines(self) -> None:
         """Initialize DeepSpeed engines."""
         self.init_deepspeed_engines_with_cost_model()
-        
+
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         # load training datasets
         self.prompt_only_dataloader, self.eval_dataloader, self.ptx_dataloader = (
             self.get_dataloaders(PromptOnlyDataset, PromptOnlyDataset, SupervisedDataset)
         )
+
     def init_models_with_cost_model(self) -> None:
         """Initialize model and tokenizer."""
         if self.ds_train_cfgs['zero_optimization']['stage'] == 3:
@@ -242,15 +247,13 @@ class SafeRLHFVTrainer(PPOTextTrainer):
             processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
         # loading cost critic model
-        self.cost_critic_model, self.cost_critic_tokenizer, _ = (
-            load_pretrained_models(
-                self.cfgs.model_cfgs.cost_model_name_or_path,
-                model_max_length=self.cfgs.model_cfgs.model_max_length,
-                padding_side='left',
-                trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
-                is_reward_model=True,
-                processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
-            )
+        self.cost_critic_model, self.cost_critic_tokenizer, _ = load_pretrained_models(
+            self.cfgs.model_cfgs.cost_model_name_or_path,
+            model_max_length=self.cfgs.model_cfgs.model_max_length,
+            padding_side='left',
+            trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
+            is_reward_model=True,
+            processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
 
         # initial checking
@@ -314,7 +317,7 @@ class SafeRLHFVTrainer(PPOTextTrainer):
             response = sequence_wo_pad[prompt_length:]
             response_lens.append(len(response))
         return actor_batch, response_lens
-    
+
     def cost_model_step(self, actor_batch: PromptOnlyBatch) -> dict[str, Any]:
         cost_batch = copy.deepcopy(actor_batch)
         if self.cost_tokenizer is not self.tokenizer:
@@ -334,9 +337,9 @@ class SafeRLHFVTrainer(PPOTextTrainer):
         scores = self.cost_critic_model(**critic_infer_batch).scores
         cost_batch['cost_values'] = scores.squeeze(dim=-1)[:, :-1]
         self.episode_costs.extend(cost_batch['cost'].tolist())
-        
+
         return cost_batch
-    
+
     @torch.no_grad()
     def rollout(self, prompt_only_batch: PromptOnlyBatch) -> list[dict[str, Any]]:
         """Rollout a batch of experiences."""
@@ -375,17 +378,17 @@ class SafeRLHFVTrainer(PPOTextTrainer):
             if logprob.dim() == 0:
                 logprob = torch.cat([logprob.unsqueeze(0), logprob.new_zeros(2)])
             logprob_list.append(logprob)
-            
+
             ref_logprob = gather_log_probabilities(ref_logit, input_id).squeeze()
             if ref_logprob.dim() == 0:
                 ref_logprob = torch.cat([ref_logprob.unsqueeze(0), ref_logprob.new_zeros(2)])
             ref_logprob_list.append(ref_logprob)
-            
+
             reward_value = reward_value.squeeze()
             if reward_value.dim() == 0:
                 reward_value = torch.cat([reward_value.unsqueeze(0), reward_value.new_zeros(2)])
             reward_value_list.append(reward_value)
-            
+
             cost_value = cost_value.squeeze()
             if cost_value.dim() == 0:
                 cost_value = torch.cat([cost_value.unsqueeze(0), cost_value.new_zeros(2)])
@@ -425,7 +428,7 @@ class SafeRLHFVTrainer(PPOTextTrainer):
         self.set_train()
 
         return micro_inference_batches, micro_training_batches
-    
+
     def actor_loss_fn_with_cost(
         self,
         log_probs: torch.Tensor,  # size = (B, L - S)
@@ -456,7 +459,7 @@ class SafeRLHFVTrainer(PPOTextTrainer):
         sequence_mask: torch.BoolTensor,  # size = (B, L)
     ) -> tuple[torch.Tensor, torch.Tensor]:  # size = (B, L)
         end_index = torch.cat([m.nonzero()[-1] for m in sequence_mask])  # size = (B,)
-    
+
         # size = (B, L)
         kl_divergence_estimate = log_probs - ref_log_probs
         kl_penalty_rewards = -self.kl_coeff * kl_divergence_estimate
@@ -538,18 +541,20 @@ class SafeRLHFVTrainer(PPOTextTrainer):
             )
         logits = self.actor_model(**inference_batch, use_cache=False).logits
         logprob_list = []
-        
+
         for idx in range(batch_size):
             response_length = response_lens[idx]
             input_id = input_ids[idx, 1:][-response_length:].unsqueeze(0)
             logit = logits[idx, :-1][-response_length:].unsqueeze(0)
-            
+
             logprob = gather_log_probabilities(logit, input_id).squeeze()
             if logprob.dim() == 0:
                 logprob = torch.cat([logprob.unsqueeze(0), logprob.new_zeros(2)])
             logprob_list.append(logprob)
-        
-        log_probs = torch.nn.utils.rnn.pad_sequence(logprob_list, batch_first=True, padding_value=0.).to(logits.device)
+
+        log_probs = torch.nn.utils.rnn.pad_sequence(
+            logprob_list, batch_first=True, padding_value=0.0
+        ).to(logits.device)
         actor_loss = self.actor_loss_fn_with_cost(
             log_probs,
             old_log_probs,
@@ -567,7 +572,7 @@ class SafeRLHFVTrainer(PPOTextTrainer):
 
         reward_value_list = []
         cost_value_list = []
-        
+
         for idx in range(batch_size):
             response_length = response_lens[idx]
             reward_value = raw_reward_values[idx][-response_length:].unsqueeze(0)
@@ -575,8 +580,10 @@ class SafeRLHFVTrainer(PPOTextTrainer):
             if reward_value.dim() == 0:
                 reward_value = torch.cat([reward_value.unsqueeze(0), reward_value.new_zeros(2)])
             reward_value_list.append(reward_value)
-        reward_values = torch.nn.utils.rnn.pad_sequence(reward_value_list, batch_first=True, padding_value=0.).to(logits.device)
-        
+        reward_values = torch.nn.utils.rnn.pad_sequence(
+            reward_value_list, batch_first=True, padding_value=0.0
+        ).to(logits.device)
+
         reward_critic_loss = self.critic_loss_fn(
             reward_values,
             old_reward_values,
@@ -586,7 +593,6 @@ class SafeRLHFVTrainer(PPOTextTrainer):
         self.reward_critic_model.backward(reward_critic_loss)
         self.reward_critic_model.step()
 
-
         for idx in range(batch_size):
             response_length = response_lens[idx]
             cost_value = raw_cost_values[idx][-response_length:].unsqueeze(0)
@@ -594,8 +600,10 @@ class SafeRLHFVTrainer(PPOTextTrainer):
             if cost_value.dim() == 0:
                 cost_value = torch.cat([cost_value.unsqueeze(0), cost_value.new_zeros(2)])
             cost_value_list.append(cost_value)
-        cost_values = torch.nn.utils.rnn.pad_sequence(cost_value_list, batch_first=True, padding_value=0.).to(logits.device)
-        
+        cost_values = torch.nn.utils.rnn.pad_sequence(
+            cost_value_list, batch_first=True, padding_value=0.0
+        ).to(logits.device)
+
         cost_critic_loss = self.critic_loss_fn(
             cost_values,
             old_cost_values,
@@ -617,7 +625,6 @@ class SafeRLHFVTrainer(PPOTextTrainer):
             reward_advantage = masked_mean(reward_advantages, mask)
             reward_return = masked_mean(reward_returns, mask)
             reward_value = masked_mean(reward_values, mask)
-
 
             cost_with_kl_penalty = (old_costs * mask).sum(dim=-1).mean()
             cost_advantage = masked_mean(cost_advantages, mask)
@@ -676,7 +683,7 @@ class SafeRLHFVTrainer(PPOTextTrainer):
     ) -> torch.Tensor:  # size = (B, L)
         """Add KL divergence regularization on scalar rewards."""
         B, L = log_probs.size()
-        end_index = (L-1)*torch.ones((B,), dtype=torch.int64).to(reward.device)  # size = (B,)
+        end_index = (L - 1) * torch.ones((B,), dtype=torch.int64).to(reward.device)  # size = (B,)
 
         # size = (B, L)
         kl_divergence_estimate = log_probs - ref_log_probs
@@ -789,7 +796,7 @@ class SafeRLHFVTrainer(PPOTextTrainer):
         self,
         model: deepspeed.DeepSpeedEngine | None = None,
         tag: int | None = None,
-        info:str | None = None,
+        info: str | None = None,
     ) -> None:
         """Save model and tokenizer in Hugging Face format."""
         if info is None:

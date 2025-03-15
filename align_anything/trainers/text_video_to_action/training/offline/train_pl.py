@@ -158,10 +158,6 @@ class LitModel(pl.LightningModule):
             )
 
     def forward_batch(self, batch):
-        if len(batch) == 0:
-            from utils.debug_utils import ForkedPdb
-
-            ForkedPdb().set_trace()
 
         proc_batch = self.preproc.process(batch)
         outputs = self.model(proc_batch)

@@ -16,7 +16,6 @@
 # ==============================================================================
 import copy
 import math
-import pdb
 import random
 import warnings
 from contextlib import contextmanager
@@ -867,8 +866,6 @@ class StretchController:
             action_dict = dict(action='ReleaseObject')
         else:
             print('Action not defined')
-            pdb.set_trace()
-            raise NotImplementedError('Action not defined')
 
         if action_dict['action'] in ['RotateWristRelative', 'MoveArm']:
             action_dict = {**action_dict, **ADDITIONAL_ARM_ARGS}

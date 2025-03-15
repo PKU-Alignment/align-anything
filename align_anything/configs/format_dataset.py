@@ -2013,3 +2013,23 @@ class SafeRLHF_V_Cost(BaseFormatter):
         better_id = int(raw_sample['safer_response_id'])
         worse_id = 2 if better_id == 1 else 1
         return better_id in [1, 2] and worse_id in [1, 2]
+
+
+@register_template('LLaVA_Pretrain')
+class LLaVA_Pretrain(BaseFormatter):
+    system_prompt: str = ''
+
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        conversation = raw_sample['conversations']
+        for message in conversation:
+            if message['from'] == 'human':
+                prompt = message['value']
+            elif message['from'] == 'gpt':
+                answer = message['value']
+        coco_data_dir = os.environ['COCO_DATA_DIR']
+        image_path = os.path.join(coco_data_dir, raw_sample['image'])
+        image = Image.open(image_path).convert('RGBA')
+        return [
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {'image': image}

@@ -54,6 +54,10 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 * **`Coming Soon`** ⚡️⚡️⚡️ We plan to separate the evaluation component from align-anything and establish eval-anything as a dedicated repository for large-scale evaluation of any-to-any models. Meanwhile, align-anything will remain focused on the post-training alignment of any-to-any models.
 
+* **[2025.03.15]** 📜📜📜 We release the tutorial for extending modality from `text-to-text` to `text-image-to-text` models. Check out the [cookbook_en](./cookbooks/en/modality_scaling.ipynb) (for English) and [cookbook_zh](./cookbooks/zh/modality_scaling.ipynb) (for Chinese).
+
+  > We will release other tutorials in the future. Stay tuned! 😊
+
 * **[2025.03.15]**  We have supported seamless migration to Slurm clusters! Check out our example [here](#training-on-slurm) to get started.
 
 * **[2025.03.14]** 🛠️🛠️🛠️ We have supported Safe RLHF-V for `Text + Image -> Text` modality models.
@@ -74,7 +78,7 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 * **[2025.02.19]** We supported the alignment methods **GRPO** used in DeepSeek R1. See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
 
-* **[2025.01.21]** We supported the alignment fine-tuning of **MiniCPM-o** (audio & image), also included in [the official repository’s README recommendations](https://github.com/OpenBMB/MiniCPM-o#with-align-anything-). See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
+* **[2025.01.21]** We supported the alignment fine-tuning of **MiniCPM-o** (audio & image), also included in [the official repository’s README recommendations](https://github.com/OpenBMB/MiniCPM-o#with-align-anything-).
 
 * **[2025.01.17]** 🔥🔥🔥 We supported the fine-tuning of **O1-like reasoning in the text2text modality** (see [DollyTails](https://huggingface.co/datasets/PKU-Alignment/DollyTails-12K)), with multimodal and additional modalities coming soon!
 
@@ -182,7 +186,7 @@ NOTE: The current test environment for Ascend is:
   <summary>Install ascend dependencies using our docker image</summary>
 
 
-  1. **Current Ascend Machine Environment Configuration**  
+  1. **Current Ascend Machine Environment Configuration**
      The current environment configuration for the Ascend Machine is as follows:
 
      ```
@@ -204,7 +208,7 @@ NOTE: The current test environment for Ascend is:
      - Package Version: 23.0.7
      ```
 
-  2. **Create the Docker Container**  
+  2. **Create the Docker Container**
      To get started with the pre-configured environment, you can use the `setup_docker.sh` script located in the `./scripts` directory to pull the Docker image and create a container with all necessary environments set up:
 
        ```
@@ -214,7 +218,7 @@ NOTE: The current test environment for Ascend is:
 
      This will automatically pull the Docker image and create a Docker container where all the dependencies and configurations for running the framework are already set up.
 
-  3. **Warning**  
+  3. **Warning**
      **Environment Compatibility**: The environment mentioned above is tested and verified to work. If you attempt to run the setup on other environments, you may encounter issues. In such cases, you will need to perform debugging and adjustments yourself to ensure compatibility with your specific environment.
 
 </details>

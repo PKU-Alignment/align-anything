@@ -24,9 +24,9 @@ train_cfgs:
   # Batch size per device for prompt-based training
   per_device_prompt_batch_size: 2
   # Batch size per device for training the main model
-  per_device_train_batch_size: 2 
+  per_device_train_batch_size: 2
   # Batch size per device for evaluation
-  per_device_eval_batch_size: 1 
+  per_device_eval_batch_size: 1
   # The number of gradient accumulation steps
   gradient_accumulation_steps: 1
   # Whether to use gradient checkpointing for the actor model

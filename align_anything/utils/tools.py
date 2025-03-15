@@ -852,5 +852,6 @@ def move_padding_left(input_tensor, padding_value=0):
 
     return output_tensor
 
+
 def strip_pad(seq: torch.Tensor, pad_token_id: int):
     return seq[seq != pad_token_id]

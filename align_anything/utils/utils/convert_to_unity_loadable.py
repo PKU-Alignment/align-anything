@@ -45,7 +45,7 @@ def convert_to_unity_loadable(
 ):
     if target_extension not in EXTENSIONS_LOADABLE_IN_UNITY:
         raise Exception(
-            f'Invalid extention `{target_extension}` must be one of {EXTENSIONS_LOADABLE_IN_UNITY}'
+            f'Invalid extension `{target_extension}` must be one of {EXTENSIONS_LOADABLE_IN_UNITY}'
         )
     # no asset_ids in args means all assets
     if len(asset_ids) == 0:

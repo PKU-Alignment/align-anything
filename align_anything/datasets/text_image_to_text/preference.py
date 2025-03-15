@@ -68,7 +68,7 @@ class SafetyPreferenceBatch(TypedDict, total=True):
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
-    is_better_safe: list # size = (B)
+    is_better_safe: list  # size = (B)
     is_worse_safe: list  # size = (B)
 
 
@@ -269,7 +269,7 @@ class SafetyPreferenceDataset(Dataset):
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        
+
         self.raw_data = load_dataset(
             path,
             name=name if name and name != 'None' else None,
@@ -404,7 +404,9 @@ class SafetyPreferenceCollator:
 
         better_response_lens = [sample['better_response_lens'] for sample in samples]
         worse_response_lens = [sample['worse_response_lens'] for sample in samples]
-        return_dict['meta_info']['is_better_safe'] = [sample['is_better_safe'] for sample in samples]
+        return_dict['meta_info']['is_better_safe'] = [
+            sample['is_better_safe'] for sample in samples
+        ]
         return_dict['meta_info']['is_worse_safe'] = [sample['is_worse_safe'] for sample in samples]
         return_dict['meta_info']['response_lens'] = better_response_lens + worse_response_lens
         return return_dict

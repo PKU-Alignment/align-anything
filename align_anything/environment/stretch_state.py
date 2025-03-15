@@ -235,7 +235,7 @@ class StretchState:
 
     @classmethod
     def create_delta_from_goal(cls, current_state: 'StretchState', goal_dict):
-        # use goal paramters and current state to create a goal state. goal_dict must have same keys as the state
+        # use goal parameters and current state to create a goal state. goal_dict must have same keys as the state
         goal_state = copy.deepcopy(current_state)  # init from current
         if 'base_position' in goal_dict:
             # only do this for keys that match
