@@ -54,6 +54,8 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 * **`Coming Soon`** ⚡️⚡️⚡️ We plan to separate the evaluation component from align-anything and establish eval-anything as a dedicated repository for large-scale evaluation of any-to-any models. Meanwhile, align-anything will remain focused on the post-training alignment of any-to-any models.
 
+* **[2025.03.15]**  We have supported seamless migration to Slurm clusters! Check out our example [here](#training-on-slurm) to get started.
+
 * **[2025.03.14]** 🛠️🛠️🛠️ We have supported Safe RLHF-V for `Text + Image -> Text` modality models.
 
 * **[2025.03.12]** 🛠️🛠️🛠️ We have supported resume training for DPO and SFT, see [here](https://github.com/PKU-Alignment/align-anything/pull/153).
