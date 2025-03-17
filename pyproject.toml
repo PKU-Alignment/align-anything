@@ -61,6 +61,20 @@ dynamic = ["version"]
 [project.optional-dependencies]
 # Update dependencies in `all` if any are added or removed
 
+lint = [
+    "isort >= 5.11.0",
+    "black >= 22.6.0",
+    "pylint[spelling] >= 2.15.0",
+    "mypy >= 0.990",
+    "flake8",
+    "flake8-bugbear",
+    "ruff",
+    "doc8",
+    "pydocstyle",
+    "pyenchant",
+    "pre-commit",
+]
+
 train = [
     "torch >= 1.13",
     "frechet_audio_distance",
