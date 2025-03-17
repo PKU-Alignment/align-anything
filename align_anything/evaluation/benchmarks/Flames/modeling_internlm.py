@@ -126,7 +126,7 @@ def _expand_mask(mask: torch.Tensor, dtype: torch.dtype, tgt_len: Optional[int] 
 
 # Copied from transformers.models.llama.modeling_llama.LlamaRMSNorm with Llama->InternLM
 class InternLMRMSNorm(nn.Module):
-    """RMSNorm implemention."""
+    """RMSNorm implementation."""
 
     def __init__(self, hidden_size, eps=1e-6):
         """

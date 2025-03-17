@@ -112,11 +112,17 @@ class CMTrainer(SupervisedTrainerBase):
         higher_rewards, lower_rewards = scores.squeeze(dim=-1).chunk(chunks=2, dim=0)
         higher_end_reward, lower_end_reward = end_scores.squeeze(dim=-1).chunk(chunks=2, dim=0)
 
-        better_sign_list = torch.tensor(batch['meta_info']['is_better_safe']).to(higher_end_reward.device)
-        worse_sign_list = torch.tensor(batch['meta_info']['is_worse_safe']).to(lower_end_reward.device)
+        better_sign_list = torch.tensor(batch['meta_info']['is_better_safe']).to(
+            higher_end_reward.device
+        )
+        worse_sign_list = torch.tensor(batch['meta_info']['is_worse_safe']).to(
+            lower_end_reward.device
+        )
         signed_higher_rewards = higher_end_reward * better_sign_list
         signed_lower_rewards = lower_end_reward * worse_sign_list
-        cost = -F.logsigmoid(signed_higher_rewards).mean() - F.logsigmoid(signed_lower_rewards).mean()
+        cost = (
+            -F.logsigmoid(signed_higher_rewards).mean() - F.logsigmoid(signed_lower_rewards).mean()
+        )
         origin_loss = -F.logsigmoid(higher_end_reward - lower_end_reward).mean()
         loss = self.scale_coeff * cost + origin_loss
 
