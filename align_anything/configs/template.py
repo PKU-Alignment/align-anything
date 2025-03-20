@@ -80,7 +80,12 @@ class ChatTemplate:
                 raw_sample_for_prompt, raw_sample_for_response
             )
         )
-        return self.model_formatter(raw_conversation), multi_modal_info
+        raw_prompt = raw_conversation[:-1]
+        return (
+            self.model_formatter(raw_prompt),
+            self.model_formatter(raw_conversation),
+            multi_modal_info,
+        )
 
     def format_chat_sample(self, raw_conversation: list[dict[str, Any]]) -> tuple[str, Any]:
         return self.model_formatter(raw_conversation), {}

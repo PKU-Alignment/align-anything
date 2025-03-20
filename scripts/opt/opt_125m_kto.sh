@@ -16,20 +16,34 @@
 # ==============================================================================
 
 
-# Initialize variables
-MODEL_NAME_OR_PATH=""
-TRAIN_DATASETS=""
-OUTPUT_DIR=""
-HOSTFILE=""
+MODEL_NAME_OR_PATH="facebook/opt-125m" # model path
+
+TRAIN_DATASETS="../assets/text_to_text/preference" # dpo dataset path
+TRAIN_TEMPLATE="PKUSafeRLHF" # dataset template
+TRAIN_SPLIT="train" # split the dataset
+
+OUTPUT_ROOT_DIR=$OUTPUT_ROOT_DIR
+
+if [ -z "$OUTPUT_ROOT_DIR" ]; then
+    echo "OUTPUT_ROOT_DIR is not set"
+    OUTPUT_ROOT_DIR="../outputs"
+fi
+
+OUTPUT_DIR="${OUTPUT_ROOT_DIR}/opt_125m_kto" # output dir
+
+# For wandb online logging
+export WANDB_API_KEY=""
 
 # Source the setup script
 source ./setup.sh
 
 # Execute deepspeed command
 deepspeed \
-    --hostfile ${HOSTFILE} \
-	--master_port ${MASTER_PORT} \
-	--module align_anything.trainers.text_to_text.sft \
-	--model_name_or_path ${MODEL_NAME_OR_PATH} \
-	--train_datasets ${TRAIN_DATASETS} \
-	--output_dir ${OUTPUT_DIR}
+     --master_port ${MASTER_PORT} \
+     --module align_anything.trainers.text_to_text.kto \
+     --model_name_or_path ${MODEL_NAME_OR_PATH} \
+     --train_template ${TRAIN_TEMPLATE} \
+     --train_datasets ${TRAIN_DATASETS} \
+     --train_split ${TRAIN_SPLIT} \
+     --output_dir ${OUTPUT_DIR} \
+     --epochs 1
