@@ -230,11 +230,11 @@ NOTE: The current test environment for Ascend is:
 
 We provide some scripts for quick start, you can find them in the `./scripts` directory. These scripts would automatically download the model and dataset, and run the training or evaluation.
 
-For example, `scripts/llava_dpo.sh` is the script for `Text + Image -> Text` modality, you can run it by:
+For example, `scripts/llava/llava_dpo.sh` is the script for `Text + Image -> Text` modality, you can run it by:
 
 ```bash
 cd scripts
-bash llava_dpo.sh
+bash llava/llava_dpo.sh
 ```
 
 
@@ -242,16 +242,16 @@ bash llava_dpo.sh
 > We fully support seamless migration to Slurm. If you plan to run training on a Slurm-managed cluster, we invite you to use our example Slurm training script:
 >```bash
 >cd scripts
->bash slurm_llava_dpo.sh
+>bash slurm/slurm_llava_dpo.sh
 >```
 >This script is pre-configured with suitable Slurm parameters. You only need to adjust the settings (such as the `job name`, `partition`, `account`, `path` and `resource allocations`) to match your cluster configuration.
 ### Evaluation
 
-After training, you can evaluate the model by running the `scripts/llava_eval.sh` script.
+After training, you can evaluate the model by running the `scripts/evaluation/llava_eval.sh` script.
 
 ```bash
 cd scripts
-bash llava_eval.sh
+bash evaluation/llava_eval.sh
 ```
 
 You can simply modify the parameters in the script to suit your needs, *e.g.*, the `MODEL_NAME_OR_PATH` for your own model or `TRAIN_DATASETS` for your own dataset. For more details please refer to the [Advanced Usage](#advanced-usage) section.
@@ -521,7 +521,7 @@ Then decompress the compressed data package.
 modify ``HOME_PREFIX`` in ``align-anything/scripts/il_training.sh`` to your local data path.
 
 ```bash
-bash scripts/il_training.sh
+bash scripts/vla/il_training.sh
 ```
 
 More details on [AlignVLA](align_anything/trainers/text_video_to_action/README.md)
