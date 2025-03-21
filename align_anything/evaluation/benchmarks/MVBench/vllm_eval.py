@@ -19,6 +19,7 @@ from collections import defaultdict
 
 import av
 import numpy as np
+from tqdm import tqdm
 from transformers import AutoProcessor, LlavaNextVideoProcessor
 
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
@@ -30,7 +31,6 @@ from align_anything.evaluation.inference.vllm_inference import (
     extract_choices,
     re,
     save_detail,
-    tqdm,
 )
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,

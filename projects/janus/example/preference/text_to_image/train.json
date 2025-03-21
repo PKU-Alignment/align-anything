@@ -1,0 +1,17 @@
+[
+    {
+        "prompt": "A close-up high-contrast photo of a doomed cityscape, with dark blue skies and high-rise buildings standing in the distance.",
+        "better_image": "images/example_1.png",
+        "worse_image": "images/example_2.png"
+    },
+    {
+        "prompt": "A close-up high-contrast photo of a doomed cityscape, with dark blue skies and high-rise buildings standing in the distance.",
+        "better_image": "images/example_1.png",
+        "worse_image": "images/example_2.png"
+    },
+    {
+        "prompt": "A close-up high-contrast photo of a doomed cityscape, with dark blue skies and high-rise buildings standing in the distance.",
+        "better_image": "images/example_1.png",
+        "worse_image": "images/example_2.png"
+    }
+]

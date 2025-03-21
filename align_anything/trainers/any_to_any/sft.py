@@ -20,7 +20,6 @@ import os
 import sys
 
 import deepspeed
-import torch
 import transformers
 from transformers import AutoImageProcessor, AutoModel, AutoTokenizer
 
@@ -28,6 +27,7 @@ from align_anything.datasets.any_to_any import SupervisedDataset
 from align_anything.models.modeling_emu3.mllm.processing_emu3 import Emu3Processor
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.text_to_text.sft import SupervisedTrainer as SupervisedtextTrainer
+from align_anything.utils.device_utils import torch_set_device
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
@@ -82,7 +82,7 @@ def main():
     # setup distribution training
     deepspeed.init_distributed()
     current_device = get_current_device()
-    torch.cuda.set_device(current_device)
+    torch_set_device(current_device)
 
     # read default configs from the yaml file
     task = os.path.join('any_to_any', 'sft')

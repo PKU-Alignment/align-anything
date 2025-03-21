@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,11 +24,9 @@ import torch
 import transformers
 from janus.models import MultiModalityCausalLM, VLChatProcessor, VLMImageProcessor
 
-from align_anything.datasets.janus import (
-    SupervisedBatch,
-    SupervisedTokenizedDataset,
-)
+from align_anything.datasets.janus import SupervisedBatch, SupervisedTokenizedDataset
 from align_anything.trainers.text_to_text.sft import SupervisedTrainer as SupervisedtextTrainer
+from align_anything.utils.device_utils import torch_set_device
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
@@ -81,7 +79,7 @@ class SuperviseTrainer(SupervisedtextTrainer):
 
     def loss(self, sft_batch: SupervisedBatch) -> dict[str, torch.Tensor]:
         """Loss function for supervised finetuning."""
-        outputs = self.model.forward(**sft_batch, modality='generation')
+        outputs = self.model.forward(**sft_batch, task=sft_batch['task'])
         return {
             'loss': outputs.loss,
         }
@@ -91,7 +89,7 @@ def main():
     # setup distribution training
     deepspeed.init_distributed()
     current_device = get_current_device()
-    torch.cuda.set_device(current_device)
+    torch_set_device(current_device)
 
     # read default configs from the yaml file
     task = os.path.join('janus', 'sft')

@@ -36,6 +36,7 @@ from align_anything.datasets.text_to_text import (
 )
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.base import RLTrainerBase
+from align_anything.utils.device_utils import get_current_device, torch_gc, torch_set_device
 from align_anything.utils.multi_process import (
     get_all_reduce_max,
     get_all_reduce_mean,
@@ -432,7 +433,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
                     ptx_batches = self.split_ptx_micro_batches(ptx_batch)
                 else:
                     ptx_batches = [None for _ in range(len(inference_batches))]
-                torch.cuda.empty_cache()
+                torch_gc()
 
                 for _ in range(self.cfgs.train_cfgs.update_iters):
                     for inference_batch, training_batch, ptx_batch in zip(
@@ -440,11 +441,11 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
                     ):
                         rl_info = self.rl_step(inference_batch, training_batch)
 
-                        torch.cuda.empty_cache()
+                        torch_gc()
                         self.logger.log(rl_info, step=self.global_step)
                         if self.use_ptx:
                             ptx_info = self.ptx_step(ptx_batch)
-                            torch.cuda.empty_cache()
+                            torch_gc()
                             self.logger.log(ptx_info, step=self.global_step)
 
                         self.global_step += 1
@@ -454,7 +455,13 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
                         )
                         progress_bar.update(1)
 
-                        if self.global_step % self.cfgs.logger_cfgs.save_interval == 0:
+                        save_interval = (
+                            self.cfgs.train_cfgs.epochs
+                            * len(self.prompt_only_dataloader)
+                            // self.cfgs.logger_cfgs.save_total_limit
+                        )
+
+                        if self.global_step % save_interval == 0:
                             self.logger.print(f'Saving checkpoint at step {self.global_step} ...')
                             self.save(tag=self.global_step)
                             self.logger.print('Checkpoint saved.')
@@ -550,7 +557,7 @@ def main():
     # setup distribution training
     deepspeed.init_distributed()
     current_device = get_current_device()
-    torch.cuda.set_device(current_device)
+    torch_set_device(current_device)
 
     # read default configs from the yaml file
     task = os.path.join('text_to_text', 'ppo')

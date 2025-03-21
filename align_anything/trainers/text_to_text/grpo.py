@@ -17,7 +17,6 @@
 
 import argparse
 import copy
-import itertools
 import os
 import sys
 
@@ -28,11 +27,11 @@ from tqdm import tqdm
 from transformers import GenerationConfig
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-from align_anything.datasets.text_to_text import PromptOnlyBatch, PromptOnlyDataset, SupervisedDataset
+from align_anything.datasets.text_to_text import PromptOnlyDataset, SupervisedDataset
 from align_anything.models.pretrained_model import load_pretrained_models
 from align_anything.trainers.base import RLTrainerBase
+from align_anything.utils.device_utils import torch_set_device
 from align_anything.utils.multi_process import (
-    get_all_reduce_max,
     get_all_reduce_mean,
     get_current_device,
     is_main_process,
@@ -41,16 +40,12 @@ from align_anything.utils.tools import (
     batch_retokenize,
     custom_cfgs_to_dict,
     dict_to_namedtuple,
-    gather_log_probabilities,
-    is_same_tokenizer,
-    masked_mean,
     prepare_ds_eval_cfgs,
     prepare_ds_train_cfgs,
     read_cfgs,
     seed_everything,
     update_dict,
 )
-
 
 
 class GRPOTrainer(RLTrainerBase):
@@ -63,7 +58,7 @@ class GRPOTrainer(RLTrainerBase):
 
         self.init_check()
         dist.barrier()
-        self.infer_batch = lambda batch: {k: v for k, v in batch.items() if k != "meta_info"}
+        self.infer_batch = lambda batch: {k: v for k, v in batch.items() if k != 'meta_info'}
         dist.barrier()
         self.init_models()
         dist.barrier()
@@ -74,28 +69,33 @@ class GRPOTrainer(RLTrainerBase):
         self.init_logger()
 
         self.beta = self.cfgs.train_cfgs.beta  # KL regularization coefficient
-        self.num_generations = self.cfgs.train_cfgs.num_generations  # number of sequences generated for each prompt
+        self.num_generations = (
+            self.cfgs.train_cfgs.num_generations
+        )  # number of sequences generated for each prompt
 
     def init_check(self) -> None:
         super().init_check()
-        if self.cfgs.train_cfgs.per_device_prompt_batch_size % self.cfgs.train_cfgs.per_device_train_batch_size != 0:
+        if (
+            self.cfgs.train_cfgs.per_device_prompt_batch_size
+            % self.cfgs.train_cfgs.per_device_train_batch_size
+            != 0
+        ):
             raise ValueError('Every prompt batch size must be divisible by the micro-batch size.')
 
     def init_models(self) -> None:
         # DeepSpeed configuration, different from that in RLTrainerBase, we don't need critic model in GRPO
-        if self.ds_train_cfgs["zero_optimization"]["stage"] == 3:
+        if self.ds_train_cfgs['zero_optimization']['stage'] == 3:
             self.dstchf_train = HfDeepSpeedConfig(self.ds_train_cfgs)
-        if self.ds_eval_cfgs["zero_optimization"]["stage"] == 3:
+        if self.ds_eval_cfgs['zero_optimization']['stage'] == 3:
             self.dsechf_eval = HfDeepSpeedConfig(self.ds_eval_cfgs)
 
         self.bnb_cfgs = self.cfgs.bnb_cfgs
         self.lora_cfgs = self.cfgs.lora_cfgs
 
-
         self.actor_model, self.tokenizer, self.processor = load_pretrained_models(
             self.cfgs.model_cfgs.actor_model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side="left",
+            padding_side='left',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
@@ -105,7 +105,7 @@ class GRPOTrainer(RLTrainerBase):
         self.actor_reference_model, _, _ = load_pretrained_models(
             self.cfgs.model_cfgs.actor_model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side="left",
+            padding_side='left',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             bnb_cfgs=self.bnb_cfgs,
             lora_cfgs=self.lora_cfgs,
@@ -115,12 +115,11 @@ class GRPOTrainer(RLTrainerBase):
         self.reward_model, self.reward_tokenizer, _ = load_pretrained_models(
             self.cfgs.model_cfgs.reward_model_name_or_path,
             model_max_length=self.cfgs.model_cfgs.model_max_length,
-            padding_side="right",
+            padding_side='right',
             trust_remote_code=self.cfgs.model_cfgs.trust_remote_code,
             is_reward_model=True,
             processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
-
 
         self.generation_config = GenerationConfig(
             max_length=self.cfgs.model_cfgs.model_max_length,
@@ -189,6 +188,10 @@ class GRPOTrainer(RLTrainerBase):
             ds_cfgs=self.ds_eval_cfgs,
         )
         self.reward_model.eval()
+
+        # load the checkpoint if specified
+        if self.cfgs.train_cfgs.load_checkpoint:
+            self.actor_model.load_checkpoint(load_dir=self.cfgs.model_cfgs.actor_model_name_or_path)
         # setup the gradient checkpointing
         if self.cfgs.train_cfgs.actor_gradient_checkpointing and not self.lora_enabled:
             self.actor_model.gradient_checkpointing_enable()
@@ -246,8 +249,10 @@ class GRPOTrainer(RLTrainerBase):
         )
         reward_inputs = {k: v.to(sequences.device) for k, v in reward_tokenize_output.items()}
         with torch.no_grad():
-            rewards = self.reward_model(**reward_inputs).end_scores.squeeze(dim=-1) # shape: (B*num_generations,
-        return rewards 
+            rewards = self.reward_model(**reward_inputs).end_scores.squeeze(
+                dim=-1
+            )  # shape: (B*num_generations,
+        return rewards
 
     def train_step(self, prompt_batch: dict) -> dict[str, float]:
         """Single training step"""
@@ -255,7 +260,7 @@ class GRPOTrainer(RLTrainerBase):
         prompt_batch = {k: v.to(device) for k, v in prompt_batch.items()}
 
         # record the original prompt length
-        prompt_length = prompt_batch["input_ids"].size(1)
+        prompt_length = prompt_batch['input_ids'].size(1)
 
         # generate multiple completions (each prompt generates num_generations sequences)
         sequences = self.generate_completions(prompt_batch)  # shape: (B * num_generations, L_total)
@@ -264,7 +269,7 @@ class GRPOTrainer(RLTrainerBase):
 
         # compute rewards
         rewards = self.compute_rewards(sequences, prompt_length)  # shape: (B * num_generations,)
-        B = prompt_batch["input_ids"].size(0)
+        B = prompt_batch['input_ids'].size(0)
         G = self.num_generations
         rewards = rewards.view(B, G)
         group_mean = rewards.mean(dim=1, keepdim=True)
@@ -277,7 +282,9 @@ class GRPOTrainer(RLTrainerBase):
         logits_to_keep = sequences.size(1) - prompt_length
 
         # compute the per-token log-probabilities of the actor_model on the generated sequences
-        per_token_logps = self._get_per_token_logps(self.actor_model, sequences, attention_mask, logits_to_keep)
+        per_token_logps = self._get_per_token_logps(
+            self.actor_model, sequences, attention_mask, logits_to_keep
+        )
         # the log-probabilities of the reference model (no gradient)
         with torch.no_grad():
             ref_per_token_logps = self._get_per_token_logps(
@@ -285,7 +292,11 @@ class GRPOTrainer(RLTrainerBase):
             )
 
         # compute the per-token KL divergence: KL = exp(ref - logp) - (ref - logp) - 1
-        per_token_kl = torch.exp(ref_per_token_logps - per_token_logps) - (ref_per_token_logps - per_token_logps) - 1
+        per_token_kl = (
+            torch.exp(ref_per_token_logps - per_token_logps)
+            - (ref_per_token_logps - per_token_logps)
+            - 1
+        )
 
         # expand the advantages to each token (assume the same advantages for all completion tokens)
         advantages_expanded = advantages.expand(-1, logits_to_keep)
@@ -315,28 +326,36 @@ class GRPOTrainer(RLTrainerBase):
         loss_val = get_all_reduce_mean(loss).item()
         avg_reward = get_all_reduce_mean(rewards.mean()).item()
 
-        return {"train/loss": loss_val, "train/reward": avg_reward}
+        return {'train/loss': loss_val, 'train/reward': avg_reward}
 
     def train(self) -> None:
         """Training main loop"""
+        self.logger.print('***** Running GRPO training *****')
 
-        self.logger.print("***** Running GRPO training *****")
-
-        total_training_steps = self.cfgs.train_cfgs.total_training_steps
+        total_training_steps = self.total_training_steps
         progress_bar = tqdm(
             total=total_training_steps,
-            desc=f"Training 1/{self.cfgs.train_cfgs.epochs} epoch",
+            desc=f'Training 1/{self.cfgs.train_cfgs.epochs} epoch',
             position=0,
             leave=True,
             disable=not is_main_process(),
         )
+        progress_bar.update(self.global_step)
 
         if self.cfgs.data_cfgs.eval_datasets:
-            self.logger.print("\n***** Evaluating at the beginning *****")
             self.eval()
 
-        for epoch in range(int(self.cfgs.train_cfgs.epochs)):
-            for prompt_batch in self.prompt_only_dataloader:
+        remain_epoch = self.cfgs.train_cfgs.epochs - (
+            self.global_step // len(self.prompt_only_dataloader)
+        )
+
+        start_batch_idx = self.global_step % len(self.prompt_only_dataloader)
+
+        for epoch in range(int(remain_epoch)):
+            for batch_idx, prompt_batch in enumerate(self.prompt_only_dataloader):
+                if epoch == 0 and batch_idx < start_batch_idx:
+                    continue
+
                 train_info = self.train_step(prompt_batch)
                 self.global_step += 1
 
@@ -346,17 +365,22 @@ class GRPOTrainer(RLTrainerBase):
                 )
                 progress_bar.update(1)
 
-                if self.global_step % self.cfgs.logger_cfgs.save_interval == 0:
-                    self.logger.print(f"Saving checkpoint at step {self.global_step} ...")
+                save_interval = (
+                    self.cfgs.train_cfgs.epochs
+                    * len(self.prompt_only_dataloader)
+                    // self.cfgs.logger_cfgs.save_total_limit
+                )
+                if self.global_step % save_interval == 0:
+                    self.logger.print(f'Saving checkpoint at step {self.global_step} ...')
                     self.save(tag=self.global_step)
-                    self.logger.print("Checkpoint saved.")
+                    self.logger.print('Checkpoint saved.')
 
                 if (
                     self.cfgs.data_cfgs.eval_datasets
-                    and self.cfgs.train_cfgs.eval_strategy == "steps"
+                    and self.cfgs.train_cfgs.eval_strategy == 'steps'
                     and self.global_step % self.cfgs.train_cfgs.eval_interval == 0
                 ):
-                    self.logger.print(f"\n***** Evaluating at step {self.global_step} *****")
+                    self.logger.print(f'\n***** Evaluating at step {self.global_step} *****')
                     self.eval()
 
         self.save()
@@ -369,11 +393,11 @@ def main():
     # initialize distributed training
     deepspeed.init_distributed()
     current_device = get_current_device()
-    torch.cuda.set_device(current_device)
+    torch_set_device(current_device)
 
     # read the default configuration from the yaml file
-    task = os.path.join("text_to_text", "grpo")
-    dict_cfgs, ds_cfgs = read_cfgs(mode="train", task=task)
+    task = os.path.join('text_to_text', 'grpo')
+    dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # read the custom configuration from the command line
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -393,5 +417,5 @@ def main():
     trainer.save()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())

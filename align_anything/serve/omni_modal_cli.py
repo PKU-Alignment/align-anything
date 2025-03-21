@@ -24,6 +24,7 @@ import torch
 from PIL import Image
 
 from align_anything.models.pretrained_model import load_pretrained_models
+from align_anything.utils.device_utils import get_current_device
 from align_anything.utils.process_minicpmo import get_video_chunk_content
 
 
@@ -149,7 +150,7 @@ if __name__ == '__main__':
         trust_remote_code=True,
         auto_model_kwargs={'init_vision': True, 'init_audio': True, 'init_tts': True},
     )
-    model = model.eval().cuda()
+    model = model.eval().to(get_current_device())
 
     examples = IMAGE_EXAMPLES + AUDIO_EXAMPLES + VIDEO_EXAMPLES
     iface = gr.ChatInterface(

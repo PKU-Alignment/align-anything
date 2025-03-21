@@ -1,6 +1,5 @@
 {
-    "SamplingParams":
-    {
+    "SamplingParams": {
         "n": 1,
         "top_k": 20,
         "top_p": 0.9,
@@ -8,8 +7,7 @@
         "prompt_logprobs": 0,
         "logprobs": 5
     },
-    "LLM":
-    {
+    "LLM": {
         "tokenizer_mode": "auto",
         "trust_remote_code": false,
         "gpu_memory_utilization": 0.8,

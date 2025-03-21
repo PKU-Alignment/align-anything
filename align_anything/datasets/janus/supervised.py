@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ class SupervisedBatch(TypedDict, total=True):
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    task: str
 
 
 class SupervisedDataset(Dataset):
@@ -127,6 +128,7 @@ class SupervisedDataset(Dataset):
             return_dict = full_inputs.copy()
             return_dict['labels'] = return_dict['input_ids'].clone()
             return_dict['labels'][: len(prompt_inputs['input_ids'])] = IGNORE_INDEX
+            return_dict['task'] = 'understanding'
         elif 'output_image' in formatted_sample and formatted_sample['output_image'] is not None:
             raise NotImplementedError(
                 'Not implemented inside SupervisedDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
@@ -189,7 +191,7 @@ class SupervisedTokenizedDataset(Dataset):
         self.tokenizer = tokenizer
         self.processor = processor
 
-        self.raw_data = torch.load(f"{path}/{data_files}", map_location=torch.device('cpu'))
+        self.raw_data = torch.load(f'{path}/{data_files}', map_location=torch.device('cpu'))
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
         self.template = template
@@ -251,4 +253,5 @@ class SupervisedCollator:
 
             return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device)
 
+        return_dict['task'] = samples[0]['task']
         return return_dict

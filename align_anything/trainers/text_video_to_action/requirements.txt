@@ -1,0 +1,85 @@
+# Checks style, syntax, and other useful errors.
+flake8
+
+# Static type checking
+mypy==1.2.0
+
+# Automatic code formatting
+black
+
+# Running tests
+pytest
+pytest-xdist
+
+# Flaky tests
+flaky
+
+# Other reqs
+invoke==2.0.0
+attrs
+prior
+stringcase
+nltk @ git+https://github.com/nltk/nltk@582e6e35f0e6c984b44ec49dcb8846d9c011d0a8
+phonemizer
+networkx
+numpy-quaternion==2022.4.1
+tensorboardx>=2.1
+setproctitle
+moviepy>=1.0.3
+filelock
+numpy==1.23.5
+matplotlib>=3.3.1
+opencv-python
+wheel>=0.36.2
+attrs>=21.4.0
+scipy>=1.5.4
+prior
+canonicaljson
+plotly
+shapely
+h5py
+pyquaternion>=0.9.9
+omegaconf
+boto3
+petname
+wget
+pandas
+python-sat
+python-fcl
+invoke
+wandb
+scikit-video
+nbformat
+pre-commit
+black==23.3.0
+scikit-image
+torchmetrics
+av
+shortuuid
+transformers
+ipdb
+prettytable
+fire
+decorator==4.4.2
+timeout-decorator
+objathor>=0.0.2
+librosa
+# for objaverse pipeline
+trimesh
+objaverse
+compress_pickle
+compress_json
+
+# for proper determiners with phonemization
+phonemizer
+
+-e git+https://github.com/openai/CLIP.git@a1d071733d7111c9c014f024669f959182114e33#egg=clip
+torch==2.0.0
+torchvision==0.15.1
+torchaudio==2.0.1
+xformers==0.0.19
+lightning
+open-clip-torch
+-e "git+https://github.com/openai/CLIP.git@a1d071733d7111c9c014f024669f959182114e33#egg=clip"
+-e "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact&subdirectory=allenact"
+-e "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact_plugins[all]&subdirectory=allenact_plugins"

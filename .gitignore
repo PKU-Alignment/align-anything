@@ -35,6 +35,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 *.whl
+**/src/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -89,7 +90,6 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb
 
 # IPython
 profile_default/

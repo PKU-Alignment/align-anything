@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team and LlamaFactory team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team and LlamaFactory team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -189,8 +189,8 @@ class Alpaca(BaseFormatter):
         prompt = ' '.join((raw_sample['instruction'], raw_sample['input']))
         response = raw_sample['output']
         return [
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': response},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': response}]},
         ], {}
 
 
@@ -207,13 +207,13 @@ class PKUSafeRLHF(BaseFormatter):
         prompt = raw_sample['prompt']
 
         better_conversation = [
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': better_response},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': better_response}]},
         ]
 
         worse_conversation = [
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': worse_response},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': worse_response}]},
         ]
 
         meta_info = {
@@ -228,7 +228,7 @@ class PKUSafeRLHF(BaseFormatter):
     ) -> tuple[list[dict[str, Any]], str]:
         prompt = raw_sample['prompt']
         return [
-            {'role': 'user', 'content': prompt},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
         ], {}
 
     def format_unmatched_supervised_sample(
@@ -237,8 +237,8 @@ class PKUSafeRLHF(BaseFormatter):
         prompt = raw_sample_for_prompt['prompt']
         response = raw_sample_for_response['response_1']
         return [
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': response},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': response}]},
         ], {}
 
 
@@ -252,9 +252,9 @@ class Aligner(BaseFormatter):
         text = '##CORRECTION: ' + raw_sample['correction']
 
         return [
-            {'role': 'system', 'content': self.system_prompt},
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': text},
+            {'role': 'system', 'content': [{'type': 'text', 'text': self.system_prompt}]},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': text}]},
         ], {}
 
 
@@ -1836,3 +1836,200 @@ class OpenAQA:
             'conversation': conversation,
             'prompt': conversation[:-1],
         }
+
+
+@register_template('SafeRLHF_V_Reward')
+class SafeRLHF_V_Reward(BaseFormatter):
+    system_prompt: str = ''
+
+    def format_preference_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+        better_id = int(raw_sample['more_helpful_response_id'])
+        worse_id = 2 if better_id == 1 else 1
+
+        if better_id not in [1, 2] or worse_id not in [1, 2]:
+            return [], [], {}
+
+        raw_better_response = raw_sample[f'response_{better_id}']
+        raw_worse_response = raw_sample[f'response_{worse_id}']
+        prompt = raw_sample['question']
+        image = raw_sample['image']
+        better_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_better_response}]},
+        ]
+        worse_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_worse_response}]},
+        ]
+
+        meta_info = {
+            'image': image,
+            'better_response': raw_better_response,
+            'worse_response': raw_worse_response,
+        }
+
+        return better_conversation, worse_conversation, meta_info
+
+    def format_prompt_only_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['question']
+        image = raw_sample['image']
+
+        return [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+        ], {'image': image}
+
+    def format_supervised_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['prompt']
+        answer = raw_sample['response']
+        image = raw_sample['image']
+
+        return [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {'image': image}
+
+    def check_validation(self, raw_sample: dict[str, Any]) -> bool:
+        better_id = int(raw_sample['more_helpful_response_id'])
+        worse_id = 2 if better_id == 1 else 1
+        return better_id in [1, 2] and worse_id in [1, 2]
+
+
+@register_template('SafeRLHF_V_Cost')
+class SafeRLHF_V_Cost(BaseFormatter):
+    system_prompt: str = ''
+
+    def format_preference_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+        worse_id = int(raw_sample['safer_response_id'])
+        better_id = 2 if worse_id == 1 else 1
+
+        if better_id not in [1, 2] or worse_id not in [1, 2]:
+            return [], [], {}
+
+        raw_better_response = raw_sample[f'response_{better_id}']
+        raw_worse_response = raw_sample[f'response_{worse_id}']
+        prompt = raw_sample['question']
+        image = raw_sample['image']
+        better_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_better_response}]},
+        ]
+        worse_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_worse_response}]},
+        ]
+
+        is_better_safe = raw_sample[f'response_{better_id}_harmless_rate'] * (-1)
+        is_worse_safe = raw_sample[f'response_{worse_id}_harmless_rate'] * (-1)
+
+        meta_info = {
+            'image': image,
+            'better_response': raw_better_response,
+            'worse_response': raw_worse_response,
+            'is_better_safe': is_better_safe,
+            'is_worse_safe': is_worse_safe,
+        }
+
+        return better_conversation, worse_conversation, meta_info
+
+    def format_prompt_only_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['question']
+        image = raw_sample['image']
+
+        return [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+        ], {'image': image}
+
+    def format_supervised_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['prompt']
+        answer = raw_sample['response']
+        image = raw_sample['image']
+
+        return [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {'image': image}
+
+    def check_validation(self, raw_sample: dict[str, Any]) -> bool:
+        better_id = int(raw_sample['safer_response_id'])
+        worse_id = 2 if better_id == 1 else 1
+        return better_id in [1, 2] and worse_id in [1, 2]
+
+
+@register_template('LLaVA_Pretrain')
+class LLaVA_Pretrain(BaseFormatter):
+    system_prompt: str = ''
+
+    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
+        conversation = raw_sample['conversations']
+        for message in conversation:
+            if message['from'] == 'human':
+                prompt = message['value']
+            elif message['from'] == 'gpt':
+                answer = message['value']
+        coco_data_dir = os.environ['COCO_DATA_DIR']
+        image_path = os.path.join(coco_data_dir, raw_sample['image'])
+        image = Image.open(image_path).convert('RGBA')
+        return [
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {'image': image}

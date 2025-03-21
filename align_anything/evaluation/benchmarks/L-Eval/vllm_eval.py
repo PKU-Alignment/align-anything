@@ -19,6 +19,7 @@ import re
 from typing import Dict, List
 
 import requests
+from tqdm import tqdm
 
 from align_anything.evaluation.data_type import InferenceInput, InferenceOutput
 from align_anything.evaluation.dataloader.base_dataloader import BaseDataLoader
@@ -28,7 +29,6 @@ from align_anything.evaluation.inference.vllm_inference import (
     logger,
     os,
     save_detail,
-    tqdm,
 )
 from align_anything.utils.template_registry import get_eval_template_class as get_template_class
 from align_anything.utils.tools import (

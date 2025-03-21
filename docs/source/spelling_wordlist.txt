@@ -1,5 +1,5 @@
-OmniSafe
-omnisafe
+Align-Anything
+Align-Anything
 RL
 envs
 env
@@ -487,3 +487,5 @@ mathbb
 meger
 Jupyter
 ans
+CANN
+nd

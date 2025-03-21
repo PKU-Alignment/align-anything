@@ -45,6 +45,7 @@ from torchvision.transforms import InterpolationMode
 from transformers import PreTrainedTokenizerBase, ProcessorMixin
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
 
+from align_anything.utils.device_utils import get_current_device, manual_seed_all
 from align_anything.utils.multi_process import print_on_main_process
 
 
@@ -376,8 +377,7 @@ def seed_everything(seed: int) -> None:
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    manual_seed_all(seed)
 
 
 def split_prompt_response(
@@ -582,7 +582,7 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
     assert batch_size > 0
     assert N > batch_size
 
-    device = torch.device('cuda' if cuda and torch.cuda.is_available() else 'cpu')
+    device = get_current_device() if cuda else 'cpu'
 
     dataloader = torch.utils.data.DataLoader(imgs, batch_size=batch_size)
     inception_model = inception_v3(pretrained=True, transform_input=False).to(device)
@@ -824,3 +824,34 @@ def ends_with_any(s, substrings):
     """
     temp = s.strip()
     return temp.endswith(tuple(substrings))
+
+
+def move_padding_left(input_tensor, padding_value=0):
+    """Moves the padding values in each row of the input_tensor from the right to the left.
+
+    Args:
+        input_tensor (Tensor): A 2D tensor to be processed.
+        padding_value (int): The value used for padding, default is 0.
+
+    Returns:
+        Tensor: The tensor with padding values moved to the left.
+    """
+    start_pad_counts = (
+        (input_tensor == padding_value)
+        .cumsum(dim=1)
+        .eq(torch.arange(1, input_tensor.size(1) + 1, device=input_tensor.device))
+        .sum(dim=1)
+    )
+    non_pad_counts = (input_tensor != padding_value).sum(dim=1)
+    output_tensor = torch.full_like(input_tensor, padding_value, device=input_tensor.device)
+    max_len = input_tensor.size(1)
+    indices = torch.arange(max_len, device=input_tensor.device).expand(len(non_pad_counts), max_len)
+    shifts = max_len - non_pad_counts.unsqueeze(1) - start_pad_counts.unsqueeze(1)
+    new_indices = (indices - shifts) % max_len
+    output_tensor = torch.gather(input_tensor, 1, new_indices)
+
+    return output_tensor
+
+
+def strip_pad(seq: torch.Tensor, pad_token_id: int):
+    return seq[seq != pad_token_id]
