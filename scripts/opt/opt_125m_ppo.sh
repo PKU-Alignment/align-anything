@@ -17,8 +17,8 @@
 
 
 ACTOR_MODEL_NAME_OR_PATH="facebook/opt-125m" # actor model path
-CRITIC_MODEL_NAME_OR_PATH="facebook/opt-125m" # critic model path
-REWARD_MODEL_NAME_OR_PATH="facebook/opt-125m" # reward model path
+CRITIC_MODEL_NAME_OR_PATH=${REWARD_MODEL_NAME_OR_PATH:-"facebook/opt-125m"} # please set the reward model path
+REWARD_MODEL_NAME_OR_PATH=${REWARD_MODEL_NAME_OR_PATH:-"facebook/opt-125m"} # please set the reward model path
 
 TRAIN_DATASETS="../assets/text_to_text/preference" # rlhf dataset path
 TRAIN_TEMPLATE="PKUSafeRLHF" # rlhf dataset template
