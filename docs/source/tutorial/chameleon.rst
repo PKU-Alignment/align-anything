@@ -154,54 +154,6 @@ After pre-tokenizing the dataset, you can start training the model using the fol
 
 .. tab-set::
 
-    .. tab-item:: SFT
-
-        .. card::
-            :class-header: sd-bg-success sd-text-white sd-font-weight-bold
-            :class-card: sd-outline-success sd-rounded-1 sd-font-weight-bold
-            :class-footer: sd-font-weight-bold
-
-            Supervised Fine-Tuning
-            ^^^^^^^^^^^^^^^^^^^^^^
-
-            Add a script named ``sft_text_image_to_text_image.sh`` under the ``scripts`` file like this:
-
-            .. code:: bash
-
-                MODEL_NAME_OR_PATH="PKU-Alignment/AA-chameleon-7b-base"
-                TRAIN_DATASETS=""
-                PT_NAME=""
-                OUTPUT_DIR="../outputs/sft_text_image_to_text_image"
-                export WANDB_API_KEY=""
-                source ./setup.sh
-
-                deepspeed \
-                    --master_port ${MASTER_PORT} \
-                    --module align_anything.trainers.text_image_to_text_image.sft \
-                    --model_name_or_path ${MODEL_NAME_OR_PATH} \
-                    --train_datasets ${TRAIN_DATASETS} \
-                    --train_data_files ${PT_NAME} \
-                    --output_dir ${OUTPUT_DIR} \
-                    --train_template ANYTHING_TI2TI \
-                    --train_split 'train' \
-                    --per_device_train_batch_size 2 \
-                    --per_device_eval_batch_size 2 \
-                    --gradient_accumulation_steps 2 \
-                    --save_interval 500 \
-                    --learning_rate 5e-5 \
-                    --epochs 3 \
-                    --lr_scheduler_type constant
-
-            and set up the correct model path and dataset path, then run:
-
-            .. code:: bash
-
-                bash scripts/sft_text_image_to_text_image.sh
-
-            .. admonition:: Note
-                :class: note
-
-                - Supposed your pre-tokenized dataset is stored in ``/path/to/dataset/dataset_file_name.pt``, then the ``TRAIN_DATASETS`` should be ``/path/to/dataset`` and the ``PT_NAME`` should be ``dataset_file_name.pt``.
 
     .. tab-item:: DPO
 
@@ -262,7 +214,7 @@ After pre-tokenizing the dataset, you can start training the model using the fol
             Reward Model
             ^^^^^^^^^^^^
 
-            Add a script named ``rm_text_image_to_text_image.sh`` under the ``scripts`` file like this:
+            Add a script named ``chameleon/chameleon_rm.sh`` under the ``scripts`` file like this:
 
             .. code:: bash
 
@@ -316,7 +268,7 @@ After pre-tokenizing the dataset, you can start training the model using the fol
             Proximal Policy Optimization
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-            Add a script named ``ppo_text_image_to_text_image.sh`` under the ``scripts`` file like this:
+            Add a script named ``chameleon/chameleon_ppo.sh`` under the ``scripts`` file like this:
 
             .. code:: bash
 
