@@ -2,7 +2,7 @@
 #
 # Copyright 2025 Allen Institute for AI
 
-# Copyright 2025-2025 Align-Anything Team. All Rights Reserved.
+# Copyright 2025 Align-Anything Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
