@@ -88,6 +88,7 @@ MODEL_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('modeling_emu3.mllm.modeling_emu3', 'Emu3ForCausalLM'),
         ('llava_next_video', 'AccustomedLlavaNextVideoModel'),
         ('idefics2', 'AccustomedIdefics2Model'),
+        ('gemma3', 'AccustomedGemma3Model'),
     ],
 )
 
