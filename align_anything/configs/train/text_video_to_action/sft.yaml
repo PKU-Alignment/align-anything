@@ -1,4 +1,6 @@
-# Copyright 2024 Your Organization. All Rights Reserved.
+# Copyright 2024 Allen Institute for AI
+
+# Copyright 2025 Align-Anything Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -90,11 +92,11 @@ logger_cfgs:
   # Type of logging to use, choosing from [wandb, tensorboard]
   log_type: "wandb"
   # Project name for logging
-  log_project: "align_vla"
+  log_project: null
   # Run name for logging
-  log_run_name: "rl_train"
+  log_run_name: null
   # Output directory name
-  output_dir: 'output'
+  output_dir: null
   # The directory to cache the downloaded model
   cache_dir: null
   # The interval of saving models
