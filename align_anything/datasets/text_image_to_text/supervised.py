@@ -25,7 +25,7 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.tools import ends_with_any, convert_to_rgb
+from align_anything.utils.tools import convert_to_rgb, ends_with_any
 from datasets import load_dataset
 
 
@@ -164,7 +164,7 @@ class SupervisedCollator:
         else:
             images = [sample['image'] for sample in samples]
 
-        # TODO: special for gemma3 processor, will be merge in next version         
+        # TODO: special for gemma3 processor, will be merge in next version
         if isinstance(self.processor, transformers.Gemma3Processor):
             images = [[convert_to_rgb(img)] for img in images]
             return_dict['meta_info']['images'] = images

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="/aifs4su/yaodong/models/gemma-3-12b-it" # model path
+MODEL_NAME_OR_PATH="google/gemma-3-12b-it" # model path
 
-TRAIN_DATASETS="/aifs4su/yaodong/datasets/align-anything" # dataset path
+TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
 TRAIN_TEMPLATE="AA_TI2T" # dataset template
 TRAIN_NAME="text-image-to-text" # dataset name
 TRAIN_SPLIT="train" # split the dataset
@@ -41,6 +41,5 @@ deepspeed \
      --train_split ${TRAIN_SPLIT} \
      --train_name ${TRAIN_NAME} \
      --output_dir ${OUTPUT_DIR} \
-     --train_size 5000 \
-     --train_batch_size 4 \
-     --epochs 3
+     --save_total_limit 3 \
+     --epochs 2

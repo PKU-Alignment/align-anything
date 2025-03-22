@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,22 +16,22 @@
 # ==============================================================================
 
 
-ACTOR_MODEL_NAME_OR_PATH="/aifs4su/yaodong/models/gemma-3-12b-it" # model path
-REWARD_MODEL_NAME_OR_PATH="/aifs4su/yaodong/wenqi/align-anything-d1/outputs/gemma3_rm/slice_end" # model path
-CRITIC_MODEL_NAME_OR_PATH="/aifs4su/yaodong/wenqi/align-anything-d1/outputs/gemma3_rm/slice_end" # model path
+ACTOR_MODEL_NAME_OR_PATH="google/gemma-3-12b-it" # model path
+REWARD_MODEL_NAME_OR_PATH="../outputs/gemma3_rm" # model path
+CRITIC_MODEL_NAME_OR_PATH="../outputs/gemma3_rm" # model path
 
-TRAIN_DATASETS="/aifs4su/yaodong/datasets/align-anything" # dataset path
+TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
 TRAIN_TEMPLATE="AA_TI2T" # dataset template
 TRAIN_NAME="text-image-to-text" # dataset name
 TRAIN_SPLIT="train" # split the dataset
 
-PTX_DATASETS="/aifs4su/yaodong/datasets/Align-Anything-TI2T-Instruction-100K"
+PTX_DATASETS="PKU-Alignment/Align-Anything-TI2T-Instruction-100K"
 PTX_TEMPLATE="AA_TI2T"
 PTX_SPLIT="train"
 
 OUTPUT_DIR="../outputs/gemma3_ppo" # output dir
 # For wandb online logging
-export WANDB_API_KEY="62c57a07add7cf80060d09b29e313990bc2fada2"
+export WANDB_API_KEY=""
 
 # Source the setup script
 source ./setup.sh
@@ -51,9 +51,5 @@ deepspeed \
     --ptx_template ${PTX_TEMPLATE} \
     --ptx_split ${PTX_SPLIT} \
     --output_dir ${OUTPUT_DIR} \
+    --save_total_limit 3 \
     --epochs 2 \
-    --train_size 2000 \
-    --ptx_size 2000 \
-    --per_device_train_batch_size 4 \
-    --per_device_prompt_batch_size 4 \
-    --gradient_accumulation_steps 2 \

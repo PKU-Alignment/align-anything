@@ -170,7 +170,7 @@ class PromptOnlyCollator:
         # TODO: special for gemma3 processor, will be merge in next version
         if isinstance(self.processor, transformers.Gemma3Processor):
             images = [[convert_to_rgb(img)] for img in images]
-            
+
         multi_modal_padding = self.processor(
             images=images,
             text=concated_text,
