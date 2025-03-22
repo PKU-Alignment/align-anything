@@ -48,6 +48,11 @@ from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, Trun
 from align_anything.utils.device_utils import get_current_device, manual_seed_all
 from align_anything.utils.multi_process import print_on_main_process
 
+from typing import List, Union
+from transformers.utils.import_utils import (
+    requires_backends,
+)
+import PIL.Image
 
 try:
     import yt_dlp
@@ -58,6 +63,31 @@ except ImportError:
         You can ignore this warning if you are not using the evaluation module.
         or install them by `pip install -e .[evaluate]`."""
     )
+
+
+ImageInput = Union[
+    "PIL.Image.Image", np.ndarray, "torch.Tensor", List["PIL.Image.Image"], List[np.ndarray], List["torch.Tensor"]
+] 
+
+def convert_to_rgb(image: ImageInput) -> ImageInput:
+    """
+    Converts an image to RGB format. Only converts if the image is of type PIL.Image.Image, otherwise returns the image
+    as is.
+    Args:
+        image (Image):
+            The image to convert.
+    """
+    requires_backends(convert_to_rgb, ["vision"])
+
+    if not isinstance(image, Image.Image):
+        return image
+
+    if image.mode == "RGB":
+        return image
+
+    image = image.convert("RGB")
+    image = np.array(image)
+    return image
 
 
 def right_padding(sequences: list[torch.Tensor], padding_value: Number) -> torch.Tensor:

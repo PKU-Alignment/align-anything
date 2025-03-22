@@ -24,6 +24,7 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
+from align_anything.utils.tools import convert_to_rgb
 from datasets import load_dataset
 
 
@@ -166,6 +167,10 @@ class PromptOnlyCollator:
 
         concated_text = [sample['conversation'] for sample in samples]
 
+        # TODO: special for gemma3 processor, will be merge in next version
+        if isinstance(self.processor, transformers.Gemma3Processor):
+            images = [[convert_to_rgb(img)] for img in images]
+            
         multi_modal_padding = self.processor(
             images=images,
             text=concated_text,
