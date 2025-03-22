@@ -318,6 +318,7 @@ export WANDB_API_KEY="..."  # your W&B API key here
 | `Text -> Image`            | [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) |
 | `Text -> Video`            | [ali-vilab/text-to-video-ms-1.7b](https://huggingface.co/ali-vilab/text-to-video-ms-1.7b) |
 | `Text -> Audio`            | [cvssp/audioldm-s-full-v2](https://huggingface.co/cvssp/audioldm-s-full-v2) |
+| `Text+Video -> Action`     | [SPOC](https://spoc-robot.github.io/) |
 
 Besides, you can also use your own model for training, you can refer to the here (sorry, corresponding docs will be uploaded later) for the model registration.
 
@@ -511,20 +512,19 @@ python3 -m align_anything.serve.arena \
 ### Downloading the training data
 
 ```bash
-python -m align_anything.trainers.text_video_to_action.download_training_data --save_dir ./path/to/your/data  --types astar
+python -m align_anything.utils.spoc_utils.download_training_data --save_dir /path/to/data  --types fifteen
 ```
 
 Then decompress the compressed data package.
 
 ### Training
 
-modify ``HOME_PREFIX`` in ``align-anything/scripts/il_training.sh`` to your local data path.
+modify ``HOME_PREFIX`` in ``align-anything/scripts/spoc_sft.sh`` to your local data path.
 
 ```bash
-bash scripts/il_training.sh
+bash scripts/spoc_sft.sh
 ```
 
-More details on [AlignVLA](align_anything/trainers/text_video_to_action/README.md)
 
 
 
