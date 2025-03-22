@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team and LlamaFactory team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team and LlamaFactory team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -189,8 +189,8 @@ class Alpaca(BaseFormatter):
         prompt = ' '.join((raw_sample['instruction'], raw_sample['input']))
         response = raw_sample['output']
         return [
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': response},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': response}]},
         ], {}
 
 
@@ -207,13 +207,13 @@ class PKUSafeRLHF(BaseFormatter):
         prompt = raw_sample['prompt']
 
         better_conversation = [
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': better_response},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': better_response}]},
         ]
 
         worse_conversation = [
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': worse_response},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': worse_response}]},
         ]
 
         meta_info = {
@@ -228,7 +228,7 @@ class PKUSafeRLHF(BaseFormatter):
     ) -> tuple[list[dict[str, Any]], str]:
         prompt = raw_sample['prompt']
         return [
-            {'role': 'user', 'content': prompt},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
         ], {}
 
     def format_unmatched_supervised_sample(
@@ -237,8 +237,8 @@ class PKUSafeRLHF(BaseFormatter):
         prompt = raw_sample_for_prompt['prompt']
         response = raw_sample_for_response['response_1']
         return [
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': response},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': response}]},
         ], {}
 
 
@@ -252,9 +252,9 @@ class Aligner(BaseFormatter):
         text = '##CORRECTION: ' + raw_sample['correction']
 
         return [
-            {'role': 'system', 'content': self.system_prompt},
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': text},
+            {'role': 'system', 'content': [{'type': 'text', 'text': self.system_prompt}]},
+            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': text}]},
         ], {}
 
 

@@ -10,6 +10,26 @@ You can use the syntax `close #1314520` if this solves the issue #15213
 
 - [ ] I have raised an issue to propose this change ([required](https://github.com/PKU-Alignment/align-anything/issues) for new features and bug fixes)
 
+## Test
+
+Please test your changes by running the following command:
+
+```bash
+cd scripts
+bash test/test_text_to_text.sh ./opt PATH_TO_OUTPUT_ROOT_DIR
+```
+
+Here, `./opt` is the directory containing the test scripts for the `opt` model, and `PATH_TO_OUTPUT_ROOT_DIR` is the path to the output root directory. The test scripts will save ~1GB data to the output root directory and delete it after the test. Please ensure you have enough space on your disk.
+
+## Lint
+
+Please run the following command in the root directory to check your code style:
+
+```bash
+pip install pre-commit
+pre-commit run --all-files
+```
+
 ## Types of changes
 
 What types of changes does your code introduce? Put an `x` in all the boxes that apply:

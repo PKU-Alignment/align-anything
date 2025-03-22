@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -160,10 +160,13 @@ class UnmatchedSupervisedDataset(SupervisedDataset):
         self, raw_sample_for_prompt: dict[str, Any], raw_sample_for_response: dict[str, Any]
     ) -> SupervisedSample:
         return_dict = {}
-        formatted_text, _ = self.template.format_unmatched_supervised_sample(
+        formatted_prompt, formatted_text, _ = self.template.format_unmatched_supervised_sample(
             raw_sample_for_prompt, raw_sample_for_response
         )
         return_dict['input_ids'] = self.tokenize(formatted_text)
+        prompt_length = len(self.tokenize(formatted_prompt, add_special_tokens=False))
+        response_lens = len(return_dict['input_ids']) - prompt_length
+        return_dict['response_lens'] = response_lens
 
         return return_dict
 
@@ -188,7 +191,7 @@ class UnmatchedSupervisedCollator:
         self.pad_token_id = pad_token_id
 
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
-        return_dict = {}
+        return_dict = {'meta_info': {}}
         current_device = get_current_device()
 
         return_dict['input_ids'] = right_padding(
@@ -201,5 +204,7 @@ class UnmatchedSupervisedCollator:
         return_dict['attention_mask'] = (
             return_dict['input_ids'].ne(self.pad_token_id).to(current_device)
         )
+        response_lens = [sample['response_lens'] for sample in samples]
+        return_dict['meta_info']['response_lens'] = response_lens
 
         return return_dict

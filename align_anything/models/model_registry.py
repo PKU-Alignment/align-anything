@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ MODEL_FOR_SCORE_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('idefics2', 'AccustomedIdefics2RewardModel'),
         ('llava_next_video', 'AccustomedLlavaNextVideoRewardModel'),
         ('gemma3', 'AccustomedGemma3RewardModel'),
+        ('opt', 'AccustomedOPTRewardModel'),
     ],
 )
 
@@ -90,6 +91,7 @@ MODEL_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('llava_next_video', 'AccustomedLlavaNextVideoModel'),
         ('idefics2', 'AccustomedIdefics2Model'),
         ('gemma3', 'AccustomedGemma3Model'), 
+        ('opt', 'AccustomedOPTModel'),
     ],
 )
 

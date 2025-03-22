@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -80,7 +80,12 @@ class ChatTemplate:
                 raw_sample_for_prompt, raw_sample_for_response
             )
         )
-        return self.model_formatter(raw_conversation), multi_modal_info
+        raw_prompt = raw_conversation[:-1]
+        return (
+            self.model_formatter(raw_prompt),
+            self.model_formatter(raw_conversation),
+            multi_modal_info,
+        )
 
     def format_chat_sample(self, raw_conversation: list[dict[str, Any]]) -> tuple[str, Any]:
         return self.model_formatter(raw_conversation), {}
