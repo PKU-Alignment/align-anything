@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
 # This code is inspired by the HuggingFace's Transformers library.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/llava/modeling_llava.py
@@ -22,13 +22,13 @@ import torch.utils.checkpoint
 from torch import nn
 from transformers import AutoConfig
 from transformers.cache_utils import StaticCache
-from transformers.models.qwen2_vl.modeling_qwen2_vl import Qwen2VLForConditionalGeneration
+from transformers.models.qwen2_5_vl.modeling_qwen2_5_vl import Qwen2_5_VLForConditionalGeneration
 from transformers.utils import is_torchdynamo_compiling
 
 from align_anything.models.reward_model import ScoreModelOutput
 
 
-class AccustomedQwen2VLModel(Qwen2VLForConditionalGeneration):
+class AccustomedQwen2_5_VLModel(Qwen2_5_VLForConditionalGeneration):
 
     @property
     def processor_available(self):
@@ -39,7 +39,7 @@ class AccustomedQwen2VLModel(Qwen2VLForConditionalGeneration):
         return self.model.embed_tokens
 
 
-class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
+class AccustomedQwen2_5_VLRewardModel(Qwen2_5_VLForConditionalGeneration):
 
     supports_gradient_checkpointing = True
 
