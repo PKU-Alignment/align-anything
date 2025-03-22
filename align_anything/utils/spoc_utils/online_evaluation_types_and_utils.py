@@ -16,15 +16,16 @@
 # ==============================================================================
 
 
-
-import json, os
-from typing import TypedDict, Literal, List, Dict, Any, Union, TYPE_CHECKING
+import json
+import os
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, TypedDict, Union
 
 import numpy as np
 
 from utils.data_generation_utils.navigation_utils import get_room_id_from_location
-from utils.task_type_mapping_utils import map_task_type, map_task_spec
+from utils.task_type_mapping_utils import map_task_spec, map_task_type
 from utils.type_utils import REGISTERED_TASK_PARAMS
+
 
 if TYPE_CHECKING:
     from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpec
@@ -38,7 +39,7 @@ class EvalSample(TypedDict):
     agent_starting_position: List[float]
     agent_y_rotation: float
 
-    expert_length_bucket: Literal["long", "medium", "short"]
+    expert_length_bucket: Literal['long', 'medium', 'short']
     expert_length: int
     synsets: List[str]
     synset_to_object_ids: Dict[str, List[str]]
@@ -71,35 +72,35 @@ class NormalizedEvalSample(TypedDict):
 
 
 def map_hard_easy_objectnavtype_to_objectnavtype(task_type):
-    if task_type in ["HardObjectNavType", "EasyObjectNavType"]:
-        task_type = "ObjectNavType"
-    if task_type in "ObjectNavType":
-        if os.getenv("ACTION_DICT") is not None:
-            task_type = "BPEObjectNavType"
-    if task_type in "ObjectNavMulti":
-        if os.getenv("ACTION_DICT") is not None:
-            task_type = "BPEObjectNavMulti"
+    if task_type in ['HardObjectNavType', 'EasyObjectNavType']:
+        task_type = 'ObjectNavType'
+    if task_type in 'ObjectNavType':
+        if os.getenv('ACTION_DICT') is not None:
+            task_type = 'BPEObjectNavType'
+    if task_type in 'ObjectNavMulti':
+        if os.getenv('ACTION_DICT') is not None:
+            task_type = 'BPEObjectNavMulti'
     return task_type
 
 
 def eval_sample_to_normalized_eval_sample(
     task_type: str, sample: EvalSample, index: int
 ) -> NormalizedEvalSample:
-    if "task_type" in sample:
-        assert task_type == map_task_type(sample["task_type"])
+    if 'task_type' in sample:
+        assert task_type == map_task_type(sample['task_type'])
 
     return NormalizedEvalSample(
         sample_id=f"task={task_type},house={sample['house_index']},sub_house_id={index}",
-        house_id=str(sample["house_index"]).zfill(6),
+        house_id=str(sample['house_index']).zfill(6),
         task_type=map_hard_easy_objectnavtype_to_objectnavtype(task_type),
         sub_house_id=index,
         needs_video=False,
-        raw_navigation_camera="",
-        sensors_path="",
+        raw_navigation_camera='',
+        sensors_path='',
         observations=Observations(
-            goal=sample["natural_language_spec"],
+            goal=sample['natural_language_spec'],
             initial_agent_location=np.array(
-                sample["agent_starting_position"] + [0, sample["agent_y_rotation"], 0]
+                sample['agent_starting_position'] + [0, sample['agent_y_rotation'], 0]
             ),
             actions=[],
             time_ids=[],
@@ -108,24 +109,24 @@ def eval_sample_to_normalized_eval_sample(
     )
 
 
-def normalized_eval_sample_to_task_spec(s: NormalizedEvalSample) -> "TaskSpec":
-    templated_task_info = json.loads(s["observations"]["templated_task_type"])
+def normalized_eval_sample_to_task_spec(s: NormalizedEvalSample) -> 'TaskSpec':
+    templated_task_info = json.loads(s['observations']['templated_task_type'])
     task_spec = {
-        "task_type": s["task_type"],
-        "house_index": int(s["house_id"]),
-        "natural_language_spec": s["observations"]["goal"],
-        "agent_starting_position": s["observations"]["initial_agent_location"][:3],
-        "agent_y_rotation": float(s["observations"]["initial_agent_location"][-2]),
-        "eval_info": {
-            "sample_id": s["sample_id"],
-            "needs_video": s["needs_video"],
+        'task_type': s['task_type'],
+        'house_index': int(s['house_id']),
+        'natural_language_spec': s['observations']['goal'],
+        'agent_starting_position': s['observations']['initial_agent_location'][:3],
+        'agent_y_rotation': float(s['observations']['initial_agent_location'][-2]),
+        'eval_info': {
+            'sample_id': s['sample_id'],
+            'needs_video': s['needs_video'],
             **templated_task_info,
         },
     }
 
     task_spec = map_task_spec(task_spec)
 
-    for key in REGISTERED_TASK_PARAMS.get(s["task_type"]):
+    for key in REGISTERED_TASK_PARAMS.get(s['task_type']):
         try:
             task_spec[key] = templated_task_info[key]
         except KeyError:

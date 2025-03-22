@@ -16,7 +16,6 @@
 # ==============================================================================
 
 
-
 import abc
 from abc import ABC
 from collections import defaultdict
@@ -26,7 +25,6 @@ from typing import Any, Dict, List, Literal, Optional, Sequence, Type, Union
 
 import torch
 import torch.nn as nn
-
 from allenact.base_abstractions.experiment_config import ExperimentConfig, MachineParams
 from allenact.base_abstractions.preprocessor import SensorPreprocessorGraph
 from allenact.base_abstractions.sensor import ExpertActionSensor, Sensor, SensorSuite
@@ -34,19 +32,20 @@ from allenact.base_abstractions.task import TaskSampler
 from allenact.utils.experiment_utils import evenly_distribute_count_into_bins
 from environment.stretch_controller import StretchController
 from safety_gymnasium.tasks.safe_vla.multi_task_eval_sampler import MultiTaskSampler
-from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpecDatasetList, TaskSpecSamplerInfiniteList
-from utils.constants.objaverse_data_dirs import OBJAVERSE_HOUSES_DIR
-from utils.constants.stretch_initialization_utils import (
-    ALL_STRETCH_ACTIONS,
-    STRETCH_ENV_ARGS,
+from safety_gymnasium.tasks.safe_vla.task_specs import (
+    TaskSpecDatasetList,
+    TaskSpecSamplerInfiniteList,
 )
+
+from utils.constants.objaverse_data_dirs import OBJAVERSE_HOUSES_DIR
+from utils.constants.stretch_initialization_utils import ALL_STRETCH_ACTIONS, STRETCH_ENV_ARGS
 from utils.data_utils import Hdf5TaskSpecs, LazyJsonHouses, LazyJsonTaskSpecs
 from utils.task_sampler_utils import TaskSpecPartitioner
 from utils.type_utils import AbstractTaskArgs
 
 
 def task_sampler_args_builder(
-    mode: Literal["train", "val", "test"],
+    mode: Literal['train', 'val', 'test'],
     task_specs: Union[LazyJsonTaskSpecs, Hdf5TaskSpecs],
     houses: LazyJsonHouses,
     on_server: bool,
@@ -63,8 +62,8 @@ def task_sampler_args_builder(
     max_houses: Optional[int] = None,
 ):
     assert on_server or max_houses is not None, (
-        "max_houses must be provided if not on server. "
-        f"Currently max_houses={max_houses} and on_server={on_server}"
+        'max_houses must be provided if not on server. '
+        f'Currently max_houses={max_houses} and on_server={on_server}'
     )
 
     if isinstance(task_specs, LazyJsonTaskSpecs):
@@ -82,23 +81,23 @@ def task_sampler_args_builder(
     elif isinstance(task_specs, Hdf5TaskSpecs):
         assert (
             task_specs.proc_id == process_ind
-        ), f"Hdf5TaskSpecs.proc_id ({task_specs.proc_id}) must match process_ind ({process_ind})"
+        ), f'Hdf5TaskSpecs.proc_id ({task_specs.proc_id}) must match process_ind ({process_ind})'
         assert (
             task_specs.total_procs == total_processes
-        ), f"Hdf5TaskSpecs.total_procs ({task_specs.total_procs}) must match total_processes ({total_processes})"
+        ), f'Hdf5TaskSpecs.total_procs ({task_specs.total_procs}) must match total_processes ({total_processes})'
         selected_task_specs = task_specs
-        selected_house_inds = [task_spec["house_index"] for task_spec in selected_task_specs]
+        selected_house_inds = [task_spec['house_index'] for task_spec in selected_task_specs]
         selected_houses = houses.select(selected_house_inds)
     else:
         raise NotImplementedError(
-            f"task_specs must be LazyJsonTaskSpecs or Hdf5TaskSpecs not {type(task_specs)}"
+            f'task_specs must be LazyJsonTaskSpecs or Hdf5TaskSpecs not {type(task_specs)}'
         )
 
     # create task_spec sampler
-    if mode == "train":
-        house_index_to_task_specs = defaultdict(lambda: [])
+    if mode == 'train':
+        house_index_to_task_specs = defaultdict(list)
         for task_spec in selected_task_specs:
-            house_index_to_task_specs[task_spec["house_index"]].append(task_spec)
+            house_index_to_task_specs[task_spec['house_index']].append(task_spec)
 
         task_spec_sampler = TaskSpecSamplerInfiniteList(
             house_index_to_task_specs, shuffle=True, repeat_house_until_forced=True
@@ -120,18 +119,18 @@ def task_sampler_args_builder(
     )
 
     return {
-        "mode": mode,
-        "task_args": task_args,
-        "houses": selected_houses,
-        "house_inds": selected_house_inds,
-        "task_spec_sampler": task_spec_sampler,
-        "controller_args": controller_args,
-        "controller_type": controller_type,
-        "device": device,
-        "visualize": False,
-        "always_allocate_a_new_stretch_controller_when_reset": True,
-        "retain_agent_pose": False,
-        "prob_randomize_materials": prob_randomize_materials,
+        'mode': mode,
+        'task_args': task_args,
+        'houses': selected_houses,
+        'house_inds': selected_house_inds,
+        'task_spec_sampler': task_spec_sampler,
+        'controller_args': controller_args,
+        'controller_type': controller_type,
+        'device': device,
+        'visualize': False,
+        'always_allocate_a_new_stretch_controller_when_reset': True,
+        'retain_agent_pose': False,
+        'prob_randomize_materials': prob_randomize_materials,
     }
 
 
@@ -140,11 +139,11 @@ class BaseConfigParams:
     num_train_processes: int = 1
     distributed_nodes: int = 1
     test_on_validation: bool = True
-    dataset_dir: str = "data/fifteen/ObjectNavType"
+    dataset_dir: str = 'data/fifteen/ObjectNavType'
     max_steps: int = 500
     max_houses: Optional[int] = None
     max_task_specs: Optional[int] = None
-    tag: str = "ObjectNavType-RL"
+    tag: str = 'ObjectNavType-RL'
 
 
 class BaseConfig(ExperimentConfig, ABC):
@@ -158,8 +157,8 @@ class BaseConfig(ExperimentConfig, ABC):
         self.num_test_processes = 2 * torch.cuda.device_count() if torch.cuda.is_available() else 1
 
         self.houses = dict(
-            train=self.get_houses(subset="train") if params.num_train_processes > 0 else None,
-            val=self.get_houses(subset="val"),
+            train=self.get_houses(subset='train') if params.num_train_processes > 0 else None,
+            val=self.get_houses(subset='val'),
         )
 
     def tag(self) -> str:
@@ -201,35 +200,35 @@ class BaseConfig(ExperimentConfig, ABC):
         raise NotImplementedError
 
     @lru_cache(maxsize=None)
-    def get_devices(self, mode="train"):
+    def get_devices(self, mode='train'):
         if torch.cuda.is_available():
-            if mode == "train":
+            if mode == 'train':
                 return tuple(range(torch.cuda.device_count()))
-            elif mode == "valid":
+            elif mode == 'valid':
                 return (torch.cuda.device_count() - 1,)
-            elif mode == "test":
+            elif mode == 'test':
                 return tuple(range(torch.cuda.device_count()))
             else:
-                raise NotImplementedError("mode must be train, valid or test")
+                raise NotImplementedError('mode must be train, valid or test')
         else:
-            return (torch.device("cpu"),)
+            return (torch.device('cpu'),)
 
     @lru_cache(maxsize=None)
-    def get_nprocesses(self, mode="train"):
+    def get_nprocesses(self, mode='train'):
         num_devices = len(self.get_devices(mode))
-        if mode == "train":
+        if mode == 'train':
             if self.params.num_train_processes == 0:
                 return [0] * num_devices
             return evenly_distribute_count_into_bins(self.params.num_train_processes, num_devices)
-        elif mode == "valid":
+        elif mode == 'valid':
             return [self.num_validation_processes]
-        elif mode == "test":
+        elif mode == 'test':
             return evenly_distribute_count_into_bins(self.num_test_processes, num_devices)
         else:
-            raise NotImplementedError("mode must be train, valid or test")
+            raise NotImplementedError('mode must be train, valid or test')
 
     @lru_cache(maxsize=None)
-    def get_local_worker_ids(self, mode="train", machine_id=0):
+    def get_local_worker_ids(self, mode='train', machine_id=0):
         num_devices = len(self.get_devices(mode))
         return list(
             range(
@@ -238,20 +237,20 @@ class BaseConfig(ExperimentConfig, ABC):
             )
         )
 
-    def machine_params(self, mode="train", **kwargs):
+    def machine_params(self, mode='train', **kwargs):
         nprocesses = self.get_nprocesses(mode)
         devices = self.get_devices(mode)
-        machine_id = kwargs.get("machine_id", 0)
+        machine_id = kwargs.get('machine_id', 0)
         local_worker_ids = self.get_local_worker_ids(mode=mode, machine_id=machine_id)
-        print(f"*****Node-{machine_id} Machine Params [mode={mode}]*****")
-        print("NUM PROCESSES", nprocesses)
-        print("DEVICES", devices)
-        print("LOCAL WORKER IDS", local_worker_ids)
-        print("******************************************")
+        print(f'*****Node-{machine_id} Machine Params [mode={mode}]*****')
+        print('NUM PROCESSES', nprocesses)
+        print('DEVICES', devices)
+        print('LOCAL WORKER IDS', local_worker_ids)
+        print('******************************************')
 
         sensors = self.sensors
 
-        if mode != "train":
+        if mode != 'train':
             sensors = [s for s in sensors if not isinstance(s, ExpertActionSensor)]
 
         sensor_preprocessor_graph = (
@@ -261,7 +260,7 @@ class BaseConfig(ExperimentConfig, ABC):
             )
             if len(self.preprocessors()) > 0
             and (
-                mode == "train"
+                mode == 'train'
                 or (
                     (isinstance(nprocesses, int) and nprocesses > 0)
                     or (isinstance(nprocesses, Sequence) and sum(nprocesses) > 0)
@@ -276,7 +275,7 @@ class BaseConfig(ExperimentConfig, ABC):
             sampler_devices=devices,
             sensor_preprocessor_graph=sensor_preprocessor_graph,
         )
-        if mode == "train":
+        if mode == 'train':
             params.nprocesses = params.nprocesses * self.params.distributed_nodes
             params.devices = params.devices * self.params.distributed_nodes
             params.sampler_devices = params.sampler_devices * self.params.distributed_nodes
@@ -285,12 +284,12 @@ class BaseConfig(ExperimentConfig, ABC):
         return params
 
     def make_sampler_fn(self, **kwargs) -> TaskSampler:
-        print("kwargs", kwargs)
+        print('kwargs', kwargs)
         return MultiTaskSampler(**kwargs)
 
     def get_sampler_args(
         self,
-        mode: Literal["train", "val", "test"],
+        mode: Literal['train', 'val', 'test'],
         process_ind: int,
         total_processes: int,
         devices: Optional[List[int]] = None,
@@ -312,7 +311,7 @@ class BaseConfig(ExperimentConfig, ABC):
             action_names=ALL_STRETCH_ACTIONS,
             max_steps=self.params.max_steps,
             max_houses=self.params.max_houses,
-            prob_randomize_materials=0.8 if mode == "train" else 0,
+            prob_randomize_materials=0.8 if mode == 'train' else 0,
         )
 
     def train_task_sampler_args(
@@ -324,7 +323,7 @@ class BaseConfig(ExperimentConfig, ABC):
         deterministic_cudnn: bool = False,
     ) -> Dict[str, Any]:
         return self.get_sampler_args(
-            "train",
+            'train',
             process_ind=process_ind,
             total_processes=total_processes,
             devices=devices,
@@ -340,7 +339,7 @@ class BaseConfig(ExperimentConfig, ABC):
         deterministic_cudnn: bool = False,
     ) -> Dict[str, Any]:
         return self.get_sampler_args(
-            "val",
+            'val',
             process_ind=process_ind,
             total_processes=total_processes,
             devices=devices,
@@ -365,7 +364,7 @@ class BaseConfig(ExperimentConfig, ABC):
             )
         else:
             return self.get_sampler_args(
-                "test",
+                'test',
                 process_ind=process_ind,
                 total_processes=total_processes,
                 devices=devices,
@@ -373,22 +372,22 @@ class BaseConfig(ExperimentConfig, ABC):
             )
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     MAX_HOUSES = 10
     MAX_TASK_SPECS = 1000
     houses = LazyJsonHouses.from_dir(
         OBJAVERSE_HOUSES_DIR,
-        subset="val",
+        subset='val',
         max_houses=MAX_HOUSES,
     )
     task_specs = LazyJsonTaskSpecs.from_dir(
-        "/root/data/ObjectNavType_Poliformer",
-        subset="val",
+        '/root/data/ObjectNavType_Poliformer',
+        subset='val',
         max_task_specs=MAX_TASK_SPECS,
     )
 
     sampler_args = task_sampler_args_builder(
-        mode="val",
+        mode='val',
         task_specs=task_specs,
         houses=houses,
         process_ind=0,

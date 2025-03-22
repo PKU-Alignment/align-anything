@@ -16,35 +16,33 @@
 # ==============================================================================
 
 
-
 import abc
 from dataclasses import dataclass, fields
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, Literal, Optional, Union
 
 from allenact.algorithms.onpolicy_sync.runner import OnPolicyRunner, SaveDirFormat
 from allenact.base_abstractions.experiment_config import ExperimentConfig
-from spoc_constants import ABS_PATH_OF_SPOC_DIR
 
 
 @dataclass
 class OnPolicyRunnerMixin(abc.ABC):
-    output_dir: str = "/root/results"
-    save_dir_fmt: Literal["flat", "nested"] = "flat"
+    output_dir: str = '/root/results'
+    save_dir_fmt: Literal['flat', 'nested'] = 'flat'
     seed: Optional[int] = None
     deterministic_cudnn: bool = False
     deterministic_agents: bool = False
-    extra_tag: str = ""
+    extra_tag: str = ''
     disable_tensorboard: bool = True
     disable_config_saving: bool = True
-    distributed_ip_and_port: str = "127.0.0.1:0"
+    distributed_ip_and_port: str = '127.0.0.1:0'
     machine_id: int = 0
-    callbacks: str = ""
+    callbacks: str = ''
 
     @abc.abstractmethod
     def get_config(self) -> ExperimentConfig:
         raise NotImplementedError
 
-    def build_runner(self, mode=Literal["train", "test"]):
+    def build_runner(self, mode=Literal['train', 'test']):
         return OnPolicyRunner(
             config=self.get_config(),
             output_dir=self.output_dir,
@@ -72,7 +70,7 @@ class OnPolicyRunnerMixin(abc.ABC):
         enable_crash_recovery: bool = False,
         save_ckpt_at_every_host: bool = False,
     ):
-        runner = self.build_runner(mode="train")
+        runner = self.build_runner(mode='train')
         runner.start_train(
             checkpoint=checkpoint,
             restart_pipeline=restart_pipeline,
@@ -91,7 +89,7 @@ class OnPolicyRunnerMixin(abc.ABC):
         max_sampler_processes_per_worker: Optional[int] = None,
         test_expert: bool = False,
     ):
-        runner = self.build_runner(mode="test")
+        runner = self.build_runner(mode='test')
         runner.start_test(
             checkpoint_path_dir_or_pattern=checkpoint,
             infer_output_dir=infer_output_dir,
@@ -101,7 +99,7 @@ class OnPolicyRunnerMixin(abc.ABC):
         )
 
     def print_param(self, name):
-        print(name, ": ", getattr(self, name))
+        print(name, ': ', getattr(self, name))
 
     def get_params_dict(self) -> Dict[str, Any]:
         params = dict()

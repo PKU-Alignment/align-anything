@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from typing import List, Optional, Any, cast, Dict, Union, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 import gym
 import numpy as np
@@ -22,9 +22,14 @@ import torch
 import torch.nn as nn
 from allenact.base_abstractions.preprocessor import Preprocessor
 from allenact.utils.misc_utils import prepare_locals_for_super
-from align_anything.utils.spoc_utils.transformation_util import get_transformation, sample_a_specific_transform
 
-DINO_PRETRAINED_MODEL = ["dinov2_vits14", "dinov2_vitb14", "dinov2_vitl14", "dinov2_vitg14"]
+from align_anything.utils.spoc_utils.transformation_util import (
+    get_transformation,
+    sample_a_specific_transform,
+)
+
+
+DINO_PRETRAINED_MODEL = ['dinov2_vits14', 'dinov2_vitb14', 'dinov2_vitl14', 'dinov2_vitg14']
 
 
 class DinoViTEmbedder(nn.Module):
@@ -35,9 +40,9 @@ class DinoViTEmbedder(nn.Module):
         self.eval()
 
     def forward(self, x):
-        assert x.shape[-2:] == (224, 384), f"Expected shape is 224x384; got {x.shape}"
+        assert x.shape[-2:] == (224, 384), f'Expected shape is 224x384; got {x.shape}'
         with torch.no_grad():
-            x = self.model.forward_features(x[:, :, :, 3:-3])["x_norm_patchtokens"]
+            x = self.model.forward_features(x[:, :, :, 3:-3])['x_norm_patchtokens']
             B, _, D = x.shape  # Bx432x384
             x = x.permute(0, 2, 1)  # Bx384x432
             x = x.reshape(B, D, 16, 27)
@@ -60,22 +65,22 @@ class DinoViTPreprocessor(Preprocessor):
     ):
         assert dino_model_type in DINO_PRETRAINED_MODEL
 
-        if dino_model_type == "dinov2_vits14":
+        if dino_model_type == 'dinov2_vits14':
             if flatten:
                 output_shape = (7 * 12, 384)
             else:
                 output_shape = (7, 12, 384)
-        elif dino_model_type == "dinov2_vitb14":
+        elif dino_model_type == 'dinov2_vitb14':
             if flatten:
                 output_shape = (7 * 12, 768)
             else:
                 output_shape = (7, 12, 768)
-        elif dino_model_type == "dinov2_vitl14":
+        elif dino_model_type == 'dinov2_vitl14':
             if flatten:
                 output_shape = (7 * 12, 1024)
             else:
                 output_shape = (7, 12, 1024)
-        elif dino_model_type == "dinov2_vitg14":
+        elif dino_model_type == 'dinov2_vitg14':
             if flatten:
                 output_shape = (7 * 12, 1536)
             else:
@@ -87,7 +92,7 @@ class DinoViTPreprocessor(Preprocessor):
 
         self.dino_model_type = dino_model_type
 
-        self.device = torch.device("cpu") if device is None else device
+        self.device = torch.device('cpu') if device is None else device
         self.device_ids = device_ids or cast(
             List[torch.device], list(range(torch.cuda.device_count()))
         )
@@ -98,7 +103,7 @@ class DinoViTPreprocessor(Preprocessor):
         shape = output_shape
 
         input_uuids = [rgb_input_uuid]
-        assert len(input_uuids) == 1, "resnet preprocessor can only consume one observation type"
+        assert len(input_uuids) == 1, 'resnet preprocessor can only consume one observation type'
 
         observation_space = gym.spaces.Box(low=low, high=high, shape=shape)
 
@@ -108,15 +113,15 @@ class DinoViTPreprocessor(Preprocessor):
     def vit(self) -> DinoViTEmbedder:
         if self._vit is None:
             self._vit = DinoViTEmbedder(
-                model=torch.hub.load("facebookresearch/dinov2", self.dino_model_type),
+                model=torch.hub.load('facebookresearch/dinov2', self.dino_model_type),
             ).to(self.device)
             for module in self._vit.modules():
-                if "BatchNorm" in type(module).__name__:
+                if 'BatchNorm' in type(module).__name__:
                     module.momentum = 0.0
             self._vit.eval()
         return self._vit
 
-    def to(self, device: torch.device) -> "DinoViTPreprocessor":
+    def to(self, device: torch.device) -> 'DinoViTPreprocessor':
         self._vit = self.vit.to(device)
         self.device = device
         return self
@@ -166,6 +171,7 @@ class PostPreprocessor(nn.Module):
             x = torch.permute(x, (0, 2, 1))
         return x
 
+
 # this is always called for allenact models
 class DataAugmentationPreprocessor(Preprocessor):
     def __init__(
@@ -184,7 +190,7 @@ class DataAugmentationPreprocessor(Preprocessor):
         **kwargs: Any,
     ):
         assert height is not None and width is not None
-        self.device = torch.device("cpu") if device is None else device
+        self.device = torch.device('cpu') if device is None else device
         self.device_ids = device_ids or cast(
             List[torch.device], list(range(torch.cuda.device_count()))
         )
@@ -205,13 +211,13 @@ class DataAugmentationPreprocessor(Preprocessor):
         shape = (cast(int, height), cast(int, width), cast(int, output_channels))
 
         input_uuids = [rgb_input_uuid]
-        assert len(input_uuids) == 1, "resnet preprocessor can only consume one observation type"
+        assert len(input_uuids) == 1, 'resnet preprocessor can only consume one observation type'
 
         observation_space = gym.spaces.Box(low=low, high=high, shape=shape)
 
         super().__init__(**prepare_locals_for_super(locals()))
 
-    def to(self, device: torch.device) -> "DataAugmentationPreprocessor":
+    def to(self, device: torch.device) -> 'DataAugmentationPreprocessor':
         self.mean = self.mean.to(device)
         self.stdev = self.stdev.to(device)
         self.device = device

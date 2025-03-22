@@ -16,7 +16,6 @@
 # ==============================================================================
 
 
-
 import pdb
 import sys
 
@@ -29,7 +28,7 @@ class ForkedPdb(pdb.Pdb):  # used for real episode logging
     def interaction(self, *args, **kwargs):
         _stdin = sys.stdin
         try:
-            sys.stdin = open("/dev/stdin")
+            sys.stdin = open('/dev/stdin')
             pdb.Pdb.interaction(self, *args, **kwargs)
         finally:
             sys.stdin = _stdin

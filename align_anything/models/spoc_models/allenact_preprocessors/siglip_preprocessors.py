@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from typing import List, Optional, Any, cast, Dict, Union, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 import gym
 import numpy as np
@@ -24,9 +24,12 @@ from allenact.base_abstractions.preprocessor import Preprocessor
 from allenact.utils.misc_utils import prepare_locals_for_super
 from open_clip import create_model_from_pretrained
 
-from align_anything.models.spoc_models.models.transformer_models.preprocessors import tensor_image_preprocessor
+from align_anything.models.spoc_models.models.transformer_models.preprocessors import (
+    tensor_image_preprocessor,
+)
 
-SIGLIP_PRETRAINED_MODEL = ["ViT-B-16-SigLIP-256"]
+
+SIGLIP_PRETRAINED_MODEL = ['ViT-B-16-SigLIP-256']
 
 
 class SigLIPViTEmbedder(nn.Module):
@@ -37,7 +40,7 @@ class SigLIPViTEmbedder(nn.Module):
         self.eval()
 
     def forward(self, x):
-        assert x.shape[-2:] == (256, 256), f"Expected shape is 256x256; got {x.shape}"
+        assert x.shape[-2:] == (256, 256), f'Expected shape is 256x256; got {x.shape}'
         with torch.no_grad():
             x = self.model.forward_features(x)
             B, _, D = x.shape  # Bx256x768
@@ -62,7 +65,7 @@ class SigLIPPreprocessor(Preprocessor):
     ):
         assert siglip_model_type in SIGLIP_PRETRAINED_MODEL
 
-        if siglip_model_type == "ViT-B-16-SigLIP-256":
+        if siglip_model_type == 'ViT-B-16-SigLIP-256':
             if flatten:
                 output_shape = (7 * 12, 768)
             else:
@@ -74,7 +77,7 @@ class SigLIPPreprocessor(Preprocessor):
 
         self.siglip_model_type = siglip_model_type
 
-        self.device = torch.device("cpu") if device is None else device
+        self.device = torch.device('cpu') if device is None else device
         self.device_ids = device_ids or cast(
             List[torch.device], list(range(torch.cuda.device_count()))
         )
@@ -85,7 +88,7 @@ class SigLIPPreprocessor(Preprocessor):
         shape = output_shape
 
         input_uuids = [rgb_input_uuid]
-        assert len(input_uuids) == 1, "resnet preprocessor can only consume one observation type"
+        assert len(input_uuids) == 1, 'resnet preprocessor can only consume one observation type'
 
         observation_space = gym.spaces.Box(low=low, high=high, shape=shape)
 
@@ -95,17 +98,17 @@ class SigLIPPreprocessor(Preprocessor):
     def vit(self) -> SigLIPViTEmbedder:
         if self._vit is None:
             self._vit = SigLIPViTEmbedder(
-                model=create_model_from_pretrained("hf-hub:timm/{}".format(self.siglip_model_type))[
+                model=create_model_from_pretrained(f'hf-hub:timm/{self.siglip_model_type}')[
                     0
                 ].visual.trunk
             ).to(self.device)
             for module in self._vit.modules():
-                if "BatchNorm" in type(module).__name__:
+                if 'BatchNorm' in type(module).__name__:
                     module.momentum = 0.0
             self._vit.eval()
         return self._vit
 
-    def to(self, device: torch.device) -> "SigLIPPreprocessor":
+    def to(self, device: torch.device) -> 'SigLIPPreprocessor':
         self._vit = self.vit.to(device)
         self.device = device
         return self
@@ -169,7 +172,7 @@ class DataAugmentationPreprocessor(Preprocessor):
         **kwargs: Any,
     ):
         assert height is not None and width is not None
-        self.device = torch.device("cpu") if device is None else device
+        self.device = torch.device('cpu') if device is None else device
         self.device_ids = device_ids or cast(
             List[torch.device], list(range(torch.cuda.device_count()))
         )
@@ -185,7 +188,7 @@ class DataAugmentationPreprocessor(Preprocessor):
         self.tensor_image_preprocessor = tensor_image_preprocessor(
             size=(256, 256),
             data_augmentation=True,
-            augmentation_version="v2",
+            augmentation_version='v2',
             mean=mean,
             std=stdev,
         )
@@ -195,13 +198,13 @@ class DataAugmentationPreprocessor(Preprocessor):
         shape = (cast(int, height), cast(int, width), cast(int, output_channels))
 
         input_uuids = [rgb_input_uuid]
-        assert len(input_uuids) == 1, "resnet preprocessor can only consume one observation type"
+        assert len(input_uuids) == 1, 'resnet preprocessor can only consume one observation type'
 
         observation_space = gym.spaces.Box(low=low, high=high, shape=shape)
 
         super().__init__(**prepare_locals_for_super(locals()))
 
-    def to(self, device: torch.device) -> "DataAugmentationPreprocessor":
+    def to(self, device: torch.device) -> 'DataAugmentationPreprocessor':
         self.mean = self.mean.to(device)
         self.stdev = self.stdev.to(device)
         self.device = device

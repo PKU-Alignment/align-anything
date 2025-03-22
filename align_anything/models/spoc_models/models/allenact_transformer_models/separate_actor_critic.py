@@ -14,8 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from align_anything.models.spoc_models.models.allenact_transformer_models.allenact_dino_transformer import DinoLLAMATxNavActorCritic
-from allenact.base_abstractions.misc import SafeActorCriticOutput, Memory
+from allenact.base_abstractions.misc import SafeActorCriticOutput
+
+from align_anything.models.spoc_models.models.allenact_transformer_models.allenact_dino_transformer import (
+    DinoLLAMATxNavActorCritic,
+)
 
 
 class DinoLLAMATxNavActorCriticSeparate(DinoLLAMATxNavActorCritic):
@@ -40,7 +43,6 @@ class SafeDinoLLAMATxNavActorCriticSeparate(DinoLLAMATxNavActorCriticSeparate):
     def forward(self, *args, **kwargs):
         actor_output, memory = super().forward(*args, **kwargs)
         c_critic_output, c_critic_memory = self.c_critic_tsfm(*args, **kwargs)
-
 
         actor_critic_output = SafeActorCriticOutput(
             distributions=actor_output.distributions,

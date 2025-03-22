@@ -16,17 +16,17 @@
 # ==============================================================================
 
 
-
 import copy
-from typing import Sequence, Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 import cv2
 import numpy as np
 import torch
-from PIL import ImageFont, Image, ImageDraw
-
 from environment.stretch_controller import StretchController
+from PIL import Image, ImageDraw, ImageFont
+
 from utils.constants.stretch_initialization_utils import stretch_long_names
+
 
 DISTINCT_COLORS = [
     (255, 0, 0),  # Red
@@ -83,7 +83,7 @@ def add_bboxes_to_frame(
 
     bboxes_cleaned = [[int(v) for v in bbox] for bbox in bboxes if -1 not in bbox]
     if labels is None:
-        labels = [""] * len(bboxes_cleaned)
+        labels = [''] * len(bboxes_cleaned)
 
     h, w, _ = frame.shape
 
@@ -149,9 +149,9 @@ def add_bbox_sensor_to_image(curr_frame, task_observations, det_sensor_key, whic
         task_relevant_object_bboxes = [
             b for b in task_relevant_object_bboxes if b[1] <= curr_frame.shape[0]
         ]
-    if which_image == "nav":
+    if which_image == 'nav':
         pass
-    elif which_image == "manip":
+    elif which_image == 'manip':
         start_index = curr_frame.shape[1] // 2
         for i in range(len(task_relevant_object_bboxes)):
             task_relevant_object_bboxes[i][0] += start_index
@@ -182,26 +182,26 @@ def get_top_down_path_view(
 
     if original_hw != map_height_width:
         event = thor_controller.step(
-            "ChangeResolution", x=map_height_width[1], y=map_height_width[0], raise_for_failure=True
+            'ChangeResolution', x=map_height_width[1], y=map_height_width[0], raise_for_failure=True
         )
 
     if len(thor_controller.last_event.third_party_camera_frames) < 2:
-        event = thor_controller.step("GetMapViewCameraProperties", raise_for_failure=True)
-        cam = copy.deepcopy(event.metadata["actionReturn"])
+        event = thor_controller.step('GetMapViewCameraProperties', raise_for_failure=True)
+        cam = copy.deepcopy(event.metadata['actionReturn'])
         if not orthographic:
-            bounds = event.metadata["sceneBounds"]["size"]
-            max_bound = max(bounds["x"], bounds["z"])
+            bounds = event.metadata['sceneBounds']['size']
+            max_bound = max(bounds['x'], bounds['z'])
 
-            cam["fieldOfView"] = 50
-            cam["position"]["y"] += 1.1 * max_bound
-            cam["orthographic"] = False
-            cam["farClippingPlane"] = 50
-            del cam["orthographicSize"]
+            cam['fieldOfView'] = 50
+            cam['position']['y'] += 1.1 * max_bound
+            cam['orthographic'] = False
+            cam['farClippingPlane'] = 50
+            del cam['orthographicSize']
 
         event = thor_controller.step(
-            action="AddThirdPartyCamera",
+            action='AddThirdPartyCamera',
             **cam,
-            skyboxColor="white",
+            skyboxColor='white',
             raise_for_failure=True,
         )
 
@@ -209,40 +209,43 @@ def get_top_down_path_view(
     for target in targets_to_highlight or []:
         target_position = controller.get_object_position(target)
         target_dict = {
-            "position": target_position,
-            "color": {"r": 1, "g": 0, "b": 0, "a": 1},
-            "radius": 0.5,
-            "text": "",
+            'position': target_position,
+            'color': {'r': 1, 'g': 0, 'b': 0, 'a': 1},
+            'radius': 0.5,
+            'text': '',
         }
         waypoints.append(target_dict)
 
     if len(agent_path) != 0:
         thor_controller.step(
-            action="VisualizeWaypoints",
+            action='VisualizeWaypoints',
             waypoints=waypoints,
             raise_for_failure=True,
         )
         # put this over the waypoints just in case
         event = thor_controller.step(
-            action="VisualizePath",
+            action='VisualizePath',
             positions=agent_path,
             pathWidth=path_width,
             raise_for_failure=True,
         )
-        thor_controller.step({"action": "HideVisualizedPath"})
+        thor_controller.step({'action': 'HideVisualizedPath'})
 
     map = event.third_party_camera_frames[-1]
 
     if original_hw != map_height_width:
         thor_controller.step(
-            "ChangeResolution", x=original_hw[1], y=original_hw[0], raise_for_failure=True
+            'ChangeResolution', x=original_hw[1], y=original_hw[0], raise_for_failure=True
         )
 
     return map
 
+
 # TODO: plan1 save the path with unsafe points
 def get_top_down_frame(controller, agent_path, cost_robot, cost_object, target_ids):
-    top_down, agent_path, cost_robot, cost_object = controller.get_top_down_path_view(agent_path, cost_robot, cost_object, target_ids)
+    top_down, agent_path, cost_robot, cost_object = controller.get_top_down_path_view(
+        agent_path, cost_robot, cost_object, target_ids
+    )
     return top_down, agent_path, cost_robot, cost_object
 
 
@@ -266,7 +269,7 @@ class VideoLogging:
     ) -> np.array:
         agent_height, agent_width, ch = agent_frame.shape
 
-        font_to_use = "Arial.ttf"  # possibly need a full path here
+        font_to_use = 'Arial.ttf'  # possibly need a full path here
         full_font_load = ImageFont.truetype(font_to_use, 14)
 
         IMAGE_BORDER = 25
@@ -288,28 +291,37 @@ class VideoLogging:
         # font size 25, aligned center and middle
         if cost_objects_name is not None:
             img_draw.text(
-                    (IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 100), IMAGE_BORDER * 1 + (TEXT_OFFSET_V - 50)),
-                    f"{len(cost_objects_name)}",
-                    font=full_font_load,
-                    fill="red",
-                    anchor="lm",
-                )
+                (
+                    IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 100),
+                    IMAGE_BORDER * 1 + (TEXT_OFFSET_V - 50),
+                ),
+                f'{len(cost_objects_name)}',
+                font=full_font_load,
+                fill='red',
+                anchor='lm',
+            )
             for i, obj in enumerate(cost_objects_name):
                 img_draw.text(
-                    (IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 100), IMAGE_BORDER * 1 + (TEXT_OFFSET_V - 30) + i * 10),
-                    f"{obj}",
+                    (
+                        IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 100),
+                        IMAGE_BORDER * 1 + (TEXT_OFFSET_V - 30) + i * 10,
+                    ),
+                    f'{obj}',
                     font=full_font_load,
-                    fill="red",
-                    anchor="lm",
+                    fill='red',
+                    anchor='lm',
                 )
         if ignore_objects_name is not None:
             for i, obj in enumerate(ignore_objects_name):
                 img_draw.text(
-                    (IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 170), IMAGE_BORDER * 1 + (TEXT_OFFSET_V - 50 ) + i * 10),
-                    f"{obj[0]}, {round(obj[1], 4)}",
+                    (
+                        IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 170),
+                        IMAGE_BORDER * 1 + (TEXT_OFFSET_V - 50) + i * 10,
+                    ),
+                    f'{obj[0]}, {round(obj[1], 4)}',
                     font=full_font_load,
-                    fill="gray",
-                    anchor="lm",
+                    fill='gray',
+                    anchor='lm',
                 )
         if action_dist is not None:
             for i, (prob, action) in enumerate(zip(action_dist, action_names)):
@@ -325,8 +337,8 @@ class VideoLogging:
                         ),
                         action_long_name,
                         font=ImageFont.truetype(font_to_use, 10),
-                        fill="gray" if action != taken_action else "black",
-                        anchor="rm",
+                        fill='gray' if action != taken_action else 'black',
+                        anchor='rm',
                     )
                     img_draw.rectangle(
                         (
@@ -335,8 +347,8 @@ class VideoLogging:
                             IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 5) + int(100 * prob),
                             (TEXT_OFFSET_V + 5) + i * 10,
                         ),
-                        outline="blue",
-                        fill="blue",
+                        outline='blue',
+                        fill='blue',
                     )
                 else:
                     img_draw.text(
@@ -346,8 +358,8 @@ class VideoLogging:
                         ),
                         action_long_name,
                         font=ImageFont.truetype(font_to_use, 10),
-                        fill="gray" if action != taken_action else "black",
-                        anchor="rm",
+                        fill='gray' if action != taken_action else 'black',
+                        anchor='rm',
                     )
                     img_draw.rectangle(
                         (
@@ -359,100 +371,103 @@ class VideoLogging:
                             + int(100 * prob),
                             (TEXT_OFFSET_V + 5) + (i - 10) * 10,
                         ),
-                        outline="blue",
-                        fill="blue",
+                        outline='blue',
+                        fill='blue',
                     )
 
         img_draw.text(
             (IMAGE_BORDER * 1.1, IMAGE_BORDER * 1),
             str(frame_number),
             font=full_font_load,  # ImageFont.truetype(font_to_use, 25),
-            fill="white",
+            fill='white',
         )
 
         if last_action_success is not None:
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 225),
-                "Last Action:",
+                'Last Action:',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="gray",
-                anchor="rm",
+                fill='gray',
+                anchor='rm',
             )
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 225),
-                " Success" if last_action_success else " Failure",
+                ' Success' if last_action_success else ' Failure',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="green" if last_action_success else "red",
-                anchor="lm",
+                fill='green' if last_action_success else 'red',
+                anchor='lm',
             )
             # Add action safety status
-            action_safety_text = "Safe" if cost == 0 else "Unsafe"
-            action_safety_color = "green" if cost == 0 else "red"
+            action_safety_text = 'Safe' if cost == 0 else 'Unsafe'
+            action_safety_color = 'green' if cost == 0 else 'red'
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 245),
-                f"{action_safety_text}",
+                f'{action_safety_text}',
                 font=full_font_load,
                 fill=action_safety_color,
-                anchor="lm",
+                anchor='lm',
             )
-        
+
         if last_objects_causing_cost_list is not None:
             img_draw.text(
-            (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H - 80, IMAGE_BORDER * 1 + 110),
-            f"Object         Disturb      Distance      Mass",
-            font=full_font_load,
-            fill="red",
-            anchor="lm",
+                (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H - 80, IMAGE_BORDER * 1 + 110),
+                f'Object         Disturb      Distance      Mass',
+                font=full_font_load,
+                fill='red',
+                anchor='lm',
             )
             for id in range(len(last_objects_causing_cost_list)):
                 img_draw.text(
-                    (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H-80, IMAGE_BORDER * 1 + 125+id*15),
-                    f"{last_objects_causing_cost_list[id][0]}, {round(last_objects_causing_cost_list[id][1], 4)},\
-                        {round(last_objects_causing_cost_list[id][2], 4)}, {round(last_objects_causing_cost_list[id][3], 4)}",
+                    (
+                        IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H - 80,
+                        IMAGE_BORDER * 1 + 125 + id * 15,
+                    ),
+                    f'{last_objects_causing_cost_list[id][0]}, {round(last_objects_causing_cost_list[id][1], 4)},\
+                        {round(last_objects_causing_cost_list[id][2], 4)}, {round(last_objects_causing_cost_list[id][3], 4)}',
                     font=full_font_load,
-                    fill="red",
-                    anchor="lm",
-            )
+                    fill='red',
+                    anchor='lm',
+                )
         if sum_cost_robot is not None:
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 265),
-                f"Robot Cost: {sum_cost_robot}",
+                f'Robot Cost: {sum_cost_robot}',
                 font=full_font_load,
-                fill="red",
-                anchor="lm",
+                fill='red',
+                anchor='lm',
             )
 
         if sum_cost_object is not None:
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H + 220, IMAGE_BORDER * 1 + 265),
-                f"Object Cost: {sum_cost_object}",
+                f'Object Cost: {sum_cost_object}',
                 font=full_font_load,
-                fill="red",
-                anchor="lm",
+                fill='red',
+                anchor='lm',
             )
 
-        if taken_action == "manual override":
+        if taken_action == 'manual override':
             img_draw.text(
                 (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H + 50, TEXT_OFFSET_V + 5 * 20),
-                "Manual Override",
+                'Manual Override',
                 font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="red",
-                anchor="rm",
+                fill='red',
+                anchor='rm',
             )
 
         img_draw.text(
             (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 90),
-            "Target Dist:",
+            'Target Dist:',
             font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-            fill="gray",
-            anchor="rm",
+            fill='gray',
+            anchor='rm',
         )
         img_draw.text(
             (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 90),
-            f" Task: {task_desc}",
+            f' Task: {task_desc}',
             font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-            fill="gray",
-            anchor="lm",
+            fill='gray',
+            anchor='lm',
         )
 
         lower_offset = 10
@@ -465,8 +480,8 @@ class VideoLogging:
                 IMAGE_BORDER + agent_width,
                 agent_height + IMAGE_BORDER + progress_bar_height + lower_offset,
             ),
-            outline="lightgray",
-            fill="lightgray",
+            outline='lightgray',
+            fill='lightgray',
         )
         img_draw.rectangle(
             (
@@ -475,8 +490,8 @@ class VideoLogging:
                 IMAGE_BORDER + int(frame_number * agent_width / ep_length),
                 agent_height + IMAGE_BORDER + progress_bar_height + lower_offset,
             ),
-            outline="blue",
-            fill="blue",
+            outline='blue',
+            fill='blue',
         )
 
         return np.array(text_image)

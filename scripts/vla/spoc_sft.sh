@@ -16,16 +16,16 @@
 # ==============================================================================
 
 
-export HOME_PREFIX=/path/to/data
+export HOME_PREFIX=/path/to/objaverse/data
 
 export OBJAVERSE_HOUSES_DIR=${HOME_PREFIX}/houses/objaverse_houses/houses_2023_07_28
 export OBJAVERSE_DATA_DIR=${HOME_PREFIX}/assets/objaverse_assets/2023_07_28
 export OBJAVERSE_ANNOTATIONS_PATH=${HOME_PREFIX}/assets/objaverse_assets/2023_07_28/annotations.json.gz
 export LONG_ACTION_NAME=1
 
-OUTPUT_DIR="../outputs/spoc_sft" 
+OUTPUT_DIR="../outputs/spoc_sft"
 
-source ./setup.sh
+source ./scripts/setup.sh
 
 deepspeed \
      --master_port ${MASTER_PORT} \

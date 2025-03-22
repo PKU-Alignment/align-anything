@@ -429,7 +429,7 @@ class TransformerDecoder(nn.Module):
 
         mask = None
         if seqlen > 1:
-            mask = torch.full((seqlen, seqlen), float("-inf"), device=tokens.device)
+            mask = torch.full((seqlen, seqlen), float('-inf'), device=tokens.device)
 
             mask = torch.triu(mask, diagonal=1)
 

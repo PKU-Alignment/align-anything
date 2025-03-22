@@ -17,7 +17,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 
-import math
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
@@ -404,7 +403,7 @@ class TransformerBlock(nn.Module):
         self.ffn_norm = RMSNorm(args.dim, eps=args.norm_eps)
 
     def sampler_select(self, keep: list):
-        if hasattr(self.attention, "sampler_select"):
+        if hasattr(self.attention, 'sampler_select'):
             self.attention.sampler_select(keep)
 
     def forward(
@@ -446,7 +445,7 @@ class TransformerDecoder(nn.Module):
 
     def sampler_select(self, keep: list):
         for layer in self.layers:
-            if hasattr(layer, "sampler_select"):
+            if hasattr(layer, 'sampler_select'):
                 layer.sampler_select(keep)
 
     def forward(self, tokens: torch.Tensor, start_pos: int, mask: Optional[torch.Tensor] = None):
@@ -454,7 +453,7 @@ class TransformerDecoder(nn.Module):
         h = tokens
 
         if mask is None:
-            mask = torch.full((seqlen, seqlen), float("-inf"), device=tokens.device)
+            mask = torch.full((seqlen, seqlen), float('-inf'), device=tokens.device)
 
             mask = torch.triu(mask, diagonal=1)
 

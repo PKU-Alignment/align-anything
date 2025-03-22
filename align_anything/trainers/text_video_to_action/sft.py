@@ -19,24 +19,19 @@
 
 import argparse
 import os
-import random
-import warnings
-from typing import Any, Dict, Mapping, Optional
-from tqdm import tqdm
-import numpy as np
+from typing import Any
+
 import deepspeed
-from datetime import datetime
+import torch
+import torch.distributed as dist
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
+from tqdm import tqdm
 from transformers.integrations.deepspeed import HfDeepSpeedConfig
 
-import torch
-from torch import optim
-from torch.utils.data import DataLoader
-import torch.distributed as dist
-from torch.utils.data.distributed import DistributedSampler
-
-from align_anything.trainers.base import SupervisedTrainerBase
-from align_anything.models.spoc_models.models.transformer_models import REGISTERED_MODELS
 from align_anything.datasets.text_video_to_action.supervised import ChoresMultitaskDataset
+from align_anything.models.spoc_models.models.transformer_models import REGISTERED_MODELS
+from align_anything.trainers.base import SupervisedTrainerBase
 from align_anything.utils.device_utils import get_current_device, torch_set_device
 from align_anything.utils.multi_process import is_main_process
 from align_anything.utils.tools import (
@@ -46,8 +41,8 @@ from align_anything.utils.tools import (
     read_cfgs,
     seed_everything,
     update_dict,
-    str2bool,
 )
+
 
 class SupervisedTrainer(SupervisedTrainerBase):
     def __init__(self, cfgs, ds_cfgs) -> None:
@@ -65,11 +60,11 @@ class SupervisedTrainer(SupervisedTrainerBase):
         self.init_engines()
         dist.barrier()
         self.init_logger()
-        
+
     def init_check(self) -> None:
         """Initial configuration checking."""
         super().init_check()
-        
+
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
         if self.ds_train_cfgs is not None and self.ds_train_cfgs['zero_optimization']['stage'] == 3:
@@ -79,25 +74,24 @@ class SupervisedTrainer(SupervisedTrainerBase):
             input_sensors=self.cfgs.sensor_cfgs.input_sensors,
             loss=self.cfgs.train_cfgs.loss,
             data_augmentation=True,
-            ckpt_pth=None
+            ckpt_pth=None,
         )
         self.model = model.cuda()
         self.processor = processor
-        self.processor.device = torch.device("cuda")
-
+        self.processor.device = torch.device('cuda')
 
     def init_engines(self) -> None:
         """Initialize DeepSpeed engines."""
         self.init_deepspeed_engines()
-        
+
     def init_datasets(self) -> None:
-        self.train_dataloader = self.get_dataloader("train")
-        self.val_dataloader = self.get_dataloader("val")
+        self.train_dataloader = self.get_dataloader('train')
+        self.val_dataloader = self.get_dataloader('val')
         num_datasets = len(self.train_dataloader.dataset.dataset_names)
         self.max_samples = min(
-                self.cfgs.data_cfgs.max_samples * num_datasets,
-                len(self.train_dataloader.dataset),
-            )
+            self.cfgs.data_cfgs.max_samples * num_datasets,
+            len(self.train_dataloader.dataset),
+        )
 
     @torch.no_grad()
     def val(self) -> dict[str, Any]:
@@ -114,11 +108,10 @@ class SupervisedTrainer(SupervisedTrainerBase):
         )
         for batch in val_dataloader:
             outputs, proc_batch = self.forward_batch(batch)
-            losses = dict()
             for k, v in outputs.items():
-                if "loss" in k:
+                if 'loss' in k:
                     val_loss.append(v.item())
-        loss_logger["val/loss"] = sum(val_loss) / len(val_loss)
+        loss_logger['val/loss'] = sum(val_loss) / len(val_loss)
         self.model.train()
         return loss_logger
 
@@ -133,7 +126,7 @@ class SupervisedTrainer(SupervisedTrainerBase):
         output_dir = os.path.join(self.cfgs.logger_cfgs.output_dir, f'slice_{tag or "end"}')
         os.makedirs(output_dir, exist_ok=True)
         self.logger.print(f'Saving model to "{output_dir}" ...')
-        
+
         if not self.lora_enabled:
             self.logger.print('Saving 16-bit model...')
             zero_stage = self.ds_train_cfgs.get('zero_optimization', {}).get('stage', 0)
@@ -146,10 +139,11 @@ class SupervisedTrainer(SupervisedTrainerBase):
                 if is_main_process():
                     model_to_save.save_pretrained(output_dir, is_main_process=True)
             self.logger.print('Checkpoint saved.')
-                    
+
     def on_train_epoch_start(self) -> None:
         prob_decay_size = (
-            self.cfgs.data_cfgs.init_prob_sample_last_steps - self.cfgs.data_cfgs.final_prob_sample_last_steps
+            self.cfgs.data_cfgs.init_prob_sample_last_steps
+            - self.cfgs.data_cfgs.final_prob_sample_last_steps
         ) / self.cfgs.train_cfgs.epochs
         current_prob = (
             self.cfgs.data_cfgs.init_prob_sample_last_steps - prob_decay_size * self.current_epoch
@@ -164,25 +158,26 @@ class SupervisedTrainer(SupervisedTrainerBase):
             num_gpu_per_node=max(torch.cuda.device_count(), 1),
             num_node=1,
         )
-        
+
     def forward_batch(self, batch):
         if len(batch) == 0:
             from align_anything.utils.spoc_utils.debug_utils import ForkedPdb
+
             ForkedPdb().set_trace()
 
         proc_batch = self.processor.process(batch)
         with torch.amp.autocast('cuda', dtype=torch.bfloat16):
             outputs = self.model(proc_batch)
         return outputs, proc_batch
-    
-    def train_step(self,batch):
+
+    def train_step(self, batch):
         outputs, proc_batch = self.forward_batch(batch)
         losses = dict()
-        total_loss = 0.0 
+        total_loss = 0.0
         for k, v in outputs.items():
-            if "loss" in k:
-                losses[f"train/{k}"] = v
-                total_loss += v  
+            if 'loss' in k:
+                losses[f'train/{k}'] = v
+                total_loss += v
         self.model.backward(total_loss)
         self.model.step()
         return losses
@@ -208,9 +203,9 @@ class SupervisedTrainer(SupervisedTrainerBase):
             rst = self.val()
             self.logger.log(rst, step=self.global_step)
             self.logger.print(f'Validation loss: {rst["val/loss"]:.4f}')
-        
+
         start_batch_idx = self.global_step % len(self.train_dataloader)
-        
+
         for epoch in range(int(remain_epoch)):
             self.model.train()
             self.on_train_epoch_start()
@@ -221,17 +216,17 @@ class SupervisedTrainer(SupervisedTrainerBase):
             for batch_idx, batch in enumerate(self.train_dataloader):
                 if epoch == 0 and batch_idx < start_batch_idx:
                     continue
-                
+
                 info = self.train_step(batch)
                 self.global_step += 1
-                
+
                 progress_bar.set_description(
                     f'Training {self.current_epoch + 1}/{self.cfgs.train_cfgs.epochs} epoch '
                     f'(loss {info["train/loss"]:.4f})',
                 )
                 progress_bar.update(1)
                 info['train/epoch'] = self.global_step / len(self.train_dataloader)
-                
+
                 save_interval = (
                     self.cfgs.train_cfgs.epochs
                     * len(self.train_dataloader)
@@ -261,16 +256,26 @@ class SupervisedTrainer(SupervisedTrainerBase):
         dataset = ChoresMultitaskDataset(
             base_data_dir=self.cfgs.data_cfgs.data_dir,
             dataset_names=self.cfgs.data_cfgs.dataset_task_type,
-            subset=subset,  
-            max_samples=self.cfgs.data_cfgs.max_samples if subset == "train" else self.cfgs.data_cfgs.val_max_samples,
+            subset=subset,
+            max_samples=(
+                self.cfgs.data_cfgs.max_samples
+                if subset == 'train'
+                else self.cfgs.data_cfgs.val_max_samples
+            ),
             sliding_window=self.cfgs.data_cfgs.sliding_window,
             input_sensors=self.cfgs.sensor_cfgs.input_sensors,
-            reduce_action_redundancy=self.cfgs.data_cfgs.reduce_action_redundancy if subset == "train" else False,
+            reduce_action_redundancy=(
+                self.cfgs.data_cfgs.reduce_action_redundancy if subset == 'train' else False
+            ),
         )
         sampler = DistributedSampler(dataset, shuffle=True)
         return DataLoader(
             dataset,
-            batch_size=self.cfgs.train_cfgs.per_device_train_batch_size if subset == "train" else self.cfgs.train_cfgs.per_device_val_batch_size,
+            batch_size=(
+                self.cfgs.train_cfgs.per_device_train_batch_size
+                if subset == 'train'
+                else self.cfgs.train_cfgs.per_device_val_batch_size
+            ),
             prefetch_factor=2,
             collate_fn=lambda batch: [sample for sample in batch if sample is not None],
             persistent_workers=False,
@@ -279,12 +284,13 @@ class SupervisedTrainer(SupervisedTrainerBase):
             sampler=sampler,
         )
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     # setup distribution training
     deepspeed.init_distributed()
     current_device = get_current_device()
     torch_set_device(current_device)
-    
+
     # read default configs from the yaml file
     task = os.path.join('text_video_to_action', 'sft')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)

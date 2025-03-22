@@ -16,19 +16,18 @@
 # ==============================================================================
 
 
-
 from typing import List
 
 from allenact.utils.misc_utils import prepare_locals_for_super
 from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
 
+
 try:
-    from typing import Literal
+    pass
 except ImportError:
-    from typing_extensions import Literal
+    pass
 #
 import numpy as np
-
 from allenact.utils.system import get_logger
 
 
@@ -71,7 +70,7 @@ class ObjectNavRewardShaper(RewardShaper):
         reward = 0.0
         cur_distance = self.dist_to_target_func()
 
-        if self.distance_type == "l2":
+        if self.distance_type == 'l2':
             reward += self.reward_config.shaping_weight * max(
                 self.closest_distance - cur_distance, 0
             )
@@ -108,8 +107,8 @@ class FetchRewardShaper(RewardShaper):
 
     def is_object_pickupable(self):
         pickupable_object = self.controller.get_objects_in_hand_sphere()
-        object_type = self.task_info["synsets"][0]
-        for object_id in self.task_info["synset_to_object_ids"][object_type]:
+        object_type = self.task_info['synsets'][0]
+        for object_id in self.task_info['synset_to_object_ids'][object_type]:
             if object_id in pickupable_object:
                 return True
         return False
@@ -120,14 +119,14 @@ class FetchRewardShaper(RewardShaper):
         May return a negative value if the target object is not reachable.
         """
         # NOTE: may return -1 if the object is unreachable.
-        min_dist = float("inf")
-        object_type = self.task_info["synsets"][0]
-        for object_id in self.task_info["synset_to_object_ids"][object_type]:
+        min_dist = float('inf')
+        object_type = self.task_info['synsets'][0]
+        for object_id in self.task_info['synset_to_object_ids'][object_type]:
             min_dist = min(
                 min_dist,
                 self.controller.dist_from_arm_sphere_center_to_obj(object_id),
             )
-        if min_dist == float("inf"):
+        if min_dist == float('inf'):
             get_logger().error(
                 f"No target object among {self.task_info['synset_to_object_ids'][object_type]} found"
                 f" in house {self.task_info['house_index']}."
@@ -141,16 +140,16 @@ class FetchRewardShaper(RewardShaper):
         May return a negative value if the target object is not reachable.
         """
         # NOTE: may return -1 if the object is unreachable.
-        min_dist = float("inf")
-        object_type = self.task_info["synsets"][0]
-        for object_id in self.task_info["synset_to_object_ids"][object_type]:
+        min_dist = float('inf')
+        object_type = self.task_info['synsets'][0]
+        for object_id in self.task_info['synset_to_object_ids'][object_type]:
             min_dist = min(
                 min_dist,
                 self.controller.dist_from_arm_sphere_center_to_obj_colliders_closest_to_point(
                     object_id
                 ),
             )
-        if min_dist == float("inf"):
+        if min_dist == float('inf'):
             get_logger().error(
                 f"No target object among {self.task_info['synset_to_object_ids'][object_type]} found"
                 f" in house {self.task_info['house_index']}."
@@ -180,7 +179,7 @@ class FetchRewardShaper(RewardShaper):
 
         # distance reward
         cur_distance = self.dist_to_target_colliders_from_arm_func()
-        if self.distance_type == "l2":
+        if self.distance_type == 'l2':
             reward += (
                 self.reward_config.shaping_weight
                 * 5
@@ -204,12 +203,12 @@ class RoomVisitRewardShaper(RewardShaper):
         self.reachable_locations = self.get_reachable_locations()
 
     def get_reachable_locations(self):
-        reachable_locs = [[pos["x"], pos["z"]] for pos in self.reachable_positions]
+        reachable_locs = [[pos['x'], pos['z']] for pos in self.reachable_positions]
         return np.array(reachable_locs).round(1)
 
     def get_agent_loc(self):
         agent_position = self.controller.get_current_agent_position()
-        return round(agent_position["x"], 1), round(agent_position["z"], 1)
+        return round(agent_position['x'], 1), round(agent_position['z'], 1)
 
     def shaping(self) -> float:
         if self.reward_config is None:

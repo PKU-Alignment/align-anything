@@ -20,47 +20,40 @@ Object navigation is currently available as a Task in AI2-THOR and
 Facebook's Habitat.
 """
 
-from collections import OrderedDict
-import numpy as np
 import os
-from typing import Any, Dict, List, Optional, Sequence, Union, cast, Tuple
+from collections import OrderedDict
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import gym
+import numpy as np
 import torch
 import torch.nn as nn
-from torch import Tensor
-from torch.nn.modules.transformer import _get_clones
-from gym.spaces import Dict as SpaceDict
-
-from allenact.algorithms.onpolicy_sync.policy import ObservationType
-from allenact.embodiedai.models.visual_nav_models import (
-    VisualNavActorCritic,
-    FusionType,
+import torch.nn.functional as F
+from allenact.algorithms.onpolicy_sync.policy import (
+    DistributionType,
+    LinearActorHead,
+    LinearCriticHead,
+    ObservationType,
 )
-from transformers import T5EncoderModel, AutoTokenizer
-from align_anything.utils.spoc_utils.string_utils import convert_byte_to_string
-from align_anything.utils.spoc_utils.nn_utils import create_causal_mask, debug_model_info
 from allenact.base_abstractions.misc import ActorCriticOutput, Memory
-from allenact.algorithms.onpolicy_sync.policy import ObservationType, DistributionType
 from allenact.embodiedai.aux_losses.losses import MultiAuxTaskNegEntropyLoss
-from allenact.utils.model_utils import FeatureEmbedding
+from allenact.embodiedai.models.visual_nav_models import FusionType, VisualNavActorCritic
 from allenact.utils.system import get_logger
-from align_anything.models.spoc_models.models.transformer_models.text_cond_visual_encoder import PositionalEncoder
+from gym.spaces import Dict as SpaceDict
+from transformers import AutoTokenizer, T5EncoderModel
+
+from align_anything.models.spoc_models.models.llama.model import ModelArgs as LLAMAModelArgs
 from align_anything.models.spoc_models.models.llama.model import (
     TransformerDecoder as LLAMATransformerDecoder,
 )
-from align_anything.models.spoc_models.models.llama.model import ModelArgs as LLAMAModelArgs
-from align_anything.utils.spoc_utils.bbox_utils import get_best_of_two_bboxes
-
-from allenact.algorithms.onpolicy_sync.policy import (
-    ActorCriticModel,
-    LinearCriticHead,
-    LinearActorHead,
-    ObservationType,
-    DistributionType,
+from align_anything.models.spoc_models.models.transformer_models.text_cond_visual_encoder import (
+    PositionalEncoder,
 )
+from align_anything.utils.spoc_utils.bbox_utils import get_best_of_two_bboxes
 from align_anything.utils.spoc_utils.loss_functions import HLGaussLoss
-import torch.nn.functional as F
+from align_anything.utils.spoc_utils.nn_utils import debug_model_info
+from align_anything.utils.spoc_utils.string_utils import convert_byte_to_string
+
 
 TGTCache = torch.Tensor
 
@@ -102,7 +95,7 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         accurate_object_box_uuid: Optional[str] = None,
         prev_checkpoint: Optional[str] = None,
         prev_rl_checkpoint: Optional[str] = None,
-        critic_type="linear",
+        critic_type='linear',
         **kwargs,
     ):
         super().__init__(
@@ -166,16 +159,16 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         # self.create_actorcritic_head()
         self.actor = LinearActorHead(self._hidden_size, self.action_space.n)
         self.critic_type = critic_type
-        if critic_type == "linear":
+        if critic_type == 'linear':
             self.critic = LinearCriticHead(self._hidden_size)
-        elif critic_type == "mlp":
+        elif critic_type == 'mlp':
             self.critic = MLPCriticHead(self._hidden_size)
-        elif critic_type == "discrete":
+        elif critic_type == 'discrete':
             # seems that bins = 101 is a good choice -> -5 to 15 = 20 / 100 = 0.2 width -> sigma=0.15
             dc_loss = HLGaussLoss(min_value=-5.0, max_value=15.0, num_bins=101, sigma=0.15)
             self.critic = DiscreteCriticHead(self._hidden_size, bin_size=101, loss_fn=dc_loss)
         else:
-            print(f"Unknown critic type: {critic_type}")
+            print(f'Unknown critic type: {critic_type}')
             raise NotImplementedError
 
         self.create_aux_models(
@@ -184,30 +177,33 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         )
 
         if prev_checkpoint is not None:
-            assert prev_rl_checkpoint is None, "Cannot have both prev_checkpoint and prev_rl_checkpoint"
+            assert (
+                prev_rl_checkpoint is None
+            ), 'Cannot have both prev_checkpoint and prev_rl_checkpoint'
             # This is in charge of loading the pytorch lightning checkpoint form Imitation learning
             ckpt = prev_checkpoint  # self.get_ckpt_path(prev_checkpoint, ckpt_step)
             from utils.offline_train_utils import load_pl_ckpt_allenact
+
             load_pl_ckpt_allenact(self, ckpt)
         elif prev_rl_checkpoint is not None:
-            ckpt = torch.load(os.path.abspath(prev_rl_checkpoint), map_location="cpu")
+            ckpt = torch.load(os.path.abspath(prev_rl_checkpoint), map_location='cpu')
 
             ckpt = cast(
-                Dict[str, Union[Dict[str, Any], torch.Tensor, float, int, str, List]], ckpt,
+                Dict[str, Union[Dict[str, Any], torch.Tensor, float, int, str, List]],
+                ckpt,
             )
 
-            state_dict = ckpt["model_state_dict"]
-            state_dict = {k: v for k, v in state_dict.items() if "critic_tsfm" not in k}
+            state_dict = ckpt['model_state_dict']
+            state_dict = {k: v for k, v in state_dict.items() if 'critic_tsfm' not in k}
             load_status = self.load_state_dict(state_dict)
-            print(f"Loaded model from {prev_rl_checkpoint} with status: {str(load_status)}")
+            print(f'Loaded model from {prev_rl_checkpoint} with status: {str(load_status)}')
 
         self.train()
-
 
         debug_model_info(self, use_logger=False)
 
     def sampler_select(self, keep: list):
-        if hasattr(self.decoder, "sampler_select"):
+        if hasattr(self.decoder, 'sampler_select'):
             self.decoder.sampler_select(keep)
 
     def create_tx_state_encoders(
@@ -242,7 +238,7 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
 
         state_encoders_linear = OrderedDict()
         state_encoders_time = OrderedDict()
-        state_encoders_text = OrderedDict()
+        OrderedDict()
         state_encoders = OrderedDict()  # perserve insertion order in py3.6
         if self.multiple_beliefs:  # multiple belief model
             for aux_uuid in self.auxiliary_uuids:
@@ -269,15 +265,13 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         else:  # single belief model
             if self.use_linear_belief_adaptor:
                 self.state_encoders_linear = nn.Linear(tx_input_size, self._hidden_size)
-            self.time_encoder = PositionalEncoder(
-                self._hidden_size, max_len=self.max_steps
-            )
+            self.time_encoder = PositionalEncoder(self._hidden_size, max_len=self.max_steps)
 
             self.decoder = LLAMATransformerDecoder(state_encoders_params)
-            self.belief_names = ["single_belief"]
+            self.belief_names = ['single_belief']
 
         get_logger().info(
-            "there are {} belief models: {}".format(len(self.belief_names), self.belief_names)
+            f'there are {len(self.belief_names)} belief models: {self.belief_names}'
         )
 
     def _recurrent_memory_specification(self):
@@ -306,26 +300,28 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         import wandb
 
         api = wandb.Api()
-        wandb_entity_name = "prior-ai2"
-        wandb_project_name = "ilearn_rl"
+        wandb_entity_name = 'prior-ai2'
+        wandb_project_name = 'ilearn_rl'
 
         on_server = torch.cuda.is_available()
         if on_server:
-            output_basedir = "/data/results/online_evaluation"
+            output_basedir = '/data/results/online_evaluation'
         else:
-            output_basedir = "./data/results/online_evaluation"
+            output_basedir = './data/results/online_evaluation'
 
-        run = api.run(f"{wandb_entity_name}/{wandb_project_name}/{training_run_id}")
+        run = api.run(f'{wandb_entity_name}/{wandb_project_name}/{training_run_id}')
 
-        eval_run_name = "OnlineEval" + run.config["exp_name"]
+        eval_run_name = 'OnlineEval' + run.config['exp_name']
         exp_base_dir = os.path.join(output_basedir, eval_run_name)
-        ckpt_dir = os.path.join(exp_base_dir, "ckpts")
+        ckpt_dir = os.path.join(exp_base_dir, 'ckpts')
         os.makedirs(ckpt_dir, exist_ok=True)
 
-        ckpt_fn = f"{wandb_entity_name}/{wandb_project_name}/ckpt-{training_run_id}-{ckptStep}:latest"
+        ckpt_fn = (
+            f'{wandb_entity_name}/{wandb_project_name}/ckpt-{training_run_id}-{ckptStep}:latest'
+        )
         artifact = api.artifact(ckpt_fn)
         artifact.download(ckpt_dir)
-        ckpt_pth = os.path.join(ckpt_dir, "model.ckpt")
+        ckpt_pth = os.path.join(ckpt_dir, 'model.ckpt')
 
         return ckpt_pth
 
@@ -377,7 +373,7 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
             )
             joint_embeds = joint_embeds + object_in_hand_enc
 
-        assert not self.multiple_beliefs, "Multiple beliefs not supported in LLAMA Tx"
+        assert not self.multiple_beliefs, 'Multiple beliefs not supported in LLAMA Tx'
 
         if joint_embeds.shape[0] > 1 or self.time_step_counter >= self.max_steps:
             self.time_step_counter = 0
@@ -413,9 +409,9 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         extras = (
             {
                 aux_uuid: {
-                    "beliefs": beliefs, # (beliefs_dict[aux_uuid] if self.multiple_beliefs else beliefs),
-                    "obs_embeds": obs_embeds,
-                    "aux_model": (
+                    'beliefs': beliefs,  # (beliefs_dict[aux_uuid] if self.multiple_beliefs else beliefs),
+                    'obs_embeds': obs_embeds,
+                    'aux_model': (
                         self.aux_models[aux_uuid] if aux_uuid in self.aux_models else None
                     ),
                 }
@@ -429,41 +425,41 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
             extras[MultiAuxTaskNegEntropyLoss.UUID] = task_weights
 
         total_norm = self.compute_total_grad_norm()
-        extras["total_norm"] = torch.Tensor([total_norm])
+        extras['total_norm'] = torch.Tensor([total_norm])
 
-        if self.critic_type == "discrete":
+        if self.critic_type == 'discrete':
             _, stop_grad_logits = self.critic(beliefs.detach())
-            extras["stop_grad_logits"] = stop_grad_logits
-            extras["loss_func"] = self.critic.loss_fn
+            extras['stop_grad_logits'] = stop_grad_logits
+            extras['loss_func'] = self.critic.loss_fn
             values, full_logits = self.critic(beliefs)
-            extras["full_logits"] = full_logits
+            extras['full_logits'] = full_logits
         else:
             stop_grad_values = self.critic(beliefs.detach())
-            extras["stop_grad_values"] = stop_grad_values
+            extras['stop_grad_values'] = stop_grad_values
             values = self.critic(beliefs)
 
-        if self.critic_type == "linear":
+        if self.critic_type == 'linear':
             with torch.no_grad():
                 weight_norm = self.critic.fc.weight.data.norm(2)
-                extras["weight_norm"] = torch.Tensor([weight_norm])
+                extras['weight_norm'] = torch.Tensor([weight_norm])
 
                 bias_norm = self.critic.fc.bias.data.norm(2)
-                extras["bias_norm"] = torch.Tensor([bias_norm])
+                extras['bias_norm'] = torch.Tensor([bias_norm])
 
                 if self.critic.fc.weight.grad is not None:
                     weight_grad_norm = self.critic.fc.weight.grad.detach().data.norm(2)
-                    extras["weight_grad_norm"] = torch.Tensor([weight_grad_norm])
+                    extras['weight_grad_norm'] = torch.Tensor([weight_grad_norm])
         else:
             with torch.no_grad():
                 weight_norm = self.critic.fc[-1].weight.data.norm(2)
-                extras["weight_norm"] = torch.Tensor([weight_norm])
+                extras['weight_norm'] = torch.Tensor([weight_norm])
 
                 bias_norm = self.critic.fc[-1].bias.data.norm(2)
-                extras["bias_norm"] = torch.Tensor([bias_norm])
+                extras['bias_norm'] = torch.Tensor([bias_norm])
 
                 if self.critic.fc[-1].weight.grad is not None:
                     weight_grad_norm = self.critic.fc[-1].weight.grad.detach().data.norm(2)
-                    extras["weight_grad_norm"] = torch.Tensor([weight_grad_norm])
+                    extras['weight_grad_norm'] = torch.Tensor([weight_grad_norm])
 
         actor_critic_output = ActorCriticOutput(
             distributions=self.actor(beliefs),
@@ -501,7 +497,7 @@ class DinoTxGoalEncoder(nn.Module):
         if goal_sensor_uuid is not None:
             self.goal_space = observation_spaces.spaces[self.goal_uuid]
 
-            text_pt_model = "t5-small"  # "google/flan-t5-small"
+            text_pt_model = 't5-small'  # "google/flan-t5-small"
             self.text_encoder = T5EncoderModel.from_pretrained(text_pt_model)
             self.text_tokenizer = AutoTokenizer.from_pretrained(text_pt_model)
             self.text_adapter = nn.Sequential(
@@ -511,14 +507,14 @@ class DinoTxGoalEncoder(nn.Module):
         self.fusion_token = nn.Parameter(0.1 * torch.rand(self.goal_embed_dims))
 
         if self.manip_uuid is not None:
-            sensor_list = ["raw_navigation_camera", "raw_manipulation_camera"]
+            sensor_list = ['raw_navigation_camera', 'raw_manipulation_camera']
         else:
-            sensor_list = ["raw_navigation_camera"]
+            sensor_list = ['raw_navigation_camera']
 
         for sensor in sensor_list:
             setattr(
                 self,
-                f"visual_sensor_token_{sensor}",
+                f'visual_sensor_token_{sensor}',
                 nn.Parameter(0.1 * torch.rand(goal_embed_dims)),
             )
 
@@ -587,7 +583,7 @@ class DinoTxGoalEncoder(nn.Module):
             g = convert_byte_to_string(g, max_len=max_len)
             goals.append(g)
         with torch.no_grad():
-            goal_emb = self.text_tokenizer(goals, return_tensors="pt", padding=True).to(
+            goal_emb = self.text_tokenizer(goals, return_tensors='pt', padding=True).to(
                 observations[self.goal_uuid].device
             )
             goal_emb = self.text_encoder(**goal_emb).last_hidden_state
@@ -603,7 +599,7 @@ class DinoTxGoalEncoder(nn.Module):
         pos_encoded_boxes = self.bbox_pos_encoder(combined_boxes)
         pos_encoded_boxes = pos_encoded_boxes + self.coord_pos_enc(
             torch.tensor(
-                [[i for i in range((self.len_bounding_boxes))]],
+                [[i for i in range(self.len_bounding_boxes)]],
                 device=pos_encoded_boxes.device,
             ).tile(B * T, 1)
         )
@@ -646,8 +642,12 @@ class DinoTxGoalEncoder(nn.Module):
         if self.blind:
             return self.embed_goal(observations[self.goal_uuid])
 
-        vis_fit = self.visual_compressor(observations[self.dino_uuid]).flatten(start_dim=2).permute(0, 2, 1)
-        corresponding_camera_token = getattr(self, f"visual_sensor_token_raw_navigation_camera")
+        vis_fit = (
+            self.visual_compressor(observations[self.dino_uuid])
+            .flatten(start_dim=2)
+            .permute(0, 2, 1)
+        )
+        corresponding_camera_token = getattr(self, f'visual_sensor_token_raw_navigation_camera')
 
         concatenated_feats = [
             self.fusion_token.view(1, 1, -1).expand(nstep * nsampler, -1, -1),
@@ -655,17 +655,23 @@ class DinoTxGoalEncoder(nn.Module):
         ]
 
         if self.manip_uuid is not None:
-            manip_fit = self.visual_compressor(observations[self.manip_uuid]).flatten(start_dim=2).permute(0, 2, 1)
-            corresponding_manip_token = getattr(self, f"visual_sensor_token_raw_manipulation_camera")
+            manip_fit = (
+                self.visual_compressor(observations[self.manip_uuid])
+                .flatten(start_dim=2)
+                .permute(0, 2, 1)
+            )
+            corresponding_manip_token = getattr(
+                self, f'visual_sensor_token_raw_manipulation_camera'
+            )
             concatenated_feats.append(self.visual_adapter(manip_fit) + corresponding_manip_token)
 
         if self.goal_uuid is not None:
             text_feats = self.distribute_target(observations)
             concatenated_feats.append(text_feats)
         else:
-            raise NotImplementedError("We currently requires goal sensor to be present")
+            raise NotImplementedError('We currently requires goal sensor to be present')
         if self.relevant_object_box_uuid is not None and self.accurate_object_box_uuid is not None:
-            raise NotImplementedError("We currently do not support Bbox observations")
+            raise NotImplementedError('We currently do not support Bbox observations')
             pos_encoded_boxes = self.encode_bbox(observations)
             concatenated_feats.append(pos_encoded_boxes)
         x = self.fusion_xformer(
