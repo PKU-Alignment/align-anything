@@ -45,8 +45,7 @@ class AccustomedQwen2VLRewardModel(Qwen2VLForConditionalGeneration):
 
     def __init__(self, config: AutoConfig):
         super().__init__(config)
-        # TODO: Fix the hard-coded value
-        self.score_head = nn.Linear(3584, 1, bias=False)
+        self.score_head = nn.Linear(config.hidden_size, 1, bias=False)
 
     @property
     def processor_available(self):

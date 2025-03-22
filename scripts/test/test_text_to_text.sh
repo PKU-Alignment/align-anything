@@ -54,12 +54,12 @@ for script in $(find "$TEST_DIR" -name "*.sh" -type f | sort); do
     if [ "$(basename "$script")" = "$(basename "$0")" ]; then
         continue
     fi
-    
+
     # increase the total count
     ((TOTAL++))
 
     echo -e "${YELLOW}Start testing script: ${script} (${TOTAL}/${NUM_SCRIPT}) ${NC}"
-    
+
     # execute the script and redirect the output to a temporary file
     temp_output=$(mktemp)
     if ! bash "$script" > "$temp_output" 2>&1; then
@@ -71,7 +71,7 @@ for script in $(find "$TEST_DIR" -name "*.sh" -type f | sort); do
         echo "----------------------------------------"
 
     fi
-    
+
     # delete the temporary file
     rm -f "$temp_output"
     echo -e "${GREEN}Test script completed: ${script} (${TOTAL}/${NUM_SCRIPT})${NC}"

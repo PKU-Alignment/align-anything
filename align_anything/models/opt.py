@@ -20,7 +20,7 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint
 from transformers import AutoConfig
-from transformers.models.opt.modeling_opt import OPTForCausalLM, OPTPreTrainedModel, OPTModel
+from transformers.models.opt.modeling_opt import OPTForCausalLM, OPTModel, OPTPreTrainedModel
 
 from align_anything.models.reward_model import ScoreModelOutput
 

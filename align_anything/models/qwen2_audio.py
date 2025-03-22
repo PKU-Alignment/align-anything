@@ -54,7 +54,7 @@ if Qwen2Audio_AVALIABLE:
             deepspeed.zero.register_external_parameter(
                 self.model, self.model.audio_tower.embed_positions.weight
             )
-            self.score_head = nn.Linear(4096, 1, bias=False)
+            self.score_head = nn.Linear(config.hidden_size, 1, bias=False)
 
         @property
         def processor_available(self):
