@@ -1571,45 +1571,58 @@ class ANYTHING_TI2TI:
 
 @register_template('RLAIFV')
 class RLAIFV:
-    system_prompt: str = ''
-    user_prompt: str = 'USER: \n<image>{input}'
-    assistant_prompt: str = '\nASSISTANT:{output}'
-    split_token: str = 'ASSISTANT:'
 
     def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        better_response = raw_sample['chosen']
-        worse_response = raw_sample['rejected']
+        raw_better_response = raw_sample['chosen']
+        raw_worse_response = raw_sample['rejected']
         prompt = raw_sample['question']
-        image = raw_sample['image']
+        image = raw_sample['image'].convert('RGBA')
 
-        formatted_prompt = f'{self.system_prompt}' f'{self.user_prompt.format(input=prompt)}'
-        formatted_better_output = f'{self.assistant_prompt.format(output=better_response)}'
-        formatted_worse_output = f'{self.assistant_prompt.format(output=worse_response)}'
+        better_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_better_response}]},
+        ]
+        worse_conversation = [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_worse_response}]},
+        ]
 
-        return {
-            'prompt': formatted_prompt,
-            'better_text': formatted_better_output,
-            'worse_text': formatted_worse_output,
+        meta_info = {
             'image': image,
+            'better_response': raw_better_response,
+            'worse_response': raw_worse_response,
         }
+
+        return better_conversation, worse_conversation, meta_info
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
         return raw_sample['chosen'] == raw_sample['rejected']
 
     def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
         prompt = raw_sample['question']
-        image = raw_sample['image']
+        image = raw_sample['image'].convert('RGBA')
 
-        formatted_prompt = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f'{self.assistant_prompt.format(output="")}'
-        )
-
-        return {
-            'text': formatted_prompt,
-            'image': image,
-        }
+        return [
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+        ], {'image': image}
 
 
 @register_template('SPA_VL')
@@ -1617,27 +1630,43 @@ class SPA_VL:
     system_prompt: str = (
         "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions. "
     )
-    user_prompt: str = 'USER: \n<image> {input}'
-    assistant_prompt: str = '\nASSISTANT: {output}'
-    split_token: str = 'ASSISTANT:'
 
     def format_preference_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        better_response = raw_sample['chosen']
-        worse_response = raw_sample['rejected']
+        raw_better_response = raw_sample['chosen']
+        raw_worse_response = raw_sample['rejected']
         prompt = raw_sample['question']
-        image = raw_sample['image']
+        image = raw_sample['image'].convert('RGBA')
 
-        formatted_prompt = f'{self.system_prompt}' f'{self.user_prompt.format(input=prompt)}'
-        formatted_better_output = f'{self.assistant_prompt.format(output=better_response)}'
-        formatted_worse_output = f'{self.assistant_prompt.format(output=worse_response)}'
-        image = image.convert('RGBA')
+        better_conversation = [
+            {'role': 'system', 'content': [{'type': 'text', 'text': self.system_prompt}]},
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_better_response}]},
+        ]
+        worse_conversation = [
+            {'role': 'system', 'content': [{'type': 'text', 'text': self.system_prompt}]},
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_worse_response}]},
+        ]
 
-        return {
-            'prompt': formatted_prompt,
-            'better_text': formatted_better_output,
-            'worse_text': formatted_worse_output,
+        meta_info = {
             'image': image,
+            'better_response': raw_better_response,
+            'worse_response': raw_worse_response,
         }
+
+        return better_conversation, worse_conversation, meta_info
 
     def check_equal(self, raw_sample: dict[str, Any]) -> bool:
         return raw_sample['chosen'] == raw_sample['rejected']
@@ -1649,19 +1678,18 @@ class SPA_VL:
             .replace('\n<image>', '')
             .replace('<image>', '')
         )
-        image = raw_sample['image']
+        image = raw_sample['image'].convert('RGBA')
 
-        formatted_prompt = (
-            f'{self.system_prompt}'
-            f'{self.user_prompt.format(input=prompt)}'
-            f'{self.assistant_prompt.format(output="")}'
-        )
-        image = image.convert('RGBA')
-
-        return {
-            'text': formatted_prompt,
-            'image': image,
-        }
+        return [
+            {'role': 'system', 'content': [{'type': 'text', 'text': self.system_prompt}]},
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image'},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+        ], {'image': image}
 
 
 @register_template('Webvid')
