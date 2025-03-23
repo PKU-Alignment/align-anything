@@ -167,7 +167,7 @@ class PromptOnlyCollator:
 
         concated_text = [sample['conversation'] for sample in samples]
 
-        # TODO: special for gemma3 processor, will be merge in next version
+        # FIXME: special for gemma3 processor, will be merge in next version
         if isinstance(self.processor, transformers.Gemma3Processor):
             images = [[convert_to_rgb(img)] for img in images]
 

@@ -164,7 +164,7 @@ class SupervisedCollator:
         else:
             images = [sample['image'] for sample in samples]
 
-        # TODO: special for gemma3 processor, will be merge in next version
+        # FIXME: special for gemma3 processor, will be merge in next version
         if isinstance(self.processor, transformers.Gemma3Processor):
             images = [[convert_to_rgb(img)] for img in images]
             return_dict['meta_info']['images'] = images

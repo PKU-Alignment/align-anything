@@ -49,7 +49,7 @@ from transformers.utils.import_utils import requires_backends
 
 from align_anything.utils.device_utils import get_current_device, manual_seed_all
 from align_anything.utils.multi_process import print_on_main_process
-
+from transformers.image_utils import ImageInput
 
 try:
     import yt_dlp
@@ -60,16 +60,6 @@ except ImportError:
         You can ignore this warning if you are not using the evaluation module.
         or install them by `pip install -e .[evaluate]`."""
     )
-
-
-ImageInput = Union[
-    'PIL.Image.Image',
-    np.ndarray,
-    'torch.Tensor',
-    List['PIL.Image.Image'],
-    List[np.ndarray],
-    List['torch.Tensor'],
-]
 
 
 def convert_to_rgb(image: ImageInput) -> ImageInput:
