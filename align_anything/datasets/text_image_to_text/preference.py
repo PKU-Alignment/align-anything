@@ -26,7 +26,7 @@ from tqdm import tqdm
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device, is_main_process
-from align_anything.utils.tools import ends_with_any, left_padding, right_padding
+from align_anything.utils.tools import convert_to_rgb, ends_with_any, left_padding, right_padding
 from datasets import load_dataset
 
 
@@ -210,7 +210,13 @@ class PreferenceCollator:
         else:
             images = [sample['image'] for sample in samples] * 2
 
-        return_dict['meta_info']['images'] = images
+        # FIXME: special for gemma3 processor, will be merge in next version
+        if isinstance(self.processor, transformers.Gemma3Processor):
+            images = [[convert_to_rgb(sample['image'])] for sample in samples] * 2
+            return_dict['meta_info']['images'] = images
+        else:
+            return_dict['meta_info']['images'] = images
+
         concated_text = [sample['better_conversation'] for sample in samples] + [
             sample['worse_conversation'] for sample in samples
         ]

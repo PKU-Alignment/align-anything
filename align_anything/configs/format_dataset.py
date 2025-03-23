@@ -384,7 +384,15 @@ class AA_TI2T(BaseFormatter):
         raw_better_response = raw_sample[f'response_{better_id}']
         raw_worse_response = raw_sample[f'response_{worse_id}']
         prompt = raw_sample['question']
-        image = raw_sample['image'].convert('RGBA')
+        image_element = raw_sample['image']
+        assert isinstance(
+            image_element, (bytes, Image.Image)
+        ), "raw_sample['image'] must be bytes or PIL.Image.Image type"
+        image = (
+            Image.open(io.BytesIO(image_element)).convert('RGBA')
+            if isinstance(image_element, bytes)
+            else image_element.convert('RGBA')
+        )
         better_conversation = [
             {
                 'role': 'user',
