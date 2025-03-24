@@ -22,10 +22,15 @@ import transformers
 from torch.utils.data import Dataset
 from torchvision import transforms
 from tqdm import tqdm
+from tqdm.auto import tqdm
 from transformers import LlavaNextVideoProcessor, Qwen2VLProcessor
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
-from align_anything.utils.multi_process import get_current_device, print_on_main_process
+from align_anything.utils.multi_process import (
+    get_current_device,
+    is_main_process,
+    print_on_main_process,
+)
 from align_anything.utils.process_llava_next_video import read_video_pyav as llava_next_video_loader
 from align_anything.utils.process_qwen2vl import process_video_info as qwen2vl_video_loader
 from align_anything.utils.tools import ends_with_any
@@ -85,12 +90,27 @@ class PreferenceDataset(Dataset):
             trust_remote_code=True,
             verification_mode='no_checks',
         )
+        if size:
+            size = min(size, len(self.raw_data))
+            self.raw_data = self.raw_data.select(range(int(size)))
         self.valid_indices = self.filter_indices()
 
     def filter_indices(self):
         valid_indices = []
-        for i, item in tqdm(enumerate(self.raw_data), desc='Filtering indices'):
-            valid_indices.append(i)
+        for i, item in tqdm(
+            enumerate(self.raw_data),
+            disable=not is_main_process(),
+            total=len(self.raw_data),
+            desc='Filtering valid indices',
+        ):
+            if not hasattr(self.template, 'check_equal'):
+                valid_indices.append(i)
+                continue
+            if not self.template.check_equal(item):
+                if hasattr(self.template, 'check_validation'):
+                    if not self.template.check_validation(item):
+                        continue
+                valid_indices.append(i)
         return valid_indices
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:

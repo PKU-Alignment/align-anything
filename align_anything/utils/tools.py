@@ -24,10 +24,11 @@ import os
 import pickle
 import random
 from collections import namedtuple
-from typing import Any, NamedTuple
+from typing import Any, List, NamedTuple, Union
 
 import cv2
 import numpy as np
+import PIL.Image
 import torch
 import torch.distributed as dist
 import torch.nn as nn
@@ -44,10 +45,11 @@ from torchvision.models.inception import inception_v3
 from torchvision.transforms import InterpolationMode
 from transformers import PreTrainedTokenizerBase, ProcessorMixin
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
+from transformers.utils.import_utils import requires_backends
 
 from align_anything.utils.device_utils import get_current_device, manual_seed_all
 from align_anything.utils.multi_process import print_on_main_process
-
+from transformers.image_utils import ImageInput
 
 try:
     import yt_dlp
@@ -58,6 +60,27 @@ except ImportError:
         You can ignore this warning if you are not using the evaluation module.
         or install them by `pip install -e .[evaluate]`."""
     )
+
+
+def convert_to_rgb(image: ImageInput) -> ImageInput:
+    """
+    Converts an image to RGB format. Only converts if the image is of type PIL.Image.Image, otherwise returns the image
+    as is.
+    Args:
+        image (Image):
+            The image to convert.
+    """
+    requires_backends(convert_to_rgb, ['vision'])
+
+    if not isinstance(image, Image.Image):
+        return image
+
+    if image.mode == 'RGB':
+        return image
+
+    image = image.convert('RGB')
+    image = np.array(image)
+    return image
 
 
 def right_padding(sequences: list[torch.Tensor], padding_value: Number) -> torch.Tensor:

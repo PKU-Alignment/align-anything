@@ -21,9 +21,10 @@ import torch
 import transformers
 from torch.utils.data import Dataset
 from torchvision import transforms
+from tqdm import tqdm
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
-from align_anything.utils.multi_process import get_current_device
+from align_anything.utils.multi_process import get_current_device, is_main_process
 from align_anything.utils.tools import right_padding
 from datasets import load_dataset
 
@@ -81,16 +82,26 @@ class PreferenceDataset(Dataset):
             *optional_args,
             trust_remote_code=True,
         )
-        self.valid_indices = self.filter_indices()
-
         if size:
             size = min(size, len(self.raw_data))
             self.raw_data = self.raw_data.select(range(int(size)))
+        self.valid_indices = self.filter_indices()
 
     def filter_indices(self):
         valid_indices = []
-        for i, item in enumerate(self.raw_data):
+        for i, item in tqdm(
+            enumerate(self.raw_data),
+            disable=not is_main_process(),
+            total=len(self.raw_data),
+            desc='Filtering valid indices',
+        ):
+            if not hasattr(self.template, 'check_equal'):
+                valid_indices.append(i)
+                continue
             if not self.template.check_equal(item):
+                if hasattr(self.template, 'check_validation'):
+                    if not self.template.check_validation(item):
+                        continue
                 valid_indices.append(i)
         return valid_indices
 
