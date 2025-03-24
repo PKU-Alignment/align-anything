@@ -33,3 +33,5 @@ else
     cat $OUTPUT_DIR/reward_server.log
     kill $REWARD_SERVER_PID
 fi
+
+bash debug_verify_rm.sh

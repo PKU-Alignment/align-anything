@@ -27,19 +27,16 @@ import os
 import sys
 
 from align_anything.models.remote_rm.reward_server import start_server
-from align_anything.models.remote_rm.reward_functions import (
-    example_math_reward_function,
-    example_coding_reward_function,
-    example_safety_reward_function,
-)
+from align_anything.models.remote_rm.reward_functions import *
 
-def main():
-    # Choose reward function
-    reward_functions = {
+reward_functions = {
         "example_math": example_math_reward_function,
         "example_coding": example_coding_reward_function,
         "example_safety": example_safety_reward_function,
-    }
+}
+
+def main():
+
     parser = argparse.ArgumentParser(description="Start rule-based reward server")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Server host address")
     parser.add_argument("--port", type=int, default=6000, help="Server port")
