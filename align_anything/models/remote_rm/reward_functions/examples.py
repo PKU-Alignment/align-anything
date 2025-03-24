@@ -1,8 +1,5 @@
 # Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
-# This code is inspired by the lmm-r1 library.
-# https://github.com/TideDra/lmm-r1/tree/main/openrlhf/models/remote_rm/math_verifier.py
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at

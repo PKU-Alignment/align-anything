@@ -33,6 +33,7 @@ reward_functions = {
         "example_math": example_math_reward_function,
         "example_coding": example_coding_reward_function,
         "example_safety": example_safety_reward_function,
+        "math_verifier": math_verifier_reward_function,
 }
 
 def main():

@@ -12,3 +12,14 @@ Input Format [list]: prompts, responses, and golden_responses(optional)
 Return [list]: rewards 
 
 TODO: Need to support batch reward evaluation (this can actually be implemented in training reward).
+
+NOTE: 
+1. You need to add some extensions:
+```
+Levenshtein
+flask
+latex2sympy2_extended
+math_verify
+```
+
+2. Corner Case Analysis: If the format is incorrect but the answer is correct, the acc rewards will be 0, indicating that correct answers without the proper format are not rewarded.

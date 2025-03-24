@@ -34,4 +34,4 @@ else
     kill $REWARD_SERVER_PID
 fi
 
-bash debug_verify_rm.sh
+bash debug_scripts/debug_math_verifier.sh
