@@ -68,9 +68,17 @@ class ChatTemplate:
             multi_modal_info,
         )
 
-    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> tuple[str, Any]:
+    def format_prompt_only_sample(self, raw_sample: dict[str, Any], apply_chat_template: bool = True) -> tuple[str, Any]:
         raw_prompt, multi_modal_info = self.dataset_formatter.format_prompt_only_sample(raw_sample)
-        return self.model_formatter(raw_prompt, add_generation_prompt=True), multi_modal_info
+        if apply_chat_template:
+            return self.model_formatter(raw_prompt, add_generation_prompt=True), multi_modal_info
+        else:
+            if isinstance(raw_prompt[0]['content'], list):
+                return raw_prompt[0]['content'][0]['text'], multi_modal_info
+            elif isinstance(raw_prompt[0]['content'], str):
+                return raw_prompt[0]['content'], multi_modal_info
+            else:
+                raise ValueError(f"Unknown format for raw_prompt: {raw_prompt}")
 
     def format_unmatched_supervised_sample(
         self, raw_sample_for_prompt: dict[str, Any], raw_sample_for_response: dict[str, Any]
