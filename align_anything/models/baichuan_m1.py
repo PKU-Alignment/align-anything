@@ -22,23 +22,26 @@ from typing import Any
 from transformers import AutoConfig, AutoTokenizer
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
+try:
 
-MODEL_NAME_OR_PATH = os.environ.get('MODEL_NAME_OR_PATH', 'baichuan-inc/Baichuan-M1-14B-Instruct')
-CONFIG = AutoConfig.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
-CLASS_REF = CONFIG.auto_map['AutoModelForCausalLM']
-BaichuanM1 = get_class_from_dynamic_module(CLASS_REF, MODEL_NAME_OR_PATH)
+    MODEL_NAME_OR_PATH = os.environ.get('MODEL_NAME_OR_PATH', 'baichuan-inc/Baichuan-M1-14B-Instruct')
+    CONFIG = AutoConfig.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
+    CLASS_REF = CONFIG.auto_map['AutoModelForCausalLM']
+    BaichuanM1 = get_class_from_dynamic_module(CLASS_REF, MODEL_NAME_OR_PATH)
 
 
-class AccustomedBaichuanM1(BaichuanM1):
+    class AccustomedBaichuanM1(BaichuanM1):
 
-    def __init__(self, config: AutoConfig):
-        super().__init__(config)
-        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
-        self.system_prompt = ''
+        def __init__(self, config: AutoConfig):
+            super().__init__(config)
+            self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
+            self.system_prompt = ''
 
-    def apply_chat_template(
-        self, messages: list[dict[str, Any]], add_generation_prompt: bool = False
-    ) -> dict[str, Any]:
-        return self.tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=add_generation_prompt
-        )
+        def apply_chat_template(
+            self, messages: list[dict[str, Any]], add_generation_prompt: bool = False
+        ) -> dict[str, Any]:
+            return self.tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=add_generation_prompt
+            )
+except:
+    print("BaichuanM1 is not supported in this version of transformers")

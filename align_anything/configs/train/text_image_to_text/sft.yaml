@@ -31,7 +31,7 @@ train_cfgs:
   # Batch size per device for evaluation
   per_device_eval_batch_size: 1
   # The number of gradient accumulation steps
-  gradient_accumulation_steps: 16
+  gradient_accumulation_steps: 1
   # Whether to use gradient checkpointing
   gradient_checkpointing: True
   # Initial learning rate
