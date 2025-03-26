@@ -40,6 +40,7 @@ class ChatTemplate:
             raw_sample
         )
         raw_prompt = raw_conversation[:-1]
+        multi_modal_info['raw_conversation'] = raw_conversation
         return (
             self.model_formatter(raw_prompt),
             self.model_formatter(raw_conversation),

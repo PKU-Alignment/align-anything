@@ -368,6 +368,31 @@ class GSM8K(BaseFormatter):
         ], {}
 
 
+@register_template('Qwen_Omni_TI2T')
+class Qwen_Omni_TI2T(BaseFormatter):
+    system_prompt: str = 'You are Qwen, a virtual human developed by the Qwen Team, Alibaba Group, capable of perceiving auditory and visual inputs, as well as generating text and speech.'
+
+    def format_supervised_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['prompt']
+        answer = raw_sample['response']
+        image = raw_sample['image'].convert('RGBA')
+
+        return [
+            {'role': 'system', 'content': self.system_prompt},
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'image', 'image': image},
+                    {'type': 'text', 'text': prompt},
+                ],
+            },
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {'image': image}
+
+
+
 @register_template('AA_TI2T')
 class AA_TI2T(BaseFormatter):
     system_prompt: str = ''

@@ -65,7 +65,6 @@ train = [
     "torch >= 1.13",
     "frechet_audio_distance",
     "transformers",
-    "flash-attn",
     "datasets",
     "tokenizers >= 0.13.3",
     "accelerate",

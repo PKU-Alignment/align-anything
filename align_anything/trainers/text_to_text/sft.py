@@ -132,9 +132,10 @@ class SupervisedTrainer(SupervisedTrainerBase):
 
         for epoch in range(int(remain_epoch)):
             self.model.train()
-            progress_bar.set_description(
-                f'Resuming from checkpoint {epoch + 1}/{self.cfgs.train_cfgs.epochs} epoch '
-            )
+            if self.cfgs.train_cfgs.load_checkpoint:
+                progress_bar.set_description(
+                    f'Resuming from checkpoint {epoch + 1}/{self.cfgs.train_cfgs.epochs} epoch '
+                )
 
             for batch_idx, batch in enumerate(self.train_dataloader):
                 if epoch == 0 and batch_idx < start_batch_idx:
