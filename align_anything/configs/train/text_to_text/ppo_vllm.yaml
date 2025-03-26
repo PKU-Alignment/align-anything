@@ -22,7 +22,7 @@ train_cfgs:
   # Seed for random number generator
   seed: 42
   # Batch size per device for data generation
-  per_device_prompt_batch_size: 1
+  per_device_prompt_batch_size: 64
   # Batch size per device for training
   per_device_train_batch_size: 1
   # Batch size per device for evauation
@@ -188,3 +188,21 @@ bnb_cfgs:
   bnb_4bit_compute_dtype: float16
 # Customized special tokens
 special_tokens: null
+# The vLLM configurations
+vllm_cfgs:
+  # Whether to use vLLM
+  use_vllm: True
+  # The number of vLLM engines
+  vllm_num_engines: 1
+  # The tensor parallel size for vLLM
+  vllm_tensor_parallel_size: 1
+  # Whether to enable prefix caching in vLLM
+  vllm_enable_prefix_caching: True
+  # Whether to enforce eager execution in vLLM
+  vllm_enforce_eager: True
+  # The maximum model length for vLLM
+  vllm_max_model_len: 2048
+  # The GPU memory utilization for vLLM
+  vllm_gpu_memory_utilization: 0.9
+  # Whether to enable sleep mode in vLLM
+  vllm_enable_sleep: False

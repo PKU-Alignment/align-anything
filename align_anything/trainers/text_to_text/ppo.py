@@ -199,7 +199,11 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         """Split a batch of PTX samples into micro-batches."""
         micro_batches = []
         micro_batch = self.infer_batch(ptx_batch)
-        micro_batches.append(micro_batch)
+        for batch_idx in range(0, micro_batch['input_ids'].size(0)):
+            micro_batch = {}
+            for key, value in ptx_batch.items():
+                micro_batch[key] = value[batch_idx: batch_idx + 1, :]
+            micro_batches.append(micro_batch)
         return micro_batches
 
     def actor_step(self, mini_prompt_only_batch: PromptOnlyBatch) -> dict[str, Any]:
@@ -456,8 +460,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
                         progress_bar.update(1)
 
                         save_interval = (
-                            self.cfgs.train_cfgs.epochs
-                            * len(self.prompt_only_dataloader)
+                            self.total_update_steps
                             // self.cfgs.logger_cfgs.save_total_limit
                         )
 
