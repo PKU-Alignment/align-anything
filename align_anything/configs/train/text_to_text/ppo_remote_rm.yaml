@@ -143,6 +143,12 @@ model_cfgs:
   reward_model_name_or_path: null
   # Pretrained model name or path for the critic model in RLHF
   reward_critic_model_name_or_path: null
+  # The endpoint of the remote reward model
+  remote_rm_endpoint: http://localhost:6000/get_reward
+  # The timeout of the remote reward model
+  remote_rm_timeout: 100
+  # The retry times of the remote reward model
+  remote_rm_retry_times: 3
   # Whether to trust remote code
   trust_remote_code: True
   # The max token length

@@ -56,12 +56,12 @@ from align_anything.utils.tools import (
     seed_everything,
     update_dict,
 )
+from align_anything.trainers.text_to_text.ppo import PPOTrainer
+from align_anything.models.remote_rm.remote_rm_client import RemoteRewardModel
 
-from align_anything.models.remote_rm.remote_rm_client import RemoteRMClient
 
-
-class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
-    """Trainer base class for PPO training."""
+class PPOTrainerRemoteRM(PPOTrainer):  # pylint: disable=too-many-instance-attributes
+    """Trainer base class for PPO training using remote reward model."""
 
     def __init__(self, cfgs, ds_cfgs) -> None:
         """Initialize trainer."""
@@ -122,6 +122,22 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             lora_cfgs=self.lora_cfgs,
             processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
+        
+        # loading remote reward models
+        self.remote_rm_endpoint = self.cfgs.model_cfgs.get('remote_rm_endpoint', None)
+        self.remote_rm_timeout = self.cfgs.model_cfgs.get('remote_rm_timeout', 100)
+        self.remote_rm_retry_times = self.cfgs.model_cfgs.get('remote_rm_retry_times', 3)
+        if self.remote_rm_endpoint is not None:
+            self.remote_rm_client = RemoteRewardModel(
+                endpoint=self.remote_rm_endpoint,
+                timeout=self.remote_rm_timeout,
+                retry_times=self.remote_rm_retry_times,
+            )
+        else:
+            raise ValueError("Remote reward model endpoint is not provided.")
+        
+        
+        
         # loading reward model
         self.reward_model, self.reward_tokenizer, _ = load_pretrained_models(
             self.cfgs.model_cfgs.reward_model_name_or_path,
@@ -562,7 +578,7 @@ def main():
     torch_set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('text_to_text', 'ppo')
+    task = os.path.join('text_to_text', 'ppo_remote_rm')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # get custom configs from command line
