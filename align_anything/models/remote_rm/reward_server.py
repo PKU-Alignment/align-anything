@@ -22,11 +22,22 @@ import os
 from typing import Any, Dict, List, Optional, Union, Callable
 
 from flask import Flask, jsonify, request
+from datasets import load_dataset
+import Levenshtein
 
 app = Flask(__name__)
 
 # Global variable to store the reward function
 reward_function = None
+
+def new_load_dataset(path: str):
+    if path.endswith("json"):
+        return json.load(open(path, "r"))
+    elif path.endswith("jsonl"):
+        return [json.loads(l) for l in open(path, "r").readlines()]
+    else:
+        return load_dataset(path)
+    raise ValueError(f"Unsupported file format for dataset: {path}")
 
 def default_reward_function(prompt: List[str], response: List[str], golden_response: Optional[List[str]] = None) -> List[float]:
     """
@@ -42,6 +53,18 @@ def default_reward_function(prompt: List[str], response: List[str], golden_respo
     # Simple example: response length as reward (only for demonstration)
     return [min(len(resp) / 100, 1.0) for resp in response]
 
+problem_to_answer = {}
+
+def find_similar_problem(problem):
+    max_sim = -1
+    target_problem = None
+    for p in problem_to_answer.keys():
+        sim = Levenshtein.ratio(problem, p)
+        if sim > max_sim:
+            max_sim = sim
+            target_problem = p
+    return target_problem
+
 @app.route("/get_reward", methods=["POST"])
 def get_reward():
     """API endpoint for handling reward requests"""
@@ -54,7 +77,12 @@ def get_reward():
             
         prompts = data["prompts"]
         responses = data["responses"]
-        golden_responses = data.get("golden_responses", None)
+        global dataset
+        golden_responses = []
+        # NOTE find golden response for each prompt
+        for prompt in prompts:
+            similar_problem = find_similar_problem(prompt)
+            golden_responses.append(problem_to_answer[similar_problem])
         # Check data validity
         if len(prompts) != len(responses):
             return jsonify({"error": "The number of prompts and responses must be the same"}), 400
@@ -77,7 +105,7 @@ def register_reward_function(func: Callable[[List[str], List[str], Optional[List
     reward_function = func
     print(f"Registered reward function: {func.__name__}")
 
-def start_server(host: str = "0.0.0.0", port: int = 6000, reward_func: Optional[Callable] = None):
+def start_server(host: str = "0.0.0.0", port: int = 6000, reward_func: Optional[Callable] = None,dataset_path: Optional[str] = None):
     """
     Start reward server
     
@@ -93,6 +121,18 @@ def start_server(host: str = "0.0.0.0", port: int = 6000, reward_func: Optional[
         register_reward_function(reward_func)
     else:
         register_reward_function(default_reward_function)
+    if dataset_path is not None:
+        global dataset
+        dataset = new_load_dataset(dataset_path)
+        for item in dataset:
+            # NOTE we need the answer in the format of $answer$ with latex format
+            if item['answer'].strip()[0] != "$":
+                answer = "$" + item['answer'] + "$"
+            else:
+                answer = item['answer']
+            problem_to_answer[item['question']] = answer
+        
+        print(f"Loaded dataset: {dataset_path}")
         
     # Start server
     print(f"Reward server started at http://{host}:{port}")

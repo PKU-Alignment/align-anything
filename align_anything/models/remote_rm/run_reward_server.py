@@ -48,6 +48,7 @@ def main():
         default="example_math",
         help="The type of reward function to use"
     )
+    parser.add_argument("--dataset", type=str, default=None, help="Dataset path")
     
     args = parser.parse_args()
     
@@ -61,7 +62,7 @@ def main():
     print(f"Using reward function: {args.reward_type}")
     
     # Start server
-    start_server(host=args.host, port=args.port, reward_func=reward_func)
+    start_server(host=args.host, port=args.port, reward_func=reward_func,dataset_path=args.dataset)
 
 if __name__ == "__main__":
     main()
