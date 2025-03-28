@@ -16,7 +16,7 @@
 
 from typing import Any, Callable
 
-from transformers import AutoProcessor, AutoTokenizer
+from transformers import AutoProcessor, AutoTokenizer, PreTrainedTokenizerBase
 
 
 class ModelFormatter:
@@ -52,6 +52,14 @@ class ModelFormatter:
     def format_with_template(
         self, raw_sample: list[dict[str, Any]], add_generation_prompt: bool = False
     ) -> str:
+        if isinstance(self.formatter, AutoTokenizer) or isinstance(self.formatter, PreTrainedTokenizerBase):
+            new_sample = []
+            for line in raw_sample:
+                for content in line['content']:
+                    if content['type'] == 'text':
+                        line['content'] = content['text']
+                        new_sample.append(line)
+            raw_sample = new_sample
         return self.formatter.apply_chat_template(
             raw_sample,
             tokenize=False,
