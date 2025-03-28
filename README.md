@@ -53,7 +53,7 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 - **`Coming Soon`** ⚡️⚡️⚡️ We plan to separate the evaluation component from align-anything and establish eval-anything as a dedicated repository for large-scale evaluation of any-to-any models. Meanwhile, align-anything will remain focused on the post-training alignment of any-to-any models.
 
 - **[2025.03.27]** 📜📜📜 We release the tutorial on DPO training for `text-to-text` models. Check out the [cookbook_en](./cookbooks/en/text_to_text_dpo.ipynb) (for English) and [cookbook_zh](./cookbooks/zh/text_to_text_dpo.ipynb) (for Chinese).
--
+
 - **[2025.03.15]** 📜📜📜 We release the tutorial for extending modality from `text-to-text` to `text-image-to-text` models. Check out the [cookbook_en](./cookbooks/en/modality_scaling.ipynb) (for English) and [cookbook_zh](./cookbooks/zh/modality_scaling.ipynb) (for Chinese).
 
   > We will release other tutorials in the future. Stay tuned! 😊
