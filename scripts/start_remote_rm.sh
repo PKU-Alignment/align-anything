@@ -1,7 +1,7 @@
 export REWARD_PORT=6000
 export REWARD_TYPE="math_verifier"  # Optional: example_math, example_coding, example_safety
 export OUTPUT_DIR="./debug_logs"
-export DATASET_PATH="../align_anything/models/remote_rm/math_verify_dataset/math_345_8k.json"
+export DATASET_PATH="../align_anything/models/remote_rm/math_verify_dataset/mathvl_345_8k.json"
 # Ensure the output directory exists
 mkdir -p $OUTPUT_DIR
 

@@ -37,6 +37,7 @@ Key features:
 - Safety constraint enforcement
 - Reasoning chain validation
 - Extensible reward function interface
+- For large-scale experiments, using remote reward server is more flexible and scalable.
 
 ## An Example
 
