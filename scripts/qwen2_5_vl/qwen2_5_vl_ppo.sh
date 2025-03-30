@@ -20,9 +20,9 @@ ACTOR_MODEL_NAME_OR_PATH="Qwen/Qwen2.5-VL-7B-Instruct" # model path
 REWARD_MODEL_NAME_OR_PATH="../outputs/qwen_2_5_vl_rm" # model path
 CRITIC_MODEL_NAME_OR_PATH="../outputs/qwen_2_5_vl_rm" # model path
 
-TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
-TRAIN_TEMPLATE="AA_TV2T" # dataset template
-TRAIN_NAME="text-video-to-text" # dataset name
+TRAIN_DATASETS="/aifs4su/yaodong/datasets/PKU-SafeRLHF-30K" # dataset path
+TRAIN_TEMPLATE="PKUSafeRLHF" # dataset template
+TRAIN_NAME="default" # dataset name
 TRAIN_SPLIT="train" # split the dataset
 
 OUTPUT_DIR="../outputs/qwen_2_5_vl_ppo" # output dir

@@ -180,6 +180,23 @@ class BaseFormatter:
         return [], {}
 
 
+@register_template('lmmR1')
+class lmmR1(BaseFormatter):
+    
+    def format_prompt_answer_sample(self, raw_sample):
+        system_prompt = """
+        Solve the question. The user asks a question, and you solves it. You first thinks about the reasoning process in the mind and then provides the user with the answer. The answer is in latex format and wrapped in $...$. The final answer must be wrapped using the \\\\boxed{} command. The reasoning process and answer are enclosed within <think> <\/think> and <answer> <\/answer> tags, respectively, i.e., <think> Since $1+1=2$, so the answer is $2$. <\/think><answer> The answer is $\\\\boxed{2}$ <\/answer>, which means assistant's output should start with <think> and end with <\/answer>.\\n
+        """
+        prompt = raw_sample['prompt']
+        golden_answer = raw_sample['answer']
+
+        conversation = [
+            {'role': 'system', 'content':[{'type':'text', 'text': system_prompt}]},
+            {'role':'assistant','content':[{'type':'text','text': prompt}]},
+        ]
+
+        return conversation , golden_answer, {}
+
 @register_template('Alpaca')
 class Alpaca(BaseFormatter):
 

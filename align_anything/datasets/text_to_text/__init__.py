@@ -18,3 +18,4 @@
 from align_anything.datasets.text_to_text.preference import *
 from align_anything.datasets.text_to_text.prompt_only import *
 from align_anything.datasets.text_to_text.supervised import *
+from align_anything.datasets.text_to_text.prompt_answer import *

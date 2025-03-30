@@ -16,16 +16,16 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="meta-llama/Llama-3.1-8B-Instruct" # model path
+MODEL_NAME_OR_PATH="/aifs4su/yaodong/models/llama3.1/Meta-Llama-3.1-8B-Instruct" # model path
 
-TRAIN_DATASETS="tatsu-lab/alpaca" # sft dataset path
+TRAIN_DATASETS="/aifs4su/yaodong/datasets/alpaca" # sft dataset path
 TRAIN_TEMPLATE="Alpaca" # sft dataset template
 TRAIN_SPLIT="train" # split the sft dataset
 
 OUTPUT_DIR="../outputs/llama_sft" # output dir
 
 # For wandb online logging
-export WANDB_API_KEY=""
+export WANDB_API_KEY="aabaeeccda3cae6cef2b2369b6e68524f755897a"
 
 # Source the setup script
 source ./setup.sh

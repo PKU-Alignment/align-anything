@@ -16,19 +16,16 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="" # model path
+ACTOR_MODEL_NAME_OR_PATH="Qwen2.5-VL/Qwen2.5-VL-3B-Instruct" # model path
+REWARD_MODEL_NAME_OR_PATH="../outputs/qwen_2_5_vl_rm/slice_end" # model path
+CRITIC_MODEL_NAME_OR_PATH="../outputs/qwen_2_5_vl_rm/slice_end" # model path
 
 TRAIN_DATASETS="" # dataset path
 TRAIN_TEMPLATE="" # dataset template
 TRAIN_NAME="" # dataset name
 TRAIN_SPLIT="" # split the dataset
 
-EVAL_DATASETS="" # dataset path
-EVAL_TEMPLATE="" # dataset template, reuse the template of Qwen2-VL
-EVAL_NAME="" # dataset name
-EVAL_SPLIT="" # split the dataset
-
-OUTPUT_DIR="" # output dir
+OUTPUT_DIR="../outputs/qwen_2_5_vl_multi_ppo/reinforce" # output dir
 
 # export ROOT_VIDEO_PATH=$TRAIN_DATASETS"/text-video-to-text"
 
@@ -41,16 +38,15 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
      --master_port ${MASTER_PORT} \
-     --module align_anything.trainers.text_to_text.rm \
-     --model_name_or_path ${MODEL_NAME_OR_PATH} \
+     --module align_anything.trainers.text_to_text.multi_ppo \
+     --actor_model_name_or_path ${ACTOR_MODEL_NAME_OR_PATH} \
+     --reward_model_name_or_path ${REWARD_MODEL_NAME_OR_PATH} \
+     --reward_critic_model_name_or_path ${CRITIC_MODEL_NAME_OR_PATH} \
      --train_datasets ${TRAIN_DATASETS} \
      --train_template ${TRAIN_TEMPLATE} \
      --train_name ${TRAIN_NAME} \
      --train_split ${TRAIN_SPLIT} \
-     --eval_datasets ${EVAL_DATASETS} \
-     --eval_template ${EVAL_TEMPLATE} \
-     --eval_name ${EVAL_NAME} \
-     --eval_split ${EVAL_SPLIT} \
      --output_dir ${OUTPUT_DIR} \
      --save_total_limit 3 \
-     --epochs 1
+     --epochs 2     
+
