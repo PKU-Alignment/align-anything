@@ -30,7 +30,7 @@ echo "Reward server process ID: $REWARD_SERVER_PID"
 # 2. Check the log to confirm if the server started successfully
 TIMEOUT=20
 echo "Waiting $TIMEOUT s for the reward server to start..."
-sleep $TIMEOUT  
+sleep $TIMEOUT
 if grep -q "Running on" $OUTPUT_DIR/reward_server.log; then
     echo "Reward server started successfully."
     cat $OUTPUT_DIR/reward_server.log

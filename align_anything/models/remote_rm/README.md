@@ -9,9 +9,9 @@
 `remote_rm_client.py` is the remote reward model client, which interacts with the remote reward service via HTTP API. It contains `RemoteRewardModel` class for training.
 
 Input Format [list]: prompts, responses, and golden_responses(optional)
-Return [list]: rewards 
+Return [list]: rewards
 
-NOTE: 
+NOTE:
 1. You need to add some extensions:
 ```
 Levenshtein
@@ -74,7 +74,7 @@ echo "Reward server process ID: $REWARD_SERVER_PID"
 # 2. Check the log to confirm if the server started successfully
 TIMEOUT=20
 echo "Waiting $TIMEOUT s for the reward server to start..."
-sleep $TIMEOUT  
+sleep $TIMEOUT
 if grep -q "Running on" $OUTPUT_DIR/reward_server.log; then
     echo "Reward server started successfully."
     cat $OUTPUT_DIR/reward_server.log

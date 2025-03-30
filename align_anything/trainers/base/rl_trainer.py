@@ -250,7 +250,9 @@ class RLTrainerBase:
             total_training_steps=self.total_training_steps,
             ds_cfgs=self.ds_train_cfgs,
         )
-        if self.reward_model is not None: # NOTE when self.reward_model is None, it means using remote reward model
+        if (
+            self.reward_model is not None
+        ):  # NOTE when self.reward_model is None, it means using remote reward model
             self.reward_model = self._init_eval_deepspeed_engine(
                 model=self.reward_model,
                 ds_cfgs=self.ds_eval_cfgs,

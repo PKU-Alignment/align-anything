@@ -14,92 +14,100 @@
 # ==============================================================================
 
 
-from typing import List, Dict, Any, Union, Optional
-from align_anything.models.remote_rm.reward_server import register_reward_function
+from typing import List, Optional
 
-def example_math_reward_function(prompts: List[str], responses: List[str], golden_responses: Optional[List[str]] = None) -> List[float]:
+
+def example_math_reward_function(
+    prompts: List[str], responses: List[str], golden_responses: Optional[List[str]] = None
+) -> List[float]:
     """
     Math reward function, evaluate the accuracy of the answer
-    
+
     Args:
         prompts: List of math problems
         responses: List of model answers
-        
+
     Returns:
         List of reward scores
     """
     rewards = []
-    
+
     for prompt, response in zip(prompts, responses):
         # Simple example: check if the answer contains numbers and math symbols
         has_numbers = any(char.isdigit() for char in response)
         has_math_symbols = any(symbol in response for symbol in ['+', '-', '*', '/', '=', '<', '>'])
-        
+
         if has_numbers and has_math_symbols:
             # There should be more complex logic to verify the correctness of the math answer
             # You can refer to the math_verifier.py in lmm-r1 for implementation
             reward = 0.8
         else:
             reward = 0.2
-            
+
         rewards.append(reward)
-        
+
     return rewards
 
-def example_coding_reward_function(prompts: List[str], responses: List[str], golden_responses: Optional[List[str]] = None) -> List[float]:
+
+def example_coding_reward_function(
+    prompts: List[str], responses: List[str], golden_responses: Optional[List[str]] = None
+) -> List[float]:
     """
     Coding reward function, evaluate the quality of the code
-    
+
     Args:
         prompts: List of coding problems
         responses: List of model answers
-        
+
     Returns:
         List of reward scores
     """
     rewards = []
-    
+
     for prompt, response in zip(prompts, responses):
         # Simple example: check if the answer contains code features
         code_features = ['def ', 'class ', 'import ', 'return ', 'if ', 'for ', 'while ']
         has_code = any(feature in response for feature in code_features)
-        
+
         # Check code format
         has_indentation = '    ' in response or '\t' in response
-        
+
         if has_code and has_indentation:
             reward = 0.9
         elif has_code:
             reward = 0.6
         else:
             reward = 0.3
-            
+
         rewards.append(reward)
-        
+
     return rewards
 
-def example_safety_reward_function(prompts: List[str], responses: List[str], golden_responses: Optional[List[str]] = None) -> List[float]:
+
+def example_safety_reward_function(
+    prompts: List[str], responses: List[str], golden_responses: Optional[List[str]] = None
+) -> List[float]:
     """
     Safety assessment reward function, check if the answer contains harmful content
-    
+
     Args:
         prompts: List of prompts
         responses: List of model answers
-        
+
     Returns:
         List of reward scores (safe answers get higher scores)
     """
     rewards = []
-    
+
     # Example harmful words list (should be more comprehensive in actual applications)
-    harmful_words = ["violence", "attack", "hacker", "illegal", "harm", "danger", "weapon"]
-        
+    harmful_words = ['violence', 'attack', 'hacker', 'illegal', 'harm', 'danger', 'weapon']
+
     for prompt, response in zip(prompts, responses):
         # Check if the answer contains harmful words
         contains_harmful = any(word in response for word in harmful_words)
-        
+
         # Answers containing harmful content get lower scores
         reward = 0.2 if contains_harmful else 1.0
         rewards.append(reward)
-        
+
     return rewards

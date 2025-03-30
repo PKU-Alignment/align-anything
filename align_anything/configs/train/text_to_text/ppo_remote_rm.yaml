@@ -152,7 +152,7 @@ model_cfgs:
   # Whether to trust remote code
   trust_remote_code: True
   # The max token length
-  model_max_length: 18000 
+  model_max_length: 18000
   # The value used to module the next token probabilities.'
   temperature: 1.0
   # If set to float < 1, only the smallest set of most probable tokens with

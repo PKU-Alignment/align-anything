@@ -68,21 +68,23 @@ class SupervisedDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        if path.endswith("json"):
+        if path.endswith('json'):
             import json
-            self.raw_data = json.load(open(path, "r"))
-        elif path.endswith("jsonl"):
+
+            self.raw_data = json.load(open(path))
+        elif path.endswith('jsonl'):
             import json
-            self.raw_data = [json.loads(l) for l in open(path, "r").readlines()]
+
+            self.raw_data = [json.loads(l) for l in open(path).readlines()]
         else:
             self.raw_data = load_dataset(
                 path,
                 name=name,
-            split=split,
-            data_files=data_files,
-            *optional_args,
-            trust_remote_code=True,
-        )
+                split=split,
+                data_files=data_files,
+                *optional_args,
+                trust_remote_code=True,
+            )
         if size:
             self.raw_data = self.raw_data.select(range(int(size)))
         self.template = template
