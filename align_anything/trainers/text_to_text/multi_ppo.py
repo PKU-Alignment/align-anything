@@ -1,4 +1,4 @@
-# Copyright 2024 PKU-Alignment Team. All Rights Reserved.
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -533,6 +533,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         rewards = rewards * sequence_mask
         
         if self.advantage_estimator == 'gae':
+            # Modified from https://github.com/CarperAI/trlx/blob/main/trlx/models/modeling_ppo.py
             last_gae_lambda = 0.0
             advantages_reversed = []
             seq_len = rewards.size(-1)
@@ -545,6 +546,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             returns = advantages + values[:, start:]
         
         elif self.advantage_estimator in ['rloo', 'reinforce_baseline', 'group_norm']:
+            # Modified from https://github.com/TideDra/lmm-r1/blob/main/openrlhf/trainer/ppo_utils/experience_maker.py
             if self.advantage_estimator == 'rloo':
                 original_shape = rewards.shape
                 rewards = rewards.reshape(-1, self.n_samples_per_prompt)
@@ -568,6 +570,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             advantages = copy.deepcopy(returns)
         
         elif self.advantage_estimator == 'reinforce':
+            # Modified from https://github.com/TideDra/lmm-r1/blob/main/openrlhf/trainer/ppo_utils/experience_maker.py
             returns = self.cumulative_returns(rewards, sequence_mask, start)
             advantages = copy.deepcopy(returns)
         

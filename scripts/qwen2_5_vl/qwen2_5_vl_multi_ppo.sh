@@ -27,8 +27,6 @@ TRAIN_SPLIT="" # split the dataset
 
 OUTPUT_DIR="../outputs/qwen_2_5_vl_multi_ppo/reinforce" # output dir
 
-# export ROOT_VIDEO_PATH=$TRAIN_DATASETS"/text-video-to-text"
-
 # For wandb online logging
 export WANDB_API_KEY=""
 
