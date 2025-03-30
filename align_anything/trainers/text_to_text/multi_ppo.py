@@ -95,11 +95,6 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         self.advantage_estimator = self.cfgs.train_cfgs.advantage_estimator
         self.n_samples_per_prompt = self.cfgs.train_cfgs.n_samples_per_prompt
 
-        # print(self.cfgs.train_cfgs)
-        # print(self.cfgs.train_cfgs.n_samples_per_prompt)
-        # print(self.n_samples_per_prompt)
-        # exit(0)
-
         if self.advantage_estimator in ['rloo', 'reinforce_baseline', 'group_norm']:
             assert (
                 self.n_samples_per_prompt > 1
@@ -279,16 +274,12 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
                 for k, v in pre_mini_batch.items()
             }
 
-            # print("mini_batch", mini_batch['input_ids'].shape)
 
             # actor generation
             actor_batch = self.actor_step(mini_batch)
 
-            # print("actor_batch", actor_batch['input_ids'].shape)
             # reward model and reward critic model scoring
             reward_batch = self.reward_model_step(actor_batch)
-
-            # print("reward_batch", reward_batch['input_ids'].shape)
 
             # calculate the log probabilities
             logits = self.actor_model(**actor_batch).logits
