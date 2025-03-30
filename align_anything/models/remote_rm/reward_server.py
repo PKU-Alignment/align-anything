@@ -78,6 +78,7 @@ def get_reward():
         prompts = data["prompts"]
         responses = data["responses"]
         global dataset
+        # TODO add judge for necessary golden_responses
         golden_responses = []
         # NOTE find golden response for each prompt
         for prompt in prompts:
@@ -145,4 +146,5 @@ if __name__ == "__main__":
     parser.add_argument("--reward_func", type=str, help="Reward function")
     
     args = parser.parse_args()
-    start_server(host=args.host, port=args.port, reward_func=args.reward_func)
+    golden_dataset_path = ''
+    start_server(host=args.host, port=args.port, reward_func=args.reward_func, dataset_path=golden_dataset_path)

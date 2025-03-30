@@ -1,5 +1,5 @@
 export REWARD_PORT=6000
-export REWARD_TYPE="example_math"  # Optional: example_math, example_coding, example_safety
+export REWARD_TYPE="math_verifier"  # Optional: example_math, example_coding, example_safety, math_verifier(For Zero RL)
 export OUTPUT_DIR="./debug_logs"
 export DATASET_PATH="/home/hansirui_1st/boyuan/mm_r1_workspace/0324_workspace/processed_math_data_debug_remote_rm.json"
 # Ensure the output directory exists
@@ -39,5 +39,3 @@ else
     cat $OUTPUT_DIR/reward_server.log
     kill $REWARD_SERVER_PID
 fi
-
-bash debug_scripts/debug_math_verifier.sh

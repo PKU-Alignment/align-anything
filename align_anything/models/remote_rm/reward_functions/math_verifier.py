@@ -49,10 +49,17 @@ def verify_acc(response, golden_response):
         extraction_mode="first_match",
         extraction_config=[LatexExtractionConfig()],
     )
+    answer_match = re.search(r"<answer>(.*?)</answer>", response, re.DOTALL)
+    if answer_match:
+        new_response = answer_match.group(1).strip()
+    else:
+        # If the answer is not provided or not in the correct format, we reward 0
+        return 0.0
     if len(gold_parsed) != 0:
         # We require the answer to be provided in correct latex (no malformed operators)
+        
         answer_parsed = parse(
-            response,
+            new_response,
             extraction_config=[
                 LatexExtractionConfig(
                     normalization_config=NormalizationConfig(
@@ -86,13 +93,6 @@ def verify_acc(response, golden_response):
     return reward
 
 
-def get_response_from_query(query: str):
-    """
-    Get the response from the query
-    """
-    # TODO: implement this, currently just return the query
-    return query
-
 def math_verifier_reward_function(prompts: List[str], responses: List[str], golden_responses: Optional[List[str]] = None) -> List[float]:
     """
     Math verifier reward function, evaluate the accuracy of the answer
@@ -114,18 +114,18 @@ def math_verifier_reward_function(prompts: List[str], responses: List[str], gold
             return jsonify({"error": f"golden response not found from {prompt}"}), 400
         # TODO: processing the error code 400
         
-        response = get_response_from_query(response) 
         format_reward = float(verify_format(response))
         acc_reward = float(verify_acc(response, golden_response))
         rewards.append(0.5 * format_reward + acc_reward)
         format_rewards.append(format_reward)
         acc_rewards.append(acc_reward)
         
-        do_print = random.randint(1, 20) == 1
+        do_print = random.randint(1, 10) == 1
         if do_print:
             info=f"Query: {prompt}\n\nAnswer: {golden_response}\n\nResponse: {response}\n\nFormat Reward: {format_reward}\n\nAcc Reward: {acc_reward}\n\n"
             info = re.sub(r"<\|.*?\|>","",info)
             print(info)
+    return rewards
     # DEBUG: return the reward, format_reward, acc_reward
-    return rewards, format_rewards, acc_rewards
+    # return rewards, format_rewards, acc_rewards
 

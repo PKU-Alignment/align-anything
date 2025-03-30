@@ -48,7 +48,7 @@ def main():
         default="example_math",
         help="The type of reward function to use"
     )
-    parser.add_argument("--dataset", type=str, default=None, help="Dataset path")
+    parser.add_argument("--dataset", type=str, default=None, help="Golden dataset path")
     
     args = parser.parse_args()
     

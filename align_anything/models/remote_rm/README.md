@@ -11,8 +11,6 @@
 Input Format [list]: prompts, responses, and golden_responses(optional)
 Return [list]: rewards 
 
-TODO: Need to support batch reward evaluation (this can actually be implemented in training reward).
-
 NOTE: 
 1. You need to add some extensions:
 ```
@@ -24,14 +22,29 @@ math_verify
 
 2. Corner Case Analysis: If the format is incorrect but the answer is correct, the acc rewards will be 0, indicating that correct answers without the proper format are not rewarded.
 
+# Usage
+
+You can customize your own rule-based reward functions (e.g., for safety rules, reasoning evaluation) using this remote reward model framework. As an example, we have implemented `math_verifier` for Math Zero RL (see `scripts/llama_ppo_remote_rm.sh` for details).
+
+The remote reward model framework provides a flexible interface to:
+- Define custom reward functions
+- Integrate safety constraints
+- Implement reasoning verification
+- Add domain-specific evaluation metrics
+
+Key features:
+- Rule-based reward computation
+- Safety constraint enforcement
+- Reasoning chain validation
+- Extensible reward function interface
 
 ## An Example
 
 ```
 export REWARD_PORT=6000
-export REWARD_TYPE="example_math"  # Optional: example_math, example_coding, example_safety
+export REWARD_TYPE="math_verifier"  # Optional: example_math, example_coding, example_safety, math_verifier(For Zero RL)
 export OUTPUT_DIR="./debug_logs"
-export DATASET_PATH="./processed_math_data_debug_remote_rm.json"
+export DATASET_PATH="./math_verify_dataset/math_345_8k.json"
 # Ensure the output directory exists
 mkdir -p $OUTPUT_DIR
 
@@ -56,4 +69,18 @@ python -m align_anything.models.remote_rm.run_reward_server \
 
 REWARD_SERVER_PID=$!
 echo "Reward server process ID: $REWARD_SERVER_PID"
+
+# 2. Check the log to confirm if the server started successfully
+TIMEOUT=20
+echo "Waiting $TIMEOUT s for the reward server to start..."
+sleep $TIMEOUT  
+if grep -q "Running on" $OUTPUT_DIR/reward_server.log; then
+    echo "Reward server started successfully."
+    cat $OUTPUT_DIR/reward_server.log
+else
+    echo "Failed to start reward server. Check the log for details."
+    cat $OUTPUT_DIR/reward_server.log
+    kill $REWARD_SERVER_PID
+fi
+
 ```

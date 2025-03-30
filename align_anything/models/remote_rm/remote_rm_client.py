@@ -39,15 +39,13 @@ class RemoteRewardModel:
     
     def score(self, 
              prompts: List[str], 
-             responses: List[str],
-             golden_responses: Optional[List[str]] = None) -> torch.Tensor:
+             responses: List[str]) -> torch.Tensor:
         """
         Get reward scores for given prompts and responses
         
         Args:
             prompts: List of input prompts
             responses: List of corresponding responses
-            golden_responses: Optional list of golden responses
         Returns:
             A tensor containing the reward scores
         """
@@ -56,11 +54,11 @@ class RemoteRewardModel:
         request_json = {
             "prompts": prompts,
             "responses": responses,
-            "golden_responses": golden_responses,
         }
-        
+        # Golden responses is not used in the remote reward model, but will be provided when load reward model server
         for attempt in range(self.retry_times):
             try:
+                print(f"Sending request to {self.endpoint}")
                 response = requests.post(
                     self.endpoint,
                     json=request_json,
@@ -68,6 +66,7 @@ class RemoteRewardModel:
                     verify=False,
                     timeout=self.timeout,
                 )
+                
                 
                 if response.status_code == 200:
                     # Assume the API returns format is {"rewards": [...]}
