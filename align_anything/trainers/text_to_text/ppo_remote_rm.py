@@ -19,9 +19,10 @@ import argparse
 import copy
 import itertools
 import os
+import random
 import sys
 from typing import Any
-import random
+
 import deepspeed
 import torch
 import torch.distributed as dist
@@ -35,7 +36,8 @@ from align_anything.datasets.text_to_text import (
     SupervisedDataset,
 )
 from align_anything.models.pretrained_model import load_pretrained_models
-from align_anything.trainers.base import RLTrainerBase
+from align_anything.models.remote_rm.remote_rm_client import RemoteRewardModel
+from align_anything.trainers.text_to_text.ppo import PPOTrainer
 from align_anything.utils.device_utils import get_current_device, torch_gc, torch_set_device
 from align_anything.utils.multi_process import (
     get_all_reduce_max,
@@ -44,7 +46,6 @@ from align_anything.utils.multi_process import (
     is_main_process,
 )
 from align_anything.utils.tools import (
-    batch_retokenize,
     custom_cfgs_to_dict,
     dict_to_namedtuple,
     gather_log_probabilities,
@@ -56,8 +57,7 @@ from align_anything.utils.tools import (
     seed_everything,
     update_dict,
 )
-from align_anything.trainers.text_to_text.ppo import PPOTrainer
-from align_anything.models.remote_rm.remote_rm_client import RemoteRewardModel
+
 
 class PPOTrainerRemoteRM(PPOTrainer):  # pylint: disable=too-many-instance-attributes
     """Trainer base class for PPO training using remote reward model."""
@@ -121,21 +121,30 @@ class PPOTrainerRemoteRM(PPOTrainer):  # pylint: disable=too-many-instance-attri
             lora_cfgs=self.lora_cfgs,
             processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
         )
-        
+
         # loading remote reward models # NOTE
-    
+
         self.remote_rm_url = self.cfgs.model_cfgs.remote_rm_url
-         
+
         if self.remote_rm_url is not None:
-            self.reward_model = None # NOTE for debug deepseed engine init
-            self.reward_tokenizer = self.tokenizer # NOTE the reward tokenizer can be set to be the same as the actor tokenizer
+            self.reward_model = None  # NOTE for debug deepseed engine init
+            self.reward_tokenizer = (
+                self.tokenizer
+            )  # NOTE the reward tokenizer can be set to be the same as the actor tokenizer
             # NOTE using is_reward_model=True to load the reward critic model, and init score head for reward critic model
-            
+
             # NOTE set the reward critic model name or path to be the same as the actor model name or path
-            if not(self.cfgs.model_cfgs.reward_critic_model_name_or_path == self.cfgs.model_cfgs.actor_model_name_or_path):
-                self.cfgs.model_cfgs.reward_critic_model_name_or_path = self.cfgs.model_cfgs.actor_model_name_or_path
-                print(f"Set the reward critic model name or path to be the same as the actor model name or path: {self.cfgs.model_cfgs.reward_critic_model_name_or_path}")
-                
+            if not (
+                self.cfgs.model_cfgs.reward_critic_model_name_or_path
+                == self.cfgs.model_cfgs.actor_model_name_or_path
+            ):
+                self.cfgs.model_cfgs.reward_critic_model_name_or_path = (
+                    self.cfgs.model_cfgs.actor_model_name_or_path
+                )
+                print(
+                    f'Set the reward critic model name or path to be the same as the actor model name or path: {self.cfgs.model_cfgs.reward_critic_model_name_or_path}'
+                )
+
             self.reward_critic_model, self.reward_critic_tokenizer, _ = load_pretrained_models(
                 self.cfgs.model_cfgs.reward_critic_model_name_or_path,
                 model_max_length=self.cfgs.model_cfgs.model_max_length,
@@ -151,10 +160,11 @@ class PPOTrainerRemoteRM(PPOTrainer):  # pylint: disable=too-many-instance-attri
             )
 
         else:
-            raise ValueError("You are using remote reward model for training. But remote reward model endpoint is not provided.")
-        
-        
-        if self.remote_rm_url is None: 
+            raise ValueError(
+                'You are using remote reward model for training. But remote reward model endpoint is not provided.'
+            )
+
+        if self.remote_rm_url is None:
             # using local reward model and reward critic model
             # loading reward model
             self.reward_model, self.reward_tokenizer, _ = load_pretrained_models(
@@ -175,8 +185,6 @@ class PPOTrainerRemoteRM(PPOTrainer):  # pylint: disable=too-many-instance-attri
                 processor_kwargs=self.cfgs.train_cfgs.processor_kwargs,
             )
 
-        
-        
         # initial checking
         if is_same_tokenizer(self.tokenizer, self.reward_tokenizer):
             self.reward_tokenizer = self.tokenizer
@@ -256,61 +264,67 @@ class PPOTrainerRemoteRM(PPOTrainer):  # pylint: disable=too-many-instance-attri
 
         return actor_batch
 
-
-    
     def decode_prompt_responses(self, actor_batch: PromptOnlyBatch) -> tuple[list[str], list[str]]:
         """
         Decode the input_ids to get prompts and responses
-        
+
         Args:
             actor_batch: Batch containing input_ids
-            
+
         Returns:
             tuple[list[str], list[str]]: (prompts, responses)
         """
-        # decode the complete sequence
         decoded = self.tokenizer.batch_decode(actor_batch['input_ids'], skip_special_tokens=True)
-        
         prompts = []
         responses = []
-        
+
         for text in decoded:
-        
             try:
-                # split the prompt and response
-                parts = text.split('user\n\n')
-                if len(parts) > 1:
-                    user_assistant = parts[1].split('assistant\n\n')
-                    if len(user_assistant) > 1:
-                        # extract the actual content from the user text
-                        user_text = eval(user_assistant[0])[0]['text']
-                        assistant_response = user_assistant[1]
-                        
-                        prompts.append(user_text)
-                        responses.append(assistant_response)
-                    else:
-                        raise ValueError("Cannot find assistant response")
+                if 'user\n\n' in text:
+                    parts = text.split('user\n\n', 1)
+                elif 'user\n' in text:
+                    parts = text.split('user\n', 1)
+                elif 'user' in text:
+                    parts = text.split('user', 1)
                 else:
-                    raise ValueError("Cannot find user query")
-                
+                    raise ValueError('No user marker found')
+
+                user_part = parts[1]
+                if 'assistant\n\n' in user_part:
+                    user_assistant = user_part.split('assistant\n\n', 1)
+                elif 'assistant\n' in user_part:
+                    user_assistant = user_part.split('assistant\n', 1)
+                elif 'assistant' in user_part:
+                    user_assistant = user_part.split('assistant', 1)
+                else:
+                    raise ValueError('No assistant marker found')
+
+                try:
+                    user_text = eval(user_assistant[0].strip())[0]['text']
+                except:
+                    user_text = user_assistant[0].strip()
+
+                assistant_response = user_assistant[1].strip()
+
+                prompts.append(user_text)
+                responses.append(assistant_response)
+
             except Exception as e:
-                print(f"Error parsing text: {e}")
-                # if parsing failed, add empty string or original text
-                prompts.append("")
-                responses.append(text)
-        
+                print(f'Error parsing text: {str(e)}')
+                print(f'Problematic text: {text}')
+                raise ValueError('Error parsing text')
+
+        assert len(prompts) == len(responses), 'Prompts and responses must have same length'
+
         return prompts, responses
-    
-    
-    
+
     def reward_model_step(self, actor_batch: PromptOnlyBatch) -> dict[str, Any]:
         reward_batch = copy.deepcopy(actor_batch)
-        prompts,responses = self.decode_prompt_responses(actor_batch)
-        
-    
+        prompts, responses = self.decode_prompt_responses(actor_batch)
+
         if prompts is None:
             raise ValueError('prompt is not found in the actor_batch')
-        
+
         reward_tensor = self.remote_rm_client.score(prompts, responses)
 
         # NOTE move on the same device
@@ -319,13 +333,13 @@ class PPOTrainerRemoteRM(PPOTrainer):  # pylint: disable=too-many-instance-attri
             reward_tensor = reward_tensor.clone().detach().to(actor_batch['input_ids'].device)
         else:
             reward_tensor = torch.tensor(reward_tensor, device=actor_batch['input_ids'].device)
-        
+
         # NOTE if the reward tensor is a scalar, we need to convert it to a 1D tensor
         if reward_tensor.dim() == 0:
             reward_tensor = reward_tensor.unsqueeze(0)
 
         reward_batch['reward'] = reward_tensor
-        
+
         critic_infer_batch = self.reward_infer_batch(actor_batch)
         scores = self.reward_critic_model(**critic_infer_batch).scores
         reward_batch['reward_values'] = scores.squeeze(dim=-1)[:, :-1]
@@ -633,15 +647,17 @@ class PPOTrainerRemoteRM(PPOTrainer):  # pylint: disable=too-many-instance-attri
         kl_divergence_estimate = log_probs - ref_log_probs
         kl_penalty_rewards = -self.kl_coeff * kl_divergence_estimate
         if random.random() < 0.1:
-            print('**'*100)
+            print('**' * 100)
             print('\n\n')
-            print(f"Batch size: {log_probs.shape[0]}")
-            print(f"Shape of index: {end_index.unsqueeze(dim=-1).shape}")
-            print(f"Shape of the kl_penalty_rewards: {kl_penalty_rewards.shape}")
-            print(f"Shape of the reward: {reward.shape}")
-            print(f"Shape of the changed reward: {reward.to(kl_penalty_rewards.dtype).unsqueeze(dim=-1).shape}")
+            print(f'Batch size: {log_probs.shape[0]}')
+            print(f'Shape of index: {end_index.unsqueeze(dim=-1).shape}')
+            print(f'Shape of the kl_penalty_rewards: {kl_penalty_rewards.shape}')
+            print(f'Shape of the reward: {reward.shape}')
+            print(
+                f'Shape of the changed reward: {reward.to(kl_penalty_rewards.dtype).unsqueeze(dim=-1).shape}'
+            )
             print('\n\n')
-            print('**'*100)
+            print('**' * 100)
         rewards = torch.scatter_add(
             kl_penalty_rewards,
             dim=-1,
