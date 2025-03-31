@@ -26,7 +26,6 @@ import random
 from collections import namedtuple
 from typing import Any, NamedTuple
 
-import cv2
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -35,19 +34,16 @@ import torch.nn.functional as F
 import torch.utils.data
 import yaml
 from PIL import Image
-from scipy.stats import entropy
-from torch.autograd import Variable
 from torch.nn.utils.rnn import pad_sequence
 from torch.types import Number
 from torchvision import transforms
-from torchvision.models.inception import inception_v3
 from torchvision.transforms import InterpolationMode
 from transformers import PreTrainedTokenizerBase, ProcessorMixin
 from transformers.image_utils import ImageInput
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
 from transformers.utils.import_utils import requires_backends
 
-from align_anything.utils.device_utils import get_current_device, manual_seed_all
+from align_anything.utils.device_utils import manual_seed_all
 from align_anything.utils.multi_process import print_on_main_process
 
 
@@ -600,99 +596,6 @@ def image_crop(input_folder):
     return output_folder
 
 
-def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
-    N = len(imgs)
-    assert batch_size > 0
-    assert N > batch_size
-
-    device = get_current_device() if cuda else 'cpu'
-
-    dataloader = torch.utils.data.DataLoader(imgs, batch_size=batch_size)
-    inception_model = inception_v3(pretrained=True, transform_input=False).to(device)
-    inception_model.eval()
-    up = nn.Upsample(size=(299, 299), mode='bilinear').to(device)
-
-    def get_pred(x):
-        if resize:
-            x = up(x)
-        x = inception_model(x)
-        return F.softmax(x).data.cpu().numpy()
-
-    preds = np.zeros((N, 1000))
-
-    for i, batch in enumerate(dataloader, 0):
-        batch = batch.to(device)
-        batchv = Variable(batch)
-        batch_size_i = batch.size()[0]
-
-        preds[i * batch_size : i * batch_size + batch_size_i] = get_pred(batchv)
-
-    split_scores = []
-
-    for k in range(splits):
-        part = preds[k * (N // splits) : (k + 1) * (N // splits), :]
-        py = np.mean(part, axis=0)
-        scores = []
-        for i in range(part.shape[0]):
-            pyx = part[i, :]
-            scores.append(entropy(pyx, py))
-        split_scores.append(np.exp(np.mean(scores)))
-
-    return np.mean(split_scores), np.std(split_scores)
-
-
-def resize_frame(frame, short_edge=256):
-    height, width = frame.shape[:2]
-    if min(height, width) <= short_edge:
-        return frame
-    else:
-        scale = short_edge / width if height > width else short_edge / height
-        new_width = int(width * scale)
-        new_height = int(height * scale)
-        resized_frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
-        return resized_frame
-
-
-def get_frames(video_path, output_folder, num_frames=8):
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        print(f'Error opening video file {video_path}')
-        return
-
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    frames_to_capture = {0, total_frames - 1}
-    frames_interval = (total_frames - 1) // (num_frames - 1)
-    for i in range(1, num_frames - 1):
-        frames_to_capture.add(i * frames_interval)
-
-    count = 0
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        if count in frames_to_capture:
-            resized_frame = resize_frame(frame)
-            frame_name = f'{os.path.splitext(os.path.basename(video_path))[0]}_frame{count}.png'
-            output_path = os.path.join(output_folder, frame_name)
-            cv2.imwrite(output_path, resized_frame)
-        count += 1
-
-    cap.release()
-
-
-def process_videos(video_id, video_path, frames_dir):
-    video_images = glob.glob(os.path.join(frames_dir, f'{video_id}_frame*.png'))
-
-    if len(video_images) == 8:
-        return
-    for img in video_images:
-        os.remove(img)
-
-    get_frames(video_path, frames_dir)
-    frames = sorted(glob.glob(os.path.join(frames_dir, f'{video_id}_frame*.png')))
-    return [os.path.basename(frame) for frame in frames]
-
-
 def image_b64(image_path):
     with open(image_path, 'rb') as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
@@ -808,31 +711,6 @@ def process_vision(conversations: list[dict] | list[list[dict]], task_idx):
         else:
             raise ValueError('video should in content.')
     return video_inputs
-
-
-def count_right_padding(lst, padding=0):
-    """Counts the number of padding values (default is 0) on the right side of a list.
-
-    This function iterates over the elements of the given list from the end to the start.
-    It stops counting when it encounters the first non-padding element.
-
-    Args:
-        lst (List): The list to be checked.
-        padding (int, optional): The value considered as padding. Defaults to 0.
-
-    Returns:
-        int: The number of padding values on the right side of the list.
-    """
-    count = 0
-    # Iterate over the list in reverse order
-    for i in range(len(lst) - 1, -1, -1):
-        if lst[i] == padding:
-            count += 1
-        else:
-            # Stop counting when a non-padding value is encountered
-            break
-
-    return count
 
 
 def ends_with_any(s, substrings):
