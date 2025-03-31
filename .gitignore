@@ -4,8 +4,6 @@ outputs/
 wandb/
 BIG-bench/
 align_anything/evaluation/tasks/
-align_anything/models/remote_rm/debug_logs/
-align_anything/models/remote_rm/debug_scripts/
 ##### Python.gitignore #####
 # Byte-compiled / optimized / DLL files
 __pycache__/
