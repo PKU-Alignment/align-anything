@@ -87,6 +87,10 @@ train = [
     "torchvision",
     "timm",
     "av",
+    "Levenshtein",
+    "flask",
+    "latex2sympy2_extended",
+    "math_verify"
 ]
 
 evaluate = [
@@ -121,6 +125,10 @@ evaluate = [
     "clip",
     "pytorch_fid",
     "av",
+    "Levenshtein",
+    "flask",
+    "latex2sympy2_extended",
+    "math_verify"
 ]
 
 all = [
@@ -155,6 +163,10 @@ all = [
     "clip",
     "pytorch_fid",
     "av",
+    "Levenshtein",
+    "flask",
+    "latex2sympy2_extended",
+    "math_verify"
 ]
 
 minicpmv = ["timm==1.0.11", "transformers==4.40.0"]

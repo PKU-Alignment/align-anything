@@ -250,11 +250,14 @@ class RLTrainerBase:
             total_training_steps=self.total_training_steps,
             ds_cfgs=self.ds_train_cfgs,
         )
-        self.reward_model = self._init_eval_deepspeed_engine(
-            model=self.reward_model,
-            ds_cfgs=self.ds_eval_cfgs,
-        )
-        self.reward_model.eval()
+        if (
+            self.reward_model is not None
+        ):  # NOTE when self.reward_model is None, it means using remote reward model
+            self.reward_model = self._init_eval_deepspeed_engine(
+                model=self.reward_model,
+                ds_cfgs=self.ds_eval_cfgs,
+            )
+            self.reward_model.eval()
         # setup the gradient checkpointing
         if self.cfgs.train_cfgs.actor_gradient_checkpointing and not self.lora_enabled:
             self.actor_model.gradient_checkpointing_enable()

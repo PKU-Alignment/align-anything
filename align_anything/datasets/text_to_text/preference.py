@@ -71,14 +71,25 @@ class PreferenceDataset(Dataset):
 
         if isinstance(optional_args, str):
             optional_args = [optional_args]
-        self.raw_data = load_dataset(
-            path,
-            name=name,
-            split=split,
-            data_files=data_files,
-            *optional_args,
-            trust_remote_code=True,
-        )
+        if path.endswith('json'):
+            import json
+
+            with open(path) as f:
+                self.raw_data = json.load(f)
+        elif path.endswith('jsonl'):
+            import json
+
+            with open(path) as f:
+                self.raw_data = [json.loads(l) for l in f.readlines()]
+        else:
+            self.raw_data = load_dataset(
+                path,
+                name=name,
+                split=split,
+                data_files=data_files,
+                *optional_args,
+                trust_remote_code=True,
+            )
         if size:
             size = min(size, len(self.raw_data))
             self.raw_data = self.raw_data.select(range(int(size)))

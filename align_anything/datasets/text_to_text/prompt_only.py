@@ -80,14 +80,23 @@ class PromptOnlyDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-        raw_data_duplicated = load_dataset(
-            path,
-            name=name,
-            split=split,
-            data_files=data_files,
-            *optional_args,
-            trust_remote_code=True,
-        )
+        if path.endswith('json'):
+            import json
+
+            raw_data_duplicated = json.load(open(path))
+        elif path.endswith('jsonl'):
+            import json
+
+            raw_data_duplicated = [json.loads(l) for l in open(path).readlines()]
+        else:
+            raw_data_duplicated = load_dataset(
+                path,
+                name=name,
+                split=split,
+                data_files=data_files,
+                *optional_args,
+                trust_remote_code=True,
+            )
         self.template = template
         self.raw_data = remove_duplicate_prompts(raw_data_duplicated, self.template)
 

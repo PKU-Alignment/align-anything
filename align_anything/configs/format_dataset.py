@@ -179,7 +179,7 @@ class BaseFormatter:
         """
         return [], {}
 
-
+        
 @register_template('Alpaca')
 class Alpaca(BaseFormatter):
 
@@ -317,6 +317,49 @@ class AA_T2T(BaseFormatter):
         return [
             {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
             {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+        ], {}
+
+
+@register_template('Math-Zero-RL')
+class Math_Zero_RL(BaseFormatter):
+    # NOTE you should add the system prompt in these prompt templates
+    system_prompt: str = (
+        'You are a helpful assistant good at solving math problems with step-by-step reasoning. You should first thinks about the reasoning process in the mind and then provides the user with the answer. Your answer must be in latex format and wrapped in $...$.The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e., <think> Since $1+1=2$, so the answer is $2$. </think><answer> $2$ </answer>, which means your output should start with <think> and end with </answer>.'
+    )
+
+    def format_supervised_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if 'prompt' in raw_sample:
+            prompt = raw_sample['prompt']
+        elif 'question' in raw_sample:
+            prompt = raw_sample['question']
+        else:
+            raise ValueError(
+                'Prompt Preparation Error: prompt or question is not found in the raw_sample'
+            )
+        answer = raw_sample['answer']
+
+        return [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': prompt},
+            {'role': 'assistant', 'content': answer},
+        ], {}
+
+    def format_prompt_only_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if 'prompt' in raw_sample:
+            prompt = raw_sample['prompt']
+        elif 'question' in raw_sample:
+            prompt = raw_sample['question']
+        else:
+            raise ValueError(
+                'Prompt Preparation Error: prompt or question is not found in the raw_sample'
+            )
+        return [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': prompt},
         ], {}
 
 
