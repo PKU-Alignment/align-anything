@@ -70,8 +70,10 @@ MODEL_FOR_SCORE_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('qwen2_audio', 'AccustomedQwen2AudioRewardModel'),
         ('chameleon', 'AccustomedChameleonRewardModel'),
         ('qwen2_vl', 'AccustomedQwen2VLRewardModel'),
+        ('qwen2_5_vl', 'AccustomedQwen2_5_VLRewardModel'),
         ('idefics2', 'AccustomedIdefics2RewardModel'),
         ('llava_next_video', 'AccustomedLlavaNextVideoRewardModel'),
+        ('gemma3', 'AccustomedGemma3RewardModel'),
         ('opt', 'AccustomedOPTRewardModel'),
     ],
 )
@@ -86,9 +88,11 @@ MODEL_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('qwen2_audio', 'AccustomedQwen2AudioModel'),
         ('chameleon', 'AccustomedChameleonModel'),
         ('qwen2_vl', 'AccustomedQwen2VLModel'),
+        ('qwen2_5_vl', 'AccustomedQwen2_5_VLModel'),
         ('modeling_emu3.mllm.modeling_emu3', 'Emu3ForCausalLM'),
         ('llava_next_video', 'AccustomedLlavaNextVideoModel'),
         ('idefics2', 'AccustomedIdefics2Model'),
+        ('gemma3', 'AccustomedGemma3Model'),
         ('opt', 'AccustomedOPTModel'),
     ],
 )
