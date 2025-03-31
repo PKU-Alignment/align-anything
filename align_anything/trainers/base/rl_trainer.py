@@ -222,7 +222,9 @@ class RLTrainerBase:
             * self.cfgs.train_cfgs.update_iters
             * self.cfgs.train_cfgs.per_device_train_batch_size
         )
-        self.total_update_steps = self.total_training_steps * self.cfgs.train_cfgs.per_device_prompt_batch_size
+        self.total_update_steps = (
+            self.total_training_steps * self.cfgs.train_cfgs.per_device_prompt_batch_size
+        )
         # initialize the actor model engines
         actor_ds_cfgs = copy.deepcopy(self.ds_train_cfgs)
         actor_total_training_steps = self.total_update_steps

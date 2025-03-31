@@ -239,7 +239,7 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         state_encoders_linear = OrderedDict()
         state_encoders_time = OrderedDict()
         OrderedDict()
-        state_encoders = OrderedDict()  # perserve insertion order in py3.6
+        state_encoders = OrderedDict()  # preserve insertion order in py3.6
         if self.multiple_beliefs:  # multiple belief model
             for aux_uuid in self.auxiliary_uuids:
                 state_encoders_linear[aux_uuid] = nn.Linear(tx_input_size, self._hidden_size)
@@ -270,9 +270,7 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
             self.decoder = LLAMATransformerDecoder(state_encoders_params)
             self.belief_names = ['single_belief']
 
-        get_logger().info(
-            f'there are {len(self.belief_names)} belief models: {self.belief_names}'
-        )
+        get_logger().info(f'there are {len(self.belief_names)} belief models: {self.belief_names}')
 
     def _recurrent_memory_specification(self):
         return None

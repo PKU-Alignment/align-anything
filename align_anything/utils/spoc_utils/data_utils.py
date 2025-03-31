@@ -276,28 +276,3 @@ class Hdf5TaskSpecs:
             max_house_id=max_house_id,
             max_task_specs=max_task_specs,
         )
-
-
-if __name__ == '__main__':
-    from utils.constants.objaverse_data_dirs import OBJAVERSE_HOUSES_DIR
-
-    houses = LazyJsonHouses.from_dir(
-        OBJAVERSE_HOUSES_DIR,
-        subset='train',
-        max_houses=10,
-    )
-    print(houses)
-    # task_specs = LazyJsonTaskSpecs.from_dir(
-    #     "/root/data/ObjectNavType_Poliformer",
-    #     "train",
-    #     max_task_specs=10,
-    # )
-    task_specs = Hdf5TaskSpecs.from_dataset_dir(
-        '/root/vida_datasets/pointing_data/GoNearPoint', 'train', proc_id=2, total_procs=48
-    )
-
-    print(task_specs)
-
-    import ipdb
-
-    ipdb.set_trace()

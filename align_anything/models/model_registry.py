@@ -115,6 +115,7 @@ MODEL_MAPPING: OrderedDict[str, Any] = _LazyAutoMappingInAlignAnything(
     MODEL_FOR_CAUSAL_LM_MAPPING_NAMES | MODEL_MAPPING_NAMES,
 )
 
+
 class AnyModelForScore(_BaseAutoModelClass):
     _model_mapping: OrderedDict[str, Any] = MODEL_FOR_SCORE_MAPPING
 

@@ -14,29 +14,31 @@
 # ==============================================================================
 """vLLM engine implementation for accelerated sampling."""
 
+import logging
 import os
-from collections import defaultdict
 import queue
+from collections import defaultdict
 from typing import Any, List
 
 import ray
+import torch.distributed as dist
 from ray.util.placement_group import placement_group
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
-import torch.distributed as dist
-import logging
+
 
 logger = logging.getLogger(__name__)
 
 
 def ray_noset_visible_devices():
     """Check if RAY_EXPERIMENTAL_NOSET_*_VISIBLE_DEVICES is set."""
-    return os.environ.get("RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES", "0") == "1"
+    return os.environ.get('RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES', '0') == '1'
 
 
 @ray.remote
 def get_all_env_variables():
     """Get all environment variables."""
     import os
+
     return os.environ
 
 
@@ -45,45 +47,58 @@ class LLMRayActor:
     """Ray actor for vLLM engine."""
 
     def __init__(self, *args, bundle_indices: list = None, **kwargs):
-        noset_visible_devices = kwargs.pop("noset_visible_devices")
-        if kwargs.get("distributed_executor_backend") == "ray":
+        noset_visible_devices = kwargs.pop('noset_visible_devices')
+        if kwargs.get('distributed_executor_backend') == 'ray':
             # a hack to make the script work.
             # stop ray from manipulating CUDA_VISIBLE_DEVICES
             # at the top-level when the distributed_executor_backend is ray.
-            os.environ.pop("CUDA_VISIBLE_DEVICES", None)
+            os.environ.pop('CUDA_VISIBLE_DEVICES', None)
         elif noset_visible_devices:
             # We need to set CUDA_VISIBLE_DEVICES to the ray assigned GPU
             # when the distributed_executor_backend is not ray and
             # RAY_EXPERIMENTAL_NOSET_*_VISIBLE_DEVICES is set.
-            os.environ["CUDA_VISIBLE_DEVICES"] = str(ray.get_gpu_ids()[0])
+            os.environ['CUDA_VISIBLE_DEVICES'] = str(ray.get_gpu_ids()[0])
 
-        num_gpus = kwargs.pop("num_gpus")
+        num_gpus = kwargs.pop('num_gpus')
         if bundle_indices is not None:
-            os.environ["VLLM_RAY_PER_WORKER_GPUS"] = str(num_gpus)
-            os.environ["VLLM_RAY_BUNDLE_INDICES"] = ",".join(map(str, bundle_indices))
-            print(f"creating LLM with bundle_indices={bundle_indices}")
+            os.environ['VLLM_RAY_PER_WORKER_GPUS'] = str(num_gpus)
+            os.environ['VLLM_RAY_BUNDLE_INDICES'] = ','.join(map(str, bundle_indices))
+            print(f'creating LLM with bundle_indices={bundle_indices}')
 
         # Number of actors that will send prompt to this engine
-        self.num_actors = kwargs.pop("num_actors")
+        self.num_actors = kwargs.pop('num_actors')
         self.actor_counter = 0
         self.requests = {}
         self.response_queues = defaultdict(queue.Queue)
 
         # Import vLLM here to avoid early import
         from vllm import LLM
+
         self.llm = LLM(*args, **kwargs)
 
-    def init_process_group(self, master_address, master_port, rank_offset, world_size, group_name, backend, use_ray):
+    def init_process_group(
+        self, master_address, master_port, rank_offset, world_size, group_name, backend, use_ray
+    ):
         return self.llm.collective_rpc(
-            "init_process_group",
-            args=(master_address, master_port, rank_offset, world_size, group_name, backend, use_ray),
+            'init_process_group',
+            args=(
+                master_address,
+                master_port,
+                rank_offset,
+                world_size,
+                group_name,
+                backend,
+                use_ray,
+            ),
         )
 
     def update_weight(self, name, dtype, shape, empty_cache=False):
-        return self.llm.collective_rpc("update_weight", args=(name, dtype, shape, empty_cache))
+        return self.llm.collective_rpc('update_weight', args=(name, dtype, shape, empty_cache))
 
     def update_weight_cuda_ipc(self, name, dtype, shape, ipc_handles, empty_cache=False):
-        return self.llm.collective_rpc("update_weight_cuda_ipc", args=(name, dtype, shape, ipc_handles, empty_cache))
+        return self.llm.collective_rpc(
+            'update_weight_cuda_ipc', args=(name, dtype, shape, ipc_handles, empty_cache)
+        )
 
     def reset_prefix_cache(self):
         self.llm.llm_engine.reset_prefix_cache()
@@ -110,7 +125,9 @@ class LLMRayActor:
 
             if len(requests) > 0:
                 # For now we assume that all requests have the same sampling params
-                responses = self.llm.chat(messages=requests, sampling_params=sampling_params, add_generation_prompt=True)
+                responses = self.llm.chat(
+                    messages=requests, sampling_params=sampling_params, add_generation_prompt=True
+                )
             else:
                 responses = []
 
@@ -144,7 +161,7 @@ def create_vllm_engines(
     vllm_enable_sleep=False,
 ):
     """Create vLLM engines.
-    
+
     Args:
         num_engines: Number of vLLM engines to create.
         tensor_parallel_size: Tensor parallel size.
@@ -157,16 +174,16 @@ def create_vllm_engines(
         shared_pg: Shared placement group.
         gpu_memory_utilization: GPU memory utilization.
         vllm_enable_sleep: Whether to enable sleep mode.
-        
+
     Returns:
         List of vLLM engines.
     """
     import vllm
 
-    assert vllm.__version__ >= "0.7.2", "Only supports vllm >= 0.7.2"
+    assert vllm.__version__ >= '0.7.2', 'Only supports vllm >= 0.7.2'
 
     vllm_engines = []
-    distributed_executor_backend = "uni" if tensor_parallel_size == 1 else "ray"
+    distributed_executor_backend = 'uni' if tensor_parallel_size == 1 else 'ray'
     use_hybrid_engine = shared_pg is not None
     num_gpus = int(tensor_parallel_size == 1)
     if use_hybrid_engine and tensor_parallel_size == 1:
@@ -176,8 +193,8 @@ def create_vllm_engines(
 
     if not use_hybrid_engine:
         # Create a big placement group to ensure that all engines are packed
-        bundles = [{"GPU": 1, "CPU": 1} for _ in range(num_engines * tensor_parallel_size)]
-        shared_pg = placement_group(bundles, strategy="PACK")
+        bundles = [{'GPU': 1, 'CPU': 1} for _ in range(num_engines * tensor_parallel_size)]
+        shared_pg = placement_group(bundles, strategy='PACK')
         ray.get(shared_pg.ready())
 
     for i in range(num_engines):
@@ -204,13 +221,13 @@ def create_vllm_engines(
             ).remote(
                 model=pretrain,
                 enforce_eager=enforce_eager,
-                worker_cls="align_anything.utils.vllm_utils.vllm_worker_wrap.WorkerWrap",
+                worker_cls='align_anything.utils.vllm_utils.vllm_worker_wrap.WorkerWrap',
                 tensor_parallel_size=tensor_parallel_size,
                 seed=seed + i,
                 distributed_executor_backend=distributed_executor_backend,
                 max_model_len=max_model_len,
                 enable_prefix_caching=enable_prefix_caching,
-                dtype="bfloat16",
+                dtype='bfloat16',
                 trust_remote_code=True,
                 num_actors=num_actors,
                 gpu_memory_utilization=gpu_memory_utilization,
@@ -222,12 +239,14 @@ def create_vllm_engines(
         )
 
     if vllm_enable_sleep:
-        batch_vllm_engine_call(vllm_engines, "sleep", rank_0_only=False)
+        batch_vllm_engine_call(vllm_engines, 'sleep', rank_0_only=False)
 
     return vllm_engines
 
 
-def batch_vllm_engine_call(engines: List[Any], method_name: str, *args, rank_0_only: bool = True, **kwargs):
+def batch_vllm_engine_call(
+    engines: List[Any], method_name: str, *args, rank_0_only: bool = True, **kwargs
+):
     """
     Batch call a method on multiple vLLM engines.
     Args:

@@ -32,6 +32,7 @@ CONFIG = AutoConfig.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
 CLASS_REF = CONFIG.auto_map['AutoModelForCausalLM']
 MiniCPMV = get_class_from_dynamic_module(CLASS_REF, MODEL_NAME_OR_PATH)
 
+
 class AccustomedMiniCPMV(MiniCPMV):
 
     def __init__(self, config: AutoConfig):
@@ -39,9 +40,7 @@ class AccustomedMiniCPMV(MiniCPMV):
         zero_stage = int(os.environ['ZERO_STAGE'])
         if zero_stage == 3:
             raise ValueError('MiniCPM-V does not support ZeRO stage 3')
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            MODEL_NAME_OR_PATH, trust_remote_code=True
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
 
     @property
     def processor_available(self):
@@ -131,4 +130,3 @@ class AccustomedMiniCPMV(MiniCPMV):
         vllm_embedding, _ = self.get_vllm_embedding(data)
 
         return self.llm(input_ids=None, inputs_embeds=vllm_embedding, **kwargs)
-

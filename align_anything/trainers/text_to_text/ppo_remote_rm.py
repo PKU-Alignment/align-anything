@@ -451,7 +451,7 @@ class PPOTrainerRemoteRM(PPOTrainer):  # pylint: disable=too-many-instance-attri
         self.actor_model.backward(actor_loss)
         self.actor_model.step()
 
-        # NOTE using reward critic model to calculate the value, get the reward values [length aligned wtih the output sequences, and use these values to calculate advantage and return
+        # NOTE using reward critic model to calculate the value, get the reward values [length aligned with the output sequences, and use these values to calculate advantage and return
         reward_values = self.reward_critic_model(**inference_batch).scores
         reward_values = reward_values.squeeze(dim=-1)[:, :-1]
         reward_critic_loss = self.critic_loss_fn(

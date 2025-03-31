@@ -98,7 +98,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         if self.advantage_estimator in ['rloo', 'reinforce_baseline', 'group_norm']:
             assert (
                 self.n_samples_per_prompt > 1
-            ), f"{self.advantage_estimator} requires n_samples_per_prompt > 1"
+            ), f'{self.advantage_estimator} requires n_samples_per_prompt > 1'
 
     def init_models(self) -> None:
         """Initialize model and tokenizer."""
@@ -273,7 +273,6 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
                 )
                 for k, v in pre_mini_batch.items()
             }
-
 
             # actor generation
             actor_batch = self.actor_step(mini_batch)
@@ -564,7 +563,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
             advantages = copy.deepcopy(returns)
 
         else:
-            raise ValueError(f"Unknown estimator: {self.advantage_estimator}")
+            raise ValueError(f'Unknown estimator: {self.advantage_estimator}')
 
         advantages *= sequence_mask[:, start:]
         returns *= sequence_mask[:, start:]

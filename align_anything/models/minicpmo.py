@@ -26,10 +26,12 @@ import torch.utils.checkpoint
 from transformers import AutoConfig, AutoTokenizer
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
+
 MODEL_NAME_OR_PATH = os.environ.get('MODEL_NAME_OR_PATH')
 CONFIG = AutoConfig.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
 CLASS_REF = CONFIG.auto_map['AutoModel']
 MiniCPMO = get_class_from_dynamic_module(CLASS_REF, MODEL_NAME_OR_PATH)
+
 
 class AccustomedMiniCPMO(MiniCPMO):
 
@@ -38,9 +40,7 @@ class AccustomedMiniCPMO(MiniCPMO):
         zero_stage = int(os.environ.get('ZERO_STAGE', '0'))
         if zero_stage == 2:
             raise ValueError('MiniCPM-O does not support ZeRO stage 2')
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            MODEL_NAME_OR_PATH, trust_remote_code=True
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH, trust_remote_code=True)
         self.system_prompt = 'You are a helpful assistant. You can accept video, audio and text input and output voice and text. '
         os.environ['MULTI_IMAGES_INFERENCE_MODELS'] = 'Yes'
         if hasattr(self, 'apm'):

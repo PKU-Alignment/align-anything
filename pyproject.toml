@@ -118,7 +118,7 @@ max-line-length = 500
 
 [tool.codespell]
 ignore-words = "docs/source/spelling_wordlist.txt"
-skip = "*.json,*.jsonl"
+skip = "*.json,*.jsonl,*.ipynb"
 
 [tool.ruff]
 # Sync with requires-python
