@@ -50,7 +50,9 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 ## 📣 News
 
-- **`Coming Soon`** ⚡️⚡️⚡️ We plan to separate the evaluation component from align-anything and establish eval-anything as a dedicated repository for large-scale evaluation of any-to-any models. Meanwhile, align-anything will remain focused on the post-training alignment of any-to-any models.
+- **[2025.03.31]** ✅✅✅ We enhance the installation process for both Nvidia GPU and Huawei Ascend NPU. Please refer to the [Quick Start](#quick-start) for details.
+
+- **[2025.03.31]** 🛠️🛠️🛠️ We separate the evaluation component from align-anything and establish [eval-anything](https://github.com/PKU-Alignment/eval-anything) as a dedicated repository for large-scale evaluation of any-to-any models.
 
 - **[2025.03.31]** 🚀🚀🚀 We support wrapping the `actor` model with [vLLM engine](https://github.com/vllm-project/vllm) for sequence generation in `text-to-text ppo` training. It greatly accelerates the ppo training process. Our results show that with vLLM engine, it only takes 22 minutes to finish ppo, while the baseline case needs ~150 minutes.
 
@@ -139,6 +141,8 @@ conda create -n align-anything python==3.11
 conda activate align-anything
 ```
 
+#### On Nvidia GPU
+
 - **`[Optional]`** We recommend installing [CUDA](https://anaconda.org/nvidia/cuda) in the conda environment and set the environment variable.
 
 ```bash
@@ -163,23 +167,21 @@ pip3 install -e .
 pip3 install vllm==0.7.2 # to run ppo on vllm engine
 ```
 
-If you encounter any issues, please refer to the [FAQ](https://github.com/PKU-Alignment/align-anything/discussions/167) for solutions.
+#### On Huawei Ascend NPU
 
-<details>
-<summary>Other Dependencies</summary>
+You should first set your NPU environment variables. For example:
 
-- `pip install -e .[text-to-audio]`: Install the text-to-audio dependencies.
-- `pip install -e .[minicpmv]`: Install the minicpmv dependencies.
-- `pip install -e .[minicpmo]`: Install the minicpmo dependencies.
-- `pip install -e .[ascend]`: Install the ascend dependencies.
-
+```bash
+pip3 install -e .[ascend]
 ```
-NOTE: The current test environment for Ascend is:
+
+The current test environment for Ascend is:
+
+
 - Python 3.10.6
 - CANN 8.0.rc3
 - Architecture: aarch64
 - Hardware: 8x Ascend-SNT9B ARM (192 cores, 1536GB memory)
-```
 
 <details>
   <summary>Install ascend dependencies using our docker image</summary>
@@ -221,6 +223,16 @@ NOTE: The current test environment for Ascend is:
 
 </details>
 
+
+If you encounter any issues, please refer to the [FAQ](https://github.com/PKU-Alignment/align-anything/discussions/167) for solutions.
+
+<details>
+<summary>Other Dependencies</summary>
+
+- `pip install -e .[text-to-audio]`: Install the text-to-audio dependencies.
+- `pip install -e .[minicpmv]`: Install the minicpmv dependencies.
+- `pip install -e .[minicpmo]`: Install the minicpmo dependencies.
+
 </details>
 
 ### Training
@@ -232,6 +244,12 @@ For example, `scripts/llava/llava_dpo.sh` is the script for `Text + Image -> Tex
 ```bash
 cd scripts
 bash llava/llava_dpo.sh
+```
+
+**Note:** The scripts will automatically download the model and dataset from huggingface. If you are prohibited from the internet, please try to use the `HF Mirror`:
+
+```bash
+export HF_ENDPOINT=https://hf-mirror.com
 ```
 
 #### Training on Slurm
