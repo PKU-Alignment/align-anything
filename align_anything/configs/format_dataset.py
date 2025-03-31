@@ -179,27 +179,6 @@ class BaseFormatter:
         """
         return [], {}
 
-@register_template('TI2T')
-class TI2T(BaseFormatter):
-    system_prompt: str = ''
-
-    def format_supervised_sample(
-        self, raw_sample: dict[str, Any]
-    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-        image = raw_sample['image']
-        prompt = raw_sample['prompt']
-        answer = raw_sample['response']
-
-        return [
-            {
-                'role': 'user',
-                'content': [
-                    {'type': 'image'},
-                    {'type': 'text', 'text': prompt},
-                ],
-            },
-            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
-        ], {'image': image}
         
 @register_template('Alpaca')
 class Alpaca(BaseFormatter):
@@ -362,9 +341,9 @@ class Math_Zero_RL(BaseFormatter):
         answer = raw_sample['answer']
 
         return [
-            {'role': 'system', 'content': [{'type': 'text', 'text': self.system_prompt}]},
-            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
-            {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': prompt},
+            {'role': 'assistant', 'content': answer},
         ], {}
 
     def format_prompt_only_sample(
@@ -379,8 +358,8 @@ class Math_Zero_RL(BaseFormatter):
                 'Prompt Preparation Error: prompt or question is not found in the raw_sample'
             )
         return [
-            {'role': 'system', 'content': [{'type': 'text', 'text': self.system_prompt}]},
-            {'role': 'user', 'content': [{'type': 'text', 'text': prompt}]},
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': prompt},
         ], {}
 
 
