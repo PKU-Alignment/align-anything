@@ -310,12 +310,13 @@ _A:_ The models registration of align-anything is 2 folds:
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Text -> Text`             | [meta-llama/Llama-3.1-8B-Instruct series](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct) (Llama3, Llama2 is also supported)                                                                                                                                                                                                                                         |
 | `Text+Image -> Text`       | [LLaVA series](https://huggingface.co/collections/llava-hf/llava-15-65f762d5b6941db5c2ba07e0), [LLaVA-Next series](https://huggingface.co/collections/llava-hf/llava-next-65f75c4afac77fd37dbbe6cf), [openbmb/MiniCPM-V](https://huggingface.co/openbmb/MiniCPM-V/tree/main) and [LLaMA-3.2-Vision-Instruct](https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct) |
-| `Text+Image -> Text+Image` | [facebook/chameleon-7b](https://huggingface.co/facebook/chameleon-7b)                                                                                                                                                                                                                                                                                                         |
-| `Text+Audio -> Text`       | [Qwen/Qwen2-Audio-7B-Instruct](https://huggingface.co/Qwen/Qwen2-Audio-7B-Instruct)                                                                                                                                                                                                                                                                                           |
-| `Text+Video -> Text`       | [Qwen/Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct)                                                                                                                                                                                                                                                                                                 |
-| `Text -> Image`            | [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4)                                                                                                                                                                                                                                                                                         |
-| `Text -> Video`            | [ali-vilab/text-to-video-ms-1.7b](https://huggingface.co/ali-vilab/text-to-video-ms-1.7b)                                                                                                                                                                                                                                                                                     |
-| `Text -> Audio`            | [cvssp/audioldm-s-full-v2](https://huggingface.co/cvssp/audioldm-s-full-v2)                                                                                                                                                                                                                                                                                                   |
+| `Text+Image -> Text+Image` | [facebook/chameleon-7b](https://huggingface.co/facebook/chameleon-7b) |
+| `Text+Audio -> Text`       | [Qwen/Qwen2-Audio-7B-Instruct](https://huggingface.co/Qwen/Qwen2-Audio-7B-Instruct) |
+| `Text+Video -> Text`       | [Qwen/Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct) |
+| `Text -> Image`            | [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) |
+| `Text -> Video`            | [ali-vilab/text-to-video-ms-1.7b](https://huggingface.co/ali-vilab/text-to-video-ms-1.7b) |
+| `Text -> Audio`            | [cvssp/audioldm-s-full-v2](https://huggingface.co/cvssp/audioldm-s-full-v2) |
+| `Text+Video -> Action`     | [SPOC](https://spoc-robot.github.io/) |
 
 Besides, you can also use your own model for training, you can refer to the here (sorry, corresponding docs will be uploaded later) for the model registration.
 
@@ -503,20 +504,21 @@ python3 -m align_anything.serve.arena \
 ### Downloading the training data
 
 ```bash
-python -m align_anything.trainers.text_video_to_action.download_training_data --save_dir ./path/to/your/data  --types astar
+python -m align_anything.utils.spoc_utils.download_training_data --save_dir /path/to/data  --types fifteen
 ```
 
 Then decompress the compressed data package.
 
 ### Training
 
-modify `HOME_PREFIX` in `align-anything/scripts/il_training.sh` to your local data path.
+
+modify ``HOME_PREFIX`` in ``align-anything/scripts/vla/spoc_sft.sh`` to your local data path.
+
 
 ```bash
-bash scripts/vla/il_training.sh
+bash scripts/vla/spoc_sft.sh
 ```
 
-More details on [AlignVLA](align_anything/trainers/text_video_to_action/README.md)
 
 ## Citation
 
