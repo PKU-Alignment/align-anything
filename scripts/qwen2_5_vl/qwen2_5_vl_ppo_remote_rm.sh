@@ -20,7 +20,7 @@ ACTOR_MODEL_NAME_OR_PATH="Qwen/Qwen2.5-VL-7B-Instruct" # model path
 CRITIC_MODEL_NAME_OR_PATH="Qwen/Qwen2.5-VL-7B-Instruct" # model path
 
 
-TRAIN_DATASETS="../align_anything/models/remote_rm/math_verify_dataset/mathvl_345_8k.json" # dataset path
+TRAIN_DATASETS="../align_anything/models/remote_rm/math_verify_dataset/mathvl_345_example.json" # dataset path
 
 TRAIN_TEMPLATE="Math-Zero-RL" # dataset template
 TRAIN_SPLIT="train" # split the dataset

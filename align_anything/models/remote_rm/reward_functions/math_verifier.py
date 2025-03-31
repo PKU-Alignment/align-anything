@@ -133,5 +133,3 @@ def math_verifier_reward_function(
             info = re.sub(r'<\|.*?\|>', '', info)
             print(info)
     return rewards
-    # DEBUG: return the reward, format_reward, acc_reward
-    # return rewards, format_rewards, acc_rewards

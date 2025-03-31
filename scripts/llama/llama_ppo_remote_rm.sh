@@ -22,7 +22,7 @@ bash start_remote_rm.sh
 ACTOR_MODEL_NAME_OR_PATH="meta-llama/Llama-3.1-8B-Instruct" # actor model path
 CRITIC_MODEL_NAME_OR_PATH="meta-llama/Llama-3.1-8B-Instruct" # critic model path
 
-TRAIN_DATASETS="../align_anything/models/remote_rm/math_verify_dataset/math_345_8k.json" # dataset path
+TRAIN_DATASETS="../align_anything/models/remote_rm/math_verify_dataset/mathvl_345_example.json" # dataset path
 TRAIN_TEMPLATE="Math-Zero-RL" # math zero rlhf dataset template, note that for math zero rl, you are recommended to expand token length to longer length such as 18000
 TRAIN_SPLIT="train" # split the input dataset
 
