@@ -38,17 +38,20 @@
 
 </div>
 
-Align-Anything aims to align any modality large models (any-to-any models), including LLMs, VLMs, and others, with human intentions and values. More details about the definition and milestones of alignment for Large Models can be found in [AI Alignment](https://alignmentsurvey.com). Overall, this framework has the following characteristics:
+Align-Anything aims to align any modality large models (any-to-any models) with human intentions and values. 
 
-- **Highly Modular Framework.** Its versatility stems from the abstraction of different algorithm types and well-designed APIs, allowing users to easily modify and customize the code for different tasks (see [framework design](https://align-anything.readthedocs.io/)).
-- **Various Modality Model Fine-Tuning.** Fine-tuning capabilities for models such as LLaMA3.2, LLaVA, Gemma, Qwen2Audio, Chameleon, and others (see [Model Zoo](#advanced-usage)).
-- **Different Alignment Methods.** Different alignment algorithms, including SFT, DPO, PPO, and others (see [scripts](./scripts)).
+- **Highly Modular Framework** allowing users to easily modify and customize the code for different tasks (see [framework design](https://align-anything.readthedocs.io/)).
+- **Various Modality Model Fine-Tuning** for diverse multi-modal (image/video/audio) models (see [scripts](./scripts)).
+- **Different Alignment Methods.** Different alignment algorithms, including SFT, DPO, PPO, and others.
 - **Multi-Modal CLI.** Multi-modal CLI for image, audio, and video modalities (see [multi-modal CLI](#multi-modal-cli)).
 - **O1-like Training.** O1-like training based on [DollyTails](https://huggingface.co/datasets/PKU-Alignment/DollyTails-12K) (see [scripts/llama_sft_o1.sh](./scripts)).
+- **Rule-based RL.** Rule-based RL encouraged by [Deepseek-R1](https://huggingface.co/deepseek-ai/DeepSeek-R1).
 
 **Note:** We provide a [quick start guide](https://align-anything.readthedocs.io/) for users to quickly get the code structure and development details.
 
 ## 📣 News
+
+- **[Future]** ⚡️⚡️⚡️ We will integrate more cutting-edge MLLMs into our framework and develop our VLA part. Stay tuned!
 
 - **[2025.03.31]** ✅✅✅ We enhance the installation process for both Nvidia GPU and Huawei Ascend NPU. Please refer to the [Quick Start](#quick-start) for details.
 
@@ -80,7 +83,7 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 - **[2025.02.28]** 🤗🤗🤗 We open-sourced [🤗Align-DS-V](https://huggingface.co/PKU-Alignment/Align-DS-V), an experimental vision-language model based on [DeepSeek-R1-Distill-Llama-8B](https://github.com/deepseek-ai/DeepSeek-R1), which enhances reasoning by incorporating additional modalities into the language model. The model has already surpassed **18,000+** downloads!
 
-- **[2025.02.28]** We supported the alignment fine-tuning of DeepSeek’s Unified Multimodal Understanding and Generation Models, as well as the SFT and DPO of the [**Janus-Series**](https://github.com/deepseek-ai/Janus). You can find the examples in the `./scripts` and `./projects/janus` directory.
+- **[2025.02.28]** We supported the alignment fine-tuning of DeepSeek’s Unified Multimodal Understanding and Generation Models, as well as the SFT and DPO of the [**Janus-Series**](https://github.com/deepseek-ai/Janus). You can find the examples in the `./scripts` and `./projects/janus` directories.
 
 - **[2025.02.19]** We supported the alignment methods **GRPO** used in DeepSeek R1. See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
 
@@ -88,29 +91,9 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 - **[2025.01.17]** 🔥🔥🔥 We supported the fine-tuning of **O1-like reasoning in the text2text modality** (see [DollyTails](https://huggingface.co/datasets/PKU-Alignment/DollyTails-12K)), with multimodal and additional modalities coming soon!
 
-- **[2024.11.20]** We release a bunch of scripts for all-modality models [here](./scripts). You can directly run the scripts to fine-tune your models, without any need to modify the code.
-
 - **[2024.10.11]** We supported the alignment fine-tuning of the latest **Emu3** model.
 
-- **[2024.10.10]** We contributed to the evaluation of new modalities, particularly the performance assessment of text-video-to-text models.
-
 - **[2024.08.29]** 💡💡💡 We supported learning from language feedback (different from binary feedback). For more details, see [lang-feedback](https://github.com/PKU-Alignment/align-anything/tree/main/projects/lang_feedback).
-<details><summary>More News</summary>
-
-- **[2024.10.10]** We support SFT for `Any -> Any` modality models Emu3.
-- **[2024.09.24]** We support SFT, DPO, RM and PPO for `Text + Video -> Text` modality models.
-- **[2024.09.13]** We support SFT, DPO, RM and PPO for `Text + Audio -> Text` modality models.
-- **[2024.08.17]** We support DPO and PPO for `Text+Image -> Text+Image` modality models.
-- **[2024.08.15]** We support a new function in the evaluation module: the `models_pk` script in [here](./scripts/models_pk.sh), which enables comparing the performance of two models across different benchmarks.
-- **[2024.08.06]** We restructure the framework to support any modality evaluation and the supported benchmark list is [here](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/evaluation/benchmarks).
-- **[2024.08.06]** We support `Text+Image -> Text+Image` modality for the SFT trainer and Chameleon models.
-- **[2024.07.23]** We support `Text -> Image`, `Text -> Audio`, and `Text -> Video` modalities for the SFT trainer and DPO trainer.
-- **[2024.07.22]** We support the **Chameleon** model for the SFT trainer and DPO trainer!
-- **[2024.07.17]** We open-source the Align-Anything-Instruction-100K dataset for text modality. This dataset is available in both [English](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K) and [Chinese](https://huggingface.co/datasets/PKU-Alignment/Align-Anything-Instruction-100K-zh) versions, each sourced from different data sets and meticulously refined for quality by GPT-4.
-- **[2024.07.14]** We open-source the align-anything framework.
-
-</details>
-
 <details><summary>More News</summary>
 
 - **[2024.10.10]** We support SFT for `Any -> Any` modality models Emu3.
@@ -169,7 +152,7 @@ pip3 install vllm==0.7.2 # to run ppo on vllm engine
 
 #### On Huawei Ascend NPU
 
-You should first set your NPU environment variables. For example:
+You can build on Huawei Ascend NPU by simply:
 
 ```bash
 pip3 install -e .[ascend]
@@ -177,14 +160,13 @@ pip3 install -e .[ascend]
 
 The current test environment for Ascend is:
 
-
 - Python 3.10.6
 - CANN 8.0.rc3
 - Architecture: aarch64
 - Hardware: 8x Ascend-SNT9B ARM (192 cores, 1536GB memory)
 
 <details>
-  <summary>Install ascend dependencies using our docker image</summary>
+  <summary>[Optional] Install ascend dependencies using our docker image</summary>
 
 1. **Current Ascend Machine Environment Configuration**
    The current environment configuration for the Ascend Machine is as follows:
@@ -227,7 +209,7 @@ The current test environment for Ascend is:
 If you encounter any issues, please refer to the [FAQ](https://github.com/PKU-Alignment/align-anything/discussions/167) for solutions.
 
 <details>
-<summary>Other Dependencies</summary>
+<summary>[Optional] Other Dependencies</summary>
 
 - `pip install -e .[text-to-audio]`: Install the text-to-audio dependencies.
 - `pip install -e .[minicpmv]`: Install the minicpmv dependencies.
@@ -278,44 +260,6 @@ We support basic alignment algorithms for different modalities, each of which ma
 | `Text -> Video (t2v)`              | ✔️  | ⚒️  | ✔️  | ⚒️  |
 | `Text -> Audio (t2a)`              | ✔️  | ⚒️  | ✔️  | ⚒️  |
 | `Text+Video -> Action (tv2act)`    | ✔️  | ⚒️  | ⚒️  | ⚒️  |
-
-## Inference
-
-### Multi-Modal CLI
-
-```bash
-# Omni-modal inference
-python3 -m align_anything.serve.omni_modal_cli --model_name_or_path openbmb/MiniCPM-o-2_6
-
-# Image inference
-python3 -m align_anything.serve.multi_modal_cli --model_name_or_path llava-hf/llava-1.5-7b-hf --modality image
-
-# Audio inference
-python3 -m align_anything.serve.multi_modal_cli --model_name_or_path Qwen/Qwen2-Audio-7B-Instruct --modality audio
-
-# Video inference
-python3 -m align_anything.serve.multi_modal_cli --model_name_or_path llava-hf/LLaVA-NeXT-Video-7B-hf --modality video
-```
-
-<img src="assets/cli.jpg" alt="multi_modal_cli" style="width:600px;">
-
-### Interactive Client
-
-```bash
-python3 -m align_anything.serve.cli --model_name_or_path your_model_name_or_path
-```
-
-<img src="assets/cli_demo.gif" alt="cli_demo" style="width:600px;">
-
-### Interactive Arena
-
-```bash
-python3 -m align_anything.serve.arena \
-    --red_corner_model_name_or_path your_red_model_name_or_path \
-    --blue_corner_model_name_or_path your_blue_model_name_or_path
-```
-
-<img src="assets/arena_demo.gif" alt="arena_demo" style="width:600px;">
 
 ## New Feature: Align VLA
 
