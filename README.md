@@ -50,7 +50,9 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 ## 📣 News
 
-- **`Coming Soon`** ⚡️⚡️⚡️ We plan to separate the evaluation component from align-anything and establish eval-anything as a dedicated repository for large-scale evaluation of any-to-any models. Meanwhile, align-anything will remain focused on the post-training alignment of any-to-any models.
+- **[2025.03.31]** ✅✅✅ We enhance the installation process for both Nvidia GPU and Huawei Ascend NPU. Please refer to the [Quick Start](#quick-start) for details.
+
+- **[2025.03.31]** 🛠️🛠️🛠️ We separate the evaluation component from align-anything and establish [eval-anything](https://github.com/PKU-Alignment/eval-anything) as a dedicated repository for large-scale evaluation of any-to-any models.
 
 - **[2025.03.31]** 🚀🚀🚀 We support wrapping the `actor` model with [vLLM engine](https://github.com/vllm-project/vllm) for sequence generation in `text-to-text ppo` training. It greatly accelerates the ppo training process. Our results show that with vLLM engine, it only takes 22 minutes to finish ppo, while the baseline case needs ~150 minutes.
 
