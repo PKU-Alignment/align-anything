@@ -74,8 +74,12 @@ def get_current_device() -> torch.device:
 def get_all_reduce_mean(tensor: torch.Tensor) -> torch.Tensor:
     """Perform all-reduce operation on a tensor cross all ranks and return the mean."""
     if dist.is_initialized():
-        dist.all_reduce(tensor, op=dist.ReduceOp.AVG)
-    return tensor
+        if is_torch_npu_available():
+            dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
+            return tensor / dist.get_world_size()
+        else:
+            dist.all_reduce(tensor, op=dist.ReduceOp.AVG)
+            return tensor
 
 
 def get_all_reduce_max(tensor: torch.Tensor) -> torch.Tensor:

@@ -46,7 +46,6 @@ dependencies = [
     "diffusers",
     "peft",
     "gradio",
-    "uvicorn",
     "librosa",
     "soundfile",
 ]
@@ -61,7 +60,27 @@ minicpmo = ["vector-quantize-pytorch", "vocos", "decord", "moviepy"]
 
 text-to-audio = ["pytorchvideo"]
 
-ascend =  ["numpy==1.26.4", "torch==2.1.0", "torch-npu==2.1.0.post3", "decorator"]
+ascend =  [
+    "torch==2.1.0",
+    "torchvision==0.16.0",
+    "torchaudio==2.1.0",
+    "numpy==1.26.0",
+    "deepspeed",
+    "torch-npu==2.1.0.post10", 
+    "transformers >= 4.50.0",
+    "datasets",
+    "tokenizers >= 0.13.3",
+    "accelerate",
+    "wandb",
+    "tensorboard",
+    "tqdm",
+    "rich",
+    "diffusers",
+    "peft",
+    "gradio",
+    "librosa",
+    "soundfile",
+]
 
 [tool.setuptools]
 include-package-data = true
