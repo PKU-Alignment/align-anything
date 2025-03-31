@@ -1,5 +1,4 @@
-# Copyright 2025 PKU-Alignment Team and LlamaFactory team. All Rights Reserved.
-
+# Copyright 2024 PKU-Alignment Team and LlamaFactory team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +16,7 @@
 
 from typing import Any, Callable
 
-from transformers import AutoProcessor, AutoTokenizer, PreTrainedTokenizerBase
+from transformers import AutoProcessor, AutoTokenizer
 
 
 class ModelFormatter:
@@ -43,9 +42,14 @@ class ModelFormatter:
     ) -> str:
         final_text = ''
         for line in raw_sample:
-            for content in line['content']:
-                if content['type'] == 'text':
-                    final_text += line['role'].upper() + ': ' + content['text'] + '\n'
+            if isinstance(line['content'], list):
+                for content in line['content']:
+                    if content['type'] == 'text':
+                        final_text += line['role'].upper() + ': ' + content['text'] + '\n'
+            elif isinstance(line['content'], str):
+                final_text += line['role'].upper() + ': ' + line['content'] + '\n'
+            else:
+                raise ValueError(f"Unknown content type: {type(line['content'])}")
         if add_generation_prompt:
             final_text += 'ASSISTANT: '
         return final_text
@@ -53,14 +57,6 @@ class ModelFormatter:
     def format_with_template(
         self, raw_sample: list[dict[str, Any]], add_generation_prompt: bool = False
     ) -> str:
-        if isinstance(self.formatter, AutoTokenizer) or isinstance(self.formatter, PreTrainedTokenizerBase):
-            new_sample = []
-            for line in raw_sample:
-                for content in line['content']:
-                    if content['type'] == 'text':
-                        line['content'] = content['text']
-                        new_sample.append(line)
-            raw_sample = new_sample
         return self.formatter.apply_chat_template(
             raw_sample,
             tokenize=False,

@@ -74,12 +74,14 @@ class PromptOnlyDataset(Dataset):
         split: str | None = None,
         data_files: str | None = None,
         optional_args: list | str = [],
+        apply_chat_template: bool = True,
     ):
         super().__init__()
         assert path, f'You must set the valid datasets path! Here is {path}'
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
+        self.apply_chat_template = apply_chat_template
         if path.endswith('json'):
             import json
 
@@ -105,7 +107,7 @@ class PromptOnlyDataset(Dataset):
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
         return_dict = {}
-        raw_text, _ = self.template.format_prompt_only_sample(raw_sample)
+        raw_text, _ = self.template.format_prompt_only_sample(raw_sample, apply_chat_template=self.apply_chat_template)
         if raw_text[-1] != self.tokenizer.eos_token:
             raw_text += self.tokenizer.eos_token
         return_dict['input_ids'] = self.tokenize(raw_text)

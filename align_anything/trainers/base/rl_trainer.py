@@ -75,7 +75,12 @@ class RLTrainerBase:
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
 
-    def get_dataloaders(self, train_data_dtype, eval_data_dtype, ptx_data_dtype) -> None:
+    def get_dataloaders(
+        self,
+        train_data_dtype,
+        eval_data_dtype,
+        ptx_data_dtype,
+    ) -> tuple[DataLoader, DataLoader | None, DataLoader]:
         """Get the dataloaders based on data_dtype."""
         formatter = self.processor if self.processor else self.tokenizer
         custom_formatter = (
@@ -102,7 +107,7 @@ class RLTrainerBase:
             train_dataset,
             collate_fn=train_dataset.get_collator(),
             sampler=DistributedSampler(train_dataset, shuffle=True),
-            batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
+            batch_size=int(self.cfgs.train_cfgs.per_device_prompt_batch_size),
         )
 
         # load ptx datasets
@@ -131,7 +136,7 @@ class RLTrainerBase:
                 ptx_dataset,
                 collate_fn=ptx_dataset.get_collator(),
                 sampler=DistributedSampler(ptx_dataset, shuffle=True),
-                batch_size=self.cfgs.train_cfgs.per_device_prompt_batch_size,
+                batch_size=int(self.cfgs.train_cfgs.per_device_train_batch_size),
             )
         else:
             ptx_dataloader = DataLoader(DummyDataset(len(train_dataloader)))
@@ -215,12 +220,12 @@ class RLTrainerBase:
             len(self.prompt_only_dataloader)
             * self.cfgs.train_cfgs.epochs
             * self.cfgs.train_cfgs.update_iters
-            * self.cfgs.train_cfgs.per_device_prompt_batch_size
-            // self.cfgs.train_cfgs.per_device_train_batch_size
+            * self.cfgs.train_cfgs.per_device_train_batch_size
         )
+        self.total_update_steps = self.total_training_steps * self.cfgs.train_cfgs.per_device_prompt_batch_size
         # initialize the actor model engines
         actor_ds_cfgs = copy.deepcopy(self.ds_train_cfgs)
-        actor_total_training_steps = self.total_training_steps
+        actor_total_training_steps = self.total_update_steps
         if self.use_ptx:
             actor_ds_cfgs['train_batch_size'] *= 2
             actor_ds_cfgs['gradient_accumulation_steps'] *= 2
@@ -247,7 +252,7 @@ class RLTrainerBase:
             lr=self.cfgs.train_cfgs.critic_lr,
             lr_scheduler_type=self.cfgs.train_cfgs.critic_lr_scheduler_type,
             lr_warmup_ratio=self.cfgs.train_cfgs.critic_lr_warmup_ratio,
-            total_training_steps=self.total_training_steps,
+            total_training_steps=self.total_update_steps,
             ds_cfgs=self.ds_train_cfgs,
         )
         if (
