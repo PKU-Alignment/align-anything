@@ -17,15 +17,15 @@
 
 
 ACTOR_MODEL_NAME_OR_PATH="Qwen2.5-VL/Qwen2.5-VL-3B-Instruct" # model path
-REWARD_MODEL_NAME_OR_PATH="../outputs/qwen_2_5_vl_rm/slice_end" # model path
-CRITIC_MODEL_NAME_OR_PATH="../outputs/qwen_2_5_vl_rm/slice_end" # model path
+REWARD_MODEL_NAME_OR_PATH="../outputs/qwen_2_5_vl_rm" # model path
+CRITIC_MODEL_NAME_OR_PATH="../outputs/qwen_2_5_vl_rm" # model path
 
 TRAIN_DATASETS="" # dataset path
 TRAIN_TEMPLATE="" # dataset template
 TRAIN_NAME="" # dataset name
 TRAIN_SPLIT="" # split the dataset
 
-OUTPUT_DIR="../outputs/qwen_2_5_vl_multi_ppo/reinforce" # output dir
+OUTPUT_DIR="../outputs/qwen_2_5_vl_multi_ppo" # output dir
 
 # For wandb online logging
 export WANDB_API_KEY=""
