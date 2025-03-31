@@ -31,14 +31,14 @@ classifiers = [
 ]
 
 dependencies = [
-    "torch >= 1.13",
-    "transformers",
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "transformers >= 4.50.0",
     "datasets",
     "tokenizers >= 0.13.3",
     "accelerate",
     "deepspeed",
-    "numpy",
-    "scipy",
     "wandb",
     "tensorboard",
     "tqdm",
@@ -49,14 +49,11 @@ dependencies = [
     "uvicorn",
     "librosa",
     "soundfile",
-    "torchaudio",
-    "torchvision",
 ]
 
 dynamic = ["version"]
 
 [project.optional-dependencies]
-# Update dependencies in `all` if any are added or removed
 
 minicpmv = ["timm==1.0.11", "transformers==4.40.0"]
 

@@ -158,11 +158,12 @@ export CUDA_HOME="/usr/local/cuda"
 Finally, install `align-anything` by:
 
 ```bash
-# We prepare quick installation for training and evaluation.
-# If you only need to use the training or evaluation module,
-# you can install the corresponding dependencies.
-pip install -e .
+pip3 install -e .
+
+pip3 install vllm==0.7.2 # to run ppo on vllm engine
 ```
+
+If you encounter any issues, please refer to the [FAQ](https://github.com/PKU-Alignment/align-anything/discussions/167) for solutions.
 
 <details>
 <summary>Other Dependencies</summary>

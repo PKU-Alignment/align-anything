@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import argparse
 import base64
-import glob
 import json
 import math
 import os
@@ -44,18 +43,6 @@ from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, Trun
 from transformers.utils.import_utils import requires_backends
 
 from align_anything.utils.device_utils import manual_seed_all
-from align_anything.utils.multi_process import print_on_main_process
-
-
-try:
-    import yt_dlp
-    from moviepy.editor import AudioFileClip
-except ImportError:
-    print_on_main_process(
-        """The moviepy and yt_dlp are not installed, which are required for evaluation.
-        You can ignore this warning if you are not using the evaluation module.
-        or install them by `pip install -e .[evaluate]`."""
-    )
 
 
 def convert_to_rgb(image: ImageInput) -> ImageInput:
@@ -517,20 +504,6 @@ def remove_pad_tokens(response: list[int], pad_token_id: int) -> list[int]:
     return [token for token in response if token != pad_token_id]
 
 
-def download_video(url, video_path):
-    ydl_opts = {
-        'format': 'best',
-        'outtmpl': video_path,
-    }
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        return True
-    except yt_dlp.utils.DownloadError as e:
-        print(f'Error downloading {url}: {e}')
-        return False
-
-
 def save_raw_outputs(raw_outputs, raw_outputs_dir):
     with open(raw_outputs_dir, 'wb') as f:
         pickle.dump(raw_outputs, f)
@@ -540,42 +513,6 @@ def load_raw_outputs(raw_outputs_dir):
     with open(raw_outputs_dir, 'rb') as f:
         inference_output = pickle.load(f)
     return inference_output
-
-
-def download_audio(youtube_id, start_time, audiocap_id, output_dir):
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': os.path.join(output_dir, f'{audiocap_id}.webm'),
-        'noplaylist': True,
-    }
-
-    youtube_url = f'https://www.youtube.com/watch?v={youtube_id}'
-
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([youtube_url])
-    except yt_dlp.utils.DownloadError as e:
-        print(f'Download failed for {youtube_url}. Error: {e}')
-        return None, f'Download failed for {youtube_url}. Error: {e}'
-
-    audio_path = os.path.join(output_dir, f'{audiocap_id}.webm')
-
-    try:
-        audio_clip = AudioFileClip(audio_path)
-        end_time = audio_clip.duration
-        start_time_sec = float(start_time)
-        audio_segment = audio_clip.subclip(start_time_sec, min(end_time, start_time_sec + 10))
-
-        output_audio_path = os.path.join(output_dir, f'{audiocap_id}.mp3')
-        audio_segment.write_audiofile(output_audio_path)
-
-        os.remove(audio_path)
-        if output_audio_path.endswith('.mp3') and os.path.isfile(output_audio_path):
-            return output_audio_path, ''
-        return None, '.webm file cannot be saved.'
-    except Exception as e:
-        print(f'Error processing audio for {audiocap_id}. Error: {e}')
-        return None, f'Error processing audio for {audiocap_id}. Error: {e}'
 
 
 def image_crop(input_folder):
@@ -650,45 +587,6 @@ def smart_nframes(ele: dict, total_frames: int, video_fps: int | float):
     return nframes
 
 
-def read_video(ele: dict, task_idx):
-    import decord
-
-    video_path = ele['video']
-    vr = decord.VideoReader(video_path)
-    total_frames, video_fps = len(vr), vr.get_avg_fps()
-    nframes = smart_nframes(ele, total_frames=total_frames, video_fps=video_fps)
-    nframes = min(task_idx, nframes)
-    idx = torch.linspace(0, total_frames - 1, nframes).round().long().tolist()
-    video = vr.get_batch(idx).asnumpy()
-    video = torch.tensor(video).permute(0, 3, 1, 2)
-    return video
-
-
-def fetch_video(ele: dict, task_idx, image_factor: int = 28):
-    video = read_video(ele, task_idx)
-    nframes, _, height, width = video.shape
-
-    min_pixels = ele.get('min_pixels', 128 * 28 * 28)
-    total_pixels = ele.get('total_pixels', 24576 * 28 * 28)
-    max_pixels = max(min(768 * 28 * 28, total_pixels / nframes * 2), int(min_pixels * 1.05))
-    max_pixels = ele.get('max_pixels', max_pixels)
-    if 'resized_height' in ele and 'resized_width' in ele:
-        resized_height, resized_width = smart_resize(
-            ele['resized_height'], ele['resized_width'], factor=image_factor
-        )
-    else:
-        resized_height, resized_width = smart_resize(
-            height, width, factor=image_factor, min_pixels=min_pixels, max_pixels=max_pixels
-        )
-    video = transforms.functional.resize(
-        video,
-        [resized_height, resized_width],
-        interpolation=InterpolationMode.BICUBIC,
-        antialias=True,
-    ).float()
-    return video
-
-
 def extract_vision_info(conversations: list[dict] | list[list[dict]]):
     vision_infos = []
     if isinstance(conversations[0], dict):
@@ -700,17 +598,6 @@ def extract_vision_info(conversations: list[dict] | list[list[dict]]):
                     if 'video' in ele or ele['type'] in ('video'):
                         vision_infos.append(ele)
     return vision_infos
-
-
-def process_vision(conversations: list[dict] | list[list[dict]], task_idx):
-    vision_infos = extract_vision_info(conversations)
-    video_inputs = []
-    for vision_info in vision_infos:
-        if 'video' in vision_info:
-            video_inputs.append(fetch_video(vision_info, task_idx))
-        else:
-            raise ValueError('video should in content.')
-    return video_inputs
 
 
 def ends_with_any(s, substrings):

@@ -22,7 +22,12 @@ import os
 import sys
 from typing import Any
 
-import ray
+try:
+    import ray
+    from align_anything.utils.vllm_utils.vllm_engine import create_vllm_engines
+except:
+    print("vLLM or Ray not available. Please install vLLM and Ray following our README.md")
+    exit()
 
 import deepspeed
 import torch
@@ -79,7 +84,6 @@ class PPOVLLMTrainer(PPOTrainer):
         self.prompt_only_dataloader, self.ptx_dataloader = (
             self.get_main_process_prompt_only_dataloader(PromptOnlyDataset, SupervisedDataset)
         )
-        print('rank', dist.get_rank(), 'prompt_only_dataloader', len(self.prompt_only_dataloader))
 
     def init_models(self):
         # Call the original init_models method
@@ -93,51 +97,44 @@ class PPOVLLMTrainer(PPOTrainer):
         self.use_vllm = getattr(self.vllm_config, 'use_vllm', False)
         self.first_actor_init = True
         
-        if self.use_vllm and is_main_process:
-            try:
-                import ray
-                original_cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
-                os.environ["CUDA_VISIBLE_DEVICES"] = vllm_devices
-                from align_anything.utils.vllm_utils.vllm_engine import create_vllm_engines
-                
-                # Initialize Ray if not already initialized
-                if not ray.is_initialized():
-                    ray.init(ignore_reinit_error=True)
-                
-                # Create vLLM engines
-                vllm_max_model_len = self.vllm_config.vllm_max_model_len or self.cfgs.model_cfgs.model_max_length
-                
-                self.vllm_engines = create_vllm_engines(
-                    num_engines=self.vllm_config.vllm_num_engines,
-                    tensor_parallel_size=self.vllm_config.vllm_tensor_parallel_size,
-                    pretrain=self.cfgs.model_cfgs.actor_model_name_or_path,
-                    seed=self.cfgs.train_cfgs.seed,
-                    enable_prefix_caching=self.vllm_config.vllm_enable_prefix_caching,
-                    enforce_eager=self.vllm_config.vllm_enforce_eager,
-                    max_model_len=vllm_max_model_len,
-                    num_total_actors=num_actors,
-                    gpu_memory_utilization=self.vllm_config.vllm_gpu_memory_utilization,
-                    vllm_enable_sleep=self.vllm_config.vllm_enable_sleep,
-                )
+        if is_main_process:
+            original_cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
+            os.environ["CUDA_VISIBLE_DEVICES"] = vllm_devices
+            
+            # Initialize Ray if not already initialized
+            if not ray.is_initialized():
+                ray.init(ignore_reinit_error=True)
+            
+            # Create vLLM engines
+            vllm_max_model_len = self.vllm_config.vllm_max_model_len or self.cfgs.model_cfgs.model_max_length
+            
+            self.vllm_engines = create_vllm_engines(
+                num_engines=self.vllm_config.vllm_num_engines,
+                tensor_parallel_size=self.vllm_config.vllm_tensor_parallel_size,
+                pretrain=self.cfgs.model_cfgs.actor_model_name_or_path,
+                seed=self.cfgs.train_cfgs.seed,
+                enable_prefix_caching=self.vllm_config.vllm_enable_prefix_caching,
+                enforce_eager=self.vllm_config.vllm_enforce_eager,
+                max_model_len=vllm_max_model_len,
+                num_total_actors=num_actors,
+                gpu_memory_utilization=self.vllm_config.vllm_gpu_memory_utilization,
+                vllm_enable_sleep=self.vllm_config.vllm_enable_sleep,
+            )
 
-                refs = [engine.init_process_group.remote(
-                    master_address=get_ip(),
-                    master_port=get_open_port(),
-                    rank_offset=current_rank,
-                    world_size=num_actors,
-                    group_name="vllm_group",
-                    backend="nccl",
-                    use_ray=False,
-                ) for engine in self.vllm_engines]
-                ray.get(refs)
+            refs = [engine.init_process_group.remote(
+                master_address=get_ip(),
+                master_port=get_open_port(),
+                rank_offset=current_rank,
+                world_size=num_actors,
+                group_name="vllm_group",
+                backend="nccl",
+                use_ray=False,
+            ) for engine in self.vllm_engines]
+            ray.get(refs)
 
-                if is_main_process:
-                    print(f"Initialized {len(self.vllm_engines)} vLLM engines for accelerated sampling")
-                os.environ["CUDA_VISIBLE_DEVICES"] = original_cuda_visible_devices
-            except ImportError:
-                print("vLLM or Ray not available. Falling back to standard generation.")
-                self.use_vllm = False
-                self.vllm_engines = None
+            if is_main_process:
+                print(f"Initialized {len(self.vllm_engines)} vLLM engines for accelerated sampling")
+            os.environ["CUDA_VISIBLE_DEVICES"] = original_cuda_visible_devices
         else:
             self.vllm_engines = None
 
