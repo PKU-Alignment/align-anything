@@ -24,11 +24,10 @@ import os
 import pickle
 import random
 from collections import namedtuple
-from typing import Any, List, NamedTuple, Union
+from typing import Any, NamedTuple
 
 import cv2
 import numpy as np
-import PIL.Image
 import torch
 import torch.distributed as dist
 import torch.nn as nn
@@ -44,12 +43,13 @@ from torchvision import transforms
 from torchvision.models.inception import inception_v3
 from torchvision.transforms import InterpolationMode
 from transformers import PreTrainedTokenizerBase, ProcessorMixin
+from transformers.image_utils import ImageInput
 from transformers.tokenization_utils import BatchEncoding, PaddingStrategy, TruncationStrategy
 from transformers.utils.import_utils import requires_backends
 
 from align_anything.utils.device_utils import get_current_device, manual_seed_all
 from align_anything.utils.multi_process import print_on_main_process
-from transformers.image_utils import ImageInput
+
 
 try:
     import yt_dlp
