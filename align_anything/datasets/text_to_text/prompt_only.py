@@ -107,7 +107,9 @@ class PromptOnlyDataset(Dataset):
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PromptOnlySample:
         return_dict = {}
-        raw_text, _ = self.template.format_prompt_only_sample(raw_sample, apply_chat_template=self.apply_chat_template)
+        raw_text, _ = self.template.format_prompt_only_sample(
+            raw_sample, apply_chat_template=self.apply_chat_template
+        )
         if raw_text[-1] != self.tokenizer.eos_token:
             raw_text += self.tokenizer.eos_token
         return_dict['input_ids'] = self.tokenize(raw_text)

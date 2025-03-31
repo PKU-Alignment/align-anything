@@ -86,7 +86,6 @@ class AccustomedGemma3Model(Gemma3ForConditionalGeneration):
                 input_ids, image_token_index=self.config.image_token_index
             )
 
-        # Replace image id woth PAD if the image token if OOV, to avoid index-errors
         if input_ids is not None and self.config.image_token_index >= self.vocab_size:
             special_image_mask = input_ids == self.config.image_token_index
             llm_input_ids = input_ids.clone()

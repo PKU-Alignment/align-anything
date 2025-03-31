@@ -21,27 +21,27 @@ from typing import Optional
 @dataclass
 class VLLMConfig:
     """Configuration for vLLM integration."""
-    
+
     use_vllm: bool = False
     """Whether to use vLLM for accelerated sampling."""
-    
+
     vllm_num_engines: int = 1
     """Number of vLLM engines to create."""
-    
+
     vllm_tensor_parallel_size: int = 1
     """Tensor parallel size for vLLM."""
-    
+
     vllm_enable_prefix_caching: bool = True
     """Whether to enable prefix caching in vLLM."""
-    
+
     vllm_enforce_eager: bool = True
     """Whether to enforce eager execution in vLLM."""
-    
+
     vllm_max_model_len: Optional[int] = None
     """Maximum model length for vLLM. If None, use model_max_length."""
-    
+
     vllm_gpu_memory_utilization: float = 0.9
     """GPU memory utilization for vLLM."""
-    
+
     vllm_enable_sleep: bool = False
     """Whether to enable sleep mode in vLLM."""

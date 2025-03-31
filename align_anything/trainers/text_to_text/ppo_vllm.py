@@ -22,7 +22,14 @@ import os
 import sys
 from typing import Any
 
-import ray
+
+try:
+    import ray
+
+    from align_anything.utils.vllm_utils.vllm_engine import create_vllm_engines
+except:
+    print('vLLM or Ray not available. Please install vLLM and Ray following our README.md')
+    exit()
 
 import deepspeed
 import torch
@@ -30,26 +37,18 @@ import torch.distributed as dist
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
+from vllm.utils import get_ip, get_open_port
 
 from align_anything.configs.template import ChatTemplate
 from align_anything.datasets import DummyDataset
-from align_anything.utils.multi_process import is_main_process
-
-
 from align_anything.datasets.text_to_text import (
     PromptOnlyBatch,
     PromptOnlyDataset,
     SupervisedDataset,
 )
-
 from align_anything.trainers.text_to_text.ppo import PPOTrainer
-from align_anything.utils.vllm_utils.config import VLLMConfig
-
 from align_anything.utils.device_utils import get_current_device, torch_gc, torch_set_device
-from align_anything.utils.multi_process import (
-    get_current_device,
-    is_main_process,
-)
+from align_anything.utils.multi_process import get_current_device, is_main_process
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
     dict_to_namedtuple,
@@ -58,10 +57,8 @@ from align_anything.utils.tools import (
     seed_everything,
     update_dict,
 )
-
+from align_anything.utils.vllm_utils.config import VLLMConfig
 from align_anything.utils.vllm_utils.vllm_sampling import generate_with_vllm
-
-from vllm.utils import get_ip, get_open_port
 
 
 def get_physical_gpu_id():
@@ -71,6 +68,7 @@ def get_physical_gpu_id():
     props = torch.cuda.get_device_properties(device)
     return str(props.uuid)
 
+
 class PPOVLLMTrainer(PPOTrainer):
 
     def init_datasets(self) -> None:
@@ -79,7 +77,6 @@ class PPOVLLMTrainer(PPOTrainer):
         self.prompt_only_dataloader, self.ptx_dataloader = (
             self.get_main_process_prompt_only_dataloader(PromptOnlyDataset, SupervisedDataset)
         )
-        print('rank', dist.get_rank(), 'prompt_only_dataloader', len(self.prompt_only_dataloader))
 
     def init_models(self):
         # Call the original init_models method
@@ -92,52 +89,50 @@ class PPOVLLMTrainer(PPOTrainer):
         self.vllm_config = getattr(self.cfgs, 'vllm_cfgs', VLLMConfig())
         self.use_vllm = getattr(self.vllm_config, 'use_vllm', False)
         self.first_actor_init = True
-        
-        if self.use_vllm and is_main_process:
-            try:
-                import ray
-                original_cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
-                os.environ["CUDA_VISIBLE_DEVICES"] = vllm_devices
-                from align_anything.utils.vllm_utils.vllm_engine import create_vllm_engines
-                
-                # Initialize Ray if not already initialized
-                if not ray.is_initialized():
-                    ray.init(ignore_reinit_error=True)
-                
-                # Create vLLM engines
-                vllm_max_model_len = self.vllm_config.vllm_max_model_len or self.cfgs.model_cfgs.model_max_length
-                
-                self.vllm_engines = create_vllm_engines(
-                    num_engines=self.vllm_config.vllm_num_engines,
-                    tensor_parallel_size=self.vllm_config.vllm_tensor_parallel_size,
-                    pretrain=self.cfgs.model_cfgs.actor_model_name_or_path,
-                    seed=self.cfgs.train_cfgs.seed,
-                    enable_prefix_caching=self.vllm_config.vllm_enable_prefix_caching,
-                    enforce_eager=self.vllm_config.vllm_enforce_eager,
-                    max_model_len=vllm_max_model_len,
-                    num_total_actors=num_actors,
-                    gpu_memory_utilization=self.vllm_config.vllm_gpu_memory_utilization,
-                    vllm_enable_sleep=self.vllm_config.vllm_enable_sleep,
-                )
 
-                refs = [engine.init_process_group.remote(
+        if is_main_process:
+            original_cuda_visible_devices = os.environ.get('CUDA_VISIBLE_DEVICES')
+            os.environ['CUDA_VISIBLE_DEVICES'] = vllm_devices
+
+            # Initialize Ray if not already initialized
+            if not ray.is_initialized():
+                ray.init(ignore_reinit_error=True)
+
+            # Create vLLM engines
+            vllm_max_model_len = (
+                self.vllm_config.vllm_max_model_len or self.cfgs.model_cfgs.model_max_length
+            )
+
+            self.vllm_engines = create_vllm_engines(
+                num_engines=self.vllm_config.vllm_num_engines,
+                tensor_parallel_size=self.vllm_config.vllm_tensor_parallel_size,
+                pretrain=self.cfgs.model_cfgs.actor_model_name_or_path,
+                seed=self.cfgs.train_cfgs.seed,
+                enable_prefix_caching=self.vllm_config.vllm_enable_prefix_caching,
+                enforce_eager=self.vllm_config.vllm_enforce_eager,
+                max_model_len=vllm_max_model_len,
+                num_total_actors=num_actors,
+                gpu_memory_utilization=self.vllm_config.vllm_gpu_memory_utilization,
+                vllm_enable_sleep=self.vllm_config.vllm_enable_sleep,
+            )
+
+            refs = [
+                engine.init_process_group.remote(
                     master_address=get_ip(),
                     master_port=get_open_port(),
                     rank_offset=current_rank,
                     world_size=num_actors,
-                    group_name="vllm_group",
-                    backend="nccl",
+                    group_name='vllm_group',
+                    backend='nccl',
                     use_ray=False,
-                ) for engine in self.vllm_engines]
-                ray.get(refs)
+                )
+                for engine in self.vllm_engines
+            ]
+            ray.get(refs)
 
-                if is_main_process:
-                    print(f"Initialized {len(self.vllm_engines)} vLLM engines for accelerated sampling")
-                os.environ["CUDA_VISIBLE_DEVICES"] = original_cuda_visible_devices
-            except ImportError:
-                print("vLLM or Ray not available. Falling back to standard generation.")
-                self.use_vllm = False
-                self.vllm_engines = None
+            if is_main_process:
+                print(f'Initialized {len(self.vllm_engines)} vLLM engines for accelerated sampling')
+            os.environ['CUDA_VISIBLE_DEVICES'] = original_cuda_visible_devices
         else:
             self.vllm_engines = None
 
@@ -146,14 +141,14 @@ class PPOVLLMTrainer(PPOTrainer):
         actor_batch = copy.deepcopy(infer_batch)
         actor_batch['prompt_ids'] = prompt_only_batch['input_ids'].contiguous()
 
-        original_cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
+        original_cuda_visible_devices = os.environ.get('CUDA_VISIBLE_DEVICES')
         vllm_devices = os.environ.get('VLLM_DEVICES')
-        os.environ["CUDA_VISIBLE_DEVICES"] = vllm_devices
-        
+        os.environ['CUDA_VISIBLE_DEVICES'] = vllm_devices
+
         # Extract prompts from the batch
         input_ids = infer_batch.get('input_ids')
         batch_attention_mask = infer_batch.get('attention_mask')
-        
+
         # Decode prompts
         prompts = []
         for i in range(input_ids.size(0)):
@@ -176,15 +171,15 @@ class PPOVLLMTrainer(PPOTrainer):
             min_new_tokens=1,
             skip_special_tokens=False,
         )
-        
-        print(f"Successfully generated with vLLM on main process")
-        os.environ["CUDA_VISIBLE_DEVICES"] = original_cuda_visible_devices
+
+        print(f'Successfully generated with vLLM on main process')
+        os.environ['CUDA_VISIBLE_DEVICES'] = original_cuda_visible_devices
         self.first_actor_init = False
-        
+
         # Update actor batch with the broadcast results
         actor_batch['input_ids'] = sequences
         actor_batch['attention_mask'] = attention_mask
-        
+
         return actor_batch
 
     def get_main_process_prompt_only_dataloader(
@@ -230,7 +225,9 @@ class PPOVLLMTrainer(PPOTrainer):
         torch.cuda.synchronize()
 
         # Broadcast the dataset length to all processes
-        dataset_length_tensor = torch.tensor([dataset_length], dtype=torch.int64, device=get_current_device())
+        dataset_length_tensor = torch.tensor(
+            [dataset_length], dtype=torch.int64, device=get_current_device()
+        )
         dist.broadcast(dataset_length_tensor, src=0)
         dataset_length = dataset_length_tensor.item()
         if not is_main_process():
@@ -268,9 +265,7 @@ class PPOVLLMTrainer(PPOTrainer):
         else:
             ptx_dataloader = DataLoader(DummyDataset(len(train_dataloader)))
 
-
         return train_dataloader, ptx_dataloader
-
 
     @torch.no_grad()
     def rollout(self, actor_batch: PromptOnlyBatch) -> list[dict[str, Any]]:
@@ -282,11 +277,13 @@ class PPOVLLMTrainer(PPOTrainer):
         micro_inference_batches = []
         micro_training_batches = []
         mini_batch = {}
-        for i in tqdm(range(0, total_batch_size, micro_batch_size), desc='Scoring batches and generating logprobs...', disable=not is_main_process()):
+        for i in tqdm(
+            range(0, total_batch_size, micro_batch_size),
+            desc='Scoring batches and generating logprobs...',
+            disable=not is_main_process(),
+        ):
 
-            mini_batch = {
-                key: actor_batch[key][i : i + micro_batch_size] for key in actor_batch
-            }
+            mini_batch = {key: actor_batch[key][i : i + micro_batch_size] for key in actor_batch}
             # reward model and reward critic model scoring
             reward_batch = self.reward_model_step(mini_batch)
             # calculate the log probabilities
@@ -314,19 +311,24 @@ class PPOVLLMTrainer(PPOTrainer):
 
         return micro_inference_batches, micro_training_batches
 
-
-    def broadcast_batch(self, batch: dict[str, torch.Tensor], keys: list[str], dtypes: list[torch.dtype]) -> None:
+    def broadcast_batch(
+        self, batch: dict[str, torch.Tensor], keys: list[str], dtypes: list[torch.dtype]
+    ) -> None:
         """Broadcast the batch to all processes."""
         for i, key in enumerate(keys):
             if is_main_process():
-                tensor_shape = torch.tensor(batch[key].shape, dtype=torch.long, device=get_current_device())
+                tensor_shape = torch.tensor(
+                    batch[key].shape, dtype=torch.long, device=get_current_device()
+                )
             else:
                 tensor_shape = torch.zeros(2, dtype=torch.long, device=get_current_device())
 
             dist.broadcast(tensor_shape, src=0)
 
             if not is_main_process():
-                batch[key] = torch.zeros(tensor_shape.tolist(), dtype=dtypes[i], device=get_current_device())
+                batch[key] = torch.zeros(
+                    tensor_shape.tolist(), dtype=dtypes[i], device=get_current_device()
+                )
 
             dist.broadcast(batch[key], src=0)
 
@@ -336,12 +338,16 @@ class PPOVLLMTrainer(PPOTrainer):
         model = self.actor_model.module
         count, num_params = 0, len(list(model.named_parameters()))
         if is_main_process():
-            print(f"Updating vLLM engines...")
+            print(f'Updating vLLM engines...')
         for name, param in model.named_parameters():
             count += 1  # empty_cache at last param
             # Fire all vllm engines for broadcast
             if is_main_process():
-                shape = param.shape if self.ds_train_cfgs['zero_optimization']['stage'] == 3 else param.ds_shape
+                shape = (
+                    param.shape
+                    if self.ds_train_cfgs['zero_optimization']['stage'] == 3
+                    else param.ds_shape
+                )
                 refs = [
                     engine.update_weight.remote(
                         name, dtype=param.dtype, shape=shape, empty_cache=count == num_params
@@ -351,12 +357,12 @@ class PPOVLLMTrainer(PPOTrainer):
                 ray.get(refs)
 
         if is_main_process():
-            print(f"Updated vLLM engines for generating next batch.")
+            print(f'Updated vLLM engines for generating next batch.')
 
         torch_gc()
         torch.distributed.barrier()
         torch.cuda.synchronize()
-        
+
     def train(self) -> None:
         """Train the model."""
         self.logger.print('***** Running training *****')
@@ -372,7 +378,9 @@ class PPOVLLMTrainer(PPOTrainer):
             self.logger.print('\n***** Evaluating at the beginning *****')
             self.eval()
 
-        num_prompt_only_batches = len(self.prompt_only_dataloader) * self.cfgs.train_cfgs.per_device_prompt_batch_size
+        num_prompt_only_batches = (
+            len(self.prompt_only_dataloader) * self.cfgs.train_cfgs.per_device_prompt_batch_size
+        )
         num_ptx_batches = len(self.ptx_dataloader)
         num_ptx_replicas = (num_prompt_only_batches + num_ptx_batches - 1) // num_ptx_batches
 
@@ -383,25 +391,21 @@ class PPOVLLMTrainer(PPOTrainer):
                 itertools.chain.from_iterable([self.ptx_dataloader] * num_ptx_replicas),
             ):
                 self.set_train(mode=False)
-                
+
                 if is_main_process():
                     actor_batch = self.actor_step(prompt_only_batch)
                     print('Actor batch has been generated')
                 else:
-                    actor_batch = {
-                        'prompt_ids': None,
-                        'input_ids': None,
-                        'attention_mask': None
-                    }
-                
+                    actor_batch = {'prompt_ids': None, 'input_ids': None, 'attention_mask': None}
+
                 if dist.is_initialized():
-                    
+
                     self.broadcast_batch(
-                        actor_batch, 
-                        ['prompt_ids', 'input_ids', 'attention_mask'], 
-                        [torch.long, torch.long, torch.bool]
+                        actor_batch,
+                        ['prompt_ids', 'input_ids', 'attention_mask'],
+                        [torch.long, torch.long, torch.bool],
                     )
-                
+
                 dist.barrier()
                 torch.cuda.synchronize()
                 torch_gc()
@@ -412,7 +416,11 @@ class PPOVLLMTrainer(PPOTrainer):
                     ptx_batches = [None for _ in range(len(inference_batches))]
 
                 for _ in range(self.cfgs.train_cfgs.update_iters):
-                    for idx in tqdm(range(len(inference_batches)), desc='Updating PPO with the scored batches...', disable=not is_main_process()):
+                    for idx in tqdm(
+                        range(len(inference_batches)),
+                        desc='Updating PPO with the scored batches...',
+                        disable=not is_main_process(),
+                    ):
                         inference_batch = inference_batches[idx]
                         training_batch = training_batches[idx]
                         ptx_batch = ptx_batches[idx]
@@ -427,7 +435,9 @@ class PPOVLLMTrainer(PPOTrainer):
                         # update the actor model weights for generating next batch
                         self.logger.log(rl_info, step=self.global_step)
 
-                        save_interval = self.total_update_steps // self.cfgs.logger_cfgs.save_total_limit
+                        save_interval = (
+                            self.total_update_steps // self.cfgs.logger_cfgs.save_total_limit
+                        )
                         self.global_step += 1
                         if self.global_step % save_interval == 0:
                             self.logger.print(f'Saving checkpoint at step {self.global_step} ...')
@@ -440,6 +450,7 @@ class PPOVLLMTrainer(PPOTrainer):
                     f'(reward {rl_info["train/reward"]:.4f})',
                 )
                 progress_bar.update(1)
+
 
 def main():
     # setup distribution training

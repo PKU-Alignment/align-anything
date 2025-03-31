@@ -370,36 +370,3 @@ class BaseConfig(ExperimentConfig, ABC):
                 devices=devices,
                 deterministic_cudnn=deterministic_cudnn,
             )
-
-
-if __name__ == '__main__':
-    MAX_HOUSES = 10
-    MAX_TASK_SPECS = 1000
-    houses = LazyJsonHouses.from_dir(
-        OBJAVERSE_HOUSES_DIR,
-        subset='val',
-        max_houses=MAX_HOUSES,
-    )
-    task_specs = LazyJsonTaskSpecs.from_dir(
-        '/root/data/ObjectNavType_Poliformer',
-        subset='val',
-        max_task_specs=MAX_TASK_SPECS,
-    )
-
-    sampler_args = task_sampler_args_builder(
-        mode='val',
-        task_specs=task_specs,
-        houses=houses,
-        process_ind=0,
-        total_processes=1,
-        on_server=True,
-        sensors=[],
-        action_names=ALL_STRETCH_ACTIONS,
-        max_steps=10,
-        devices=[0],
-        max_houses=MAX_HOUSES,
-    )
-
-    import ipdb
-
-    ipdb.set_trace()

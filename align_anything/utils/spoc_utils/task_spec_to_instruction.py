@@ -55,9 +55,7 @@ PHYSICAL_ENTITY_SYNSET = wn.synset('physical_entity.n.01')
 #     revision="objaverse-annotation-plus",
 #     which_dataset="synset_to_best_lemma",
 # )["train"].data
-SYNSET_TO_BEST_LEMMA = json.load(
-    open('align_anything/utils/spoc_utils/synset_to_best_lemma.json')
-)
+SYNSET_TO_BEST_LEMMA = json.load(open('align_anything/utils/spoc_utils/synset_to_best_lemma.json'))
 
 _CACHED_LEMMAS = None
 

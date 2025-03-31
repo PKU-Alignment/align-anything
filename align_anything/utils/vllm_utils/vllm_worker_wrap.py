@@ -14,11 +14,13 @@
 # ==============================================================================
 """vLLM worker wrapper for model weight updates."""
 
+import logging
+
 import torch
-from vllm.worker.worker import Worker
 from vllm.distributed.device_communicators.pynccl import PyNcclCommunicator
 from vllm.distributed.utils import StatelessProcessGroup
-import logging
+from vllm.worker.worker import Worker
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,17 +36,28 @@ class WorkerWrap(Worker):
     """Worker wrapper for vLLM."""
 
     def init_process_group(
-        self, master_address, master_port, rank_offset, world_size, group_name, backend="nccl", use_ray=False
+        self,
+        master_address,
+        master_port,
+        rank_offset,
+        world_size,
+        group_name,
+        backend='nccl',
+        use_ray=False,
     ):
         """Init torch process group for model weights update"""
-        assert torch.distributed.is_initialized(), f"default torch process group must be initialized"
-        assert group_name != "", f"group name must not be empty"
+        assert (
+            torch.distributed.is_initialized()
+        ), f'default torch process group must be initialized'
+        assert group_name != '', f'group name must not be empty'
 
         rank = torch.distributed.get_rank() + rank_offset
         if use_ray:
             import ray.util.collective as collective
 
-            collective.init_collective_group(world_size=world_size, rank=rank, backend=backend, group_name=group_name)
+            collective.init_collective_group(
+                world_size=world_size, rank=rank, backend=backend, group_name=group_name
+            )
             self._model_update_group = group_name
         else:
             self._model_update_group = self._init_process_group(
@@ -55,8 +68,8 @@ class WorkerWrap(Worker):
             )
         self._model_update_with_ray = use_ray
         logger.info(
-            f"init_process_group: master_address={master_address}, master_port={master_port}, "
-            f"rank={rank}, world_size={world_size}, group_name={group_name}"
+            f'init_process_group: master_address={master_address}, master_port={master_port}, '
+            f'rank={rank}, world_size={world_size}, group_name={group_name}'
         )
 
     def _init_process_group(self, master_address, master_port, world_size, rank):
@@ -74,10 +87,12 @@ class WorkerWrap(Worker):
     def update_weight(self, name, dtype, shape, empty_cache=False):
         """Broadcast weight to all vllm workers from source rank 0 (actor model)"""
         if torch.distributed.get_rank() == 0:
-            logger.info(f"update weight: {name}, dtype: {dtype}, shape: {shape}")
+            logger.info(f'update weight: {name}, dtype: {dtype}, shape: {shape}')
 
-        assert dtype == self.model_config.dtype, f"mismatch dtype: src {dtype}, dst {self.model_config.dtype}"
-        weight = torch.empty(shape, dtype=dtype, device="cuda")
+        assert (
+            dtype == self.model_config.dtype
+        ), f'mismatch dtype: src {dtype}, dst {self.model_config.dtype}'
+        weight = torch.empty(shape, dtype=dtype, device='cuda')
         if self._model_update_with_ray:
             import ray.util.collective as collective
 

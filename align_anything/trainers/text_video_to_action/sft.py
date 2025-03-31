@@ -160,11 +160,6 @@ class SupervisedTrainer(SupervisedTrainerBase):
         )
 
     def forward_batch(self, batch):
-        if len(batch) == 0:
-            from align_anything.utils.spoc_utils.debug_utils import ForkedPdb
-
-            ForkedPdb().set_trace()
-
         proc_batch = self.processor.process(batch)
         with torch.amp.autocast('cuda', dtype=torch.bfloat16):
             outputs = self.model(proc_batch)

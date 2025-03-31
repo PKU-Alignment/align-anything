@@ -14,7 +14,8 @@
 # ==============================================================================
 """vLLM utilities for accelerated sampling."""
 
-from align_anything.utils.vllm_utils.vllm_engine import create_vllm_engines, batch_vllm_engine_call
+from align_anything.utils.vllm_utils.vllm_engine import batch_vllm_engine_call, create_vllm_engines
 from align_anything.utils.vllm_utils.vllm_sampling import generate_with_vllm
+
 
 __all__ = ['create_vllm_engines', 'batch_vllm_engine_call', 'generate_with_vllm']

@@ -52,7 +52,7 @@ Align-Anything aims to align any modality large models (any-to-any models), incl
 
 - **`Coming Soon`** ⚡️⚡️⚡️ We plan to separate the evaluation component from align-anything and establish eval-anything as a dedicated repository for large-scale evaluation of any-to-any models. Meanwhile, align-anything will remain focused on the post-training alignment of any-to-any models.
 
-- **[2025.03.31]** 🚀🚀🚀 We support wrapping the `actor` model with [vLLM engine](https://github.com/vllm-project/vllm) for sequence generation in `text-to-text ppo` training. It greatly accelerates the ppo training process. Our results show that with vLLM engine, it only takes 22 minutes to finish ppo, while the baseline case needs ~150 minutes. 
+- **[2025.03.31]** 🚀🚀🚀 We support wrapping the `actor` model with [vLLM engine](https://github.com/vllm-project/vllm) for sequence generation in `text-to-text ppo` training. It greatly accelerates the ppo training process. Our results show that with vLLM engine, it only takes 22 minutes to finish ppo, while the baseline case needs ~150 minutes.
 
     > 😊 Our implementation is encouraged by [OpenRLHF](https://github.com/OpenRLHF/OpenRLHF), which is a great project for RLHF training.
 
@@ -158,15 +158,12 @@ export CUDA_HOME="/usr/local/cuda"
 Finally, install `align-anything` by:
 
 ```bash
-# We prepare quick installation for training and evaluation.
-# If you only need to use the training or evaluation module,
-# you can install the corresponding dependencies.
-pip install -e .[train] # install the training dependencies
-pip install -e .[evaluate] # install the evaluation dependencies
+pip3 install -e .
 
-# If you need to install all dependencies, you can use the following command:
-pip install -e .[all]
+pip3 install vllm==0.7.2 # to run ppo on vllm engine
 ```
+
+If you encounter any issues, please refer to the [FAQ](https://github.com/PKU-Alignment/align-anything/discussions/167) for solutions.
 
 <details>
 <summary>Other Dependencies</summary>
@@ -248,17 +245,6 @@ bash llava/llava_dpo.sh
 >
 > This script is pre-configured with suitable Slurm parameters. You only need to adjust the settings (such as the `job name`, `partition`, `account`, `path` and `resource allocations`) to match your cluster configuration.
 
-### Evaluation
-
-After training, you can evaluate the model by running the `scripts/evaluation/llava_eval.sh` script.
-
-```bash
-cd scripts
-bash evaluation/llava_eval.sh
-```
-
-You can simply modify the parameters in the script to suit your needs, _e.g._, the `MODEL_NAME_OR_PATH` for your own model or `TRAIN_DATASETS` for your own dataset. For more details please refer to the [Advanced Usage](#advanced-usage) section.
-
 ## Algorithms
 
 We support basic alignment algorithms for different modalities, each of which may involve additional algorithms. For instance, in the text modality, we have also implemented SimPO, KTO, and others.
@@ -274,189 +260,6 @@ We support basic alignment algorithms for different modalities, each of which ma
 | `Text -> Video (t2v)`              | ✔️  | ⚒️  | ✔️  | ⚒️  |
 | `Text -> Audio (t2a)`              | ✔️  | ⚒️  | ✔️  | ⚒️  |
 | `Text+Video -> Action (tv2act)`    | ✔️  | ⚒️  | ⚒️  | ⚒️  |
-
-## Evaluation
-
-We support evaluation datasets for `Text -> Text`, `Text+Image -> Text` and `Text -> Image`.
-
-| Modality | Supported Benchmarks                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `t2t`    | [ARC](https://huggingface.co/datasets/allenai/ai2_arc), [BBH](https://huggingface.co/datasets/lukaemon/bbh), [Belebele](https://huggingface.co/datasets/facebook/belebele), [CMMLU](https://huggingface.co/datasets/haonan-li/cmmlu), [GSM8K](https://huggingface.co/datasets/openai/gsm8k), [HumanEval](https://huggingface.co/datasets/openai/openai_humaneval), [MMLU](https://huggingface.co/datasets/cais/mmlu), [MMLU-Pro](https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro), [MT-Bench](https://huggingface.co/datasets/HuggingFaceH4/mt_bench_prompts), [PAWS-X](https://huggingface.co/datasets/google-research-datasets/paws-x), [RACE](https://huggingface.co/datasets/ehovy/race), [TruthfulQA ](https://huggingface.co/datasets/truthfulqa/truthful_qa)                                                                                                                                                                                                                              |
-| `ti2t`   | [A-OKVQA](https://huggingface.co/datasets/HuggingFaceM4/A-OKVQA), [LLaVA-Bench(COCO)](https://huggingface.co/datasets/lmms-lab/llava-bench-coco), [LLaVA-Bench(wild)](https://huggingface.co/datasets/lmms-lab/llava-bench-in-the-wild), [MathVista](https://huggingface.co/datasets/AI4Math/MathVista), [MM-SafetyBench](https://huggingface.co/datasets/PKU-Alignment/MM-SafetyBench), [MMBench](https://huggingface.co/datasets/lmms-lab/MMBench), [MME](https://huggingface.co/datasets/lmms-lab/MME), [MMMU](https://huggingface.co/datasets/MMMU/MMMU), [MMStar](https://huggingface.co/datasets/Lin-Chen/MMStar), [MMVet](https://huggingface.co/datasets/lmms-lab/MMVet), [POPE](https://huggingface.co/datasets/lmms-lab/POPE), [ScienceQA](https://huggingface.co/datasets/derek-thomas/ScienceQA), [SPA-VL](https://huggingface.co/datasets/sqrti/SPA-VL), [TextVQA](https://huggingface.co/datasets/lmms-lab/textvqa), [VizWizVQA](https://huggingface.co/datasets/lmms-lab/VizWiz-VQA) |
-| `tv2t`   | [MVBench](https://huggingface.co/datasets/OpenGVLab/MVBench), [Video-MME](https://huggingface.co/datasets/lmms-lab/Video-MME)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `ta2t`   | [AIR-Bench](https://huggingface.co/datasets/qyang1021/AIR-Bench-Dataset)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `t2i`    | [ImageReward](https://huggingface.co/datasets/THUDM/ImageRewardDB), [HPSv2](https://huggingface.co/datasets/zhwang/HPDv2), [COCO-30k(FID)](https://huggingface.co/datasets/sayakpaul/coco-30-val-2014)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `t2v`    | [ChronoMagic-Bench](https://huggingface.co/datasets/BestWishYsh/ChronoMagic-Bench)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `t2a`    | [AudioCaps(FAD)](https://huggingface.co/datasets/AudioLLMs/audiocaps_test)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `tv2act` | ⚒️                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-
-- ⚒️ : coming soon.
-
-## Wandb Logger
-
-We support `wandb` logging. By default, it is set to offline. If you need to view wandb logs online, you can specify the environment variables of `WANDB_API_KEY` before starting the training:
-
-```bash
-export WANDB_API_KEY="..."  # your W&B API key here
-```
-
-## Advanced Usage
-
-### Training
-
-**Q (Training Model Registration):** What models are supported for training? What should I pay attention to if I want to use my own model?
-
-_A:_ The models registration of align-anything is 2 folds:
-
-1. The model has been manually supported by the align-anything team, they are:
-
-| Modality                   | Models                                                                                                                                                                                                                                                                                                                                                                        |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Text -> Text`             | [meta-llama/Llama-3.1-8B-Instruct series](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct) (Llama3, Llama2 is also supported)                                                                                                                                                                                                                                         |
-| `Text+Image -> Text`       | [LLaVA series](https://huggingface.co/collections/llava-hf/llava-15-65f762d5b6941db5c2ba07e0), [LLaVA-Next series](https://huggingface.co/collections/llava-hf/llava-next-65f75c4afac77fd37dbbe6cf), [openbmb/MiniCPM-V](https://huggingface.co/openbmb/MiniCPM-V/tree/main) and [LLaMA-3.2-Vision-Instruct](https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct) |
-| `Text+Image -> Text+Image` | [facebook/chameleon-7b](https://huggingface.co/facebook/chameleon-7b) |
-| `Text+Audio -> Text`       | [Qwen/Qwen2-Audio-7B-Instruct](https://huggingface.co/Qwen/Qwen2-Audio-7B-Instruct) |
-| `Text+Video -> Text`       | [Qwen/Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct) |
-| `Text -> Image`            | [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) |
-| `Text -> Video`            | [ali-vilab/text-to-video-ms-1.7b](https://huggingface.co/ali-vilab/text-to-video-ms-1.7b) |
-| `Text -> Audio`            | [cvssp/audioldm-s-full-v2](https://huggingface.co/cvssp/audioldm-s-full-v2) |
-| `Text+Video -> Action`     | [SPOC](https://spoc-robot.github.io/) |
-
-Besides, you can also use your own model for training, you can refer to the here (sorry, corresponding docs will be uploaded later) for the model registration.
-
-**Q (Training Dataset Registration):** What datasets are supported for training? What should I pay attention to if I want to use my own dataset?
-
-_A:_ We prepare `datasets_formatter` for dataset registration. Its core function is to mapping the dataset key to conversation format.
-
-Basically, we support 3 types of dataset format:
-
-| Type                        | Description                                                                       |
-| --------------------------- | --------------------------------------------------------------------------------- |
-| `format_supervised_sample`  | Mapping the dataset to the supervised training format (For SFT).                  |
-| `format_preference_sample`  | Mapping the dataset to the preference training format (For RM, DPO, KTO, _etc._). |
-| `format_prompt_only_sample` | Mapping the dataset to the unique prompt only training format (For PPO).          |
-
-We introduce the following example below, and you can refer to [here](./align_anything/configs/format_dataset.py) for more details.
-
-- `format_supervised_sample`:
-
-<details>
-<summary>Click to expand</summary>
-
-```python
-@register_template('Alpaca')
-class Alpaca(BaseFormatter):
-
-    def format_supervised_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], dict]:
-        prompt = ' '.join((raw_sample['instruction'], raw_sample['input']))
-        response = raw_sample['output']
-        return [
-            {"role": "user", "content": prompt},
-            {"role": "assistant", "content": response},
-        ], {}
-```
-
-</details>
-
-- `format_preference_sample`:
-
-<details>
-<summary>Click to expand</summary>
-
-```python
-@register_template('AA_TI2T')
-class AA_TI2T(BaseFormatter):
-    system_prompt: str = ""
-
-    def format_preference_sample(self, raw_sample: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
-        better_id = int(raw_sample['overall_response'])
-        worse_id = 2 if better_id==1 else 1
-
-        if better_id not in [1, 2] or worse_id not in [1, 2]:
-            return [], [], {}
-
-        raw_better_response = raw_sample[f'response_{better_id}']
-        raw_worse_response = raw_sample[f'response_{worse_id}']
-        prompt = raw_sample['question']
-        image = raw_sample['image'].convert('RGBA')
-        better_conversation = [
-            {'role': 'user', 'content': [
-                    {'type': 'image'},
-                    {'type': 'text', 'text': prompt},
-                ]
-            },
-            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_better_response}]},
-        ]
-        worse_conversation = [
-            {'role': 'user', 'content': [
-                    {'type': 'image'},
-                    {'type': 'text', 'text': prompt},
-                ]
-            },
-            {'role': 'assistant', 'content': [{'type': 'text', 'text': raw_worse_response}]},
-        ]
-
-        meta_info = {
-            'image': image,
-            'better_response': raw_better_response,
-            'worse_response': raw_worse_response,
-        }
-
-        return better_conversation, worse_conversation, meta_info
-```
-
-</details>
-
-- `format_prompt_only_sample`:
-
-<details>
-<summary>Click to expand</summary>
-
-```python
-@register_template('AA_TA2T')
-class AA_TA2T(BaseFormatter):
-    system_prompt: str = 'You are a helpful assistant.'
-
-    def format_prompt_only_sample(self, raw_sample: dict[str, Any]) -> dict[str, Any]:
-        prompt = raw_sample['prompt']
-        audio_path = raw_sample['audio_path']
-
-        conversation = [
-            {'role': 'system', 'content': [{'type': 'text', 'text': self.system_prompt}]},
-            {'role': 'user', 'content': [
-                    {'type': 'audio', 'audio_url': audio_path},
-                    {'type': 'text', 'text': prompt},
-                ]},
-        ]
-
-        return conversation, {'audio_path': audio_path}
-```
-
-</details>
-
-### Evaluation
-
-**Q (Evaluation Model Registration):** What models are supported for evaluation? What should I pay attention to if I want to use my own model?
-
-_A:_ Register your model to use align-anything for evaluation is easy, you only need to add your model special token to the `./align_anything/configs/eval_template.py` file.
-
-For example, if you want to use [liuhaotian/llava-v1.5-7b](https://huggingface.co/liuhaotian/llava-v1.5-7b) for evaluation, you need to add the following template for it to the `./align_anything/configs/eval_template.py` file:
-
-```python
-@register_template('Llava')
-class Llava:
-    system_prompt: str = ''
-    user_prompt: str = 'USER: \n<image>{input}'
-    assistant_prompt: str = '\nASSISTANT:{output}'
-    split_token: str = 'ASSISTANT:'
-    separator: str = '###'
-```
-
-### Evaluation
-
-All evaluation scripts can be found in the `./scripts`. The `./scripts/evaluate.sh` script runs model evaluation on the benchmarks, and parameters that require user input have been left empty. The corresponding script is as follow:
-
-You can modify the configuration files for the benchmarks in [this directory](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/configs/evaluation/benchmarks) to suit specific evaluation tasks and models, and adjust inference parameters for [vLLM](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/configs/evaluation/vllm) or [DeepSpeed](https://github.com/PKU-Alignment/align-anything/tree/main/align_anything/configs/evaluation/deepspeed) based on your generation backend. For more details about the evaluation pipeline, refer to the [here](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/evaluation/README.md).
 
 ## Inference
 

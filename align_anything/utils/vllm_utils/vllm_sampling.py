@@ -14,15 +14,14 @@
 # ==============================================================================
 """vLLM sampling implementation for accelerated text generation."""
 
-import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+import logging
+from typing import List, Tuple
 
 import ray
 import torch
 import torch.distributed as dist
 from vllm import SamplingParams
-import logging
-from align_anything.utils.tools import right_padding
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +37,10 @@ def generate_with_vllm(
     max_new_tokens: int = 1024,
     min_new_tokens: int = 1,
     skip_special_tokens: bool = False,
-    **kwargs
+    **kwargs,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Generate text using vLLM.
-    
+
     Args:
         prompts: List of prompts to generate from.
         tokenizer: Tokenizer to use.
@@ -55,7 +54,7 @@ def generate_with_vllm(
         min_new_tokens: Minimum number of new tokens to generate.
         skip_special_tokens: Whether to skip special tokens.
         **kwargs: Additional arguments.
-        
+
     Returns:
         Tuple of (sequences, attention_mask, action_mask).
     """
@@ -90,9 +89,7 @@ def generate_with_vllm(
     batch_size = (len(all_prompts) + len(llms) - 1) // len(llms)
     for i, llm in enumerate(llms):
         prompts = all_prompts[i * batch_size : (i + 1) * batch_size]
-        refs.append(
-            llm.add_requests.remote(rank, sampling_params=sampling_params, prompts=prompts)
-        )
+        refs.append(llm.add_requests.remote(rank, sampling_params=sampling_params, prompts=prompts))
     ray.get(refs)
 
     # Retrieve and combine results from all outputs
@@ -106,8 +103,8 @@ def generate_with_vllm(
     max_input_len, max_output_len = 0, 0
     pad_token_id, eos_token_id = tokenizer.pad_token_id, tokenizer.eos_token_id
 
-    print('all_outputs', len(all_outputs)) # 32 1
-    
+    print('all_outputs', len(all_outputs))  # 32 1
+
     for i in range(0, len(all_outputs)):
         current_outputs = all_outputs[i]
         max_input_len = max(max_input_len, len(current_outputs.prompt_token_ids))
@@ -116,28 +113,34 @@ def generate_with_vllm(
     for i in range(0, len(all_outputs)):
         current_outputs = all_outputs[i]
         response = current_outputs.outputs[0]
-        
+
         # left padding input
         input_len = len(current_outputs.prompt_token_ids)
-        input_ids = [pad_token_id] * (max_input_len - input_len) + list(current_outputs.prompt_token_ids)
+        input_ids = [pad_token_id] * (max_input_len - input_len) + list(
+            current_outputs.prompt_token_ids
+        )
 
         # right padding output
         output_len = len(response.token_ids)
         output_ids = list(response.token_ids) + [pad_token_id] * (max_output_len - output_len)
 
         # concat input and output
-        sequences = torch.tensor(input_ids + output_ids, device="cuda").unsqueeze(0)
-        
+        sequences = torch.tensor(input_ids + output_ids, device='cuda').unsqueeze(0)
+
         # Create attention mask (1 for tokens, 0 for padding)
-        attention_mask = torch.logical_and(sequences.ne(pad_token_id), sequences.ne(eos_token_id)).long()
-        
+        attention_mask = torch.logical_and(
+            sequences.ne(pad_token_id), sequences.ne(eos_token_id)
+        ).long()
+
         all_sequences.append(sequences)
         all_attention_masks.append(attention_mask)
-        
+
     if all_sequences:
         sequences = torch.cat(all_sequences, dim=0).to(torch.long)
         attention_mask = torch.cat(all_attention_masks, dim=0).to(torch.bool)
         return sequences, attention_mask
     else:
         # Return empty tensors if no outputs
-        return torch.tensor([], device="cuda", dtype=torch.long), torch.tensor([], device="cuda", dtype=torch.bool)
+        return torch.tensor([], device='cuda', dtype=torch.long), torch.tensor(
+            [], device='cuda', dtype=torch.bool
+        )

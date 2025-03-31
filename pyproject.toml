@@ -31,15 +31,14 @@ classifiers = [
 ]
 
 dependencies = [
-    "torch >= 1.13",
-    "frechet_audio_distance",
-    "transformers",
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "transformers >= 4.50.0",
     "datasets",
     "tokenizers >= 0.13.3",
     "accelerate",
     "deepspeed",
-    "numpy",
-    "scipy",
     "wandb",
     "tensorboard",
     "tqdm",
@@ -48,126 +47,13 @@ dependencies = [
     "peft",
     "gradio",
     "uvicorn",
-    "fastapi",
     "librosa",
     "soundfile",
-    "torchaudio",
-    "torchvision",
-    "opencv-python==4.6.0.66",
 ]
 
 dynamic = ["version"]
 
 [project.optional-dependencies]
-# Update dependencies in `all` if any are added or removed
-
-train = [
-    "torch >= 1.13",
-    "frechet_audio_distance",
-    "transformers",
-    "flash-attn",
-    "datasets",
-    "tokenizers >= 0.13.3",
-    "accelerate",
-    "deepspeed",
-    "numpy",
-    "scipy",
-    "wandb",
-    "tensorboard",
-    "tqdm",
-    "rich",
-    "diffusers",
-    "peft",
-    "gradio",
-    "uvicorn",
-    "fastapi",
-    "librosa",
-    "soundfile",
-    "torchaudio",
-    "torchvision",
-    "timm",
-    "av",
-    "Levenshtein",
-    "flask",
-    "latex2sympy2_extended",
-    "math_verify"
-]
-
-evaluate = [
-    "vllm >= 0.6.2",
-    "torch >= 1.13",
-    "frechet_audio_distance",
-    "transformers",
-    "datasets",
-    "tokenizers >= 0.13.3",
-    "accelerate",
-    "deepspeed",
-    "numpy",
-    "scipy",
-    "wandb",
-    "tensorboard",
-    "tqdm",
-    "rich",
-    "diffusers",
-    "peft",
-    "gradio",
-    "uvicorn",
-    "fastapi",
-    "librosa",
-    "soundfile",
-    "torchaudio",
-    "torchvision",
-    "yt_dlp",
-    "opencv-python==4.6.0.66",
-    "moviepy",
-    "hpsv2",
-    "image-reward",
-    "clip",
-    "pytorch_fid",
-    "av",
-    "Levenshtein",
-    "flask",
-    "latex2sympy2_extended",
-    "math_verify"
-]
-
-all = [
-    "vllm >= 0.6.2",
-    "torch >= 1.13",
-    "frechet_audio_distance",
-    "transformers",
-    "datasets",
-    "tokenizers >= 0.13.3",
-    "accelerate",
-    "deepspeed",
-    "numpy",
-    "scipy",
-    "wandb",
-    "tensorboard",
-    "tqdm",
-    "rich",
-    "diffusers",
-    "peft",
-    "gradio",
-    "uvicorn",
-    "fastapi",
-    "librosa",
-    "soundfile",
-    "torchaudio",
-    "torchvision",
-    "yt_dlp",
-    "opencv-python==4.6.0.66",
-    "moviepy",
-    "hpsv2",
-    "image-reward",
-    "clip",
-    "pytorch_fid",
-    "av",
-    "Levenshtein",
-    "flask",
-    "latex2sympy2_extended",
-    "math_verify"
-]
 
 minicpmv = ["timm==1.0.11", "transformers==4.40.0"]
 
@@ -232,7 +118,7 @@ max-line-length = 500
 
 [tool.codespell]
 ignore-words = "docs/source/spelling_wordlist.txt"
-skip = "*.json,*.jsonl"
+skip = "*.json,*.jsonl,*.ipynb"
 
 [tool.ruff]
 # Sync with requires-python

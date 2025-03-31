@@ -202,7 +202,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
         for batch_idx in range(0, micro_batch['input_ids'].size(0)):
             micro_batch = {}
             for key, value in ptx_batch.items():
-                micro_batch[key] = value[batch_idx: batch_idx + 1, :]
+                micro_batch[key] = value[batch_idx : batch_idx + 1, :]
             micro_batches.append(micro_batch)
         return micro_batches
 
@@ -460,8 +460,7 @@ class PPOTrainer(RLTrainerBase):  # pylint: disable=too-many-instance-attributes
                         progress_bar.update(1)
 
                         save_interval = (
-                            self.total_update_steps
-                            // self.cfgs.logger_cfgs.save_total_limit
+                            self.total_update_steps // self.cfgs.logger_cfgs.save_total_limit
                         )
 
                         if self.global_step % save_interval == 0:

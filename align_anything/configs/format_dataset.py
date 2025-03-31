@@ -179,7 +179,7 @@ class BaseFormatter:
         """
         return [], {}
 
-        
+
 @register_template('Alpaca')
 class Alpaca(BaseFormatter):
 
