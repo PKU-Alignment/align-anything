@@ -1,0 +1,196 @@
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+# The training configurations
+train_cfgs:
+  # The deepspeed configuration
+  ds_cfgs: ds_z3_config.json
+  # Number of training epochs
+  epochs: 3
+  # Seed for random number generator
+  seed: 42
+  # Batch size per device for training
+  per_device_prompt_batch_size: 1
+  # Batch size per device for training
+  per_device_train_batch_size: 1
+  # Batch size per device for evauation
+  per_device_eval_batch_size: 1
+  # The number of gradient accumulation steps
+  gradient_accumulation_steps: 1
+  # Whether to use gradient checkpointing for the actor model
+  actor_gradient_checkpointing: True
+  # Whether to use gradient checkpointing for the critic model
+  critic_gradient_checkpointing: True
+  # Initial learning rate for the actor model
+  actor_lr: 1.e-5
+  # Type of learning rate scheduler for the actor model
+  actor_lr_scheduler_type: cosine
+  # Ratio of warmup steps for learning rate for the actor model
+  actor_lr_warmup_ratio: 0.03
+  # Weight decay coefficient for the actor model
+  actor_weight_decay: 0.01
+  # Initial learning rate for the critic model
+  critic_lr: 5.e-6
+  # Type of learning rate scheduler for the critic model
+  critic_lr_scheduler_type: constant
+  # Ratio of warmup steps for learning rate for the critic model
+  critic_lr_warmup_ratio: 0.03
+  # Weight decay coefficient for the critic model
+  critic_weight_decay: 0.0
+  # Hyper-parameters for adam optimizer
+  adam_betas: [0.9, 0.95]
+  # Enable bfloat 16 precision
+  bf16: True
+  # Enable float 16 precision
+  fp16: False
+  # The strategy of evaluation, choosing form [epoch, steps]
+  eval_strategy: epoch
+  # The evaluation interval in step-wise evaluation case
+  eval_interval: 10
+  # The coefficient for the KL divergence between the reference and actor policy.
+  kl_coeff: 0.02
+  # The clipping range for ratio between the old and new policy.
+  clip_range_ratio: 0.2
+  # The clipping range for the output of the score model.
+  clip_range_score: 50.0
+  # The clipping range for the value function.
+  clip_range_value: 5.0
+  # The coefficient for the ptx loss.
+  ptx_coeff: 16.0
+  # The discounted factor for advantage function
+  gamma: 1.0
+  # The hyperparameters controlling the trade-off between bias and variance of advantage function
+  gae_lambda: 0.95
+  # Whether to normalize the reward during RL training.
+  normalize_reward: False
+  # The number of repeated updates on a generated batch.
+  update_iters: 1
+# The data configurations
+data_cfgs:
+  # Datasets to use for training
+  train_datasets: null
+  # The format template for training
+  train_template: null
+  # The total number for training
+  train_size: null
+  # The split of train datasets
+  train_split: null
+  # The name of training datasets
+  train_name: null
+  # The training data files to be used
+  train_data_files: null
+  # The optional arguments for loading training datasets
+  train_optional_args: []
+  # Datasets to use for evaluation
+  eval_datasets: null
+  # The format template for evaluation
+  eval_template: null
+  # The total number for evaluation
+  eval_size: null
+  # The split of evaluation datasets
+  eval_split: null
+  # The subset of evaluation datasets
+  eval_subset: null
+  # The evaluation data files to be used
+  eval_data_files: null
+  # The optional arguments for loading training evaluation datasets
+  eval_optional_args: []
+  # Datasets to use for ptx loss
+  ptx_datasets: null
+  # The format template for ptx training
+  ptx_template: null
+  # The total number for ptx training
+  ptx_size: null
+  # The subset of datasets
+  ptx_subset: null
+  # The split of ptx datasets
+  ptx_split: null
+  # The ptx training data files to be used
+  ptx_data_files: null
+  # The optional arguments for loading ptx training datasets
+  ptx_optional_args: []
+# The logging configurations
+logger_cfgs:
+  # Type of logging to use, choosing from [wandb, tensorboard]
+  log_type: wandb
+  # Project name for logging
+  log_project: align-anything
+  # Run name for logging
+  log_run_name: ppo
+  # Output directory name
+  output_dir: null
+  # The directory to cache the downloaded model
+  cache_dir: null
+  # The interval of saving models
+  save_total_limit: 1
+# The model configurations
+model_cfgs:
+  # Pretrained model name or path for the actor model in RLHF
+  actor_model_name_or_path: null
+  # Pretrained model name or path for the reward model in RLHF
+  reward_model_name_or_path: null
+  # Pretrained model name or path for the critic model in RLHF
+  reward_critic_model_name_or_path: null
+  # The endpoint of the remote reward model
+  remote_rm_url: http://localhost:6000/get_reward
+  # The timeout for the remote reward model
+  remote_rm_timeout: 100
+  # The retry times for the remote reward model
+  remote_rm_retry_times: 3
+  # Whether to trust remote code
+  trust_remote_code: True
+  # The max token length
+  model_max_length: 18000
+  # The value used to module the next token probabilities.'
+  temperature: 1.0
+  # If set to float < 1, only the smallest set of most probable tokens with
+  # probabilities that add up to`top_p` or higher are kept for generation.
+  top_p: 1.0
+  # The parameter for repetition penalty. 1.0 means no penalty.
+  repetition_penalty: 1.0
+# The LoRA configurations
+lora_cfgs:
+  # Whether to use LoRA
+  use_lora: False
+  # Task type for LoRA configuration
+  task_type: TaskType.CAUSAL_LM
+  # Inference mode
+  inference_mode: False
+  # Rank of the low-rank adaptation matrices
+  r: 16
+  # Alpha parameter for LoRA
+  lora_alpha: 16
+  # Dropout rate for LoRA
+  lora_dropout: 0.1
+  # Target modules for applying LoRA
+  target_modules: ["q_proj", "v_proj"]
+  # Whether to save the full model
+  save_full_model: True
+# The QLoRA configurations
+bnb_cfgs:
+  # Whether to use BNB(For QLoRA)
+  use_bnb: False
+  # Whether to use 4-bit quantization
+  load_in_4bit: True
+  # Whether to use 8-bit quantization
+  load_in_8bit: False
+  # The quantization type for 4-bit quantization
+  bnb_4bit_quant_type: nf4
+  # Whether to use double quantization
+  bnb_4bit_use_double_quant: True
+  # The compute dtype for 4-bit quantization
+  bnb_4bit_compute_dtype: float16
+# Customized special tokens
+special_tokens: null

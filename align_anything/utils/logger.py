@@ -26,12 +26,12 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, TextIO
 from typing_extensions import Self  # Python 3.11+
 
 import torch.utils.tensorboard as tensorboard
-import wandb
 import yaml
 from rich.console import Console  # pylint: disable=wrong-import-order
 from rich.table import Table  # pylint: disable=wrong-import-order
 from tqdm import tqdm  # pylint: disable=wrong-import-order
 
+import wandb
 from align_anything.utils.multi_process import is_main_process, rank_zero_only
 
 

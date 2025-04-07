@@ -42,9 +42,14 @@ class ModelFormatter:
     ) -> str:
         final_text = ''
         for line in raw_sample:
-            for content in line['content']:
-                if content['type'] == 'text':
-                    final_text += line['role'].upper() + ': ' + content['text'] + '\n'
+            if isinstance(line['content'], list):
+                for content in line['content']:
+                    if content['type'] == 'text':
+                        final_text += line['role'].upper() + ': ' + content['text'] + '\n'
+            elif isinstance(line['content'], str):
+                final_text += line['role'].upper() + ': ' + line['content'] + '\n'
+            else:
+                raise ValueError(f"Unknown content type: {type(line['content'])}")
         if add_generation_prompt:
             final_text += 'ASSISTANT: '
         return final_text
