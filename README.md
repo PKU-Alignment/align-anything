@@ -53,7 +53,7 @@ Align-Anything aims to align any modality large models (any-to-any models) with 
 
 - **[Future]** ⚡️⚡️⚡️ We will integrate more cutting-edge MLLMs into our framework and develop our VLA part. Stay tuned!
 
-- **[2025.04.07]** 🥳🥳🥳 Align-Anything now serves as the homework platform for the PKU course "Large Language Models Basics and Alignment", supporting on both Nvidia GPU and Huawei Ascend NPU. The corresponding tutorial will be released soon!
+- **[2025.04.07]** 🥳🥳🥳 Align-Anything now serves as the homework platform for the PKU course [Large Language Models Basics and Alignment](https://pku-llm.ai/), supporting on both Nvidia GPU and Huawei Ascend NPU. The corresponding tutorial will be released soon!
 
 > Align-Anything目前已成为为北京大学《大模型基础与对齐》的课程作业平台，支持在Nvidia GPU和华为昇腾NPU上进行训练与评估。对应教程将持续发布！
 
