@@ -299,6 +299,7 @@ def load_pretrained_models(  # pylint: disable=too-many-arguments
 
     if processor and hasattr(processor, 'tokenizer'):
         processor.tokenizer.padding_side = padding_side
+        processor.tokenizer.model_max_length = model_max_length
         resize_tokenizer_embedding(tokenizer=processor.tokenizer, model=model)
         if hasattr(model, 'chat_template'):
             processor.chat_template = model.chat_template
