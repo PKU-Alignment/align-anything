@@ -18,7 +18,6 @@
 import argparse
 import copy
 import os
-import random
 import sys
 
 import deepspeed
@@ -43,7 +42,6 @@ from align_anything.utils.multi_process import (
     is_main_process,
 )
 from align_anything.utils.tools import (
-    batch_retokenize,
     custom_cfgs_to_dict,
     dict_to_namedtuple,
     prepare_ds_eval_cfgs,
@@ -128,7 +126,7 @@ class GRPOTrainerRemoteRM(GRPOTrainer):
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id,
         )
-        
+
         # loading remote reward models # NOTE
 
         self.remote_rm_url = self.cfgs.model_cfgs.remote_rm_url
@@ -150,7 +148,6 @@ class GRPOTrainerRemoteRM(GRPOTrainer):
             raise ValueError(
                 'You are using remote reward model for training. But remote reward model endpoint is not provided.'
             )
-
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets"""
@@ -299,13 +296,13 @@ class GRPOTrainerRemoteRM(GRPOTrainer):
         """
         Compute the rewards for the generated completions.
         """
-        
+
         prompts, responses = self.decode_prompt_responses(sequences)
         if prompts is None:
             raise ValueError('prompt is not found in the actor_batch')
         reward_tensor = self.remote_rm_client.score(prompts, responses)
         print(reward_tensor.shape)
-        
+
         return reward_tensor
 
     def train_step(self, prompt_batch: dict) -> dict[str, float]:
