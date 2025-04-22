@@ -53,6 +53,8 @@ Align-Anything aims to align any modality large models (any-to-any models) with 
 
 - **[Future]** ⚡️⚡️⚡️ We will integrate more cutting-edge MLLMs into our framework and develop our VLA part. Stay tuned!
 
+- **[2025.04.14]** 📜📜📜 We release the tutorial on SFT training for `text-image-to-text` models. Check out the [cookbook_en](./cookbooks/en/text_image_to_text_sft.ipynb) (for English) and [cookbook_zh](./cookbooks/zh/text_image_to_text_sft.ipynb) (for Chinese).
+
 - **[2025.04.07]** 🥳🥳🥳 Align-Anything now serves as the homework platform for the PKU course [Large Language Models Basics and Alignment](https://pku-llm.ai/), supporting on both Nvidia GPU and Huawei Ascend NPU. The corresponding tutorial will be released soon!
 
 > Align-Anything目前已成为北京大学本硕博课程《大模型基础与对齐》的课程作业平台，支持在Nvidia GPU和华为昇腾NPU上进行训练与评估。对应教程将持续发布！
@@ -85,21 +87,16 @@ Align-Anything aims to align any modality large models (any-to-any models) with 
 
   > 近期 align-anything 团队正在和华为昇腾团队积极联合开发，基于 VLLMs-Ascend 上的全模态推理和对齐微调。
 
-- **[2025.02.28]** 🤗🤗🤗 We open-sourced [🤗Align-DS-V](https://huggingface.co/PKU-Alignment/Align-DS-V), an experimental vision-language model based on [DeepSeek-R1-Distill-Llama-8B](https://github.com/deepseek-ai/DeepSeek-R1), which enhances reasoning by incorporating additional modalities into the language model. The model has already surpassed **18,000+** downloads!
 
-- **[2025.02.28]** We supported the alignment fine-tuning of DeepSeek’s Unified Multimodal Understanding and Generation Models, as well as the SFT and DPO of the [**Janus-Series**](https://github.com/deepseek-ai/Janus). You can find the examples in the `./scripts` and `./projects/janus` directories.
-
-- **[2025.02.19]** We supported the alignment methods **GRPO** used in DeepSeek R1. See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
-
-- **[2025.01.21]** We supported the alignment fine-tuning of **MiniCPM-o** (audio & image), also included in [the official repository’s README recommendations](https://github.com/OpenBMB/MiniCPM-o#with-align-anything-).
-
-- **[2025.01.17]** 🔥🔥🔥 We supported the fine-tuning of **O1-like reasoning in the text2text modality** (see [DollyTails](https://huggingface.co/datasets/PKU-Alignment/DollyTails-12K)), with multimodal and additional modalities coming soon!
-
-- **[2024.10.11]** We supported the alignment fine-tuning of the latest **Emu3** model.
-
-- **[2024.08.29]** 💡💡💡 We supported learning from language feedback (different from binary feedback). For more details, see [lang-feedback](https://github.com/PKU-Alignment/align-anything/tree/main/projects/lang_feedback).
 <details><summary>More News</summary>
 
+- **[2025.02.28]** 🤗🤗🤗 We open-sourced [🤗Align-DS-V](https://huggingface.co/PKU-Alignment/Align-DS-V), an experimental vision-language model based on [DeepSeek-R1-Distill-Llama-8B](https://github.com/deepseek-ai/DeepSeek-R1), which enhances reasoning by incorporating additional modalities into the language model. The model has already surpassed **18,000+** downloads!
+- **[2025.02.28]** We supported the alignment fine-tuning of DeepSeek’s Unified Multimodal Understanding and Generation Models, as well as the SFT and DPO of the [**Janus-Series**](https://github.com/deepseek-ai/Janus). You can find the examples in the `./scripts` and `./projects/janus` directories.
+- **[2025.02.19]** We supported the alignment methods **GRPO** used in DeepSeek R1. See [GRPO Trainer](https://github.com/PKU-Alignment/align-anything/blob/main/align_anything/trainers/text_to_text/grpo.py).
+- **[2025.01.21]** We supported the alignment fine-tuning of **MiniCPM-o** (audio & image), also included in [the official repository’s README recommendations](https://github.com/OpenBMB/MiniCPM-o#with-align-anything-).
+- **[2025.01.17]** 🔥🔥🔥 We supported the fine-tuning of **O1-like reasoning in the text2text modality** (see [DollyTails](https://huggingface.co/datasets/PKU-Alignment/DollyTails-12K)), with multimodal and additional modalities coming soon!
+- **[2024.10.11]** We supported the alignment fine-tuning of the latest **Emu3** model.
+- **[2024.08.29]** 💡💡💡 We supported learning from language feedback (different from binary feedback). For more details, see [lang-feedback](https://github.com/PKU-Alignment/align-anything/tree/main/projects/lang_feedback).
 - **[2024.10.10]** We support SFT for `Any -> Any` modality models Emu3.
 - **[2024.09.24]** We support SFT, DPO, RM and PPO for `Text + Video -> Text` modality models.
 - **[2024.09.13]** We support SFT, DPO, RM and PPO for `Text + Audio -> Text` modality models.
