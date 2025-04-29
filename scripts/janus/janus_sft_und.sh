@@ -13,12 +13,12 @@
 # limitations under the License.
 # ==============================================================================
 # Initialize variables
-MODEL_NAME_OR_PATH="/mnt/petrelfs/louhantao/models/Janus-1.3B"
-TRAIN_DATASETS="/mnt/petrelfs/louhantao/code/align-anything/projects/janus/example/supervised/text_image_to_text"
+MODEL_NAME_OR_PATH="deepseek-ai/Janus-1.3B"
+TRAIN_DATASETS="projects/janus/example/supervised/text_image_to_text"
 TRAIN_SPLIT="train"
 # TRAIN_DATA_FILE="train_tokenized.pt"
 OUTPUT_DIR="output/janus_sft_text_image_to_text"
-JANUS_REPO_PATH="/mnt/petrelfs/louhantao/code/Align_Anything_Janus"
+JANUS_REPO_PATH="/path/to/Align_Anything_Janus"
 
 export PYTHONPATH=$PYTHONPATH:$JANUS_REPO_PATH
 export WANDB_API_KEY=""
