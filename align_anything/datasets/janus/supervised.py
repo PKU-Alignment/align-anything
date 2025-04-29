@@ -51,6 +51,8 @@ class SupervisedBatch(TypedDict, total=True):
     attention_mask: torch.BoolTensor  # size = (B, L)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
     task: str
+    images_seq_mask: torch.BoolTensor | None  # size = (B, L)
+    images_emb_mask: torch.BoolTensor | None  # size = (B, N)
 
 
 class SupervisedDataset(Dataset):
@@ -89,25 +91,8 @@ class SupervisedDataset(Dataset):
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
         prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)
-        # print("="*10 + "prompt" + "="*10)
-        # print(prompt)
-        # print("="*10 + "conversation" + "="*10)
-        # print(conversation)
-        # print("="*10 + "meta_info" + "="*10)
-        # print(meta_info)
-        # print("="*20)
         if not ends_with_any(conversation, self.tokenizer.eos_token):
             conversation += self.tokenizer.eos_token
-
-        # # return necessary information
-        # return_dict['prompt'] = prompt
-        # return_dict['conversation'] = conversation
-        # return_dict['image'] = meta_info['image']
-
-        # # set the labels masked by the prompt
-        # return_dict['prompt_lens'] = len(
-        #     self.tokenize(prompt, add_special_tokens=False)['input_ids'][0]
-        # )
 
         # return return_dict
         full_inputs = self.processor(
@@ -124,58 +109,9 @@ class SupervisedDataset(Dataset):
         return_dict['images_seq_mask'] = full_inputs['images_seq_mask'][0]
         return_dict['images_emb_mask'] = full_inputs['images_emb_mask'][0]
         return_dict['labels'] = return_dict['input_ids'].clone()
-        # print("prompt_inputs:" + str(len(prompt_inputs['input_ids'][0])))
-        # print("full_inputs:" + str(len(full_inputs['input_ids'][0])))
         return_dict['labels'][: len(prompt_inputs['input_ids'][0])] = IGNORE_INDEX
         return_dict['task'] = 'understanding'
-        for key, value in return_dict.items():
-            if isinstance(value, torch.Tensor):
-                print(key + ":" + str(value.shape))
 
-        #     full_conversation = [
-        #         {
-        #             'role': 'User',
-        #             'content': formatted_sample['input_text'],
-        #             'images': (
-        #                 [formatted_sample['input_image']]
-        #                 if isinstance(formatted_sample['input_image'], str)
-        #                 else formatted_sample['input_image']
-        #             ),
-        #         },
-        #         {'role': 'Assistant', 'content': formatted_sample['output_text']},
-        #     ]
-
-        #     prompt_conversation = [
-        #         {
-        #             'role': 'User',
-        #             'content': formatted_sample['input_text'],
-        #             'images': (
-        #                 [formatted_sample['input_image']]
-        #                 if isinstance(formatted_sample['input_image'], str)
-        #                 else formatted_sample['input_image']
-        #             ),
-        #         },
-        #         {
-        #             'role': 'Assistant',
-        #             'content': '',
-        #         },
-        #     ]
-        #     full_inputs = self.processor(
-        #         full_conversation, formatted_sample['input_image'], return_tensors='pt'
-        #     )
-        #     prompt_inputs = self.processor(
-        #         prompt_conversation, formatted_sample['input_image'], return_tensors='pt'
-        #     )
-
-        #     return_dict = full_inputs.copy()
-        #     return_dict['labels'] = return_dict['input_ids'].clone()
-        #     return_dict['labels'][: len(prompt_inputs['input_ids'])] = IGNORE_INDEX
-        #     return_dict['task'] = 'understanding'
-        # if 'output_image' in formatted_sample and formatted_sample['output_image'] is not None:
-        #     raise NotImplementedError(
-        #         'Not implemented inside SupervisedDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
-        #     )
-        print(return_dict)
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
@@ -255,67 +191,12 @@ class SupervisedTokenizedDataset(Dataset):
 
 class SupervisedCollator:
 
-    # def __init__(self, pad_token_id: int) -> None:
-    #     """Initialize a collator."""
-    #     self.pad_token_id = pad_token_id
     def __init__(self, pad_token_id: int, processor: transformers.ProcessorMixin | transforms.Compose | None = None, padding_side: str = 'right') -> None:
         self.pad_token_id = pad_token_id
         self.processor = processor
         self.padding_side = padding_side
 
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
-
-        # return_dict = {'meta_info': {}}
-        # current_device = get_current_device()
-
-        # concated_text = [sample['conversation'] for sample in samples]
-
-        # if os.environ.get('MULTI_IMAGES_INFERENCE_MODELS') == 'Yes':
-        #     images = [[sample['image']] for sample in samples]
-        # else:
-        #     images = [sample['image'] for sample in samples]
-
-        # # FIXME: special for gemma3 processor, will be merge in next version
-        # if isinstance(self.processor, transformers.Gemma3Processor):
-        #     images = [[convert_to_rgb(img)] for img in images]
-        #     return_dict['meta_info']['images'] = images
-        # else:
-        #     return_dict['meta_info']['images'] = images
-
-        # print(concated_text)
-        # multi_modal_padding = self.processor(
-        #     images=images,
-        #     prompt=concated_text,
-        #     return_tensors='pt',
-        #     padding=True,
-        #     padding_side=self.padding_side,
-        #     return_attention_mask=True,
-        # )
-
-        # inputs_ids = multi_modal_padding['input_ids']
-        # labels = inputs_ids.clone()
-
-        # for i in range(len(samples)):
-        #     prompt_lens = samples[i]['prompt_lens']
-        #     labels[i, :prompt_lens] = IGNORE_INDEX
-
-        # return_dict.update(multi_modal_padding)
-        # return_dict['labels'] = labels
-        # for key, value in return_dict.items():
-        #     if isinstance(value, torch.Tensor):
-        #         return_dict[key] = value.to(current_device)
-        #     elif key == 'pixel_values':
-
-        #         def move_to_device(item):
-        #             if isinstance(item, list):
-        #                 return [move_to_device(sub_item) for sub_item in item]
-        #             elif isinstance(item, torch.Tensor):
-        #                 return item.to(current_device)
-        #             return item
-
-        #         return_dict[key] = move_to_device(value)
-
-        # return return_dict
 
         return_dict = {}
         current_device = get_current_device()
@@ -341,22 +222,6 @@ class SupervisedCollator:
                 [sample['pixel_values'] for sample in samples],
                 padding_value=0,
             ).to(current_device)
-            # new_samples = []
-
-            # for sample in samples:
-
-            #     sample['pixel_values'] = torch.cat(
-            #         [tensor.to(current_device) for tensor in sample['pixel_values']], dim=0
-            #     )
-
-            #     new_samples.append(sample)
-
-            # _pixel_values_list = []
-            # for sample in new_samples:
-            #     pixel_values = sample['pixel_values']  # size = (P, C, H, W)
-            #     _pixel_values_list.append(pixel_values)
-
-            # return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device)
 
         return_dict['task'] = samples[0]['task']
 
@@ -372,9 +237,4 @@ class SupervisedCollator:
                 padding_value=0,
             ).to(current_device)
 
-        # print(return_dict)
-        print("="*10 + "return_dict" + "="*10)
-        for key, value in return_dict.items():
-            if isinstance(value, torch.Tensor):
-                print(key + ":" + str(value.shape))
         return return_dict

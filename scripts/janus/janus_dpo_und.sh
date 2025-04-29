@@ -15,7 +15,7 @@
 # Initialize variables
 MODEL_NAME_OR_PATH="/mnt/petrelfs/louhantao/models/Janus-1.3B"
 TRAIN_DATASETS="/mnt/petrelfs/louhantao/code/align-anything/projects/janus/example/preference/text_to_image"
-TRAIN_DATA_FILE="train_tokenized.pt"
+TRAIN_SPLIT="train"
 OUTPUT_DIR="output/janus_dpo_text_to_image"
 JANUS_REPO_PATH="/mnt/petrelfs/louhantao/code/Align_Anything_Janus"
 
@@ -31,8 +31,8 @@ deepspeed \
     --module align_anything.trainers.janus.dpo \
     --model_name_or_path ${MODEL_NAME_OR_PATH} \
     --train_datasets ${TRAIN_DATASETS} \
-    --train_data_files ${TRAIN_DATA_FILE} \
-    --train_split train \
+    --train_split ${TRAIN_SPLIT} \
+    --train_template Janus_TI2T \
     --learning_rate 1e-6 \
     --epochs 3 \
     --lr_scheduler_type cosine \

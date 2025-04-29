@@ -426,6 +426,41 @@ class Janus_TI2T(BaseFormatter):
             },
             {'role': 'assistant', 'content': answer},
         ], {'image': image}
+    
+    def check_equal(self, raw_sample: dict[str, Any]) -> bool:
+        return raw_sample['better_response'] == raw_sample['worse_response']
+        
+    def format_preference_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+        raw_better_response = raw_sample['better_response']
+        raw_worse_response = raw_sample['worse_response']
+        prompt = raw_sample['question']
+        image = load_image(raw_sample['image']).convert('RGB')
+        
+        better_conversation = [
+            {
+                'role': 'user',
+                'content': prompt,
+            },
+            {'role': 'assistant', 'content': raw_better_response},
+        ]
+
+        worse_conversation = [
+            {
+                'role': 'user',
+                'content': prompt,
+            },
+            {'role': 'assistant', 'content': raw_worse_response},
+        ]
+
+        meta_info = {
+            'image': image,
+            'better_response': raw_better_response,
+            'worse_response': raw_worse_response,
+        }
+
+        return better_conversation, worse_conversation, meta_info
 
 @register_template('AA_TI2T')
 class AA_TI2T(BaseFormatter):

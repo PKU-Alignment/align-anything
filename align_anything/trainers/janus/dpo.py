@@ -44,8 +44,8 @@ class DPOTrainer(DPOtextTrainer):
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
-            PreferenceTokenizedDataset, PreferenceTokenizedDataset
-        )
+            PreferenceDataset, PreferenceDataset
+        ) # change to PreferenceTokenizedDataset, PreferenceTokenizedDataset in case of image input
 
     def update_configs(self, model_config, args, fields):
         cross_update = lambda a, b, field_name: (
@@ -71,22 +71,84 @@ class DPOTrainer(DPOtextTrainer):
             self.model = self.model.to(torch.bfloat16)
             self.reference_model = self.reference_model.to(torch.bfloat16)
 
-        self.processor = VLMImageProcessor.from_pretrained(
-            self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.train_cfgs.max_position_embeddings,
-            padding_side='right',
-            use_fast=False,
-        )
-        text_processor = VLChatProcessor.from_pretrained(
+        self.processor = VLChatProcessor.from_pretrained(
             self.cfgs.model_cfgs.model_name_or_path,
         )
-        self.tokenizer = text_processor.tokenizer
+        self.tokenizer = self.processor.tokenizer
+        self.tokenizer.model_max_length = self.cfgs.model_cfgs.model_max_length
+    
+    def compute_log_probs(
+        self,
+        model: MultiModalityCausalLM,
+        batch: PreferenceBatch,
+    ) -> torch.Tensor:
+        """Compute log probabilities of given sequences."""
+        logits = self.model.forward(**self.infer_batch(batch)).logits
+        device = logits.device
+        input_ids = batch['input_ids']
+        batch_size = len(batch['meta_info']['response_lens'])
+        logprob_list = []
+        for idx in range(batch_size):
+            response_length = batch['meta_info']['response_lens'][idx]
+            raw_input_id = strip_pad(input_ids[idx], self.tokenizer.pad_token_id)
+            logit = logits[idx][-response_length:].unsqueeze(0)
+            input_id = raw_input_id[-response_length:].unsqueeze(0)
+            log_p = gather_log_probabilities(logit[:, :-1], input_id[:, 1:])
+            logprob_list.append(log_p.squeeze(0))
+        return torch.nn.utils.rnn.pad_sequence(
+            logprob_list, batch_first=True, padding_value=0.0
+        ).to(device)
 
     def loss(self, batch: PreferenceBatch) -> dict[str, torch.Tensor]:
         """Loss function for preference learning."""
-        outputs = self.model.forward(**batch)
+        sequence_log_probs = self.compute_log_probs(
+            self.model.module,
+            batch,
+        )
+        (
+            better_sequence_log_probs,  # size = (B, L - 1)
+            worse_sequence_log_probs,  # size = (B, L - 1)
+        ) = sequence_log_probs.chunk(chunks=2, dim=0)
+
+        with torch.no_grad():
+            ref_sequence_log_probs = self.compute_log_probs(  # size = (2 * B, L - 1)
+                self.reference_model.module,
+                batch,
+            )
+
+        losses = []
+        better_sample_rewards = []
+        worse_sample_rewards = []
+
+        batch_size = better_sequence_log_probs.size(0)
+        for i in range(batch_size):
+            better_log_prob = better_sequence_log_probs[i, :].sum(dim=-1)
+            worse_log_prob = worse_sequence_log_probs[i, :].sum(dim=-1)
+            ref_better_log_prob = ref_better_sequence_log_probs[i, :].sum(dim=-1)
+            ref_worse_log_prob = ref_worse_sequence_log_probs[i, :].sum(dim=-1)
+            better_log_ratio = better_log_prob - ref_better_log_prob
+            worse_log_ratio = worse_log_prob - ref_worse_log_prob
+            
+            losses.append(
+                -torch.nn.functional.logsigmoid(better_log_ratio) - torch.nn.functional.logsigmoid(-worse_log_ratio)
+            )
+            better_sample_rewards.append(better_log_ratio)
+            worse_sample_rewards.append(-worse_log_ratio)
+
+        loss = torch.stack(losses).mean()
+        better_sample_reward = torch.stack(better_sample_rewards)
+        worse_sample_reward = torch.stack(worse_sample_rewards)
+        reward = better_sample_reward + worse_sample_reward
+        reward_accuracy = (better_sample_reward > worse_sample_reward).float().mean()
+        reward_margin = better_sample_reward - worse_sample_reward
+        
         return {
-            'loss': outputs.loss,
+            'loss': loss,
+            'reward': reward,
+            'better_sample_reward': better_sample_reward,
+            'worse_sample_reward': worse_sample_reward,
+            'reward_accuracy': reward_accuracy,
+            'reward_margin': reward_margin,
         }
 
 
