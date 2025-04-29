@@ -127,6 +127,10 @@ class PreferenceDataset(Dataset):
         return_dict['better_conversation'] = better_conversation
         return_dict['worse_conversation'] = worse_conversation
 
+        print(return_dict['better_conversation'])
+        print(return_dict['worse_conversation'])
+        exit()
+
         return return_dict
 
     def tokenize(
