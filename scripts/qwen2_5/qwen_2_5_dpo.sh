@@ -15,7 +15,7 @@
 # limitations under the License.
 # ==============================================================================
 
-export CUDA_VISIBLE_DEVICES=7
+
 MODEL_NAME_OR_PATH="Qwen/Qwen2.5-0.5B-Instruct" # model path
 
 TRAIN_DATASETS="../assets/text_to_text/preference" # dpo dataset path
