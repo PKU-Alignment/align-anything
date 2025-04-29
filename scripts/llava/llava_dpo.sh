@@ -43,4 +43,4 @@ deepspeed \
      --output_dir ${OUTPUT_DIR} \
      --save_total_limit 3 \
      --train_batch_size 1 \
-     --epochs 20000000
+     --epochs 2
