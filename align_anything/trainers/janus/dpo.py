@@ -82,9 +82,9 @@ class DPOTrainer(DPOtextTrainer):
         )
         self.tokenizer = text_processor.tokenizer
 
-    def loss(self, dpo_batch: PreferenceBatch) -> dict[str, torch.Tensor]:
+    def loss(self, batch: PreferenceBatch) -> dict[str, torch.Tensor]:
         """Loss function for preference learning."""
-        outputs = self.model.forward(**dpo_batch, task='generation')
+        outputs = self.model.forward(**batch)
         return {
             'loss': outputs.loss,
         }

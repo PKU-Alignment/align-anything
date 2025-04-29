@@ -1,0 +1,120 @@
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+Processing on GPU 6: 0it [00:00, ?it/s]Processing on GPU 6: 0it [00:00, ?it/s]
+Processing on GPU 2:   0%|          | 0/1 [00:00<?, ?it/s]Processing on GPU 2:   0%|          | 0/1 [00:00<?, ?it/s]
+Process Process-4:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 102, in process_data
+    sample = tokenize_sample(vl_chat_processor, vl_gpt, vl_image_processor, formatted_sample)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 58, in tokenize_sample
+    sft_format = vl_chat_processor.apply_sft_template_for_multi_turn_prompts(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/processing_vlm.py", line 169, in apply_sft_template_for_multi_turn_prompts
+    conv = get_conv_template(sft_format)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/utils/conversation.py", line 237, in get_conv_template
+    return conv_templates[name].copy()
+           ~~~~~~~~~~~~~~^^^^^^
+KeyError: 'deepseek_old'
+Processing on GPU 7: 0it [00:00, ?it/s]Processing on GPU 7: 0it [00:00, ?it/s]
+Processing on GPU 5: 0it [00:00, ?it/s]Processing on GPU 5: 0it [00:00, ?it/s]
+Processing on GPU 4: 0it [00:00, ?it/s]Processing on GPU 4: 0it [00:00, ?it/s]
+Processing on GPU 1:   0%|          | 0/1 [00:00<?, ?it/s]Processing on GPU 1:   0%|          | 0/1 [00:00<?, ?it/s]
+Process Process-3:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 102, in process_data
+    sample = tokenize_sample(vl_chat_processor, vl_gpt, vl_image_processor, formatted_sample)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 58, in tokenize_sample
+    sft_format = vl_chat_processor.apply_sft_template_for_multi_turn_prompts(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/processing_vlm.py", line 169, in apply_sft_template_for_multi_turn_prompts
+    conv = get_conv_template(sft_format)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/utils/conversation.py", line 237, in get_conv_template
+    return conv_templates[name].copy()
+           ~~~~~~~~~~~~~~^^^^^^
+KeyError: 'deepseek_old'
+Processing on GPU 0:   0%|          | 0/1 [00:00<?, ?it/s]Processing on GPU 0:   0%|          | 0/1 [00:00<?, ?it/s]
+Process Process-2:
+Processing on GPU 3:   0%|          | 0/1 [00:00<?, ?it/s]Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 102, in process_data
+    sample = tokenize_sample(vl_chat_processor, vl_gpt, vl_image_processor, formatted_sample)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 58, in tokenize_sample
+    sft_format = vl_chat_processor.apply_sft_template_for_multi_turn_prompts(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/processing_vlm.py", line 169, in apply_sft_template_for_multi_turn_prompts
+    conv = get_conv_template(sft_format)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/utils/conversation.py", line 237, in get_conv_template
+    return conv_templates[name].copy()
+           ~~~~~~~~~~~~~~^^^^^^
+KeyError: 'deepseek_old'
+Processing on GPU 3:   0%|          | 0/1 [00:00<?, ?it/s]
+Process Process-5:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 102, in process_data
+    sample = tokenize_sample(vl_chat_processor, vl_gpt, vl_image_processor, formatted_sample)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 58, in tokenize_sample
+    sft_format = vl_chat_processor.apply_sft_template_for_multi_turn_prompts(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/processing_vlm.py", line 169, in apply_sft_template_for_multi_turn_prompts
+    conv = get_conv_template(sft_format)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/utils/conversation.py", line 237, in get_conv_template
+    return conv_templates[name].copy()
+           ~~~~~~~~~~~~~~^^^^^^
+KeyError: 'deepseek_old'

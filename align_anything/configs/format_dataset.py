@@ -410,6 +410,22 @@ class GSM8K(BaseFormatter):
             {'role': 'assistant', 'content': [{'type': 'text', 'text': answer}]},
         ], {}
 
+@register_template('Janus_TI2T')
+class Janus_TI2T(BaseFormatter):
+    def format_supervised_sample(
+        self, raw_sample: dict[str, Any]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        prompt = raw_sample['prompt']
+        answer = raw_sample['response']
+        image = load_image(raw_sample['image']).convert('RGB')
+
+        return [
+            {
+                'role': 'user',
+                'content': prompt,
+            },
+            {'role': 'assistant', 'content': answer},
+        ], {'image': image}
 
 @register_template('AA_TI2T')
 class AA_TI2T(BaseFormatter):
@@ -1032,10 +1048,9 @@ class ANY2ANY:
             output_dict['input_image'] = load_image(raw_sample['input_image'])
         if 'output_image' in raw_sample and raw_sample['output_image'] is not None:
             output_dict['output_image'] = load_image(raw_sample['output_image'])
-        print(f'Get output dict: {output_dict}')
         return output_dict
 
-
+    
 @register_template('AA_textfeedback')
 class AA_TF:
     system_prompt: str = 'BEGINNING OF CONVERSATION: '

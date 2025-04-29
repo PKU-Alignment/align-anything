@@ -1,0 +1,356 @@
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Process Process-4:
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 556, in load_state_dict
+    return torch.load(
+           ^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 1425, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 751, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 732, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+
+During handling of the above exception, another exception occurred:
+
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Traceback (most recent call last):
+
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+Process Process-6:
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4399, in from_pretrained
+    ) = cls._load_pretrained_model(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4822, in _load_pretrained_model
+    state_dict = load_state_dict(
+                 ^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 564, in load_state_dict
+    with open(checkpoint_file) as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+
+Process Process-9:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 556, in load_state_dict
+    return torch.load(
+           ^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 1425, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 751, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 732, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 556, in load_state_dict
+    return torch.load(
+           ^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 1425, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4399, in from_pretrained
+    ) = cls._load_pretrained_model(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 751, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4822, in _load_pretrained_model
+    state_dict = load_state_dict(
+                 ^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 732, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 564, in load_state_dict
+    with open(checkpoint_file) as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4399, in from_pretrained
+    ) = cls._load_pretrained_model(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4822, in _load_pretrained_model
+    state_dict = load_state_dict(
+                 ^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 564, in load_state_dict
+    with open(checkpoint_file) as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Process Process-8:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 556, in load_state_dict
+    return torch.load(
+           ^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 1425, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 751, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 732, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+
+During handling of the above exception, another exception occurred:
+
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Traceback (most recent call last):
+
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+Process Process-5:
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4399, in from_pretrained
+    ) = cls._load_pretrained_model(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4822, in _load_pretrained_model
+    state_dict = load_state_dict(
+                 ^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 564, in load_state_dict
+    with open(checkpoint_file) as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 556, in load_state_dict
+    return torch.load(
+           ^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 1425, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 751, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 732, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4399, in from_pretrained
+    ) = cls._load_pretrained_model(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4822, in _load_pretrained_model
+    state_dict = load_state_dict(
+                 ^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 564, in load_state_dict
+    with open(checkpoint_file) as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Process Process-7:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 556, in load_state_dict
+    return torch.load(
+           ^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 1425, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 751, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 732, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4399, in from_pretrained
+    ) = cls._load_pretrained_model(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4822, in _load_pretrained_model
+    state_dict = load_state_dict(
+                 ^^^^^^^^^^^^^^^^
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 564, in load_state_dict
+    with open(checkpoint_file) as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Process Process-2:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 556, in load_state_dict
+    return torch.load(
+           ^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 1425, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 751, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 732, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4399, in from_pretrained
+    ) = cls._load_pretrained_model(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4822, in _load_pretrained_model
+    state_dict = load_state_dict(
+                 ^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 564, in load_state_dict
+    with open(checkpoint_file) as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Process Process-3:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 556, in load_state_dict
+    return torch.load(
+           ^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 1425, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 751, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/torch/serialization.py", line 732, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4399, in from_pretrained
+    ) = cls._load_pretrained_model(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4822, in _load_pretrained_model
+    state_dict = load_state_dict(
+                 ^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 564, in load_state_dict
+    with open(checkpoint_file) as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/petrelfs/louhantao/models/Janus-Pro-7B/pytorch_model-00001-of-00002.bin'

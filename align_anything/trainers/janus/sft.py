@@ -24,7 +24,7 @@ import torch
 import transformers
 from janus.models import MultiModalityCausalLM, VLChatProcessor, VLMImageProcessor
 
-from align_anything.datasets.janus import SupervisedBatch, SupervisedTokenizedDataset
+from align_anything.datasets.janus import SupervisedBatch, SupervisedDataset, SupervisedTokenizedDataset
 from align_anything.trainers.text_to_text.sft import SupervisedTrainer as SupervisedtextTrainer
 from align_anything.utils.device_utils import torch_set_device
 from align_anything.utils.multi_process import get_current_device
@@ -44,8 +44,11 @@ class SuperviseTrainer(SupervisedtextTrainer):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
+        # self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
+        #     SupervisedTokenizedDataset, SupervisedTokenizedDataset
+        # )
         self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
-            SupervisedTokenizedDataset, SupervisedTokenizedDataset
+            SupervisedDataset, SupervisedDataset
         )
 
     def update_configs(self, model_config, args, fields):
@@ -66,20 +69,14 @@ class SuperviseTrainer(SupervisedtextTrainer):
         if self.cfgs.train_cfgs.bf16:
             self.model = self.model.to(torch.bfloat16)
 
-        self.processor = VLMImageProcessor.from_pretrained(
-            self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.train_cfgs.max_position_embeddings,
-            padding_side='right',
-            use_fast=False,
-        )
-        text_processor = VLChatProcessor.from_pretrained(
+        self.processor = VLChatProcessor.from_pretrained(
             self.cfgs.model_cfgs.model_name_or_path,
         )
-        self.tokenizer = text_processor.tokenizer
+        self.tokenizer = self.processor.tokenizer
 
     def loss(self, sft_batch: SupervisedBatch) -> dict[str, torch.Tensor]:
         """Loss function for supervised finetuning."""
-        outputs = self.model.forward(**sft_batch, task=sft_batch['task'])
+        outputs = self.model.forward(**sft_batch)
         return {
             'loss': outputs.loss,
         }

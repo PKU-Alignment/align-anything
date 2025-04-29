@@ -14,14 +14,16 @@
 # ==============================================================================
 # Initialize variables
 MODEL_NAME_OR_PATH="/mnt/petrelfs/louhantao/models/Janus-1.3B"
-TRAIN_DATASETS="/mnt/petrelfs/louhantao/code/align-anything/projects/janus/example/supervised/text_to_image"
-TRAIN_DATA_FILE="train_tokenized.pt"
-OUTPUT_DIR="output/janus_sft_text_to_image"
+TRAIN_DATASETS="/mnt/petrelfs/louhantao/code/align-anything/projects/janus/example/supervised/text_image_to_text"
+TRAIN_SPLIT="train"
+# TRAIN_DATA_FILE="train_tokenized.pt"
+OUTPUT_DIR="output/janus_sft_text_image_to_text"
 JANUS_REPO_PATH="/mnt/petrelfs/louhantao/code/Align_Anything_Janus"
 
 export PYTHONPATH=$PYTHONPATH:$JANUS_REPO_PATH
 export WANDB_API_KEY=""
 export WANDB_MODE=online
+# export MULTI_IMAGES_INFERENCE_MODELS="Yes"
 
 # Source the setup script
 source ../setup.sh
@@ -31,8 +33,8 @@ deepspeed \
     --module align_anything.trainers.janus.sft \
     --model_name_or_path ${MODEL_NAME_OR_PATH} \
     --train_datasets ${TRAIN_DATASETS} \
-    --train_data_files ${TRAIN_DATA_FILE} \
-    --train_split train \
+    --train_split ${TRAIN_SPLIT} \
+    --train_template Janus_TI2T \
     --learning_rate 1e-6 \
     --epochs 3 \
     --lr_scheduler_type cosine \

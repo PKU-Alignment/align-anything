@@ -1,0 +1,260 @@
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+Process Process-6:
+Process Process-2:
+Process Process-9:
+Process Process-5:
+Process Process-4:
+Process Process-8:
+Process Process-7:
+Traceback (most recent call last):
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+Traceback (most recent call last):
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4342, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/modeling_vlm.py", line 221, in __init__
+    self.language_model = LlamaForCausalLM(language_config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/llama/modeling_llama.py", line 739, in __init__
+    super().__init__(config)
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 1868, in __init__
+    config = self._autoset_attn_implementation(config, torch_dtype=dtype, check_device_map=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2109, in _autoset_attn_implementation
+    cls._check_and_enable_flash_attn_2(
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2252, in _check_and_enable_flash_attn_2
+    raise ImportError(f"{preface} the package flash_attn seems to be not installed. {install_message}")
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4342, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4342, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4342, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+Process Process-3:
+ImportError: FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/modeling_vlm.py", line 221, in __init__
+    self.language_model = LlamaForCausalLM(language_config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4342, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/modeling_vlm.py", line 221, in __init__
+    self.language_model = LlamaForCausalLM(language_config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4342, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/modeling_vlm.py", line 221, in __init__
+    self.language_model = LlamaForCausalLM(language_config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4342, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/llama/modeling_llama.py", line 739, in __init__
+    super().__init__(config)
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/modeling_vlm.py", line 221, in __init__
+    self.language_model = LlamaForCausalLM(language_config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/llama/modeling_llama.py", line 739, in __init__
+    super().__init__(config)
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/modeling_vlm.py", line 221, in __init__
+    self.language_model = LlamaForCausalLM(language_config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/llama/modeling_llama.py", line 739, in __init__
+    super().__init__(config)
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/modeling_vlm.py", line 221, in __init__
+    self.language_model = LlamaForCausalLM(language_config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 1868, in __init__
+    config = self._autoset_attn_implementation(config, torch_dtype=dtype, check_device_map=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/llama/modeling_llama.py", line 739, in __init__
+    super().__init__(config)
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 1868, in __init__
+    config = self._autoset_attn_implementation(config, torch_dtype=dtype, check_device_map=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/llama/modeling_llama.py", line 739, in __init__
+    super().__init__(config)
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 1868, in __init__
+    config = self._autoset_attn_implementation(config, torch_dtype=dtype, check_device_map=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/llama/modeling_llama.py", line 739, in __init__
+    super().__init__(config)
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2109, in _autoset_attn_implementation
+    cls._check_and_enable_flash_attn_2(
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 1868, in __init__
+    config = self._autoset_attn_implementation(config, torch_dtype=dtype, check_device_map=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2109, in _autoset_attn_implementation
+    cls._check_and_enable_flash_attn_2(
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 1868, in __init__
+    config = self._autoset_attn_implementation(config, torch_dtype=dtype, check_device_map=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2109, in _autoset_attn_implementation
+    cls._check_and_enable_flash_attn_2(
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 1868, in __init__
+    config = self._autoset_attn_implementation(config, torch_dtype=dtype, check_device_map=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2252, in _check_and_enable_flash_attn_2
+    raise ImportError(f"{preface} the package flash_attn seems to be not installed. {install_message}")
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2109, in _autoset_attn_implementation
+    cls._check_and_enable_flash_attn_2(
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2252, in _check_and_enable_flash_attn_2
+    raise ImportError(f"{preface} the package flash_attn seems to be not installed. {install_message}")
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2109, in _autoset_attn_implementation
+    cls._check_and_enable_flash_attn_2(
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2252, in _check_and_enable_flash_attn_2
+    raise ImportError(f"{preface} the package flash_attn seems to be not installed. {install_message}")
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2109, in _autoset_attn_implementation
+    cls._check_and_enable_flash_attn_2(
+ImportError: FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2252, in _check_and_enable_flash_attn_2
+    raise ImportError(f"{preface} the package flash_attn seems to be not installed. {install_message}")
+ImportError: FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2252, in _check_and_enable_flash_attn_2
+    raise ImportError(f"{preface} the package flash_attn seems to be not installed. {install_message}")
+ImportError: FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 93, in process_data
+    vl_gpt = MultiModalityCausalLM.from_pretrained(model_path, trust_remote_code=True).to(device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2252, in _check_and_enable_flash_attn_2
+    raise ImportError(f"{preface} the package flash_attn seems to be not installed. {install_message}")
+ImportError: FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.
+ImportError: FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+ImportError: FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 4342, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/Align_Anything_Janus/janus/models/modeling_vlm.py", line 221, in __init__
+    self.language_model = LlamaForCausalLM(language_config)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/llama/modeling_llama.py", line 739, in __init__
+    super().__init__(config)
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 1868, in __init__
+    config = self._autoset_attn_implementation(config, torch_dtype=dtype, check_device_map=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2109, in _autoset_attn_implementation
+    cls._check_and_enable_flash_attn_2(
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/modeling_utils.py", line 2252, in _check_and_enable_flash_attn_2
+    raise ImportError(f"{preface} the package flash_attn seems to be not installed. {install_message}")
+ImportError: FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.

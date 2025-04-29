@@ -1,0 +1,148 @@
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/transformers/models/auto/image_processing_auto.py:604: FutureWarning: The image_processor_class argument is deprecated and will be removed in v4.42. Please use `slow_image_processor_class`, or `fast_image_processor_class` instead
+  warnings.warn(
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+You are using the default legacy behaviour of the <class 'transformers.models.llama.tokenization_llama_fast.LlamaTokenizerFast'>. This is expected, and simply means that the `legacy` (previous) behavior will be used so nothing changes for you. If you want to use the new behaviour, set `legacy=False`. This should only be set if you understand what it means, and thoroughly read the reason why this was added as explained in https://github.com/huggingface/transformers/pull/24565 - if you loaded a llama tokenizer from a GGUF file you can ignore this message.
+Processing on GPU 1:   0%|          | 0/1 [00:00<?, ?it/s]Processing on GPU 1:   0%|          | 0/1 [00:00<?, ?it/s]
+Process Process-3:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 38, in load_image
+    image = Image.open(image_path).convert('RGB')
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/PIL/Image.py", line 3505, in open
+    fp = builtins.open(filename, "rb")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'images/example_2.png'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 101, in process_data
+    formatted_sample = format_sample_janus(piece, vl_chat_processor)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 48, in format_sample_janus
+    'output_image': load_image(piece['image']),
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 42, in load_image
+    raise Exception
+Exception
+Processing on GPU 0:   0%|          | 0/1 [00:00<?, ?it/s]Processing on GPU 0:   0%|          | 0/1 [00:00<?, ?it/s]
+Process Process-2:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 38, in load_image
+    image = Image.open(image_path).convert('RGB')
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/PIL/Image.py", line 3505, in open
+    fp = builtins.open(filename, "rb")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'images/example_1.png'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 101, in process_data
+    formatted_sample = format_sample_janus(piece, vl_chat_processor)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 48, in format_sample_janus
+    'output_image': load_image(piece['image']),
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 42, in load_image
+    raise Exception
+Exception
+Processing on GPU 4: 0it [00:00, ?it/s]Processing on GPU 4: 0it [00:00, ?it/s]
+Processing on GPU 2:   0%|          | 0/1 [00:00<?, ?it/s]Processing on GPU 2:   0%|          | 0/1 [00:00<?, ?it/s]
+Process Process-4:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 38, in load_image
+    image = Image.open(image_path).convert('RGB')
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/PIL/Image.py", line 3505, in open
+    fp = builtins.open(filename, "rb")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'images/example_1.png'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 101, in process_data
+    formatted_sample = format_sample_janus(piece, vl_chat_processor)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 48, in format_sample_janus
+    'output_image': load_image(piece['image']),
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 42, in load_image
+    raise Exception
+Exception
+Processing on GPU 5: 0it [00:00, ?it/s]Processing on GPU 5: 0it [00:00, ?it/s]
+Processing on GPU 6: 0it [00:00, ?it/s]Processing on GPU 6: 0it [00:00, ?it/s]
+Processing on GPU 3:   0%|          | 0/1 [00:00<?, ?it/s]Processing on GPU 3:   0%|          | 0/1 [00:00<?, ?it/s]
+Process Process-5:
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 38, in load_image
+    image = Image.open(image_path).convert('RGB')
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/site-packages/PIL/Image.py", line 3505, in open
+    fp = builtins.open(filename, "rb")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'images/example_2.png'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/mnt/petrelfs/louhantao/miniconda3/envs/formal_pipeline/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 101, in process_data
+    formatted_sample = format_sample_janus(piece, vl_chat_processor)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 48, in format_sample_janus
+    'output_image': load_image(piece['image']),
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/petrelfs/louhantao/code/align-anything/projects/janus/supervised_text_to_image.py", line 42, in load_image
+    raise Exception
+Exception
+Processing on GPU 7: 0it [00:00, ?it/s]Processing on GPU 7: 0it [00:00, ?it/s]

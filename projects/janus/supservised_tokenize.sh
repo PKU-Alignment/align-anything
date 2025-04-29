@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-INPUT_PATH=""
-OUTPUT_PATH=""
-MODEL_PATH=""
-CACHE_DIR=""
-JANUS_REPO_PATH=""
+INPUT_PATH="/mnt/petrelfs/louhantao/code/align-anything/projects/janus/example/supervised/text_to_image/train.json"
+OUTPUT_PATH="/mnt/petrelfs/louhantao/code/align-anything/projects/janus/example/supervised/text_to_image/train_tokenized.pt"
+MODEL_PATH="/mnt/petrelfs/louhantao/models/Janus-1.3B"
+CACHE_DIR="/mnt/petrelfs/louhantao/code/align-anything/projects/janus/.cache"
+JANUS_REPO_PATH="/mnt/petrelfs/louhantao/code/Align_Anything_Janus"
 mkdir -p $CACHE_DIR
 NUM_PROCESSES=8
 NUM_GPUS=8
