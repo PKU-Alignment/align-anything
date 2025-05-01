@@ -27,7 +27,7 @@
 [📘Documentation](https://align-anything.readthedocs.io/) |
 [🛠️Quick Start](#quick-start) |
 [🚀Algorithms](#algorithms) |
-[👀Evaluation](#evaluation) |
+[👀Evaluation](https://github.com/PKU-Alignment/eval-anything) |
 [🤔Reporting Issues](#report-issues)
 
 </div>
