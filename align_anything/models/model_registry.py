@@ -75,6 +75,7 @@ MODEL_FOR_SCORE_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('llava_next_video', 'AccustomedLlavaNextVideoRewardModel'),
         ('gemma3', 'AccustomedGemma3RewardModel'),
         ('opt', 'AccustomedOPTRewardModel'),
+        ('qwen2', 'AccustomedQwen2RewardModel'),
     ],
 )
 
@@ -94,6 +95,7 @@ MODEL_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('idefics2', 'AccustomedIdefics2Model'),
         ('gemma3', 'AccustomedGemma3Model'),
         ('opt', 'AccustomedOPTModel'),
+        ('qwen2', 'AccustomedQwen2Model'),
     ],
 )
 
