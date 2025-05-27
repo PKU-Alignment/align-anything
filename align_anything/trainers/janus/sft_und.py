@@ -86,7 +86,7 @@ def main():
     torch_set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('janus', 'sft')
+    task = os.path.join('janus', 'sft_und')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # get custom configs from command line

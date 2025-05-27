@@ -14,23 +14,21 @@
 # ==============================================================================
 # Initialize variables
 MODEL_NAME_OR_PATH="deepseek-ai/Janus-1.3B"
-TRAIN_DATASETS="projects/janus/example/supervised/text_image_to_text"
+TRAIN_DATASETS="../../projects/janus/example/supervised/text_image_to_text"
 TRAIN_SPLIT="train"
-# TRAIN_DATA_FILE="train_tokenized.pt"
 OUTPUT_DIR="output/janus_sft_text_image_to_text"
-JANUS_REPO_PATH="/path/to/Align_Anything_Janus"
+JANUS_REPO_PATH="/path/to/Align_Anything_Janus" # change to your own path to Align_Anything_Janus
 
 export PYTHONPATH=$PYTHONPATH:$JANUS_REPO_PATH
 export WANDB_API_KEY=""
 export WANDB_MODE=online
-# export MULTI_IMAGES_INFERENCE_MODELS="Yes"
 
 # Source the setup script
 source ../setup.sh
 # Execute deepspeed command
 deepspeed \
     --master_port ${MASTER_PORT} \
-    --module align_anything.trainers.janus.sft \
+    --module align_anything.trainers.janus.sft_und \
     --model_name_or_path ${MODEL_NAME_OR_PATH} \
     --train_datasets ${TRAIN_DATASETS} \
     --train_split ${TRAIN_SPLIT} \

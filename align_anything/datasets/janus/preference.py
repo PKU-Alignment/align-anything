@@ -13,9 +13,10 @@
 # limitations under the License.
 # ==============================================================================
 
+from math import e
+from einops import rearrange
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
-
 import torch
 import transformers
 from torch.utils.data import Dataset
@@ -23,7 +24,7 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.tools import right_padding
+from align_anything.utils.tools import right_padding, ends_with_any
 from datasets import load_dataset
 
 
@@ -207,27 +208,14 @@ class PreferenceCollator:
             current_device
         )  # size = (2 * B, L)
 
-        attention_mask = [
-            input_id.new_ones(input_id.size(), dtype=torch.bool) for input_id in input_ids
-        ]  # size = (2 * B, L)
-        return_dict['attention_mask'] = right_padding(attention_mask, padding_value=0).to(
-            current_device
-        )  # size = (2 * B, L)
-
         if 'pixel_values' in samples[0].keys():
             pixel_values = [sample['pixel_values'] for sample in samples]
-            # 2*pixel_values
-            return_dict['pixel_values'] = torch.cat(pixel_values + pixel_values, dim=0).to(current_device)
-        
-        if "better_images_seq_mask" in samples[0].keys():
-            better_images_seq_mask = [sample['better_images_seq_mask'] for sample in samples]
-            worse_images_seq_mask = [sample['worse_images_seq_mask'] for sample in samples]
-            return_dict['images_seq_mask'] = right_padding(better_images_seq_mask + worse_images_seq_mask, padding_value=0).to(current_device)
+            return_dict['pixel_values'] = torch.cat(pixel_values + pixel_values, dim=0).to(current_device).unsqueeze(0)
         
         if "better_images_emb_mask" in samples[0].keys():
             better_images_emb_mask  = [sample['better_images_emb_mask'] for sample in samples]
             worse_images_emb_mask = [sample['worse_images_emb_mask'] for sample in samples]
-            return_dict['images_emb_mask'] = right_padding(better_images_emb_mask + worse_images_emb_mask, padding_value=0).to(current_device)
-        
+            return_dict['images_emb_mask'] = right_padding(better_images_emb_mask + worse_images_emb_mask, padding_value=0).to(current_device).detach()
+            
         return_dict['task'] = samples[0]['task']
         return return_dict

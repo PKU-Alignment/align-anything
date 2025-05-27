@@ -24,11 +24,12 @@ import torch
 import transformers
 from janus.models import MultiModalityCausalLM, VLChatProcessor, VLMImageProcessor
 
-from align_anything.datasets.janus import PreferenceBatch, PreferenceTokenizedDataset
+from align_anything.datasets.janus import PreferenceDataset, PreferenceBatch, PreferenceTokenizedDataset
 from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
+    gather_log_probabilities,
     dict_to_namedtuple,
     read_cfgs,
     seed_everything,
@@ -38,14 +39,26 @@ from align_anything.utils.tools import (
 
 transformers.logging.set_verbosity_info()
 
+def strip_pad(seq: torch.Tensor, max_token_id: int):
+    with torch.no_grad():
+        # 使用torch.where创建索引张量
+        indices = torch.where(seq < max_token_id)[0]
+        
+        # 检查索引张量是否为空
+        if indices.numel() == 0:
+            # 如果没有非填充标记，返回空张量
+            return torch.tensor([], device=seq.device, dtype=seq.dtype)
+        
+        # 使用索引选择非填充标记
+        return torch.index_select(seq, 0, indices)
 
 class DPOTrainer(DPOtextTrainer):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
-            PreferenceDataset, PreferenceDataset
-        ) # change to PreferenceTokenizedDataset, PreferenceTokenizedDataset in case of image input
+            PreferenceTokenizedDataset, PreferenceTokenizedDataset
+        ) # change to PreferenceDataset, PreferenceDataset in case of image input & text output
 
     def update_configs(self, model_config, args, fields):
         cross_update = lambda a, b, field_name: (
@@ -86,13 +99,17 @@ class DPOTrainer(DPOtextTrainer):
         logits = self.model.forward(**self.infer_batch(batch)).logits
         device = logits.device
         input_ids = batch['input_ids']
-        batch_size = len(batch['meta_info']['response_lens'])
+        # dim 0 is the batch size
+        batch_size = input_ids.size(0)
         logprob_list = []
         for idx in range(batch_size):
-            response_length = batch['meta_info']['response_lens'][idx]
-            raw_input_id = strip_pad(input_ids[idx], self.tokenizer.pad_token_id)
+            response_length = batch['input_ids'].size(1)
+            print("input_ids[idx]", input_ids[idx])
+            raw_input_id = strip_pad(input_ids[idx], 16384)
             logit = logits[idx][-response_length:].unsqueeze(0)
             input_id = raw_input_id[-response_length:].unsqueeze(0)
+            print("logit.shape", logit.shape)
+            print("input_id.shape", input_id.shape)
             log_p = gather_log_probabilities(logit[:, :-1], input_id[:, 1:])
             logprob_list.append(log_p.squeeze(0))
         return torch.nn.utils.rnn.pad_sequence(
@@ -115,6 +132,8 @@ class DPOTrainer(DPOtextTrainer):
                 self.reference_model.module,
                 batch,
             )
+        
+        ref_better_sequence_log_probs, ref_worse_sequence_log_probs = ref_sequence_log_probs.chunk(chunks=2, dim=0)
 
         losses = []
         better_sample_rewards = []
@@ -159,7 +178,7 @@ def main():
     torch.cuda.set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('janus', 'dpo')
+    task = os.path.join('janus', 'dpo_gen')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # get custom configs from command line

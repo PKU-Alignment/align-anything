@@ -15,10 +15,10 @@
 # limitations under the License.
 # ==============================================================================
 
-
 MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # model path
 
-TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
+# TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
+TRAIN_DATASETS="/home/hantao/data/align-anything/text-image-to-text/train"
 TRAIN_TEMPLATE="AA_TI2T" # dataset template
 TRAIN_NAME="text-image-to-text" # dataset name
 TRAIN_SPLIT="train" # split the dataset
@@ -39,8 +39,7 @@ deepspeed \
      --train_datasets ${TRAIN_DATASETS} \
      --train_template ${TRAIN_TEMPLATE} \
      --train_split ${TRAIN_SPLIT} \
-     --train_name ${TRAIN_NAME} \
      --output_dir ${OUTPUT_DIR} \
      --save_total_limit 3 \
      --train_batch_size 1 \
-     --epochs 2
+     --epochs 2000000

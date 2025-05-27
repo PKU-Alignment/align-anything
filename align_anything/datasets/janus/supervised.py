@@ -170,6 +170,7 @@ class SupervisedTokenizedDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
+        self.padding_side = padding_side
 
         self.raw_data = torch.load(f'{path}/{data_files}', map_location=torch.device('cpu'))
         if size:
@@ -223,7 +224,8 @@ class SupervisedCollator:
                 padding_value=0,
             ).to(current_device)
 
-        return_dict['task'] = samples[0]['task']
+        if 'task' in samples[0]:
+            return_dict['task'] = samples[0]['task']
 
         if "images_seq_mask" in samples[0]:
             return_dict['images_seq_mask'] = right_padding(
