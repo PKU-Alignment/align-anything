@@ -1,13 +1,13 @@
 [
     {
         "question": "Briefly describe what's in the image.",
-        "image": "/home/hantao/code/align-anything/projects/janus/example/images/example_1.png",
+        "image": "../../projects/janus/example/images/example_1.png",
         "better_response": "A close-up high-contrast photo of a doomed cityscape, with dark blue skies and high-rise buildings standing in the distance.",
         "worse_response": "Nothing but a blank dark blue sky."
     },
     {
         "question": "Briefly describe what's in the image.",
-        "image": "/home/hantao/code/align-anything/projects/janus/example/images/example_1.png",
+        "image": "../../projects/janus/example/images/example_1.png",
         "better_response": "A close-up high-contrast photo of a doomed cityscape, with dark blue skies and high-rise buildings standing in the distance.",
         "worse_response": "Nothing but a blank dark blue sky."
     }
