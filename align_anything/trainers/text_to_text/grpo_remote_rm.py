@@ -301,8 +301,6 @@ class GRPOTrainerRemoteRM(GRPOTrainer):
         if prompts is None:
             raise ValueError('prompt is not found in the actor_batch')
         reward_tensor = self.remote_rm_client.score(prompts, responses)
-        print(reward_tensor.shape)
-
         return reward_tensor
 
     def train_step(self, prompt_batch: dict) -> dict[str, float]:
@@ -320,6 +318,13 @@ class GRPOTrainerRemoteRM(GRPOTrainer):
 
         # compute rewards
         rewards = self.compute_rewards(sequences, prompt_length)  # shape: (B * num_generations,)
+        if isinstance(rewards, torch.Tensor):
+            rewards = rewards.clone().detach().to(prompt_batch['input_ids'].device)
+        else:
+            rewards = torch.tensor(rewards, device=prompt_batch['input_ids'].device)
+
+
+
         B = prompt_batch['input_ids'].size(0)
         G = self.num_generations
         rewards = rewards.view(B, G)
