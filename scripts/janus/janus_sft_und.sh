@@ -13,26 +13,26 @@
 # limitations under the License.
 # ==============================================================================
 # Initialize variables
-MODEL_NAME_OR_PATH="deepseek-ai/Janus-Pro-7B"
-TRAIN_DATASETS="../projects/janus/example/preference/text_image_to_text"
-TRAIN_DATA_FILE="train.json"
-OUTPUT_DIR="output/janus_dpo_text_image_to_text"
-JANUS_REPO_PATH="/path/to/Janus"
+MODEL_NAME_OR_PATH="deepseek-ai/Janus-1.3B"
+TRAIN_DATASETS="../../projects/janus/example/supervised/text_image_to_text"
+TRAIN_SPLIT="train"
+OUTPUT_DIR="output/janus_sft_text_image_to_text"
+JANUS_REPO_PATH="/path/to/Align_Anything_Janus" # change to your own path to Align_Anything_Janus
 
 export PYTHONPATH=$PYTHONPATH:$JANUS_REPO_PATH
 export WANDB_API_KEY=""
 export WANDB_MODE=online
 
 # Source the setup script
-source ./setup.sh
+source ../setup.sh
 # Execute deepspeed command
 deepspeed \
     --master_port ${MASTER_PORT} \
-    --module align_anything.trainers.janus.dpo \
+    --module align_anything.trainers.janus.sft_und \
     --model_name_or_path ${MODEL_NAME_OR_PATH} \
     --train_datasets ${TRAIN_DATASETS} \
-    --train_data_files ${TRAIN_DATA_FILE} \
-    --train_split train \
+    --train_split ${TRAIN_SPLIT} \
+    --train_template Janus_TI2T \
     --learning_rate 1e-6 \
     --epochs 3 \
     --lr_scheduler_type cosine \

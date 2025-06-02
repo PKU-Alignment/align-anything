@@ -53,6 +53,8 @@ class PreferenceBatch(TypedDict, total=True):
     labels: torch.LongTensor  # size = (B, L)
     attention_mask: torch.BoolTensor  # size = (B, L)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
+    images_seq_mask: torch.BoolTensor | None  # size = (B, L)
+    images_emb_mask: torch.BoolTensor | None  # size = (B, N)
 
 
 class SafetyPreferenceSample(TypedDict, total=True):

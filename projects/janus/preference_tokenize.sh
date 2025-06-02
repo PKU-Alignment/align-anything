@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-INPUT_PATH=""
-OUTPUT_PATH=""
-MODEL_PATH=""
-CACHE_DIR=""
-JANUS_REPO_PATH=""
+INPUT_PATH="align-anything/projects/janus/example/preference/text_to_image/train.json"
+OUTPUT_PATH="align-anything/projects/janus/example/preference/text_to_image/train_tokenized.pt"
+MODEL_PATH="deepseek-ai/Janus-1.3B"
+CACHE_DIR="align-anything/projects/janus/.cache"
+JANUS_REPO_PATH="/path/to/Align_Anything_Janus" # change to your own path to Align_Anything_Janus
 mkdir -p $CACHE_DIR
 NUM_PROCESSES=8
 NUM_GPUS=8
