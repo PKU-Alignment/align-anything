@@ -76,6 +76,8 @@ MODEL_FOR_SCORE_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('gemma3', 'AccustomedGemma3RewardModel'),
         ('opt', 'AccustomedOPTRewardModel'),
         ('qwen2', 'AccustomedQwen2RewardModel'),
+        ('qwen3', 'AccustomedQwen3RewardModel'),
+        ('qwen3_moe', 'AccustomedQwen3MoeRewardModel'),
     ],
 )
 
@@ -96,6 +98,8 @@ MODEL_MAPPING_NAMES: OrderedDict[str, str] = OrderedDict(
         ('gemma3', 'AccustomedGemma3Model'),
         ('opt', 'AccustomedOPTModel'),
         ('qwen2', 'AccustomedQwen2Model'),
+        ('qwen3', 'AccustomedQwen3Model'),
+        ('qwen3_moe', 'AccustomedQwen3MoeModel'),
     ],
 )
 
