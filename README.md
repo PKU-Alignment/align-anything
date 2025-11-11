@@ -51,7 +51,23 @@ Align-Anything aims to align any modality large models (any-to-any models) with 
 
 ## 📣 News
 
-- **[Future]** ⚡️⚡️⚡️ We will integrate more cutting-edge MLLMs into our framework and develop our VLA part. Stay tuned!
+### Roadmap
+
+We are actively working on the following features:
+
+- ⚡️ **More Models:** Integrating cutting-edge models like the Qwen3-VL series.
+
+- 🚀 **More Inference Engines:** Adding support for high-performance engines like SGLang.
+
+- 🤖 **Advanced VLA Algorithms:** Implementing more VLA algorithms, including Safe-VLA.
+
+- 🧠 **Agent RL:** Expanding capabilities to support Agent-based Reinforcement Learning.
+
+- 🛠️ **Enhanced RLHF Features:** Upgrading our RL training framework with features like asynchronous rollout, vLLM sleep mode, and checkpoint-engine.
+
+Stay tuned for more updates!
+  
+- **[2025.11.11]** 🎉🎉🎉 We now support the alignment fine-tuning of Qwen3 and Qwen3-MoE models!
 
 - **[2025.11.11]** 🎉🎉🎉 We integrate the **InterMT** project (NeurIPS 2025 Spotlight) into the main repository, featuring the first multi-turn interleaved preference alignment dataset with human feedback and InterMT-Bench for evaluating multi-turn multimodal interaction capabilities. Check out [InterMT](./projects/InterMT) for more details.
 
@@ -312,3 +328,4 @@ If you have any questions in the process of using align-anything, don't hesitate
 # License
 
 align-anything is released under Apache License 2.0.
+
