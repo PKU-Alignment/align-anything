@@ -19,3 +19,7 @@ The contents of each project are as follows:
 ## Janus
 
 [This project](./janus/README.md) contains the process for training [Janus](https://huggingface.co/deepseek-ai/Janus-1.3B) model series. To be specific, it contains the scripts for SFT Janus model.
+
+## InterMT
+
+[This project](./intermt/README.md) contains the **InterMT** dataset and **InterMT-Bench** (NeurIPS 2025 Spotlight), focusing on multi-turn interleaved preference alignment with human feedback. InterMT is the first preference dataset for multi-turn multimodal interaction. InterMT-Bench evaluates the alignment between models and human values in multi-turn multimodal interaction scenarios through score evaluation, pair comparison, and crucial step recognition.
