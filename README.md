@@ -53,6 +53,8 @@ Align-Anything aims to align any modality large models (any-to-any models) with 
 
 - **[Future]** ⚡️⚡️⚡️ We will integrate more cutting-edge MLLMs into our framework and develop our VLA part. Stay tuned!
 
+- **[2025.11.11]** 🎉🎉🎉 We integrate the **InterMT** project (NeurIPS 2025 Spotlight) into the main repository, featuring the first multi-turn interleaved preference alignment dataset with human feedback and InterMT-Bench for evaluating multi-turn multimodal interaction capabilities. Check out [InterMT](./projects/InterMT) for more details.
+
 - **[2025.11.11]** 🛠️🛠️🛠️ We integrate the **eval-anything** evaluation framework into the main repository as a dedicated project for large-scale evaluation of any-to-any models. Check out [eval-anything](./projects/eval-anything) for more details.
 
 - **[2025.04.14]** 📜📜📜 We release the tutorial on SFT training for `text-image-to-text` models. Check out the [cookbook_en](./cookbooks/en/text_image_to_text_sft.ipynb) (for English) and [cookbook_zh](./cookbooks/zh/text_image_to_text_sft.ipynb) (for Chinese).

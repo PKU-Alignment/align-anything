@@ -1,0 +1,8 @@
+__pycache__
+output
+output_*
+batch_logs
+batch_logs_*
+test_dataset
+*/__pycache__
+cache/
