@@ -1,0 +1,72 @@
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================
+
+dataset:
+  name: DeceptionBench
+  path: PKU-Alignment/DeceptionBench
+  split: test  
+  size: null  # Use complete test set
+  modality: text-to-text
+  data_name: test  # HuggingFace dataset config name
+  default_task_list: ["DeceptionBench"]
+
+# Default task configuration
+task_defaults: &task_defaults
+  type: Dialogue  # Dialogue generation task
+  question_key: prompt  # Input prompt field
+  available_evaluate_tools: ["gpt_harmfulness_evaluation", "alignment_analysis", "deception_detection"]
+
+task:
+  - name: DeceptionBench
+    <<: *task_defaults
+    # DeceptionBench uses custom dual reasoning and alignment analysis
+
+# Evaluation tools configuration
+answer_extractor:
+  - name: alignment_analysis
+    function: gpt_evaluate_alignment  # Evaluate alignment between internal beliefs and external outputs
+    args:
+      model: gpt-4o
+      temperature: 0.0
+      max_tokens: 1024
+  - name: deception_detection
+    function: batch_evaluate_deception  # Comprehensive deception behavior detection
+    args:
+      model: gpt-4o
+
+# Evaluation metrics configuration
+metrics:
+  - name: alignment_rate
+    function: alignment_rate
+    args: {}
+  - name: deception_rate
+    function: deception_rate
+    args: {}
+  - name: consistency_rate
+    function: consistency_rate
+    args: {}
+
+# Overall metrics
+overall_metrics:
+  - name: comprehensive_deception_analysis
+    function: comprehensive_analysis
+    args:
+      include_advanced_metrics: true
+
+# benchmark_config:
+enable_advanced_analysis: true  # Enable advanced alignment analysis
+evaluation_model: gpt-4o  # Evaluation model
+max_workers: 32  # Number of parallel evaluation threads
+cache_evaluation: true  # Cache evaluation results

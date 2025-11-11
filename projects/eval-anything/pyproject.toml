@@ -1,0 +1,203 @@
+# Package ######################################################################
+[build-system]
+requires = ["setuptools >= 60.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eval-anything"
+description = "Eval Anything"
+readme = "README.md"
+requires-python = ">= 3.11"
+authors = [{ name = "PKU-Alignment Team" }]
+license = { text = "Apache License, Version 2.0" }
+keywords = [
+    "Evaluation",
+    "Large Language Model",
+    "Multi-Modal Model",
+    "Language Model",
+    "LLM",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "vllm >= 0.6.2",
+    "torch >= 1.13",
+    "frechet_audio_distance",
+    "transformers",
+    "datasets",
+    "tokenizers >= 0.13.3",
+    "accelerate",
+    "numpy==1.26.4",
+    "scipy",
+    "wandb",
+    "tensorboard",
+    "tqdm",
+    "rich",
+    "diffusers",
+    "peft",
+    "gradio",
+    "uvicorn",
+    "fastapi",
+    "librosa",
+    "soundfile",
+    "torchaudio",
+    "torchvision",
+    "yt_dlp",
+    "opencv-python==4.6.0.66",
+    "moviepy==1.0.3",
+    "hpsv2",
+    "image-reward",
+    "clip",
+    "pytorch_fid",
+    "av",
+    "latex2sympy2",
+]
+
+dynamic = ["version"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["eval_anything", "eval_anything.*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.jsonl", "*.yaml", "*.yml"]
+
+# Linter tools #################################################################
+
+[tool.black]
+line-length = 100
+skip-string-normalization = true
+# Sync with requires-python
+target-version = ["py38", "py39", "py310", "py311"]
+
+[tool.isort]
+atomic = true
+profile = "black"
+src_paths = ["eval_anything", "scripts", "tests"]
+extra_standard_library = ["typing_extensions"]
+indent = 4
+line_length = 100
+lines_after_imports = 2
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.8"
+pretty = true
+show_error_codes = true
+show_error_context = true
+show_traceback = true
+allow_redefinition = true
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+no_implicit_optional = true
+strict_equality = true
+strict_optional = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[tool.pydocstyle]
+convention = "google"
+
+[tool.doc8]
+max-line-length = 500
+
+[tool.ruff]
+# Sync with requires-python
+target-version = "py38"
+line-length = 100
+output-format = "full"
+src = ["eval_anything", "scripts"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",   # pycodestyle
+    "F",   # pyflakes
+    "UP",  # pyupgrade
+    "ANN", # flake8-annotations
+    "S",   # flake8-bandit
+    "BLE", # flake8-blind-except
+    "B",   # flake8-bugbear
+    "COM", # flake8-commas
+    "C4",  # flake8-comprehensions
+    "EXE", # flake8-executable
+    "ISC", # flake8-implicit-str-concat
+    "PIE", # flake8-pie
+    "PYI", # flake8-pyi
+    "Q",   # flake8-quotes
+    "RSE", # flake8-raise
+    "RET", # flake8-return
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "RUF", # ruff
+]
+ignore = [
+    # E501: line too long
+    # W505: doc line too long
+    # too long docstring due to long example blocks
+    "E501",
+    "W505",
+    # ANN101: missing type annotation for `self` in method
+    # ANN102: missing type annotation for `cls` in classmethod
+    "ANN101",
+    "ANN102",
+    # ANN401: dynamically typed expressions (typing.Any) are disallowed
+    "ANN401",
+    # S101: use of `assert` detected
+    # internal use and may never raise at runtime
+    "S101",
+    # PLR0402: use from {module} import {name} in lieu of alias
+    # use alias for import convention (e.g., `import torch.nn as nn`)
+    "PLR0402",
+]
+
+[project.scripts]
+eval-anything-cli = "eval_anything.cli:main"
+
+[project.optional-dependencies]
+vla = [
+    "nltk @ git+https://github.com/nltk/nltk@582e6e35f0e6c984b44ec49dcb8846d9c011d0a8",
+    "clip @ git+https://github.com/openai/CLIP.git@a1d071733d7111c9c014f024669f959182114e33#egg=clip",
+    "phonemizer",
+    "networkx",
+    "matplotlib>=3.3.1",
+    "h5py",
+    "pyquaternion>=0.9.9",
+    "compress_json",
+    "objaverse",
+    "trimesh",
+    "decorator",
+    "ipdb",
+    "prettytable",
+    "fire",
+    "shapely",
+    "numpy-quaternion",
+    "tensorboardx",
+    "setproctitle",
+    "open-clip-torch",
+    "plotly",
+    "omegaconf",
+    "wheel>=0.36.2",
+    "scipy>=1.5.4",
+    "wget",
+    "pandas",
+    "nbformat",
+    "scikit-image",
+    "torchmetrics",
+    "gym"
+]

@@ -1,0 +1,9 @@
+dataset:
+  name: MIC
+  path: Lv111/MIC
+  split: train
+  size:
+  modality: text-to-text
+  default_task_list: ["MIC"]
+task:
+  - name: MIC

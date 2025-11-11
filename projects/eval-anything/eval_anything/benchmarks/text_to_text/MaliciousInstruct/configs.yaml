@@ -1,0 +1,9 @@
+dataset:
+  name: MaliciousInstruct
+  path: eval-anything-local/data/MaliciousInstruct.txt
+  split:
+  size:
+  modality: text-to-text
+  default_task_list: ["MaliciousInstruct"]
+task:
+  - name: MaliciousInstruct
