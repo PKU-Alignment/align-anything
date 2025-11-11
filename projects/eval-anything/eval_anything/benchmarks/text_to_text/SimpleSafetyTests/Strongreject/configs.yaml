@@ -1,0 +1,9 @@
+dataset:
+  name: SandP
+  path: Lv111/SandP
+  split: train
+  size:
+  modality: text-to-text
+  default_task_list: ["SandP"]
+task:
+  - name: SandP

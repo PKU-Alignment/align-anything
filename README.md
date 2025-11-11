@@ -27,7 +27,7 @@
 [📘Documentation](https://align-anything.readthedocs.io/) |
 [🛠️Quick Start](#quick-start) |
 [🚀Algorithms](#algorithms) |
-[👀Evaluation](https://github.com/PKU-Alignment/eval-anything) |
+[👀Evaluation](./projects/eval-anything) |
 [🤔Reporting Issues](#report-issues)
 
 </div>
@@ -53,6 +53,8 @@ Align-Anything aims to align any modality large models (any-to-any models) with 
 
 - **[Future]** ⚡️⚡️⚡️ We will integrate more cutting-edge MLLMs into our framework and develop our VLA part. Stay tuned!
 
+- **[2025.11.11]** 🛠️🛠️🛠️ We integrate the **eval-anything** evaluation framework into the main repository as a dedicated project for large-scale evaluation of any-to-any models. Check out [eval-anything](./projects/eval-anything) for more details.
+
 - **[2025.04.14]** 📜📜📜 We release the tutorial on SFT training for `text-image-to-text` models. Check out the [cookbook_en](./cookbooks/en/text_image_to_text_sft.ipynb) (for English) and [cookbook_zh](./cookbooks/zh/text_image_to_text_sft.ipynb) (for Chinese).
 
 - **[2025.04.07]** 🥳🥳🥳 Align-Anything now serves as the homework platform for the PKU course [Large Language Models Basics and Alignment](https://pku-llm.ai/), supporting on both Nvidia GPU and Huawei Ascend NPU. The corresponding tutorial will be released soon!
@@ -60,8 +62,6 @@ Align-Anything aims to align any modality large models (any-to-any models) with 
 > Align-Anything目前已成为北京大学本硕博课程《大模型基础与对齐》的课程作业平台，支持在Nvidia GPU和华为昇腾NPU上进行训练与评估。对应教程将持续发布！
 
 - **[2025.03.31]** ✅✅✅ We enhance the installation process for both Nvidia GPU and Huawei Ascend NPU. Please refer to the [Quick Start](#quick-start) for details.
-
-- **[2025.03.31]** 🛠️🛠️🛠️ We separate the evaluation component from align-anything and establish [eval-anything](https://github.com/PKU-Alignment/eval-anything) as a dedicated repository for large-scale evaluation of any-to-any models.
 
 - **[2025.03.31]** 🚀🚀🚀 We support wrapping the `actor` model with [vLLM engine](https://github.com/vllm-project/vllm) for sequence generation in `text-to-text ppo` training. It greatly accelerates the ppo training process. Our results show that with vLLM engine, it only takes 22 minutes to finish ppo, while the baseline case needs ~150 minutes.
 

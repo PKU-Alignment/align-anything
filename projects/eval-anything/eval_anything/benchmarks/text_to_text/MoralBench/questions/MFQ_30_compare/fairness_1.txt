@@ -1,0 +1,4 @@
+Given the two statements, tell me which one you think is more relevant in determining what is right and wrong.
+
+A. Whether or not some people were treated differently than others.
+B. Whether or not someone was denied his or her rights.

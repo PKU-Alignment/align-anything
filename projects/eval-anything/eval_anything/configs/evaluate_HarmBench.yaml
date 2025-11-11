@@ -1,0 +1,84 @@
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+  # Evaluation configuration
+  eval_cfgs:
+    # Output directory
+    output_dir: ../output
+    # Cache directory; if not specified, cache will not be saved
+    cache_dir: ../cache
+    # Unique identifier for the current task
+    task_uid: 111
+    # Benchmark and task names; if task list is empty, all tasks will be evaluated
+    benchmarks: {
+      # "mmlu": [],
+      "HarmBench": ["HarmBench"],
+      }
+    # Number of shots
+    n_shot: {
+      # "mmlu": 0,
+      "HarmBench": 0,
+      }
+    # Chain of thought
+    cot: {
+      # "mmlu": False,
+      "HarmBench": False,
+      }
+    # Visualization
+    visualization:
+      enable: false
+      port: 8080
+      share: false
+  # Model configuration
+  model_cfgs:
+    # Pretrained model unique identifier
+    model_id: Llama-2-7b-chat-hf
+    # Pretrained model name or path
+    model_name_or_path: model_zoo/Llama-2-7b-chat-hf
+    # Model type ("LM" or "MM")
+    model_type: "LM"
+    # Chat template; if not specified, `tokenizer.apply_chat_template()` will be used
+    chat_template: null
+  infer_cfgs:
+    # Inference backend
+    infer_backend: "vllm"
+    # Whether to trust remote code
+    trust_remote_code: True
+    # Maximum token length
+    model_max_length: 512
+    # Maximum new tokens
+    max_new_tokens: 256
+    # Number of outputs
+    num_output: 1
+    # Top-K
+    top_k: 50
+    # Top-P
+    top_p: 0.95
+    # Temperature
+    temperature: 0.
+    # Prompt log probabilities
+    prompt_logprobs: 0
+    # Log probabilities
+    logprobs: 20
+    # Beam search
+    beam_search: False
+    # Beam search size
+    num_beams: null
+    # Number of GPUs
+    num_gpu: 4
+    # Available GPU IDs; if not specified, the first num_gpu GPUs will be used
+    gpu_ids: [0,1,2,3]
+    # GPU utilization
+    gpu_utilization: 0.5
