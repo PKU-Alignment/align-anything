@@ -13,9 +13,10 @@
 # limitations under the License.
 # ==============================================================================
 
+from math import e
+from einops import rearrange
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
-
 import torch
 import transformers
 from torch.utils.data import Dataset
@@ -23,7 +24,7 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.tools import right_padding
+from align_anything.utils.tools import right_padding, ends_with_any
 from datasets import load_dataset
 
 
@@ -72,7 +73,10 @@ class PreferenceDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
+        self.template = template
 
+        if isinstance(optional_args, str):
+            optional_args = [optional_args]
         self.raw_data = load_dataset(
             path,
             split=split,
@@ -82,54 +86,35 @@ class PreferenceDataset(Dataset):
             trust_remote_code=True,
         )
         if size:
+            size = min(size, len(self.raw_data))
             self.raw_data = self.raw_data.select(range(int(size)))
-        self.template = template
 
     def preprocess(self, raw_sample: dict[str, Any]) -> PreferenceSample:
-        formatted_sample = self.template.format_sample(raw_sample)
+        better_conversation, worse_conversation, meta_info = self.template.format_preference_sample(raw_sample)
+
+        if not ends_with_any(better_conversation, self.tokenizer.eos_token):
+            better_conversation += self.tokenizer.eos_token
+
+        if not ends_with_any(worse_conversation, self.tokenizer.eos_token):
+            worse_conversation += self.tokenizer.eos_token
+        
+        better_inputs = self.processor(
+            prompt=better_conversation, images=[meta_info['image']], return_tensors='pt'
+        )
+        worse_inputs = self.processor(
+            prompt=worse_conversation, images=[meta_info['image']], return_tensors='pt'
+        )
+        
         return_dict = {}
-        if 'input_image' in formatted_sample and formatted_sample['input_image'] is not None:
+        return_dict['better_input_ids'] = better_inputs['input_ids'][0]
+        return_dict['worse_input_ids'] = worse_inputs['input_ids'][0]
+        return_dict['pixel_values'] = better_inputs['pixel_values'][0]
+        return_dict['better_images_seq_mask'] = better_inputs['images_seq_mask'][0]
+        return_dict['worse_images_seq_mask'] = worse_inputs['images_seq_mask'][0]
+        return_dict['better_images_emb_mask'] = better_inputs['images_emb_mask'][0]
+        return_dict['worse_images_emb_mask'] = worse_inputs['images_emb_mask'][0]
+        return_dict['task'] = 'understanding'
 
-            better_full_conversation = [
-                {
-                    'role': 'User',
-                    'content': formatted_sample['input_text'],
-                    'images': (
-                        [formatted_sample['input_image']]
-                        if isinstance(formatted_sample['input_image'], str)
-                        else formatted_sample['input_image']
-                    ),
-                },
-                {'role': 'Assistant', 'content': formatted_sample['better_output_text']},
-            ]
-
-            worse_full_conversation = [
-                {
-                    'role': 'User',
-                    'content': formatted_sample['input_text'],
-                    'images': (
-                        [formatted_sample['input_image']]
-                        if isinstance(formatted_sample['input_image'], str)
-                        else formatted_sample['input_image']
-                    ),
-                },
-                {'role': 'Assistant', 'content': formatted_sample['worse_output_text']},
-            ]
-
-            better_inputs = self.processor(
-                better_full_conversation, formatted_sample['input_image'], return_tensors='pt'
-            )
-            worse_inputs = self.processor(
-                worse_full_conversation, formatted_sample['input_image'], return_tensors='pt'
-            )
-
-            return_dict = better_inputs.copy()
-            return_dict['worse_input_ids'] = worse_inputs['input_ids']
-            return_dict['task'] = 'understanding'
-        elif 'output_image' in formatted_sample and formatted_sample['output_image'] is not None:
-            raise NotImplementedError(
-                'Not implemented inside PreferenceDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
-            )
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
@@ -216,39 +201,21 @@ class PreferenceCollator:
         return_dict = {}
         current_device = get_current_device()
 
-        return_dict['better_input_ids'] = right_padding(
-            [sample['better_input_ids'] for sample in samples],
-            padding_value=self.pad_token_id,
-        ).to(current_device)
+        input_ids = [sample['better_input_ids'] for sample in samples] + [
+            sample['worse_input_ids'] for sample in samples
+        ]  # size = (2 * B, L)
+        return_dict['input_ids'] = right_padding(input_ids, padding_value=self.pad_token_id).to(
+            current_device
+        )  # size = (2 * B, L)
 
-        return_dict['worse_input_ids'] = right_padding(
-            [sample['worse_input_ids'] for sample in samples],
-            padding_value=self.pad_token_id,
-        ).to(current_device)
-
-        if 'attention_mask' in return_dict:
-            return_dict['attention_mask'] = right_padding(
-                [sample['attention_mask'] for sample in samples],
-                padding_value=0,
-            ).to(current_device)
-
-        if 'pixel_values' in return_dict:
-            new_samples = []
-
-            for sample in samples:
-
-                sample['pixel_values'] = torch.cat(
-                    [tensor.to(current_device) for tensor in sample['pixel_values']], dim=0
-                )
-
-                new_samples.append(sample)
-
-            _pixel_values_list = []
-            for sample in new_samples:
-                pixel_values = sample['pixel_values']  # size = (P, C, H, W)
-                _pixel_values_list.append(pixel_values)
-
-            return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device)
-
+        if 'pixel_values' in samples[0].keys():
+            pixel_values = [sample['pixel_values'] for sample in samples]
+            return_dict['pixel_values'] = torch.cat(pixel_values + pixel_values, dim=0).to(current_device).unsqueeze(0)
+        
+        if "better_images_emb_mask" in samples[0].keys():
+            better_images_emb_mask  = [sample['better_images_emb_mask'] for sample in samples]
+            worse_images_emb_mask = [sample['worse_images_emb_mask'] for sample in samples]
+            return_dict['images_emb_mask'] = right_padding(better_images_emb_mask + worse_images_emb_mask, padding_value=0).to(current_device).detach()
+            
         return_dict['task'] = samples[0]['task']
         return return_dict

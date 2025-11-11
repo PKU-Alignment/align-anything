@@ -12,21 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-INPUT_PATH="align-anything/projects/janus/example/supervised/text_to_image/train.json"
-OUTPUT_PATH="align-anything/projects/janus/example/supervised/text_to_image/train_tokenized.pt"
-MODEL_PATH="deepseek-ai/Janus-1.3B"
-CACHE_DIR="align-anything/projects/janus/.cache"
+# Initialize variables
+MODEL_NAME_OR_PATH="deepseek-ai/Janus-1.3B"
+TRAIN_DATASETS="../../projects/janus/example/supervised/text_to_image"
+TRAIN_DATA_FILE="train_tokenized.pt"
+OUTPUT_DIR="output/janus_sft_text_to_image"
 JANUS_REPO_PATH="/path/to/Align_Anything_Janus" # change to your own path to Align_Anything_Janus
-mkdir -p $CACHE_DIR
-NUM_PROCESSES=8
-NUM_GPUS=8
 
-export PYTHONPATH=$PYTHONPATH:"$JANUS_REPO_PATH"
+export PYTHONPATH=$PYTHONPATH:$JANUS_REPO_PATH
+export WANDB_API_KEY=""
+export WANDB_MODE=online
 
-python supervised_text_to_image.py \
-    --input_path $INPUT_PATH \
-    --output_path $OUTPUT_PATH \
-    --model_path $MODEL_PATH \
-    --cache_dir $CACHE_DIR \
-    --num_processes $NUM_PROCESSES \
-    --num_gpus $NUM_GPUS
+# Source the setup script
+source ../setup.sh
+# Execute deepspeed command
+deepspeed \
+    --master_port ${MASTER_PORT} \
+    --module align_anything.trainers.janus.sft_gen \
+    --model_name_or_path ${MODEL_NAME_OR_PATH} \
+    --train_datasets ${TRAIN_DATASETS} \
+    --train_data_files ${TRAIN_DATA_FILE} \
+    --train_split train \
+    --learning_rate 1e-6 \
+    --epochs 3 \
+    --lr_scheduler_type cosine \
+    --output_dir ${OUTPUT_DIR}

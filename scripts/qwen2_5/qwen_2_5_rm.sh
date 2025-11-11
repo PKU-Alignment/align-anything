@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+#
 # Copyright 2025 PKU-Alignment Team. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,28 +14,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-# Initialize variables
-MODEL_NAME_OR_PATH="deepseek-ai/Janus-Pro-7B"
-TRAIN_DATASETS="../projects/janus/example/supervised/text_image_to_text"
-TRAIN_DATA_FILE="train.json"
-OUTPUT_DIR="output/janus_sft_text_image_to_text"
-JANUS_REPO_PATH="/path/to/Janus"
 
-export PYTHONPATH=$PYTHONPATH:$JANUS_REPO_PATH
+
+MODEL_NAME_OR_PATH="Qwen/Qwen2.5-0.5B-Instruct" # model path
+
+TRAIN_DATASETS="../assets/text_to_text/preference" # rm dataset path
+TRAIN_TEMPLATE="PKUSafeRLHF" # dataset template
+TRAIN_SPLIT="train" # split the dataset
+
+OUTPUT_ROOT_DIR=$OUTPUT_ROOT_DIR
+
+if [ -z "$OUTPUT_ROOT_DIR" ]; then
+    echo "OUTPUT_ROOT_DIR is not set"
+    OUTPUT_ROOT_DIR="../outputs"
+fi
+
+OUTPUT_DIR="${OUTPUT_ROOT_DIR}/qwen_2_5_rm" # output dir
+
+# For wandb online logging
 export WANDB_API_KEY=""
-export WANDB_MODE=online
 
 # Source the setup script
 source ./setup.sh
+
 # Execute deepspeed command
 deepspeed \
-    --master_port ${MASTER_PORT} \
-    --module align_anything.trainers.janus.sft \
-    --model_name_or_path ${MODEL_NAME_OR_PATH} \
-    --train_datasets ${TRAIN_DATASETS} \
-    --train_data_files ${TRAIN_DATA_FILE} \
-    --train_split train \
-    --learning_rate 1e-6 \
-    --epochs 3 \
-    --lr_scheduler_type cosine \
-    --output_dir ${OUTPUT_DIR}
+     --master_port ${MASTER_PORT} \
+     --module align_anything.trainers.text_to_text.rm \
+     --model_name_or_path ${MODEL_NAME_OR_PATH} \
+     --train_template ${TRAIN_TEMPLATE} \
+     --train_datasets ${TRAIN_DATASETS} \
+     --train_split ${TRAIN_SPLIT} \
+     --output_dir ${OUTPUT_DIR} \
+     --epochs 1 

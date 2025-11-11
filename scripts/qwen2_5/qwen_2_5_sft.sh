@@ -16,14 +16,20 @@
 # ==============================================================================
 
 
-MODEL_NAME_OR_PATH="llava-hf/llava-1.5-7b-hf" # model path
+MODEL_NAME_OR_PATH="Qwen/Qwen2.5-0.5B-Instruct" # model path
 
-TRAIN_DATASETS="PKU-Alignment/align-anything" # dataset path
-TRAIN_TEMPLATE="AA_TI2T" # dataset template
-TRAIN_NAME="text-image-to-text" # dataset name
-TRAIN_SPLIT="train" # split the dataset
+TRAIN_DATASETS="../assets/text_to_text/supervised" # sft dataset path
+TRAIN_TEMPLATE="Alpaca" # sft dataset template
+TRAIN_SPLIT="train" # split the sft dataset
 
-OUTPUT_DIR="../outputs/llava_dpo" # output dir
+OUTPUT_ROOT_DIR=$OUTPUT_ROOT_DIR
+
+if [ -z "$OUTPUT_ROOT_DIR" ]; then
+    echo "OUTPUT_ROOT_DIR is not set"
+    OUTPUT_ROOT_DIR="../outputs"
+fi
+
+OUTPUT_DIR="${OUTPUT_ROOT_DIR}/qwen_2_5_sft" # output dir
 
 # For wandb online logging
 export WANDB_API_KEY=""
@@ -34,13 +40,10 @@ source ./setup.sh
 # Execute deepspeed command
 deepspeed \
      --master_port ${MASTER_PORT} \
-     --module align_anything.trainers.text_image_to_text.dpo \
+     --module align_anything.trainers.text_to_text.sft \
      --model_name_or_path ${MODEL_NAME_OR_PATH} \
-     --train_datasets ${TRAIN_DATASETS} \
      --train_template ${TRAIN_TEMPLATE} \
+     --train_datasets ${TRAIN_DATASETS} \
      --train_split ${TRAIN_SPLIT} \
-     --train_name ${TRAIN_NAME} \
      --output_dir ${OUTPUT_DIR} \
-     --save_total_limit 3 \
-     --train_batch_size 1 \
-     --epochs 2
+     --epochs 1 

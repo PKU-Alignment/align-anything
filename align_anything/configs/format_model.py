@@ -29,6 +29,8 @@ class ModelFormatter:
             self.format_sample = custom_formatter
         elif hasattr(formatter, 'apply_chat_template') and formatter.chat_template:
             self.format_sample = self.format_with_template
+        elif hasattr(formatter, 'apply_sft_template_for_multi_turn_prompts'): # Janus only
+            self.format_sample = self.format_with_template_janus
         else:
             self.format_sample = self.default_format
 
@@ -63,3 +65,12 @@ class ModelFormatter:
             add_generation_prompt=add_generation_prompt,
             add_special_tokens=True,
         )
+    def format_with_template_janus(
+        self, raw_sample: list[dict[str, Any]], add_generation_prompt: bool = False
+    ) -> str:
+        return self.formatter.apply_sft_template_for_multi_turn_prompts(
+            conversations = raw_sample,
+            sft_format = 'deepseek',
+            system_prompt = '',
+        )
+

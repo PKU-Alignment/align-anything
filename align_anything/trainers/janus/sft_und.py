@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Trainer for DPO training."""
+"""Trainer for supervised training."""
 
 
 import argparse
@@ -24,8 +24,9 @@ import torch
 import transformers
 from janus.models import MultiModalityCausalLM, VLChatProcessor, VLMImageProcessor
 
-from align_anything.datasets.janus import PreferenceBatch, PreferenceTokenizedDataset
-from align_anything.trainers.text_to_text.dpo import DPOTrainer as DPOtextTrainer
+from align_anything.datasets.janus import SupervisedBatch, SupervisedDataset, SupervisedTokenizedDataset
+from align_anything.trainers.text_to_text.sft import SupervisedTrainer as SupervisedtextTrainer
+from align_anything.utils.device_utils import torch_set_device
 from align_anything.utils.multi_process import get_current_device
 from align_anything.utils.tools import (
     custom_cfgs_to_dict,
@@ -39,13 +40,13 @@ from align_anything.utils.tools import (
 transformers.logging.set_verbosity_info()
 
 
-class DPOTrainer(DPOtextTrainer):
+class SuperviseTrainer(SupervisedtextTrainer):
 
     def init_datasets(self) -> None:
         """Initialize training and evaluation datasets."""
         self.train_dataloader, self.eval_dataloader = self.get_dataloaders(
-            PreferenceTokenizedDataset, PreferenceTokenizedDataset
-        )
+            SupervisedDataset, SupervisedDataset
+        ) # change to SupervisedTokenizedDataset, SupervisedTokenizedDataset in case of image input
 
     def update_configs(self, model_config, args, fields):
         cross_update = lambda a, b, field_name: (
@@ -62,29 +63,17 @@ class DPOTrainer(DPOtextTrainer):
         self.model = MultiModalityCausalLM.from_pretrained(
             self.cfgs.model_cfgs.model_name_or_path,
         ).to(get_current_device())
-
-        self.reference_model = MultiModalityCausalLM.from_pretrained(
-            self.cfgs.model_cfgs.model_name_or_path,
-        ).to(get_current_device())
-
         if self.cfgs.train_cfgs.bf16:
             self.model = self.model.to(torch.bfloat16)
-            self.reference_model = self.reference_model.to(torch.bfloat16)
 
-        self.processor = VLMImageProcessor.from_pretrained(
-            self.cfgs.model_cfgs.model_name_or_path,
-            model_max_length=self.cfgs.train_cfgs.max_position_embeddings,
-            padding_side='right',
-            use_fast=False,
-        )
-        text_processor = VLChatProcessor.from_pretrained(
+        self.processor = VLChatProcessor.from_pretrained(
             self.cfgs.model_cfgs.model_name_or_path,
         )
-        self.tokenizer = text_processor.tokenizer
+        self.tokenizer = self.processor.tokenizer
 
-    def loss(self, dpo_batch: PreferenceBatch) -> dict[str, torch.Tensor]:
-        """Loss function for preference learning."""
-        outputs = self.model.forward(**dpo_batch, task='generation')
+    def loss(self, sft_batch: SupervisedBatch) -> dict[str, torch.Tensor]:
+        """Loss function for supervised finetuning."""
+        outputs = self.model.forward(**sft_batch)
         return {
             'loss': outputs.loss,
         }
@@ -94,10 +83,10 @@ def main():
     # setup distribution training
     deepspeed.init_distributed()
     current_device = get_current_device()
-    torch.cuda.set_device(current_device)
+    torch_set_device(current_device)
 
     # read default configs from the yaml file
-    task = os.path.join('janus', 'dpo')
+    task = os.path.join('janus', 'sft_und')
     dict_cfgs, ds_cfgs = read_cfgs(mode='train', task=task)
 
     # get custom configs from command line
@@ -114,7 +103,7 @@ def main():
     seed_everything(cfgs.train_cfgs.seed)
 
     # finetune the model
-    trainer = DPOTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)
+    trainer = SuperviseTrainer(cfgs=cfgs, ds_cfgs=ds_cfgs)
     trainer.train()
     trainer.save()
 

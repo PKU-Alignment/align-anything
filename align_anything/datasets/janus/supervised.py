@@ -13,6 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
+import os
 from typing import Any, Callable
 from typing_extensions import TypedDict  # Python 3.10+
 
@@ -23,7 +24,7 @@ from torchvision import transforms
 from transformers.tokenization_utils import PaddingStrategy, TruncationStrategy
 
 from align_anything.utils.multi_process import get_current_device
-from align_anything.utils.tools import right_padding
+from align_anything.utils.tools import right_padding, convert_to_rgb, ends_with_any
 from datasets import load_dataset
 
 
@@ -50,6 +51,8 @@ class SupervisedBatch(TypedDict, total=True):
     attention_mask: torch.BoolTensor  # size = (B, L)
     pixel_values: torch.LongTensor | None  # size = (B, C, H, W)
     task: str
+    images_seq_mask: torch.BoolTensor | None  # size = (B, L)
+    images_emb_mask: torch.BoolTensor | None  # size = (B, N)
 
 
 class SupervisedDataset(Dataset):
@@ -60,6 +63,7 @@ class SupervisedDataset(Dataset):
         template: str,
         tokenizer: transformers.PreTrainedTokenizer,
         processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        padding_side: str = 'right',
         name: str | None = None,
         size: int | None = None,
         split: str | None = None,
@@ -72,7 +76,7 @@ class SupervisedDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
-
+        self.padding_side = padding_side
         self.raw_data = load_dataset(
             path,
             split=split,
@@ -86,61 +90,36 @@ class SupervisedDataset(Dataset):
         self.template = template
 
     def preprocess(self, raw_sample: dict[str, Any]) -> SupervisedSample:
-        formatted_sample = self.template.format_sample(raw_sample)
+        prompt, conversation, meta_info = self.template.format_supervised_sample(raw_sample)
+        if not ends_with_any(conversation, self.tokenizer.eos_token):
+            conversation += self.tokenizer.eos_token
+
+        # return return_dict
+        full_inputs = self.processor(
+            prompt=conversation, images=[meta_info['image']], return_tensors='pt'
+        )
+        prompt_inputs = self.processor(
+            prompt=prompt, images=[meta_info['image']], return_tensors='pt'
+        )
+
         return_dict = {}
-        if 'input_image' in formatted_sample and formatted_sample['input_image'] is not None:
+        return_dict['input_ids'] = full_inputs['input_ids'][0]
+        return_dict['attention_mask'] = full_inputs['attention_mask'][0]
+        return_dict['pixel_values'] = full_inputs['pixel_values'][0]
+        return_dict['images_seq_mask'] = full_inputs['images_seq_mask'][0]
+        return_dict['images_emb_mask'] = full_inputs['images_emb_mask'][0]
+        return_dict['labels'] = return_dict['input_ids'].clone()
+        return_dict['labels'][: len(prompt_inputs['input_ids'][0])] = IGNORE_INDEX
+        return_dict['task'] = 'understanding'
 
-            full_conversation = [
-                {
-                    'role': 'User',
-                    'content': formatted_sample['input_text'],
-                    'images': (
-                        [formatted_sample['input_image']]
-                        if isinstance(formatted_sample['input_image'], str)
-                        else formatted_sample['input_image']
-                    ),
-                },
-                {'role': 'Assistant', 'content': formatted_sample['output_text']},
-            ]
-
-            prompt_conversation = [
-                {
-                    'role': 'User',
-                    'content': formatted_sample['input_text'],
-                    'images': (
-                        [formatted_sample['input_image']]
-                        if isinstance(formatted_sample['input_image'], str)
-                        else formatted_sample['input_image']
-                    ),
-                },
-                {
-                    'role': 'Assistant',
-                    'content': '',
-                },
-            ]
-            full_inputs = self.processor(
-                full_conversation, formatted_sample['input_image'], return_tensors='pt'
-            )
-            prompt_inputs = self.processor(
-                prompt_conversation, formatted_sample['input_image'], return_tensors='pt'
-            )
-
-            return_dict = full_inputs.copy()
-            return_dict['labels'] = return_dict['input_ids'].clone()
-            return_dict['labels'][: len(prompt_inputs['input_ids'])] = IGNORE_INDEX
-            return_dict['task'] = 'understanding'
-        elif 'output_image' in formatted_sample and formatted_sample['output_image'] is not None:
-            raise NotImplementedError(
-                'Not implemented inside SupervisedDataset. Please follow the instructions in projects/janus/README.md to deal with image input.'
-            )
         return return_dict
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return SupervisedCollator(self.tokenizer, self.processor)
+        return SupervisedCollator(self.tokenizer.pad_token_id, self.processor, self.padding_side)
 
     def tokenize(
         self,
-        text: str,
+        conversation: str,
         add_special_tokens: bool = True,
         padding: bool | str | PaddingStrategy = PaddingStrategy.DO_NOT_PAD,
         truncation: bool | str | TruncationStrategy = TruncationStrategy.LONGEST_FIRST,
@@ -151,13 +130,13 @@ class SupervisedDataset(Dataset):
             max_length = self.tokenizer.model_max_length
 
         return self.tokenizer(
-            text,
+            text=conversation,
             add_special_tokens=add_special_tokens,
             padding=padding,
             max_length=max_length,
             truncation=truncation,
             return_tensors='pt',
-        )['input_ids'][0]
+        )
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
@@ -178,6 +157,7 @@ class SupervisedTokenizedDataset(Dataset):
         template: str | None = None,
         tokenizer: transformers.PreTrainedTokenizer | None = None,
         processor: transformers.ProcessorMixin | transforms.Compose | None = None,
+        padding_side: str = 'right',
         size: int | None = None,
         name: str | None = None,
         split: str | None = None,
@@ -190,6 +170,7 @@ class SupervisedTokenizedDataset(Dataset):
         assert template, f'You must set the valid template path! Here is {template}'
         self.tokenizer = tokenizer
         self.processor = processor
+        self.padding_side = padding_side
 
         self.raw_data = torch.load(f'{path}/{data_files}', map_location=torch.device('cpu'))
         if size:
@@ -197,7 +178,7 @@ class SupervisedTokenizedDataset(Dataset):
         self.template = template
 
     def get_collator(self) -> Callable[[list[dict[str, torch.Tensor]]], dict[str, torch.Tensor]]:
-        return SupervisedCollator(self.tokenizer.pad_token_id)
+        return SupervisedCollator(self.tokenizer.pad_token_id, self.processor, self.padding_side)
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         """Get a tokenized data sample by index."""
@@ -211,11 +192,13 @@ class SupervisedTokenizedDataset(Dataset):
 
 class SupervisedCollator:
 
-    def __init__(self, pad_token_id: int) -> None:
-        """Initialize a collator."""
+    def __init__(self, pad_token_id: int, processor: transformers.ProcessorMixin | transforms.Compose | None = None, padding_side: str = 'right') -> None:
         self.pad_token_id = pad_token_id
+        self.processor = processor
+        self.padding_side = padding_side
 
     def __call__(self, samples: list[SupervisedSample]) -> SupervisedBatch:
+
         return_dict = {}
         current_device = get_current_device()
 
@@ -229,29 +212,31 @@ class SupervisedCollator:
             padding_value=IGNORE_INDEX,
         ).to(current_device)
 
-        if 'attention_mask' in return_dict:
+        if 'attention_mask' in samples[0]:
             return_dict['attention_mask'] = right_padding(
                 [sample['attention_mask'] for sample in samples],
                 padding_value=0,
             ).to(current_device)
 
-        if 'pixel_values' in return_dict:
-            new_samples = []
+        if 'pixel_values' in samples[0]:
+            return_dict['pixel_values'] = right_padding(
+                [sample['pixel_values'] for sample in samples],
+                padding_value=0,
+            ).to(current_device)
 
-            for sample in samples:
+        if 'task' in samples[0]:
+            return_dict['task'] = samples[0]['task']
 
-                sample['pixel_values'] = torch.cat(
-                    [tensor.to(current_device) for tensor in sample['pixel_values']], dim=0
-                )
+        if "images_seq_mask" in samples[0]:
+            return_dict['images_seq_mask'] = right_padding(
+                [sample['images_seq_mask'] for sample in samples],
+                padding_value=0,
+            ).to(current_device)
+            
+        if "images_emb_mask" in samples[0]:
+            return_dict['images_emb_mask'] = right_padding(
+                [sample['images_emb_mask'] for sample in samples],
+                padding_value=0,
+            ).to(current_device)
 
-                new_samples.append(sample)
-
-            _pixel_values_list = []
-            for sample in new_samples:
-                pixel_values = sample['pixel_values']  # size = (P, C, H, W)
-                _pixel_values_list.append(pixel_values)
-
-            return_dict['pixel_values'] = torch.cat(_pixel_values_list, dim=0).to(current_device)
-
-        return_dict['task'] = samples[0]['task']
         return return_dict
