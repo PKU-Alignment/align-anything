@@ -1,0 +1,9 @@
+dataset:
+  name: XSTest
+  path: natolambert/xstest-v2-copy
+  split: train
+  size:
+  modality: text-to-text
+  default_task_list: ["XSTest"]
+task:
+  - name: XSTest

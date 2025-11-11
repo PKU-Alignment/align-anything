@@ -1,0 +1,204 @@
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+# ============================================
+# 评测配置：
+#   - 数据集hf路径
+#   - 数据集split
+#   - 数据集size
+#   - 数据集模态
+#   - 评测方式（multiple choice / generation / ...）
+#   - 评测指标（accuracy / ...）
+#   - 是否支持few_shot
+#   - 选项编号形式（ABCD或1234...），判断对错时的标识(true/false或者1/0...)
+# ============================================
+dataset:
+  name: CMMLU
+  path: /aifs4su/yaodong/panrui/pr/dataset/cmmlu
+  split: test
+  size:
+  modality: text-to-text
+  fewshot_data_path: /aifs4su/yaodong/panrui/pr/dataset/cmmlu
+  fewshot_data_file: null
+  fewshot_data_split: dev
+  cot_fewshot_data_path: null
+  cot_fewshot_data_file: null
+  cot_fewshot_data_split: null
+  max_shot: 5
+default_task_list: ['agronomy', 'anatomy', 'ancient_chinese', 'arts', 'astronomy', 'business_ethics', 'chinese_civil_service_exam', 'chinese_driving_rule', 'chinese_food_culture', 'chinese_foreign_policy', 'chinese_history', 'chinese_literature', 'chinese_teacher_qualification', 'clinical_knowledge', 'college_actuarial_science', 'college_education', 'college_engineering_hydrology', 'college_law', 'college_mathematics', 'college_medical_statistics', 'college_medicine', 'computer_science', 'computer_security', 'conceptual_physics', 'construction_project_management', 'economics', 'education', 'electrical_engineering', 'elementary_chinese', 'elementary_commonsense', 'elementary_information_and_technology', 'elementary_mathematics', 'ethnology', 'food_science', 'genetics', 'global_facts', 'high_school_biology', 'high_school_chemistry', 'high_school_geography', 'high_school_mathematics', 'high_school_physics', 'high_school_politics', 'human_sexuality', 'international_law', 'journalism', 'jurisprudence', 'legal_and_moral_basis', 'logical', 'machine_learning', 'management', 'marketing', 'marxist_theory', 'modern_chinese', 'nutrition', 'philosophy', 'professional_accounting', 'professional_law', 'professional_medicine', 'professional_psychology', 'public_relations', 'security_study', 'sociology', 'sports_science', 'traditional_chinese_medicine', 'virology', 'world_history', 'world_religions']
+
+# Default task configuration that applies to all tasks
+task_defaults: &task_defaults
+  type: MultiChoiceChinese
+  data_files: null
+  question_key: Question
+  answer_key: [A, B, C, D]
+  ground_truth_key: Answer
+  candidate_labels: [A, B, C, D]
+  avalable_evaluate_tools: ["match_letter"]
+
+task:
+  - name: agronomy
+    <<: *task_defaults
+  - name: anatomy
+    <<: *task_defaults
+  - name: ancient_chinese
+    <<: *task_defaults
+  - name: arts
+    <<: *task_defaults
+  - name: astronomy
+    <<: *task_defaults
+  - name: business_ethics
+    <<: *task_defaults
+  - name: chinese_civil_service_exam
+    <<: *task_defaults
+  - name: chinese_driving_rule
+    <<: *task_defaults
+  - name: chinese_food_culture
+    <<: *task_defaults
+  - name: chinese_foreign_policy
+    <<: *task_defaults
+  - name: chinese_history
+    <<: *task_defaults
+  - name: chinese_literature
+    <<: *task_defaults
+  - name: chinese_teacher_qualification
+    <<: *task_defaults
+  - name: clinical_knowledge
+    <<: *task_defaults
+  - name: college_actuarial_science
+    <<: *task_defaults
+  - name: college_education
+    <<: *task_defaults
+  - name: college_engineering_hydrology
+    <<: *task_defaults
+  - name: college_law
+    <<: *task_defaults
+  - name: college_mathematics
+    <<: *task_defaults
+  - name: college_medical_statistics
+    <<: *task_defaults
+  - name: college_medicine
+    <<: *task_defaults
+  - name: computer_science
+    <<: *task_defaults
+  - name: computer_security
+    <<: *task_defaults
+  - name: conceptual_physics
+    <<: *task_defaults
+  - name: construction_project_management
+    <<: *task_defaults
+  - name: economics
+    <<: *task_defaults
+  - name: education
+    <<: *task_defaults
+  - name: electrical_engineering
+    <<: *task_defaults
+  - name: elementary_chinese
+    <<: *task_defaults
+  - name: elementary_commonsense
+    <<: *task_defaults
+  - name: elementary_information_and_technology
+    <<: *task_defaults
+  - name: elementary_mathematics
+    <<: *task_defaults
+  - name: ethnology
+    <<: *task_defaults
+  - name: food_science
+    <<: *task_defaults
+  - name: genetics
+    <<: *task_defaults
+  - name: global_facts
+    <<: *task_defaults
+  - name: high_school_biology
+    <<: *task_defaults
+  - name: high_school_chemistry
+    <<: *task_defaults
+  - name: high_school_geography
+    <<: *task_defaults
+  - name: high_school_mathematics
+    <<: *task_defaults
+  - name: high_school_physics
+    <<: *task_defaults
+  - name: high_school_politics
+    <<: *task_defaults
+  - name: human_sexuality
+    <<: *task_defaults
+  - name: international_law
+    <<: *task_defaults
+  - name: journalism
+    <<: *task_defaults
+  - name: jurisprudence
+    <<: *task_defaults
+  - name: legal_and_moral_basis
+    <<: *task_defaults
+  - name: logical
+    <<: *task_defaults
+  - name: machine_learning
+    <<: *task_defaults
+  - name: management
+    <<: *task_defaults
+  - name: marketing
+    <<: *task_defaults
+  - name: marxist_theory
+    <<: *task_defaults
+  - name: modern_chinese
+    <<: *task_defaults
+  - name: nutrition
+    <<: *task_defaults
+  - name: philosophy
+    <<: *task_defaults
+  - name: professional_accounting
+    <<: *task_defaults
+  - name: professional_law
+    <<: *task_defaults
+  - name: professional_medicine
+    <<: *task_defaults
+  - name: professional_psychology
+    <<: *task_defaults
+  - name: public_relations
+    <<: *task_defaults
+  - name: security_study
+    <<: *task_defaults
+  - name: sociology
+    <<: *task_defaults
+  - name: sports_science
+    <<: *task_defaults
+  - name: traditional_chinese_medicine
+    <<: *task_defaults
+  - name: virology
+    <<: *task_defaults
+  - name: world_history
+    <<: *task_defaults
+  - name: world_religions
+    <<: *task_defaults
+
+answer_extractor:
+  - name: match_letter
+    function: regex_match_letter
+    args:
+      additional_pattern: "{original_pattern}"
+      match_index: -1
+
+metrics:
+  - name: accuracy
+    function: accuracy
+    args:
+
+overall_metrics:
+  - name: null
+    function: null
+    args:
+      null

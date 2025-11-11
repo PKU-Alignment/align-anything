@@ -1,0 +1,9 @@
+dataset:
+  name: MoralChoice
+  path: Lv111/MoralChoice
+  split: train
+  size:
+  modality: text-to-text
+  default_task_list: ["MoralChoice"]
+task:
+  - name: MoralChoice

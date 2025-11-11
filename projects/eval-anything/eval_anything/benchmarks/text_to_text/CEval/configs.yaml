@@ -1,0 +1,174 @@
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+# ============================================
+# 评测配置：
+#   - 数据集hf路径
+#   - 数据集split
+#   - 数据集size
+#   - 数据集模态
+#   - 评测方式（multiple choice / generation / ...）
+#   - 评测指标（accuracy / ...）
+#   - 是否支持few_shot
+#   - 选项编号形式（ABCD或1234...），判断对错时的标识(true/false或者1/0...)
+# ============================================
+dataset:
+  name: CEval
+  path: ceval/ceval-exam
+  split: val
+  size:
+  modality: text-to-text
+  fewshot_data_path: ceval/ceval-exam
+  fewshot_data_file: null
+  fewshot_data_split: dev
+  cot_fewshot_data_path: ceval/ceval-exam
+  cot_fewshot_data_file: null
+  cot_fewshot_data_split: dev
+  max_shot: 5
+  default_task_list: ['accountant', 'advanced_mathematics', 'art_studies', 'basic_medicine', 'business_administration', 'chinese_language_and_literature', 'civil_servant', 'clinical_medicine', 'college_chemistry', 'college_economics', 'college_physics', 'college_programming', 'computer_architecture', 'computer_network', 'discrete_mathematics', 'education_science', 'electrical_engineer', 'environmental_impact_assessment_engineer', 'fire_engineer', 'high_school_biology', 'high_school_chemistry', 'high_school_chinese', 'high_school_geography', 'high_school_history', 'high_school_mathematics', 'high_school_physics', 'high_school_politics', 'ideological_and_moral_cultivation', 'law', 'legal_professional', 'logic', 'mao_zedong_thought', 'marxism', 'metrology_engineer', 'middle_school_biology', 'middle_school_chemistry', 'middle_school_geography', 'middle_school_history', 'middle_school_mathematics', 'middle_school_physics', 'middle_school_politics', 'modern_chinese_history', 'operating_system', 'physician', 'plant_protection', 'probability_and_statistics', 'professional_tour_guide', 'sports_science', 'tax_accountant', 'teacher_qualification', 'urban_and_rural_planner', 'veterinary_medicine']
+
+# Default task configuration that applies to all tasks
+task_defaults: &task_defaults
+  type: MultiChoiceChinese
+  data_files: null
+  question_key: question
+  answer_key: [A, B, C, D]
+  ground_truth_key: answer
+  candidate_labels: [A, B, C, D]
+  avalable_evaluate_tools: ["match_letter"]
+
+task:
+  - name: accountant
+    <<: *task_defaults
+  - name: advanced_mathematics
+    <<: *task_defaults
+  - name: art_studies
+    <<: *task_defaults
+  - name: basic_medicine
+    <<: *task_defaults
+  - name: business_administration
+    <<: *task_defaults
+  - name: chinese_language_and_literature
+    <<: *task_defaults
+  - name: civil_servant
+    <<: *task_defaults
+  - name: clinical_medicine
+    <<: *task_defaults
+  - name: college_chemistry
+    <<: *task_defaults
+  - name: college_economics
+    <<: *task_defaults
+  - name: college_physics
+    <<: *task_defaults
+  - name: college_programming
+    <<: *task_defaults
+  - name: computer_architecture
+    <<: *task_defaults
+  - name: computer_network
+    <<: *task_defaults
+  - name: discrete_mathematics
+    <<: *task_defaults
+  - name: education_science
+    <<: *task_defaults
+  - name: electrical_engineer
+    <<: *task_defaults
+  - name: environmental_impact_assessment_engineer
+    <<: *task_defaults
+  - name: fire_engineer
+    <<: *task_defaults
+  - name: high_school_biology
+    <<: *task_defaults
+  - name: high_school_chemistry
+    <<: *task_defaults
+  - name: high_school_chinese
+    <<: *task_defaults
+  - name: high_school_geography
+    <<: *task_defaults
+  - name: high_school_history
+    <<: *task_defaults
+  - name: high_school_mathematics
+    <<: *task_defaults
+  - name: high_school_physics
+    <<: *task_defaults
+  - name: high_school_politics
+    <<: *task_defaults
+  - name: ideological_and_moral_cultivation
+    <<: *task_defaults
+  - name: law
+    <<: *task_defaults
+  - name: legal_professional
+    <<: *task_defaults
+  - name: logic
+    <<: *task_defaults
+  - name: mao_zedong_thought
+    <<: *task_defaults
+  - name: marxism
+    <<: *task_defaults
+  - name: metrology_engineer
+    <<: *task_defaults
+  - name: middle_school_biology
+    <<: *task_defaults
+  - name: middle_school_chemistry
+    <<: *task_defaults
+  - name: middle_school_geography
+    <<: *task_defaults
+  - name: middle_school_history
+    <<: *task_defaults
+  - name: middle_school_mathematics
+    <<: *task_defaults
+  - name: middle_school_physics
+    <<: *task_defaults
+  - name: middle_school_politics
+    <<: *task_defaults
+  - name: modern_chinese_history
+    <<: *task_defaults
+  - name: operating_system
+    <<: *task_defaults
+  - name: physician
+    <<: *task_defaults
+  - name: plant_protection
+    <<: *task_defaults
+  - name: probability_and_statistics
+    <<: *task_defaults
+  - name: professional_tour_guide
+    <<: *task_defaults
+  - name: sports_science
+    <<: *task_defaults
+  - name: tax_accountant
+    <<: *task_defaults
+  - name: teacher_qualification
+    <<: *task_defaults
+  - name: urban_and_rural_planner
+    <<: *task_defaults
+  - name: veterinary_medicine
+    <<: *task_defaults
+
+answer_extractor:
+  - name: match_letter
+    function: regex_match_letter
+    args:
+      additional_pattern: "{original_pattern}"
+      match_index: -1
+
+metrics:
+  - name: accuracy
+    function: accuracy
+    args:
+
+overall_metrics:
+  - name: null
+    function: null
+    args:
+      null

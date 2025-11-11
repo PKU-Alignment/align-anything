@@ -1,0 +1,245 @@
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+# ============================================
+# 评测配置：
+#   - 数据集hf路径
+#   - 数据集split
+#   - 数据集size
+#   - 数据集模态
+#   - 评测方式（multiple choice / generation / ...）
+#   - 评测指标（accuracy / ...）
+#   - 是否支持few_shot
+#   - 选项编号形式（ABCD或1234...），判断对错时的标识(true/false或者1/0...)
+# ============================================
+dataset:
+  name: mmlu
+  path: cais/mmlu
+  split: test
+  size: null  # Dynamic based on subject
+  modality: text-to-text
+  fewshot_data_path: cais/mmlu
+  fewshot_data_file: ["all/dev*.parquet"]
+  fewshot_data_split: train
+  max_shot: 5
+  default_task_list: ["abstract_algebra", "anatomy", "astronomy", "business_ethics", "clinical_knowledge", "college_biology", "college_chemistry", "college_computer_science", "college_mathematics", "college_medicine", "college_physics", "computer_security", "conceptual_physics", "econometrics", "electrical_engineering", "elementary_mathematics", "formal_logic", "global_facts", "high_school_biology", "high_school_chemistry", "high_school_computer_science", "high_school_european_history", "high_school_geography", "high_school_government_and_politics", "high_school_macroeconomics", "high_school_mathematics", "high_school_microeconomics", "high_school_physics", "high_school_psychology", "high_school_statistics", "high_school_us_history", "high_school_world_history", "human_aging", "human_sexuality", "international_law", "jurisprudence", "logical_fallacies", "machine_learning", "management", "marketing", "medical_genetics", "miscellaneous", "moral_disputes", "moral_scenarios", "nutrition", "philosophy", "prehistory", "professional_accounting", "professional_law", "professional_medicine", "professional_psychology", "public_relations", "security_studies", "sociology", "us_foreign_policy", "virology", "world_religions"]
+
+# Default task configuration that applies to all tasks
+task_defaults: &task_defaults
+  type: MultiChoice
+  question_key: question
+  answer_key: choices
+  ground_truth_key: answer
+  candidate_labels: ["A", "B", "C", "D"]
+  avalable_evaluate_tools: ["match_letter_after_pattern", "match_letter_in_parentheses"]
+
+task:
+  - name: all
+    data_files: ["all/test*.parquet"]
+    <<: *task_defaults
+  - name: abstract_algebra
+    data_files: ["abstract_algebra/test*.parquet"]
+    <<: *task_defaults
+  - name: anatomy
+    data_files: ["anatomy/test*.parquet"]
+    <<: *task_defaults
+  - name: astronomy
+    data_files: ["astronomy/test*.parquet"]
+    <<: *task_defaults
+  - name: business_ethics
+    data_files: ["business_ethics/test*.parquet"]
+    <<: *task_defaults
+  - name: clinical_knowledge
+    data_files: ["clinical_knowledge/test*.parquet"]
+    <<: *task_defaults
+  - name: college_biology
+    data_files: ["college_biology/test*.parquet"]
+    <<: *task_defaults
+  - name: college_chemistry
+    data_files: ["college_chemistry/test*.parquet"]
+    <<: *task_defaults
+  - name: college_computer_science
+    data_files: ["college_computer_science/test*.parquet"]
+    <<: *task_defaults
+  - name: college_mathematics
+    data_files: ["college_mathematics/test*.parquet"]
+    <<: *task_defaults
+  - name: college_medicine
+    data_files: ["college_medicine/test*.parquet"]
+    <<: *task_defaults
+  - name: college_physics
+    data_files: ["college_physics/test*.parquet"]
+    <<: *task_defaults
+  - name: computer_security
+    data_files: ["computer_security/test*.parquet"]
+    <<: *task_defaults
+  - name: conceptual_physics
+    data_files: ["conceptual_physics/test*.parquet"]
+    <<: *task_defaults
+  - name: econometrics
+    data_files: ["econometrics/test*.parquet"]
+    <<: *task_defaults
+  - name: electrical_engineering
+    data_files: ["electrical_engineering/test*.parquet"]
+    <<: *task_defaults
+  - name: elementary_mathematics
+    data_files: ["elementary_mathematics/test*.parquet"]
+    <<: *task_defaults
+  - name: formal_logic
+    data_files: ["formal_logic/test*.parquet"]
+    <<: *task_defaults
+  - name: global_facts
+    data_files: ["global_facts/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_biology
+    data_files: ["high_school_biology/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_chemistry
+    data_files: ["high_school_chemistry/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_computer_science
+    data_files: ["high_school_computer_science/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_european_history
+    data_files: ["high_school_european_history/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_geography
+    data_files: ["high_school_geography/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_government_and_politics
+    data_files: ["high_school_government_and_politics/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_macroeconomics
+    data_files: ["high_school_macroeconomics/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_mathematics
+    data_files: ["high_school_mathematics/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_microeconomics
+    data_files: ["high_school_microeconomics/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_physics
+    data_files: ["high_school_physics/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_psychology
+    data_files: ["high_school_psychology/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_statistics
+    data_files: ["high_school_statistics/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_us_history
+    data_files: ["high_school_us_history/test*.parquet"]
+    <<: *task_defaults
+  - name: high_school_world_history
+    data_files: ["high_school_world_history/test*.parquet"]
+    <<: *task_defaults
+  - name: human_aging
+    data_files: ["human_aging/test*.parquet"]
+    <<: *task_defaults
+  - name: human_sexuality
+    data_files: ["human_sexuality/test*.parquet"]
+    <<: *task_defaults
+  - name: international_law
+    data_files: ["international_law/test*.parquet"]
+    <<: *task_defaults
+  - name: jurisprudence
+    data_files: ["jurisprudence/test*.parquet"]
+    <<: *task_defaults
+  - name: logical_fallacies
+    data_files: ["logical_fallacies/test*.parquet"]
+    <<: *task_defaults
+  - name: machine_learning
+    data_files: ["machine_learning/test*.parquet"]
+    <<: *task_defaults
+  - name: management
+    data_files: ["management/test*.parquet"]
+    <<: *task_defaults
+  - name: marketing
+    data_files: ["marketing/test*.parquet"]
+    <<: *task_defaults
+  - name: medical_genetics
+    data_files: ["medical_genetics/test*.parquet"]
+    <<: *task_defaults
+  - name: miscellaneous
+    data_files: ["miscellaneous/test*.parquet"]
+    <<: *task_defaults
+  - name: moral_disputes
+    data_files: ["moral_disputes/test*.parquet"]
+    <<: *task_defaults
+  - name: moral_scenarios
+    data_files: ["moral_scenarios/test*.parquet"]
+    <<: *task_defaults
+  - name: nutrition
+    data_files: ["nutrition/test*.parquet"]
+    <<: *task_defaults
+  - name: philosophy
+    data_files: ["philosophy/test*.parquet"]
+    <<: *task_defaults
+  - name: prehistory
+    data_files: ["prehistory/test*.parquet"]
+    <<: *task_defaults
+  - name: professional_accounting
+    data_files: ["professional_accounting/test*.parquet"]
+    <<: *task_defaults
+  - name: professional_law
+    data_files: ["professional_law/test*.parquet"]
+    <<: *task_defaults
+  - name: professional_medicine
+    data_files: ["professional_medicine/test*.parquet"]
+    <<: *task_defaults
+  - name: professional_psychology
+    data_files: ["professional_psychology/test*.parquet"]
+    <<: *task_defaults
+  - name: public_relations
+    data_files: ["public_relations/test*.parquet"]
+    <<: *task_defaults
+  - name: security_studies
+    data_files: ["security_studies/test*.parquet"]
+    <<: *task_defaults
+  - name: sociology
+    data_files: ["sociology/test*.parquet"]
+    <<: *task_defaults
+  - name: us_foreign_policy
+    data_files: ["us_foreign_policy/test*.parquet"]
+    <<: *task_defaults
+  - name: virology
+    data_files: ["virology/test*.parquet"]
+    <<: *task_defaults
+  - name: world_religions
+    data_files: ["world_religions/test*.parquet"]
+    <<: *task_defaults
+
+answer_extractor:
+  - name: match_last_letter
+    function: regex_match_letter
+    args:
+      additional_pattern: "{original_pattern}"
+      match_index: -1
+  - name: match_first_letter
+    function: regex_match_letter
+    args:
+      additional_pattern: "{original_pattern}"
+      match_index: 0
+
+metrics:
+  - name: accuracy
+    function: accuracy
+    args:
+
+overall_metrics:
+  - name: avearage
+    function: average_across_tasks
+    args:
+      null

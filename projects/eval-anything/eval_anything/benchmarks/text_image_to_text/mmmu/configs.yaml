@@ -1,0 +1,154 @@
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+# ============================================
+# 评测配置：
+#   - 数据集hf路径
+#   - 数据集split
+#   - 数据集size
+#   - 数据集模态
+#   - 评测方式（multiple choice / generation / ...）
+#   - 评测指标（accuracy / ...）
+#   - 是否支持few_shot
+#   - 选项编号形式（ABCD或1234...），判断对错时的标识(true/false或者1/0...)
+# ============================================
+dataset:
+  name: mmmu
+  path: MMMU/MMMU
+  split: validation
+  size:
+  modality: text-image-to-text
+  fewshot_data_path: MMMU/MMMU
+  fewshot_data_name: "{task_name}"
+  fewshot_data_split: dev
+  cot_fewshot_data_path: null
+  cot_fewshot_data_name: null
+  cot_fewshot_data_split: null
+  max_shot: 5
+  default_task_list: ["Accounting", "Agriculture", "Architecture_and_Engineering", "Art", "Art_Theory", "Basic_Medical_Science", "Biology", "Chemistry", "Clinical_Medicine", "Computer_Science", "Design", "Diagnostics_and_Laboratory_Medicine", "Economics", "Electronics", "Energy_and_Power", "Finance", "Geography", "History", "Literature", "Manage", "Marketing", "Materials", "Math", "Mechanical_Engineering", "Music", "Pharmacy", "Physics", "Psychology", "Public_Health", "Sociology"]
+task_defaults: &task_defaults
+  type: MultiChoice
+  question_key: question
+  answer_key: options
+  ground_truth_key: answer
+  candidate_labels: ["A", "B", "C", "D", "E"]
+  avalable_evaluate_tools: ["match_multi-choice_and_open-ended"]
+task:
+  - name: Accounting
+    data_files: null
+    <<: *task_defaults
+  - name: Agriculture
+    data_files: null
+    <<: *task_defaults
+  - name: Architecture_and_Engineering
+    data_files: null
+    <<: *task_defaults
+  - name: Art
+    data_files: null
+    <<: *task_defaults
+  - name: Art_Theory
+    data_files: null
+    <<: *task_defaults
+  - name: Basic_Medical_Science
+    data_files: null
+    <<: *task_defaults
+  - name: Biology
+    data_files: null
+    <<: *task_defaults
+  - name: Chemistry
+    data_files: null
+    <<: *task_defaults
+  - name: Clinical_Medicine
+    data_files: null
+    <<: *task_defaults
+  - name: Computer_Science
+    data_files: null
+    <<: *task_defaults
+  - name: Design
+    data_files: null
+    <<: *task_defaults
+  - name: Diagnostics_and_Laboratory_Medicine
+    data_files: null
+    <<: *task_defaults
+  - name: Economics
+    data_files: null
+    <<: *task_defaults
+  - name: Electronics
+    data_files: null
+    <<: *task_defaults
+  - name: Energy_and_Power
+    data_files: null
+    <<: *task_defaults
+  - name: Finance
+    data_files: null
+    <<: *task_defaults
+  - name: Geography
+    data_files: null
+    <<: *task_defaults
+  - name: History
+    data_files: null
+    <<: *task_defaults
+  - name: Literature
+    data_files: null
+    <<: *task_defaults
+  - name: Manage
+    data_files: null
+    <<: *task_defaults
+  - name: Marketing
+    data_files: null
+    <<: *task_defaults
+  - name: Materials
+    data_files: null
+    <<: *task_defaults
+  - name: Math
+    data_files: null
+    <<: *task_defaults
+  - name: Mechanical_Engineering
+    data_files: null
+    <<: *task_defaults
+  - name: Music
+    data_files: null
+    <<: *task_defaults
+  - name: Pharmacy
+    data_files: null
+    <<: *task_defaults
+  - name: Physics
+    data_files: null
+    <<: *task_defaults
+  - name: Psychology
+    data_files: null
+    <<: *task_defaults
+  - name: Public_Health
+    data_files: null
+    <<: *task_defaults
+  - name: Sociology
+    data_files: null
+    <<: *task_defaults
+
+answer_extractor:
+  - name: match_multi-choice_and_open-ended
+    function: regex_match_multi_open
+    args:
+      match_index: -1   # Index for multiple choice
+judge_method: judge_equal_list
+metrics:
+  - name: accuracy
+    function: accuracy
+    args:
+overall_metrics:
+  - name: average
+    function: average_across_tasks
+    args:
+      null

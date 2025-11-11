@@ -1,0 +1,234 @@
+# Copyright 2025 PKU-Alignment Team. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+# ============================================
+# 评测配置：
+#   - 数据集hf路径
+#   - 数据集split
+#   - 数据集size
+#   - 数据集模态
+#   - 评测方式（multiple choice / generation / ...）
+#   - 评测指标（accuracy / ...）
+#   - 是否支持few_shot
+#   - 选项编号形式（ABCD或1234...），判断对错时的标识(true/false或者1/0...)
+# ============================================
+dataset:
+  name: AGIEval
+  path: zacharyxxxxcr/AGIEval
+  split: test
+  size:
+  modality: text-to-text
+  fewshot_data_path: zacharyxxxxcr/AGIEval
+  fewshot_data_file: null
+  fewshot_data_split: validation
+  cot_fewshot_data_path: benchmarks/cot_fewshot
+  cot_fewshot_data_file: agieval.csv
+  cot_fewshot_data_split: null
+  max_shot: 5
+  default_task_list: ['aqua-rat', 'gaokao-biology', 'gaokao-chemistry', 'gaokao-chinese', 'gaokao-english', 'gaokao-geography', 'gaokao-history', 'gaokao-mathcloze', 'gaokao-mathqa', 'gaokao-physics', 'jec-qa-ca', 'jec-qa-kd', 'logiqa-en', 'logiqa-zh', 'lsat-ar', 'lsat-lr', 'lsat-rc', 'math', 'sat-en', 'sat-en-without-passage', 'sat-math']
+task:
+  - name: aqua-rat
+    type: MultiChoice
+    data_files: ["aqua-rat/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: gaokao-biology
+    type: MultiChoiceChinese
+    data_files: ["gaokao-biology/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: gaokao-chemistry
+    type: MultiChoiceChinese
+    data_files: ["gaokao-chemistry/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: gaokao-chinese
+    type: MultiChoiceChinese
+    data_files: ["gaokao-chinese/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: gaokao-english
+    type: MultiChoice
+    data_files: ["gaokao-english/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: gaokao-geography
+    type: MultiChoiceChinese
+    data_files: ["gaokao-geography/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: gaokao-history
+    type: MultiChoiceChinese
+    data_files: ["gaokao-history/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: gaokao-mathcloze
+    type: DialogueChinese
+    data_files: ["gaokao-mathcloze/test*.parquet"]
+    question_key: question
+    answer_key: descriptionAnswer
+    ground_truth_key: descriptionAnswer
+    candidate_labels: null
+    avalable_evaluate_tools: ["match_math"]
+  - name: gaokao-mathqa
+    type: MultiChoiceChinese
+    data_files: ["gaokao-mathqa/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: gaokao-physics
+    type: MultiChoiceChinese
+    data_files: ["gaokao-physics/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: jec-qa-ca
+    type: MultiChoiceChinese
+    data_files: ["jec-qa-ca/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_multi_letter"]
+  - name: jec-qa-kd
+    type: MultiChoiceChinese
+    data_files: ["jec-qa-kd/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_multi_letter"]
+  - name: logiqa-en
+    type: MultiChoice
+    data_files: ["logiqa-en/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: logiqa-zh
+    type: MultiChoiceChinese
+    data_files: ["logiqa-zh/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: lsat-ar
+    type: MultiChoice
+    data_files: ["lsat-ar/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: lsat-lr
+    type: MultiChoice
+    data_files: ["lsat-lr/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: lsat-rc
+    type: MultiChoice
+    data_files: ["lsat-rc/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: math
+    type: Dialogue
+    data_files: ["math/test*.parquet"]
+    question_key: question
+    answer_key: descriptionAnswer
+    ground_truth_key: descriptionAnswer
+    candidate_labels: null
+    avalable_evaluate_tools: ["match_math"]
+  - name: sat-en
+    type: MultiChoice
+    data_files: ["sat-en/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: sat-en-without-passage
+    type: MultiChoice
+    data_files: ["sat-en-without-passage/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+  - name: sat-math
+    type: MultiChoice
+    data_files: ["sat-math/test*.parquet"]
+    question_key: question
+    answer_key: choices
+    ground_truth_key: answer
+    candidate_labels: [A, B, C, D, E, F, G]
+    avalable_evaluate_tools: ["match_letter"]
+answer_extractor:
+  - name: match_letter
+    function: regex_match_letter
+    args:
+      additional_pattern: "{original_pattern}"
+      match_index: 0
+  - name: match_multi_letter
+    function: regex_match_multi_letter
+    args:
+      additional_pattern: "{original_pattern}"
+      match_index: 0
+  - name: match_math
+    function: regex_match_number
+    args:
+      additional_pattern: "{original_pattern}"
+      match_index: -1
+metrics:
+  - name: accuracy
+    function: accuracy
+    args:
+overall_metrics:
+  - name: null
+    function: null
+    args:
+      null

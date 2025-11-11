@@ -1,0 +1,9 @@
+dataset:
+  name: harmbench_behaviors_text_all
+  path: Lv111/harmbench_behaviors_text_all
+  split: train
+  size:
+  modality: text-to-text
+  default_task_list: ["harmbench_behaviors_text_all"]
+task:
+  - name: harmbench_behaviors_text_all
